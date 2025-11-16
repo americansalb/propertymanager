@@ -1,0 +1,991 @@
+// PropertyMaster - Database Schema
+// Multi-tenant, ACID-compliant schema for enterprise property management
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// MULTI-TENANCY & USER MANAGEMENT
+// ============================================================================
+
+enum UserRole {
+  SUPER_ADMIN      // Platform admin
+  ORGANIZATION_ADMIN // Company owner
+  PROPERTY_MANAGER
+  ACCOUNTANT
+  LEASING_AGENT
+  MAINTENANCE_TECH
+  TENANT
+  VENDOR
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  type      OrganizationType
+
+  // Branding
+  logoUrl   String?
+  primaryColor String?
+
+  // Subscription & Billing
+  plan      SubscriptionPlan @default(TRIAL)
+  stripeCustomerId String? @unique
+
+  // Settings
+  settings  Json     @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users     User[]
+  properties Property[]
+  chartOfAccounts ChartOfAccounts[]
+  vendors   Vendor[]
+  bankAccounts BankAccount[]
+
+  @@index([slug])
+}
+
+enum OrganizationType {
+  PROPERTY_MANAGER
+  OWNER_OPERATOR
+  ENTERPRISE
+}
+
+enum SubscriptionPlan {
+  TRIAL
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+
+  firstName     String
+  lastName      String
+  phone         String?
+  avatarUrl     String?
+
+  role          UserRole
+  status        UserStatus @default(ACTIVE)
+
+  // Multi-tenant
+  organizationId String
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Security
+  emailVerified Boolean  @default(false)
+  lastLoginAt   DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  createdTransactions Transaction[]
+  assignedWorkOrders WorkOrder[]
+  auditLogs      AuditLog[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+// ============================================================================
+// PROPERTY & UNIT MANAGEMENT
+// ============================================================================
+
+enum PropertyType {
+  MULTIFAMILY
+  SINGLE_FAMILY
+  COMMERCIAL
+  MIXED_USE
+  STUDENT_HOUSING
+  SENIOR_LIVING
+}
+
+enum PropertyStatus {
+  ACTIVE
+  INACTIVE
+  UNDER_CONSTRUCTION
+}
+
+model Property {
+  id          String   @id @default(cuid())
+
+  // Basic Info
+  name        String
+  type        PropertyType
+  status      PropertyStatus @default(ACTIVE)
+
+  // Address
+  address1    String
+  address2    String?
+  city        String
+  state       String
+  zipCode     String
+  country     String   @default("US")
+
+  // Details
+  yearBuilt   Int?
+  totalUnits  Int
+  squareFeet  Int?
+
+  // Financial
+  acquisitionDate DateTime?
+  acquisitionCost Decimal? @db.Decimal(15, 2)
+
+  // Multi-tenant
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Settings
+  settings    Json     @default("{}")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  units       Unit[]
+  accounts    Account[]
+  workOrders  WorkOrder[]
+  vendors     PropertyVendor[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+enum UnitType {
+  STUDIO
+  ONE_BED
+  TWO_BED
+  THREE_BED
+  FOUR_PLUS_BED
+  COMMERCIAL
+}
+
+enum UnitStatus {
+  VACANT
+  OCCUPIED
+  VACANT_RENTED // Rented but not moved in
+  NOTICE
+  MAINTENANCE
+}
+
+model Unit {
+  id          String   @id @default(cuid())
+
+  // Identification
+  unitNumber  String
+  floor       Int?
+  type        UnitType
+  status      UnitStatus @default(VACANT)
+
+  // Physical details
+  bedrooms    Int
+  bathrooms   Decimal  @db.Decimal(3, 1)
+  squareFeet  Int?
+
+  // Financial
+  marketRent  Decimal  @db.Decimal(10, 2)
+
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  leases      Lease[]
+  workOrders  WorkOrder[]
+
+  @@unique([propertyId, unitNumber])
+  @@index([propertyId])
+  @@index([status])
+}
+
+// ============================================================================
+// LEASING & TENANTS
+// ============================================================================
+
+enum LeaseStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  CANCELLED
+}
+
+enum LeaseType {
+  FIXED_TERM
+  MONTH_TO_MONTH
+  COMMERCIAL
+}
+
+model Lease {
+  id          String   @id @default(cuid())
+
+  status      LeaseStatus @default(DRAFT)
+  type        LeaseType
+
+  // Dates
+  startDate   DateTime
+  endDate     DateTime?
+  moveInDate  DateTime?
+  moveOutDate DateTime?
+  noticeDate  DateTime?
+
+  // Financial terms
+  monthlyRent Decimal  @db.Decimal(10, 2)
+  securityDeposit Decimal @db.Decimal(10, 2)
+
+  // Lease terms
+  terms       Json     @default("{}")
+  documentUrl String?
+
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tenants     Tenant[]
+  charges     Charge[]
+
+  @@index([unitId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model Tenant {
+  id          String   @id @default(cuid())
+
+  // Personal info
+  firstName   String
+  lastName    String
+  email       String
+  phone       String
+
+  // Emergency contact
+  emergencyContactName  String?
+  emergencyContactPhone String?
+
+  // Linked user account (for portal access)
+  userId      String?  @unique
+
+  leaseId     String
+  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  isPrimary   Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  payments    Payment[]
+
+  @@index([leaseId])
+  @@index([email])
+}
+
+// ============================================================================
+// FINANCIAL CORE - CHART OF ACCOUNTS
+// ============================================================================
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum AccountSubType {
+  // Assets
+  CASH
+  ACCOUNTS_RECEIVABLE
+  SECURITY_DEPOSITS_HELD
+  FIXED_ASSETS
+
+  // Liabilities
+  ACCOUNTS_PAYABLE
+  SECURITY_DEPOSITS_LIABILITY
+  LOANS_PAYABLE
+
+  // Equity
+  OWNER_EQUITY
+  RETAINED_EARNINGS
+
+  // Revenue
+  RENTAL_INCOME
+  LATE_FEES
+  PARKING_INCOME
+  AMENITY_FEES
+  OTHER_INCOME
+
+  // Expenses
+  MAINTENANCE
+  UTILITIES
+  INSURANCE
+  PROPERTY_TAX
+  MANAGEMENT_FEES
+  MARKETING
+  PAYROLL
+  OTHER_EXPENSE
+}
+
+model ChartOfAccounts {
+  id            String   @id @default(cuid())
+
+  accountNumber String
+  name          String
+  type          AccountType
+  subType       AccountSubType
+
+  description   String?
+  isActive      Boolean  @default(true)
+
+  // Multi-tenant
+  organizationId String
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  accounts      Account[]
+  journalEntries JournalEntry[]
+
+  @@unique([organizationId, accountNumber])
+  @@index([organizationId])
+  @@index([type])
+}
+
+// Property-level GL Account
+model Account {
+  id          String   @id @default(cuid())
+
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  coaId       String
+  chartOfAccount ChartOfAccounts @relation(fields: [coaId], references: [id])
+
+  balance     Decimal  @db.Decimal(15, 2) @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  journalEntries JournalEntry[]
+
+  @@index([propertyId])
+  @@index([coaId])
+}
+
+// ============================================================================
+// FINANCIAL CORE - TRANSACTIONS & JOURNAL ENTRIES
+// ============================================================================
+
+enum TransactionType {
+  CHARGE
+  PAYMENT
+  REFUND
+  ADJUSTMENT
+  JOURNAL_ENTRY
+}
+
+enum TransactionStatus {
+  PENDING
+  POSTED
+  VOID
+  RECONCILED
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+
+  type        TransactionType
+  status      TransactionStatus @default(PENDING)
+
+  amount      Decimal  @db.Decimal(15, 2)
+  description String
+
+  transactionDate DateTime
+  postDate    DateTime?
+
+  // Reference
+  referenceType String? // "Lease", "WorkOrder", "Vendor", etc.
+  referenceId   String?
+
+  // Audit
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  journalEntries JournalEntry[]
+
+  @@index([transactionDate])
+  @@index([status])
+  @@index([referenceType, referenceId])
+}
+
+// Double-entry bookkeeping
+model JournalEntry {
+  id          String   @id @default(cuid())
+
+  transactionId String
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id])
+
+  coaId       String
+  chartOfAccount ChartOfAccounts @relation(fields: [coaId], references: [id])
+
+  // Debit or Credit
+  debit       Decimal  @db.Decimal(15, 2) @default(0)
+  credit      Decimal  @db.Decimal(15, 2) @default(0)
+
+  memo        String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([transactionId])
+  @@index([accountId])
+}
+
+// ============================================================================
+// ACCOUNTS RECEIVABLE (AR)
+// ============================================================================
+
+enum ChargeType {
+  RENT
+  LATE_FEE
+  PET_FEE
+  PARKING
+  AMENITY
+  UTILITY
+  NSF_FEE
+  DAMAGE
+  OTHER
+}
+
+enum ChargeStatus {
+  PENDING
+  POSTED
+  PAID
+  PARTIALLY_PAID
+  VOID
+}
+
+model Charge {
+  id          String   @id @default(cuid())
+
+  leaseId     String
+  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  type        ChargeType
+  status      ChargeStatus @default(PENDING)
+
+  amount      Decimal  @db.Decimal(10, 2)
+  amountPaid  Decimal  @db.Decimal(10, 2) @default(0)
+
+  description String
+  dueDate     DateTime
+  postDate    DateTime?
+
+  // Recurring
+  isRecurring Boolean  @default(false)
+  recurringRuleId String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  payments    PaymentAllocation[]
+
+  @@index([leaseId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+enum PaymentMethod {
+  ACH
+  CREDIT_CARD
+  DEBIT_CARD
+  CHECK
+  CASH
+  WIRE_TRANSFER
+  MONEY_ORDER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+
+  amount      Decimal  @db.Decimal(10, 2)
+
+  // Payment processor integration
+  stripePaymentIntentId String? @unique
+  stripeChargeId        String?
+
+  // Check/Money Order details
+  checkNumber String?
+
+  paymentDate DateTime
+  depositDate DateTime?
+
+  memo        String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  allocations PaymentAllocation[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([stripePaymentIntentId])
+}
+
+// Payment allocation to charges
+model PaymentAllocation {
+  id          String   @id @default(cuid())
+
+  paymentId   String
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  chargeId    String
+  charge      Charge   @relation(fields: [chargeId], references: [id], onDelete: Cascade)
+
+  amount      Decimal  @db.Decimal(10, 2)
+
+  createdAt   DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([chargeId])
+}
+
+// ============================================================================
+// ACCOUNTS PAYABLE (AP)
+// ============================================================================
+
+enum VendorType {
+  MAINTENANCE
+  LANDSCAPING
+  CLEANING
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  GENERAL_CONTRACTOR
+  SUPPLIER
+  UTILITY
+  PROFESSIONAL_SERVICES
+  OTHER
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model Vendor {
+  id          String   @id @default(cuid())
+
+  // Basic info
+  companyName String
+  contactName String?
+  email       String?
+  phone       String?
+
+  type        VendorType
+  status      VendorStatus @default(ACTIVE)
+
+  // Address
+  address1    String?
+  address2    String?
+  city        String?
+  state       String?
+  zipCode     String?
+
+  // Tax info
+  taxId       String?
+  w9Url       String?
+
+  // Payment info
+  paymentTerms String?   // "Net 30", etc.
+  defaultPaymentMethod PaymentMethod?
+
+  // Insurance & compliance
+  insuranceExpiryDate DateTime?
+  insuranceCertUrl    String?
+  licenseNumber       String?
+  licenseExpiryDate   DateTime?
+
+  // Multi-tenant
+  organizationId String
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  properties  PropertyVendor[]
+  bills       Bill[]
+  workOrders  WorkOrder[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// Many-to-many: Vendors approved for specific properties
+model PropertyVendor {
+  id          String   @id @default(cuid())
+
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  isPreferred Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([propertyId, vendorId])
+  @@index([propertyId])
+  @@index([vendorId])
+}
+
+enum BillStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PAID
+  VOID
+  OVERDUE
+}
+
+model Bill {
+  id          String   @id @default(cuid())
+
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+
+  status      BillStatus @default(DRAFT)
+
+  // Bill details
+  billNumber  String?
+  amount      Decimal  @db.Decimal(15, 2)
+
+  billDate    DateTime
+  dueDate     DateTime
+  paidDate    DateTime?
+
+  description String
+
+  // Document (AI-ingested invoice)
+  documentUrl String?
+  ocrData     Json?    // AI-extracted data
+
+  // Reference to work order, property, etc.
+  workOrderId String?
+  propertyId  String?
+
+  memo        String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vendorId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([workOrderId])
+}
+
+// ============================================================================
+// BANK RECONCILIATION
+// ============================================================================
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  TRUST_ACCOUNT
+}
+
+model BankAccount {
+  id          String   @id @default(cuid())
+
+  accountName String
+  accountType BankAccountType
+
+  bankName    String
+  accountNumber String  // Last 4 digits only
+  routingNumber String?
+
+  currentBalance Decimal @db.Decimal(15, 2) @default(0)
+
+  // Plaid integration
+  plaidAccessToken String?
+  plaidItemId      String?
+  plaidAccountId   String?
+
+  isActive    Boolean  @default(true)
+
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  bankTransactions BankTransaction[]
+
+  @@index([organizationId])
+}
+
+enum BankTransactionStatus {
+  PENDING
+  CLEARED
+  RECONCILED
+}
+
+model BankTransaction {
+  id          String   @id @default(cuid())
+
+  bankAccountId String
+  bankAccount   BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+
+  status      BankTransactionStatus @default(PENDING)
+
+  transactionDate DateTime
+  amount      Decimal  @db.Decimal(15, 2)
+  description String
+
+  // Plaid data
+  plaidTransactionId String? @unique
+  merchantName       String?
+  category           String[]
+
+  // Manual reconciliation
+  matchedTransactionId String? @unique
+  reconciledAt         DateTime?
+  reconciledBy         String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([bankAccountId])
+  @@index([status])
+  @@index([transactionDate])
+}
+
+// ============================================================================
+// OPERATIONS - WORK ORDERS & MAINTENANCE
+// ============================================================================
+
+enum WorkOrderType {
+  MAINTENANCE
+  REPAIR
+  INSPECTION
+  TURNOVER
+  EMERGENCY
+  PREVENTIVE
+}
+
+enum WorkOrderPriority {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+}
+
+enum WorkOrderStatus {
+  DRAFT
+  SUBMITTED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model WorkOrder {
+  id          String   @id @default(cuid())
+
+  title       String
+  description String
+  type        WorkOrderType
+  priority    WorkOrderPriority @default(MEDIUM)
+  status      WorkOrderStatus   @default(SUBMITTED)
+
+  // Location
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+
+  unitId      String?
+  unit        Unit?    @relation(fields: [unitId], references: [id])
+
+  location    String?  // "Lobby", "Roof", etc.
+
+  // Assignment
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id])
+
+  vendorId    String?
+  vendor      Vendor? @relation(fields: [vendorId], references: [id])
+
+  // Dates
+  requestedDate DateTime @default(now())
+  scheduledDate DateTime?
+  completedDate DateTime?
+
+  // Cost
+  estimatedCost Decimal? @db.Decimal(10, 2)
+  actualCost    Decimal? @db.Decimal(10, 2)
+
+  // Tenant-submitted info
+  tenantReportedBy String?
+  tenantPhone      String?
+  permissionToEnter Boolean @default(false)
+
+  // Completion
+  completionNotes String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  attachments WorkOrderAttachment[]
+  statusHistory WorkOrderStatusHistory[]
+
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToId])
+  @@index([vendorId])
+}
+
+model WorkOrderAttachment {
+  id          String   @id @default(cuid())
+
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  fileUrl     String
+  fileName    String
+  fileType    String   // "image/jpeg", etc.
+  fileSize    Int
+
+  uploadedBy  String?
+  description String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([workOrderId])
+}
+
+model WorkOrderStatusHistory {
+  id          String   @id @default(cuid())
+
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  fromStatus  WorkOrderStatus?
+  toStatus    WorkOrderStatus
+
+  changedBy   String
+  notes       String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([workOrderId])
+}
+
+// ============================================================================
+// AUDIT & COMPLIANCE
+// ============================================================================
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  PAYMENT_PROCESSED
+  DOCUMENT_VIEWED
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  action      AuditAction
+  entityType  String   // "Lease", "Payment", "WorkOrder", etc.
+  entityId    String
+
+  ipAddress   String?
+  userAgent   String?
+
+  changes     Json?    // Before/after snapshot
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// SYSTEM CONFIGURATION
+// ============================================================================
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
