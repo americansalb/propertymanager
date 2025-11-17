@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "build:production": "pnpm db:generate && cd packages/database && pnpm build && cd ../shared && pnpm build && cd ../backend && pnpm build",
+    "build:production": "pnpm db:generate && turbo run build --filter=@propertymaster/backend",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -21,10 +21,12 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down"
   },
+  "dependencies": {
+    "turbo": "^1.11.0"
+  },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "prettier": "^3.1.0",
-    "turbo": "^1.11.0",
     "typescript": "^5.3.0"
   },
   "engines": {
