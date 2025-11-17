@@ -18,8 +18,8 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@propertymaster/database": ["../database/src"],
-      "@propertymaster/shared": ["../shared/src"]
+      "@propertymaster/database": ["../database/dist"],
+      "@propertymaster/shared": ["../shared/dist"]
     }
   },
   "include": ["src/**/*"],
