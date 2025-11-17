@@ -10,7 +10,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "build:production": "pnpm db:generate && turbo run build --filter=@propertymaster/backend",
-    "start": "cd packages/backend && node dist/main",
+    "start": "node packages/backend/dist/main.js",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
