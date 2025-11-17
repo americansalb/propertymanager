@@ -27,10 +27,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('local'))
   @ApiOperation({ summary: 'Login with email and password' })
-  @ApiBody({ type: LoginRequest })
   @SwaggerResponse({ status: 200, description: 'Login successful' })
   @SwaggerResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Request() req): Promise<ApiResponse<LoginResponse>> {
+  async login(@Request() req: any): Promise<ApiResponse<LoginResponse>> {
     const result = await this.authService.login(req.user);
 
     return {
