@@ -16,7 +16,7 @@
     "migrate": "prisma migrate dev",
     "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "build": "prisma generate && tsc"
+    "build": "prisma generate && tsc && ls -la dist/"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
