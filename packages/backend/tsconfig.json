@@ -9,7 +9,7 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "baseUrl": "../../",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -17,8 +17,12 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": false,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "paths": {
+      "@propertymaster/database": ["packages/database/dist"],
+      "@propertymaster/shared": ["packages/shared/dist"]
+    }
   },
-  "include": ["src/**/*"],
+  "include": ["packages/backend/src/**/*"],
   "exclude": ["node_modules", "dist", "test"]
 }
