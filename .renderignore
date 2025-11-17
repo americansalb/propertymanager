@@ -1,0 +1,4 @@
+# Render should NOT ignore dist folders (they're built during build phase)
+# This overrides .gitignore for Render deployments
+!dist
+!packages/*/dist
