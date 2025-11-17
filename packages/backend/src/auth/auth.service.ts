@@ -4,7 +4,7 @@ import * as bcrypt from 'bcryptjs';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtPayload, LoginResponse, AuthUser, RegisterRequest } from '@propertymaster/shared';
-import { UserRole, OrganizationType, SubscriptionPlan } from '@propertymaster/database';
+import { UserRole, OrganizationType, SubscriptionPlan, Prisma } from '@propertymaster/database';
 
 @Injectable()
 export class AuthService {
@@ -96,7 +96,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(registerDto.password, 10);
 
     // Create organization and user in a transaction
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create organization
       const organization = await tx.organization.create({
         data: {
@@ -192,7 +192,7 @@ export class AuthService {
   /**
    * Create default Chart of Accounts for new organization
    */
-  private async createDefaultChartOfAccounts(tx: any, organizationId: string) {
+  private async createDefaultChartOfAccounts(tx: Prisma.TransactionClient, organizationId: string) {
     const defaultAccounts = [
       // Assets
       { accountNumber: '1000', name: 'Operating Cash', type: 'ASSET', subType: 'CASH' },
