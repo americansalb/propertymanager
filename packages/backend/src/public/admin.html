@@ -694,24 +694,155 @@
     </div>
 
     <script>
-        function handleLogin(event) {
+        // Check if user is already logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('admin_token');
+            if (token) {
+                // Try to load dashboard with existing token
+                loadDashboard();
+            }
+        });
+
+        async function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             const mfa = document.getElementById('loginMFA').value;
 
-            // Validate credentials
-            if (email === 'admin@propertymaster.com' && password === 'Admin123!' && mfa === '123456') {
-                // Show dashboard
-                document.getElementById('authSection').classList.add('hidden');
-                document.getElementById('dashboard').classList.add('active');
-                document.getElementById('userName').textContent = 'Admin User';
-            } else {
-                alert('Invalid credentials. Please use:\nEmail: admin@propertymaster.com\nPassword: Admin123!\n2FA: 123456');
+            try {
+                // Call real authentication API
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert('Login failed: ' + (error.message || 'Invalid credentials'));
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Check if user has PLATFORM_ADMIN role
+                if (data.user.role !== 'PLATFORM_ADMIN') {
+                    alert('Access denied: Platform admin privileges required');
+                    return;
+                }
+
+                // Store JWT token
+                localStorage.setItem('admin_token', data.access_token);
+                localStorage.setItem('admin_user', JSON.stringify(data.user));
+
+                // Load dashboard with real data
+                await loadDashboard();
+
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
             }
         }
 
+        async function loadDashboard() {
+            const token = localStorage.getItem('admin_token');
+            if (!token) return;
+
+            try {
+                // Fetch real data from API
+                const orgsResponse = await fetch('/api/v1/organizations', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!orgsResponse.ok) {
+                    if (orgsResponse.status === 401) {
+                        // Token expired, logout
+                        handleLogout();
+                        alert('Session expired. Please login again.');
+                        return;
+                    }
+                    throw new Error('Failed to fetch organizations');
+                }
+
+                const organizations = await orgsResponse.json();
+
+                // Update stats with real data
+                updateStats(organizations);
+
+                // Update organizations table
+                updateOrganizationsTable(organizations);
+
+                // Show dashboard
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.add('active');
+
+                // Update user name
+                const user = JSON.parse(localStorage.getItem('admin_user'));
+                document.getElementById('userName').textContent = user.name || user.email;
+
+            } catch (error) {
+                console.error('Dashboard load error:', error);
+                alert('Failed to load dashboard: ' + error.message);
+            }
+        }
+
+        function updateStats(organizations) {
+            // Calculate real stats
+            const totalOrgs = organizations.length;
+            const activeOrgs = organizations.filter(org => org.subscription?.status === 'ACTIVE').length;
+
+            // Calculate MRR (Monthly Recurring Revenue)
+            const mrr = organizations.reduce((total, org) => {
+                const prices = { STARTER: 49, PROFESSIONAL: 149, ENTERPRISE: 499 };
+                if (org.subscription?.status === 'ACTIVE') {
+                    return total + (prices[org.subscription?.plan] || 0);
+                }
+                return total;
+            }, 0);
+
+            // Update DOM
+            document.querySelector('.stat-card:nth-child(1) .value').textContent = totalOrgs;
+            document.querySelector('.stat-card:nth-child(2) .value').textContent = activeOrgs;
+            document.querySelector('.stat-card:nth-child(3) .value').textContent = '$' + (mrr / 1000).toFixed(0) + 'K';
+        }
+
+        function updateOrganizationsTable(organizations) {
+            const tbody = document.querySelector('.org-table tbody');
+            if (!tbody || organizations.length === 0) return;
+
+            // Show first 5 organizations
+            const recentOrgs = organizations.slice(0, 5);
+
+            tbody.innerHTML = recentOrgs.map(org => {
+                const subscription = org.subscription || {};
+                const statusClass = subscription.status === 'ACTIVE' ? 'status-active' :
+                                   subscription.status === 'TRIAL' ? 'status-trial' : 'status-suspended';
+                const statusText = subscription.status || 'TRIAL';
+
+                const prices = { STARTER: 49, PROFESSIONAL: 149, ENTERPRISE: 499 };
+                const mrr = subscription.status === 'ACTIVE' ? prices[subscription.plan] || 0 : 0;
+
+                return `
+                    <tr>
+                        <td>${org.name}</td>
+                        <td>${org.type || 'LANDLORD'}</td>
+                        <td>${subscription.plan || 'STARTER'}</td>
+                        <td>${org._count?.properties || 0}</td>
+                        <td>$${mrr}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td><button class="feature-btn" onclick="alert('View org: ${org.id}')">View</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         function handleLogout() {
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_user');
             document.getElementById('authSection').classList.remove('hidden');
             document.getElementById('dashboard').classList.remove('active');
         }

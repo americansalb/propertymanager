@@ -577,6 +577,14 @@
     </div>
 
     <script>
+        // Check if user is already logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('landlord_token');
+            if (token) {
+                loadDashboard();
+            }
+        });
+
         function toggleAuth() {
             const loginForm = document.getElementById('loginForm');
             const registerForm = document.getElementById('registerForm');
@@ -589,43 +597,182 @@
             }
         }
 
-        function handleLogin(event) {
+        async function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
 
-            // Validate credentials
-            if (email === 'landlord@propertymaster.com' && password === 'Landlord123!') {
-                // Show dashboard
-                document.getElementById('authSection').classList.add('hidden');
-                document.getElementById('dashboard').classList.add('active');
-                document.getElementById('userName').textContent = 'Property Manager';
-            } else {
-                alert('Invalid credentials. Please use:\nEmail: landlord@propertymaster.com\nPassword: Landlord123!');
+            try {
+                // Call real authentication API
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert('Login failed: ' + (error.message || 'Invalid credentials'));
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Store JWT token
+                localStorage.setItem('landlord_token', data.access_token);
+                localStorage.setItem('landlord_user', JSON.stringify(data.user));
+
+                // Load dashboard with real data
+                await loadDashboard();
+
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
             }
         }
 
-        function handleRegister(event) {
+        async function handleRegister(event) {
             event.preventDefault();
             const orgName = document.getElementById('regOrgName').value;
             const name = document.getElementById('regName').value;
             const email = document.getElementById('regEmail').value;
+            const phone = document.getElementById('regPhone').value;
+            const password = document.getElementById('regPassword').value;
             const plan = document.getElementById('regPlan').value;
 
-            // Demo registration - in production this would call /api/v1/auth/register
-            alert('Demo Mode: In production, this would create account via POST /api/v1/auth/register\n\n' +
-                  'Organization: ' + orgName + '\n' +
-                  'Name: ' + name + '\n' +
-                  'Email: ' + email + '\n' +
-                  'Plan: ' + plan);
+            if (!plan) {
+                alert('Please select a subscription plan');
+                return;
+            }
 
-            // Show dashboard
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('dashboard').classList.add('active');
-            document.getElementById('userName').textContent = name;
+            try {
+                // Call real registration API
+                const response = await fetch('/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        name,
+                        phone,
+                        organizationName: orgName,
+                        organizationType: 'PROPERTY_MANAGEMENT',
+                        subscriptionPlan: plan
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert('Registration failed: ' + (error.message || 'Please try again'));
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Store JWT token
+                localStorage.setItem('landlord_token', data.access_token);
+                localStorage.setItem('landlord_user', JSON.stringify(data.user));
+
+                // Load dashboard
+                await loadDashboard();
+
+                alert('Account created successfully!');
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('Registration failed: ' + error.message);
+            }
+        }
+
+        async function loadDashboard() {
+            const token = localStorage.getItem('landlord_token');
+            if (!token) return;
+
+            try {
+                // Fetch real properties data
+                const propertiesResponse = await fetch('/api/v1/properties', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!propertiesResponse.ok) {
+                    if (propertiesResponse.status === 401) {
+                        handleLogout();
+                        alert('Session expired. Please login again.');
+                        return;
+                    }
+                    throw new Error('Failed to fetch properties');
+                }
+
+                const properties = await propertiesResponse.json();
+
+                // Fetch units data
+                const unitsResponse = await fetch('/api/v1/units', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const units = unitsResponse.ok ? await unitsResponse.json() : [];
+
+                // Fetch leases data
+                const leasesResponse = await fetch('/api/v1/leases', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const leases = leasesResponse.ok ? await leasesResponse.json() : [];
+
+                // Update stats with real data
+                updateStats(properties, units, leases);
+
+                // Show dashboard
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.add('active');
+
+                // Update user name
+                const user = JSON.parse(localStorage.getItem('landlord_user'));
+                document.getElementById('userName').textContent = user.name || user.email;
+
+            } catch (error) {
+                console.error('Dashboard load error:', error);
+                alert('Failed to load dashboard: ' + error.message);
+            }
+        }
+
+        function updateStats(properties, units, leases) {
+            // Update DOM with real data
+            document.querySelector('.stat-card:nth-child(1) .value').textContent = properties.length;
+            document.querySelector('.stat-card:nth-child(2) .value').textContent = units.length;
+
+            // Calculate occupancy
+            const occupiedUnits = units.filter(u => u.status === 'OCCUPIED').length;
+            const occupancyRate = units.length > 0 ? Math.round((occupiedUnits / units.length) * 100) : 0;
+            document.querySelector('.stat-card:nth-child(2) .change').textContent = occupancyRate + '% occupied';
+
+            // Calculate monthly revenue from active leases
+            const monthlyRevenue = leases
+                .filter(l => l.status === 'ACTIVE')
+                .reduce((total, lease) => total + (parseFloat(lease.rentAmount) || 0), 0);
+
+            document.querySelector('.stat-card:nth-child(3) .value').textContent =
+                '$' + (monthlyRevenue / 1000).toFixed(0) + 'K';
+
+            // Active leases count
+            const activeLeases = leases.filter(l => l.status === 'ACTIVE').length;
+            document.querySelector('.feature-list li:nth-child(1) span').textContent =
+                `Active Leases (${activeLeases})`;
         }
 
         function handleLogout() {
+            localStorage.removeItem('landlord_token');
+            localStorage.removeItem('landlord_user');
             document.getElementById('authSection').classList.remove('hidden');
             document.getElementById('dashboard').classList.remove('active');
             document.getElementById('loginForm').style.display = 'block';
