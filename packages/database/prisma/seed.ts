@@ -20,55 +20,21 @@ async function main() {
   console.log('✅ Created organization:', organization.name);
 
   // Create admin user
-  const passwordHash = await bcrypt.hash('Admin123!', 10);
+  const passwordHash = await bcrypt.hash('retard', 10);
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@demo.com',
+      email: 'contact@aalb.org',
       passwordHash,
       firstName: 'Admin',
       lastName: 'User',
       phone: '+1-555-0100',
-      role: UserRole.ORGANIZATION_ADMIN,
+      role: UserRole.PLATFORM_ADMIN,
       emailVerified: true,
       organizationId: organization.id,
     },
   });
 
   console.log('✅ Created admin user:', adminUser.email);
-
-  // Create property manager user
-  const pmPasswordHash = await bcrypt.hash('PM123!', 10);
-  const pmUser = await prisma.user.create({
-    data: {
-      email: 'pm@demo.com',
-      passwordHash: pmPasswordHash,
-      firstName: 'Property',
-      lastName: 'Manager',
-      phone: '+1-555-0101',
-      role: UserRole.PROPERTY_MANAGER,
-      emailVerified: true,
-      organizationId: organization.id,
-    },
-  });
-
-  console.log('✅ Created PM user:', pmUser.email);
-
-  // Create landlord user (matches portal test credentials)
-  const landlordPasswordHash = await bcrypt.hash('Landlord123!', 10);
-  const landlordUser = await prisma.user.create({
-    data: {
-      email: 'landlord@propertymaster.com',
-      passwordHash: landlordPasswordHash,
-      firstName: 'Demo',
-      lastName: 'Landlord',
-      phone: '+1-555-0102',
-      role: UserRole.ORGANIZATION_ADMIN,
-      emailVerified: true,
-      organizationId: organization.id,
-    },
-  });
-
-  console.log('✅ Created landlord user:', landlordUser.email);
 
   // Create Chart of Accounts
   const chartOfAccounts = await prisma.chartOfAccounts.createMany({
@@ -193,8 +159,8 @@ async function main() {
 
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📝 Login credentials:');
-  console.log('   Admin: admin@demo.com / Admin123!');
-  console.log('   PM: pm@demo.com / PM123!');
+  console.log('   Email: contact@aalb.org');
+  console.log('   Password: retard');
 }
 
 main()
