@@ -17,16 +17,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    // @ts-ignore
-    this.$on('query', (e) => {
+    // @ts-expect-error - Prisma event types
+    this.$on('query', (e: any) => {
       if (process.env.NODE_ENV === 'development') {
         this.logger.debug(`Query: ${e.query}`);
         this.logger.debug(`Duration: ${e.duration}ms`);
       }
     });
 
-    // @ts-ignore
-    this.$on('error', (e) => {
+    // @ts-expect-error - Prisma event types
+    this.$on('error', (e: any) => {
       this.logger.error(e);
     });
 
