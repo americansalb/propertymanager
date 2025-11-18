@@ -53,6 +53,23 @@ async function main() {
 
   console.log('✅ Created PM user:', pmUser.email);
 
+  // Create landlord user (matches portal test credentials)
+  const landlordPasswordHash = await bcrypt.hash('Landlord123!', 10);
+  const landlordUser = await prisma.user.create({
+    data: {
+      email: 'landlord@propertymaster.com',
+      passwordHash: landlordPasswordHash,
+      firstName: 'Demo',
+      lastName: 'Landlord',
+      phone: '+1-555-0102',
+      role: UserRole.ORGANIZATION_ADMIN,
+      emailVerified: true,
+      organizationId: organization.id,
+    },
+  });
+
+  console.log('✅ Created landlord user:', landlordUser.email);
+
   // Create Chart of Accounts
   const chartOfAccounts = await prisma.chartOfAccounts.createMany({
     data: [
