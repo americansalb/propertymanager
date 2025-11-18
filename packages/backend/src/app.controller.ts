@@ -1,10 +1,18 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Res } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { Response } from 'express';
+import { join } from 'path';
 
-@ApiTags('health')
 @Controller()
 export class AppController {
+  @Get()
+  @ApiExcludeEndpoint()
+  root(@Res() res: Response) {
+    return res.sendFile(join(__dirname, '..', 'src', 'public', 'index.html'));
+  }
+
   @Get('health')
+  @ApiTags('health')
   @ApiOperation({ summary: 'Health check endpoint' })
   healthCheck() {
     return {
