@@ -32,4 +32,32 @@ export class PropertiesService {
       },
     });
   }
+
+  async update(id: string, data: any, organizationId: string) {
+    // Verify property belongs to organization
+    const property = await this.findById(id, organizationId);
+    if (!property) {
+      throw new Error('Property not found');
+    }
+
+    return this.prisma.property.update({
+      where: { id },
+      data,
+      include: {
+        units: true,
+      },
+    });
+  }
+
+  async delete(id: string, organizationId: string) {
+    // Verify property belongs to organization
+    const property = await this.findById(id, organizationId);
+    if (!property) {
+      throw new Error('Property not found');
+    }
+
+    return this.prisma.property.delete({
+      where: { id },
+    });
+  }
 }

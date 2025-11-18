@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
 import { OrganizationId } from '../common/decorators/organization.decorator';
+import { CreatePropertyDto, UpdatePropertyDto } from './dto/property.dto';
 
 @ApiTags('properties')
 @Controller('properties')
@@ -27,8 +28,26 @@ export class PropertiesController {
 
   @Post()
   @ApiOperation({ summary: 'Create new property' })
-  async create(@Body() data: any, @OrganizationId() organizationId: string) {
+  async create(@Body() data: CreatePropertyDto, @OrganizationId() organizationId: string) {
     const property = await this.propertiesService.create(data, organizationId);
     return { success: true, data: property };
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update property' })
+  async update(
+    @Param('id') id: string,
+    @Body() data: UpdatePropertyDto,
+    @OrganizationId() organizationId: string
+  ) {
+    const property = await this.propertiesService.update(id, data, organizationId);
+    return { success: true, data: property };
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete property' })
+  async delete(@Param('id') id: string, @OrganizationId() organizationId: string) {
+    await this.propertiesService.delete(id, organizationId);
+    return { success: true, message: 'Property deleted successfully' };
   }
 }

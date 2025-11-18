@@ -305,6 +305,175 @@
         .api-response.active {
             display: block;
         }
+
+        /* Property Management Styles */
+        .properties-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+        }
+        .properties-section h3 {
+            color: #3b82f6;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .add-property-btn {
+            padding: 10px 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .add-property-btn:hover {
+            background: #059669;
+        }
+        .properties-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .properties-table th {
+            background: #f3f4f6;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .properties-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .properties-table tr:hover {
+            background: #f9fafb;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-edit {
+            padding: 6px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .btn-edit:hover {
+            background: #2563eb;
+        }
+        .btn-delete {
+            padding: 6px 12px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        .badge-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .badge-construction {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h3 {
+            color: #3b82f6;
+            font-size: 1.5em;
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+        }
+        .close-modal:hover {
+            color: #333;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .error-message.active {
+            display: block;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        .empty-state h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -406,23 +575,37 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>Total Properties</h3>
-                    <div class="value">12</div>
+                    <div class="value" id="statTotalProperties">0</div>
                     <div class="change">+2 this month</div>
                 </div>
                 <div class="stat-card">
                     <h3>Total Units</h3>
-                    <div class="value">48</div>
-                    <div class="change">96% occupied</div>
+                    <div class="value" id="statTotalUnits">0</div>
+                    <div class="change" id="statOccupancy">0% occupied</div>
                 </div>
                 <div class="stat-card">
                     <h3>Monthly Revenue</h3>
-                    <div class="value">$72K</div>
+                    <div class="value" id="statMonthlyRevenue">$0</div>
                     <div class="change">+8.5% vs last month</div>
                 </div>
                 <div class="stat-card">
                     <h3>Open Work Orders</h3>
                     <div class="value">7</div>
                     <div class="change">3 urgent</div>
+                </div>
+            </div>
+
+            <!-- Property Management Section -->
+            <div class="properties-section">
+                <h3>
+                    <span>My Properties</span>
+                    <button class="add-property-btn" onclick="openAddPropertyModal()">+ Add Property</button>
+                </h3>
+                <div id="propertiesTableContainer">
+                    <div class="empty-state">
+                        <h4>No properties yet</h4>
+                        <p>Click "Add Property" to create your first property</p>
+                    </div>
                 </div>
             </div>
 
@@ -574,6 +757,97 @@
                 <div id="apiResponse" class="api-response"></div>
             </div>
         </div>
+
+        <!-- Add/Edit Property Modal -->
+        <div id="propertyModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Add New Property</h3>
+                    <button class="close-modal" onclick="closePropertyModal()">&times;</button>
+                </div>
+                <div id="modalError" class="error-message"></div>
+                <form id="propertyForm" onsubmit="handlePropertySubmit(event)">
+                    <input type="hidden" id="propertyId" value="">
+
+                    <div class="form-group">
+                        <label for="propName">Property Name *</label>
+                        <input type="text" id="propName" placeholder="Sunset Apartments" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="propType">Property Type *</label>
+                            <select id="propType" required>
+                                <option value="">Select type...</option>
+                                <option value="MULTIFAMILY">Multifamily</option>
+                                <option value="SINGLE_FAMILY">Single Family</option>
+                                <option value="COMMERCIAL">Commercial</option>
+                                <option value="MIXED_USE">Mixed Use</option>
+                                <option value="STUDENT_HOUSING">Student Housing</option>
+                                <option value="SENIOR_LIVING">Senior Living</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="propStatus">Status *</label>
+                            <select id="propStatus" required>
+                                <option value="ACTIVE">Active</option>
+                                <option value="INACTIVE">Inactive</option>
+                                <option value="UNDER_CONSTRUCTION">Under Construction</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="propAddress1">Street Address *</label>
+                        <input type="text" id="propAddress1" placeholder="123 Main Street" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="propAddress2">Address Line 2</label>
+                        <input type="text" id="propAddress2" placeholder="Suite 100">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="propCity">City *</label>
+                            <input type="text" id="propCity" placeholder="San Francisco" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="propState">State *</label>
+                            <input type="text" id="propState" placeholder="CA" maxlength="2" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="propZipCode">ZIP Code *</label>
+                            <input type="text" id="propZipCode" placeholder="94102" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="propTotalUnits">Total Units *</label>
+                            <input type="number" id="propTotalUnits" placeholder="24" min="1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="propYearBuilt">Year Built</label>
+                            <input type="number" id="propYearBuilt" placeholder="2020" min="1800" max="2100">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="propSquareFeet">Square Feet</label>
+                            <input type="number" id="propSquareFeet" placeholder="15000" min="0">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Save Property</button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -688,6 +962,8 @@
             }
         }
 
+        let propertiesData = [];
+
         async function loadDashboard() {
             const token = localStorage.getItem('landlord_token');
             if (!token) return;
@@ -709,7 +985,8 @@
                     throw new Error('Failed to fetch properties');
                 }
 
-                const properties = await propertiesResponse.json();
+                const propertiesResult = await propertiesResponse.json();
+                propertiesData = propertiesResult.data || propertiesResult;
 
                 // Fetch units data
                 const unitsResponse = await fetch('/api/v1/units', {
@@ -718,7 +995,8 @@
                     }
                 });
 
-                const units = unitsResponse.ok ? await unitsResponse.json() : [];
+                const unitsResult = await unitsResponse.json();
+                const units = unitsResult.data || unitsResult;
 
                 // Fetch leases data
                 const leasesResponse = await fetch('/api/v1/leases', {
@@ -727,10 +1005,14 @@
                     }
                 });
 
-                const leases = leasesResponse.ok ? await leasesResponse.json() : [];
+                const leasesResult = leasesResponse.ok ? await leasesResponse.json() : { data: [] };
+                const leases = leasesResult.data || leasesResult;
 
                 // Update stats with real data
-                updateStats(properties, units, leases);
+                updateStats(propertiesData, units, leases);
+
+                // Render properties table
+                renderPropertiesTable(propertiesData);
 
                 // Show dashboard
                 document.getElementById('authSection').classList.add('hidden');
@@ -748,26 +1030,205 @@
 
         function updateStats(properties, units, leases) {
             // Update DOM with real data
-            document.querySelector('.stat-card:nth-child(1) .value').textContent = properties.length;
-            document.querySelector('.stat-card:nth-child(2) .value').textContent = units.length;
+            document.getElementById('statTotalProperties').textContent = properties.length;
+            document.getElementById('statTotalUnits').textContent = units.length;
 
             // Calculate occupancy
             const occupiedUnits = units.filter(u => u.status === 'OCCUPIED').length;
             const occupancyRate = units.length > 0 ? Math.round((occupiedUnits / units.length) * 100) : 0;
-            document.querySelector('.stat-card:nth-child(2) .change').textContent = occupancyRate + '% occupied';
+            document.getElementById('statOccupancy').textContent = occupancyRate + '% occupied';
 
             // Calculate monthly revenue from active leases
             const monthlyRevenue = leases
                 .filter(l => l.status === 'ACTIVE')
                 .reduce((total, lease) => total + (parseFloat(lease.rentAmount) || 0), 0);
 
-            document.querySelector('.stat-card:nth-child(3) .value').textContent =
-                '$' + (monthlyRevenue / 1000).toFixed(0) + 'K';
+            document.getElementById('statMonthlyRevenue').textContent =
+                '$' + (monthlyRevenue > 0 ? (monthlyRevenue / 1000).toFixed(0) + 'K' : '0');
 
             // Active leases count
             const activeLeases = leases.filter(l => l.status === 'ACTIVE').length;
-            document.querySelector('.feature-list li:nth-child(1) span').textContent =
-                `Active Leases (${activeLeases})`;
+            const leasesElement = document.querySelector('.feature-list li:nth-child(1) span');
+            if (leasesElement) {
+                leasesElement.textContent = `Active Leases (${activeLeases})`;
+            }
+        }
+
+        function renderPropertiesTable(properties) {
+            const container = document.getElementById('propertiesTableContainer');
+
+            if (!properties || properties.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h4>No properties yet</h4>
+                        <p>Click "Add Property" to create your first property</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHTML = `
+                <table class="properties-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Address</th>
+                            <th>Units</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${properties.map(property => {
+                            const statusClass = property.status === 'ACTIVE' ? 'badge-active' :
+                                               property.status === 'INACTIVE' ? 'badge-inactive' : 'badge-construction';
+                            const statusText = property.status.replace('_', ' ');
+                            const address = `${property.city}, ${property.state} ${property.zipCode}`;
+                            const typeText = property.type.replace('_', ' ');
+
+                            return `
+                                <tr>
+                                    <td><strong>${property.name}</strong></td>
+                                    <td>${typeText}</td>
+                                    <td>${address}</td>
+                                    <td>${property.totalUnits}</td>
+                                    <td><span class="badge ${statusClass}">${statusText}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-edit" onclick='editProperty(${JSON.stringify(property).replace(/'/g, "&apos;")})'>Edit</button>
+                                            <button class="btn-delete" onclick="deleteProperty('${property.id}')">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = tableHTML;
+        }
+
+        function openAddPropertyModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Property';
+            document.getElementById('propertyForm').reset();
+            document.getElementById('propertyId').value = '';
+            document.getElementById('propStatus').value = 'ACTIVE';
+            document.getElementById('modalError').classList.remove('active');
+            document.getElementById('propertyModal').classList.add('active');
+        }
+
+        function closePropertyModal() {
+            document.getElementById('propertyModal').classList.remove('active');
+        }
+
+        function editProperty(property) {
+            document.getElementById('modalTitle').textContent = 'Edit Property';
+            document.getElementById('propertyId').value = property.id;
+            document.getElementById('propName').value = property.name;
+            document.getElementById('propType').value = property.type;
+            document.getElementById('propStatus').value = property.status;
+            document.getElementById('propAddress1').value = property.address1;
+            document.getElementById('propAddress2').value = property.address2 || '';
+            document.getElementById('propCity').value = property.city;
+            document.getElementById('propState').value = property.state;
+            document.getElementById('propZipCode').value = property.zipCode;
+            document.getElementById('propTotalUnits').value = property.totalUnits;
+            document.getElementById('propYearBuilt').value = property.yearBuilt || '';
+            document.getElementById('propSquareFeet').value = property.squareFeet || '';
+            document.getElementById('modalError').classList.remove('active');
+            document.getElementById('propertyModal').classList.add('active');
+        }
+
+        async function handlePropertySubmit(event) {
+            event.preventDefault();
+
+            const propertyId = document.getElementById('propertyId').value;
+            const token = localStorage.getItem('landlord_token');
+
+            const propertyData = {
+                name: document.getElementById('propName').value,
+                type: document.getElementById('propType').value,
+                status: document.getElementById('propStatus').value,
+                address1: document.getElementById('propAddress1').value,
+                address2: document.getElementById('propAddress2').value || null,
+                city: document.getElementById('propCity').value,
+                state: document.getElementById('propState').value.toUpperCase(),
+                zipCode: document.getElementById('propZipCode').value,
+                totalUnits: parseInt(document.getElementById('propTotalUnits').value),
+                yearBuilt: document.getElementById('propYearBuilt').value ?
+                          parseInt(document.getElementById('propYearBuilt').value) : null,
+                squareFeet: document.getElementById('propSquareFeet').value ?
+                           parseInt(document.getElementById('propSquareFeet').value) : null,
+            };
+
+            try {
+                const url = propertyId ?
+                    `/api/v1/properties/${propertyId}` :
+                    '/api/v1/properties';
+
+                const method = propertyId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(propertyData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to save property');
+                }
+
+                const result = await response.json();
+
+                // Reload dashboard to show updated data
+                await loadDashboard();
+
+                closePropertyModal();
+                alert(propertyId ? 'Property updated successfully!' : 'Property created successfully!');
+
+            } catch (error) {
+                console.error('Property save error:', error);
+                const errorDiv = document.getElementById('modalError');
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.classList.add('active');
+            }
+        }
+
+        async function deleteProperty(propertyId) {
+            if (!confirm('Are you sure you want to delete this property? This action cannot be undone.')) {
+                return;
+            }
+
+            const token = localStorage.getItem('landlord_token');
+
+            try {
+                const response = await fetch(`/api/v1/properties/${propertyId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to delete property');
+                }
+
+                // Reload dashboard to show updated data
+                await loadDashboard();
+
+                alert('Property deleted successfully!');
+
+            } catch (error) {
+                console.error('Property delete error:', error);
+                alert('Error: ' + error.message);
+            }
         }
 
         function handleLogout() {
