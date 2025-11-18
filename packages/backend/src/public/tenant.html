@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Portal - PropertyMaster</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .header {
+            background: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            color: #10b981;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .back-link {
+            padding: 10px 20px;
+            background: #f3f4f6;
+            color: #10b981;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .back-link:hover {
+            background: #10b981;
+            color: white;
+        }
+
+        .auth-section {
+            background: white;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .auth-section.hidden { display: none; }
+        .auth-section h2 {
+            color: #10b981;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-align: center;
+        }
+        .auth-section p {
+            color: #666;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background: #059669;
+            transform: scale(1.02);
+        }
+        .toggle-auth {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .toggle-auth a {
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .toggle-auth a:hover {
+            text-decoration: underline;
+        }
+
+        .dashboard {
+            display: none;
+        }
+        .dashboard.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        .dashboard-header h2 {
+            color: #10b981;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .welcome-text {
+            color: #666;
+            font-size: 1.1em;
+        }
+        .user-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .logout-btn {
+            padding: 10px 20px;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover {
+            background: #4b5563;
+        }
+
+        .property-info {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+        }
+        .property-info h3 {
+            color: #10b981;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .info-item {
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 10px;
+        }
+        .info-item h4 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .info-item p {
+            color: #333;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .payment-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+        }
+        .payment-section h3 {
+            color: #10b981;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .payment-card {
+            padding: 25px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .payment-card h4 {
+            font-size: 1em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        .payment-card .amount {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .payment-card .due-date {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+        .payment-btn {
+            padding: 15px 30px;
+            background: white;
+            color: #10b981;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .payment-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .payment-history {
+            margin-top: 30px;
+        }
+        .payment-history h4 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: left;
+            color: #666;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        tr:hover {
+            background: #fafafa;
+        }
+        .status-paid {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .feature-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .feature-card h3 {
+            color: #10b981;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .feature-list {
+            list-style: none;
+        }
+        .feature-list li {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-btn {
+            padding: 8px 15px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .feature-btn:hover {
+            background: #059669;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .action-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+        .action-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        .action-card h4 {
+            color: #10b981;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏠 Tenant Portal</h1>
+            <a href="/" class="back-link">← Back to Home</a>
+        </div>
+
+        <!-- Authentication Section -->
+        <div id="authSection" class="auth-section">
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h2>Welcome Home</h2>
+                <p>Sign in to access your rental account</p>
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" placeholder="tenant@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="btn">Sign In</button>
+                </form>
+                <div class="toggle-auth">
+                    New tenant? <a href="#" onclick="toggleAuth(); return false;">Register here</a>
+                </div>
+            </div>
+
+            <!-- Registration Form -->
+            <div id="registerForm" style="display: none;">
+                <h2>Create Account</h2>
+                <p>Set up your tenant portal account</p>
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="regName">Full Name</label>
+                        <input type="text" id="regName" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">Email Address</label>
+                        <input type="email" id="regEmail" placeholder="john@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPhone">Phone Number</label>
+                        <input type="tel" id="regPhone" placeholder="+1 (555) 123-4567" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regInviteCode">Invitation Code</label>
+                        <input type="text" id="regInviteCode" placeholder="Enter code from your landlord" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" placeholder="Create a secure password" required>
+                    </div>
+                    <button type="submit" class="btn">Create Account</button>
+                </form>
+                <div class="toggle-auth">
+                    Already have an account? <a href="#" onclick="toggleAuth(); return false;">Sign in here</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="dashboard">
+            <div class="dashboard-header">
+                <h2>Welcome Back!</h2>
+                <p class="welcome-text">Manage your rental, payments, and maintenance requests</p>
+                <div class="user-actions">
+                    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="action-card" onclick="alert('Navigate to payment page')">
+                    <div class="action-icon">💳</div>
+                    <h4>Pay Rent</h4>
+                </div>
+                <div class="action-card" onclick="alert('Submit maintenance request')">
+                    <div class="action-icon">🔧</div>
+                    <h4>Maintenance</h4>
+                </div>
+                <div class="action-card" onclick="alert('View lease details')">
+                    <div class="action-icon">📄</div>
+                    <h4>My Lease</h4>
+                </div>
+                <div class="action-card" onclick="alert('Contact property manager')">
+                    <div class="action-icon">💬</div>
+                    <h4>Contact</h4>
+                </div>
+            </div>
+
+            <!-- Property Info -->
+            <div class="property-info">
+                <h3>🏢 Your Rental Property</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <h4>Property Address</h4>
+                        <p>123 Main Street, Apt 4B</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Lease Start Date</h4>
+                        <p>January 1, 2024</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Lease End Date</h4>
+                        <p>December 31, 2024</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Monthly Rent</h4>
+                        <p>$1,500.00</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Property Manager</h4>
+                        <p>ABC Property Management</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Emergency Contact</h4>
+                        <p>(555) 123-4567</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Section -->
+            <div class="payment-section">
+                <h3>💰 Rent & Payments</h3>
+                <div class="payment-card">
+                    <h4>Next Payment Due</h4>
+                    <div class="amount">$1,500.00</div>
+                    <div class="due-date">Due: December 1, 2024</div>
+                </div>
+                <button class="payment-btn" onclick="alert('Navigate to Stripe payment page')">Pay Rent Now</button>
+
+                <div class="payment-history">
+                    <h4>Payment History</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Nov 1, 2024</td>
+                                <td>November Rent</td>
+                                <td>$1,500.00</td>
+                                <td class="status-paid">✓ Paid</td>
+                            </tr>
+                            <tr>
+                                <td>Oct 1, 2024</td>
+                                <td>October Rent</td>
+                                <td>$1,500.00</td>
+                                <td class="status-paid">✓ Paid</td>
+                            </tr>
+                            <tr>
+                                <td>Sep 1, 2024</td>
+                                <td>September Rent</td>
+                                <td>$1,500.00</td>
+                                <td class="status-paid">✓ Paid</td>
+                            </tr>
+                            <tr>
+                                <td>Aug 1, 2024</td>
+                                <td>August Rent</td>
+                                <td>$1,500.00</td>
+                                <td class="status-paid">✓ Paid</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Feature Sections -->
+            <div class="feature-sections">
+                <div class="feature-card">
+                    <h3>🔧 Maintenance Requests</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span>Submit New Request</span>
+                            <button class="feature-btn" onclick="alert('Submit maintenance form')">Submit</button>
+                        </li>
+                        <li>
+                            <span>Open Requests (2)</span>
+                            <button class="feature-btn" onclick="alert('View open requests')">View</button>
+                        </li>
+                        <li>
+                            <span>Request History</span>
+                            <button class="feature-btn" onclick="alert('View history')">History</button>
+                        </li>
+                        <li>
+                            <span>Emergency Maintenance</span>
+                            <button class="feature-btn" onclick="alert('Emergency contact info')">Contact</button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📄 Lease & Documents</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span>View Lease Agreement</span>
+                            <button class="feature-btn" onclick="alert('View lease PDF')">View</button>
+                        </li>
+                        <li>
+                            <span>Property Rules</span>
+                            <button class="feature-btn" onclick="alert('View rules')">View</button>
+                        </li>
+                        <li>
+                            <span>Renters Insurance</span>
+                            <button class="feature-btn" onclick="alert('Upload insurance')">Upload</button>
+                        </li>
+                        <li>
+                            <span>Lease Renewal</span>
+                            <button class="feature-btn" onclick="alert('Renewal options')">Options</button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3>💬 Communication</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span>Messages (3 new)</span>
+                            <button class="feature-btn" onclick="alert('View messages')">View</button>
+                        </li>
+                        <li>
+                            <span>Contact Property Manager</span>
+                            <button class="feature-btn" onclick="alert('Send message')">Message</button>
+                        </li>
+                        <li>
+                            <span>Property Announcements</span>
+                            <button class="feature-btn" onclick="alert('View announcements')">View</button>
+                        </li>
+                        <li>
+                            <span>Schedule Showing</span>
+                            <button class="feature-btn" onclick="alert('Schedule form')">Schedule</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleAuth() {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+            } else {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+
+            // Demo login - in production this would call /api/v1/auth/login
+            alert('Demo Mode: In production, this would authenticate via POST /api/v1/auth/login\n\nEmail: ' + email + '\nRole: TENANT');
+
+            // Show dashboard
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('active');
+        }
+
+        function handleRegister(event) {
+            event.preventDefault();
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const inviteCode = document.getElementById('regInviteCode').value;
+
+            // Demo registration - in production this would validate invite code and create tenant account
+            alert('Demo Mode: In production, this would:\n' +
+                  '1. Validate invitation code\n' +
+                  '2. Create tenant account via POST /api/v1/auth/register\n' +
+                  '3. Link to existing lease\n\n' +
+                  'Name: ' + name + '\n' +
+                  'Email: ' + email + '\n' +
+                  'Invite Code: ' + inviteCode);
+
+            // Show dashboard
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('active');
+        }
+
+        function handleLogout() {
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
