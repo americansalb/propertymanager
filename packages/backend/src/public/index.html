@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PropertyMaster - Property Management System</title>
+    <title>PropertyMaster - Enterprise Property Management</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -12,27 +12,24 @@
             min-height: 100vh;
             padding: 20px;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1400px; margin: 0 auto; }
+
         .header {
             background: white;
-            padding: 30px;
+            padding: 40px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             text-align: center;
         }
         .header h1 {
             color: #667eea;
-            font-size: 2.5em;
+            font-size: 3em;
             margin-bottom: 10px;
+            font-weight: 700;
         }
-        .header p {
-            color: #666;
-            font-size: 1.1em;
-        }
+        .header p { color: #666; font-size: 1.2em; margin-bottom: 10px; }
+        .tagline { color: #888; font-size: 1em; font-style: italic; }
         .status {
             display: inline-block;
             padding: 8px 20px;
@@ -41,106 +38,127 @@
             border-radius: 20px;
             margin-top: 15px;
             font-weight: 600;
+            animation: pulse 2s infinite;
         }
-        .grid {
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .portals {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
         }
-        .card {
+        .portal-card {
             background: white;
-            padding: 25px;
+            padding: 40px;
             border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transition: all 0.3s;
+            border-top: 5px solid;
         }
-        .card:hover {
-            transform: translateY(-5px);
+        .portal-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
-        .card h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-        .card a {
-            display: block;
-            padding: 12px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            margin-top: 10px;
-            text-align: center;
-            transition: background 0.2s;
-        }
-        .card a:hover {
-            background: #5568d3;
-        }
-        .card ul {
-            list-style: none;
-            margin: 15px 0;
-        }
-        .card ul li {
+        .portal-card.admin { border-top-color: #ef4444; }
+        .portal-card.landlord { border-top-color: #3b82f6; }
+        .portal-card.tenant { border-top-color: #10b981; }
+
+        .portal-icon { font-size: 4em; margin-bottom: 20px; text-align: center; }
+        .portal-card h2 { margin-bottom: 15px; font-size: 1.8em; }
+        .portal-card.admin h2 { color: #ef4444; }
+        .portal-card.landlord h2 { color: #3b82f6; }
+        .portal-card.tenant h2 { color: #10b981; }
+
+        .portal-card p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+        .portal-card ul { list-style: none; margin-bottom: 25px; }
+        .portal-card ul li {
             padding: 8px 0;
-            border-bottom: 1px solid #eee;
-            color: #666;
+            color: #444;
+            border-bottom: 1px solid #f0f0f0;
         }
-        .card ul li:last-child {
-            border-bottom: none;
+        .portal-card ul li:before {
+            content: "✓ ";
+            font-weight: bold;
+            margin-right: 8px;
         }
-        .auth-section {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
+
+        .portal-btn {
             display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 600;
-        }
-        .form-group input {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        .btn {
-            padding: 12px 30px;
+            padding: 15px;
             background: #667eea;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 1em;
+            font-size: 1.1em;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            text-decoration: none;
+            text-align: center;
         }
-        .btn:hover {
-            background: #5568d3;
+        .portal-card.admin .portal-btn { background: #ef4444; }
+        .portal-card.landlord .portal-btn { background: #3b82f6; }
+        .portal-card.tenant .portal-btn { background: #10b981; }
+        .portal-btn:hover { opacity: 0.9; transform: scale(1.02); }
+
+        .features {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
         }
-        .response {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f5f5f5;
+        .features h3 {
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 2em;
+            text-align: center;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+        .feature-item {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .feature-item h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .feature-item p {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .api-links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .api-link {
+            padding: 12px 25px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
             border-radius: 8px;
-            display: none;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
         }
-        .response.show {
-            display: block;
-        }
-        .response pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
+        .api-link:hover {
+            background: #667eea;
+            color: white;
         }
     </style>
 </head>
@@ -148,126 +166,89 @@
     <div class="container">
         <div class="header">
             <h1>🏢 PropertyMaster</h1>
-            <p>Enterprise Property Management System</p>
+            <p>Enterprise Property Management Platform</p>
+            <p class="tagline">Manage properties, tenants, and financials with ease</p>
             <span class="status">✓ System Online</span>
         </div>
 
-        <div class="grid">
-            <div class="card">
-                <h3>📚 API Documentation</h3>
-                <p>Interactive Swagger documentation with all endpoints</p>
-                <a href="/api/v1/docs" target="_blank">View API Docs →</a>
-            </div>
-
-            <div class="card">
-                <h3>💚 Health Check</h3>
-                <p>System health and status monitoring</p>
-                <a href="/api/v1/health" target="_blank">Check Health →</a>
-            </div>
-
-            <div class="card">
-                <h3>🔐 Authentication</h3>
+        <div class="portals">
+            <div class="portal-card admin">
+                <div class="portal-icon">👨‍💼</div>
+                <h2>Platform Admin</h2>
+                <p>Full system control and management for PropertyMaster administrators</p>
                 <ul>
-                    <li>User Registration</li>
-                    <li>JWT Login/Logout</li>
-                    <li>Multi-tenant Support</li>
+                    <li>Manage all organizations</li>
+                    <li>System analytics & insights</li>
+                    <li>Billing & subscriptions</li>
+                    <li>Platform configuration</li>
+                    <li>User support tools</li>
                 </ul>
+                <a href="/admin.html" class="portal-btn">Admin Portal →</a>
             </div>
 
-            <div class="card">
-                <h3>🏘️ Property Management</h3>
+            <div class="portal-card landlord">
+                <div class="portal-icon">🏘️</div>
+                <h2>Property Manager</h2>
+                <p>Complete property management suite for landlords and property managers</p>
                 <ul>
-                    <li>Properties & Units</li>
-                    <li>Leases & Tenants</li>
-                    <li>Work Orders</li>
+                    <li>Property & unit management</li>
+                    <li>Lease & tenant tracking</li>
+                    <li>Financial reporting</li>
+                    <li>Payment processing</li>
+                    <li>Work order management</li>
                 </ul>
+                <a href="/landlord.html" class="portal-btn">Landlord Portal →</a>
             </div>
 
-            <div class="card">
-                <h3>💰 Financial Core</h3>
+            <div class="portal-card tenant">
+                <div class="portal-icon">🏠</div>
+                <h2>Tenant Portal</h2>
+                <p>Easy-to-use interface for tenants to manage their rental experience</p>
                 <ul>
-                    <li>Chart of Accounts</li>
-                    <li>Double-Entry Bookkeeping</li>
-                    <li>Payment Processing</li>
+                    <li>View lease details</li>
+                    <li>Pay rent online</li>
+                    <li>Submit maintenance requests</li>
+                    <li>Track payment history</li>
+                    <li>Contact property manager</li>
                 </ul>
-            </div>
-
-            <div class="card">
-                <h3>📊 Features</h3>
-                <ul>
-                    <li>40+ Database Models</li>
-                    <li>Stripe Integration</li>
-                    <li>RESTful API</li>
-                </ul>
+                <a href="/tenant.html" class="portal-btn">Tenant Portal →</a>
             </div>
         </div>
 
-        <div class="auth-section">
-            <h3 style="color: #667eea; margin-bottom: 20px;">Quick Test - Register User</h3>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label>Organization Name</label>
-                    <input type="text" id="orgName" placeholder="My Property Company" required>
+        <div class="features">
+            <h3>🚀 Platform Features</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>💰 Financial Core</h4>
+                    <p>Double-entry bookkeeping, chart of accounts, and comprehensive financial reporting</p>
                 </div>
-                <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" id="firstName" placeholder="John" required>
+                <div class="feature-item">
+                    <h4>🏢 Multi-Tenant</h4>
+                    <p>Isolated data for each organization with role-based access control</p>
                 </div>
-                <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" id="lastName" placeholder="Doe" required>
+                <div class="feature-item">
+                    <h4>💳 Payment Processing</h4>
+                    <p>Stripe integration for secure online rent payments and automatic tracking</p>
                 </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="email" placeholder="john@example.com" required>
+                <div class="feature-item">
+                    <h4>🔧 Work Orders</h4>
+                    <p>Complete maintenance request workflow with vendor management</p>
                 </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" placeholder="Min 8 characters" required>
+                <div class="feature-item">
+                    <h4>📊 Analytics</h4>
+                    <p>Real-time dashboards, occupancy reports, and financial insights</p>
                 </div>
-                <button type="submit" class="btn">Create Account</button>
-            </form>
-            <div id="response" class="response"></div>
+                <div class="feature-item">
+                    <h4>🔐 Secure</h4>
+                    <p>JWT authentication, encrypted data, and enterprise-grade security</p>
+                </div>
+            </div>
+
+            <div class="api-links">
+                <a href="/api/v1/docs" class="api-link" target="_blank">📚 API Documentation</a>
+                <a href="/health" class="api-link" target="_blank">💚 System Health</a>
+            </div>
         </div>
     </div>
-
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const responseDiv = document.getElementById('response');
-
-            const data = {
-                organizationName: document.getElementById('orgName').value,
-                organizationType: 'PROPERTY_MANAGER',
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value
-            };
-
-            try {
-                const response = await fetch('/api/v1/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-                responseDiv.className = 'response show';
-
-                if (response.ok) {
-                    responseDiv.style.background = '#d1fae5';
-                    responseDiv.innerHTML = `<strong>✓ Success!</strong><pre>${JSON.stringify(result, null, 2)}</pre>`;
-                } else {
-                    responseDiv.style.background = '#fee2e2';
-                    responseDiv.innerHTML = `<strong>✗ Error</strong><pre>${JSON.stringify(result, null, 2)}</pre>`;
-                }
-            } catch (error) {
-                responseDiv.className = 'response show';
-                responseDiv.style.background = '#fee2e2';
-                responseDiv.innerHTML = `<strong>✗ Error:</strong> ${error.message}`;
-            }
-        });
-    </script>
 </body>
 </html>
