@@ -16,7 +16,7 @@
     "migrate": "npx prisma migrate dev",
     "studio": "npx prisma studio",
     "seed": "npx tsx prisma/seed.ts",
-    "build": "npx prisma generate && npx tsc && ls -la dist/"
+    "build": "npx prisma generate && pnpm exec tsc && ls -la dist/"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
