@@ -6,6 +6,16 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
+  // Clear existing data
+  console.log('🧹 Clearing existing seed data...');
+  await prisma.bankAccount.deleteMany({});
+  await prisma.vendor.deleteMany({});
+  await prisma.unit.deleteMany({});
+  await prisma.property.deleteMany({});
+  await prisma.chartOfAccounts.deleteMany({});
+  await prisma.user.deleteMany({ where: { email: 'contact@aalb.org' } });
+  await prisma.organization.deleteMany({ where: { slug: 'demo-pm' } });
+
   // Create demo organization
   const organization = await prisma.organization.create({
     data: {
