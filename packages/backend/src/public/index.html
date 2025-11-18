@@ -67,8 +67,7 @@
         .portal-card.landlord { border-top-color: #3b82f6; }
         .portal-card.tenant { border-top-color: #10b981; }
 
-        .portal-icon { font-size: 4em; margin-bottom: 20px; text-align: center; }
-        .portal-card h2 { margin-bottom: 15px; font-size: 1.8em; }
+        .portal-card h2 { margin-bottom: 15px; font-size: 1.8em; margin-top: 10px; }
         .portal-card.admin h2 { color: #ef4444; }
         .portal-card.landlord h2 { color: #3b82f6; }
         .portal-card.tenant h2 { color: #10b981; }
@@ -76,14 +75,17 @@
         .portal-card p { color: #666; margin-bottom: 20px; line-height: 1.6; }
         .portal-card ul { list-style: none; margin-bottom: 25px; }
         .portal-card ul li {
-            padding: 8px 0;
+            padding: 8px 0 8px 20px;
             color: #444;
             border-bottom: 1px solid #f0f0f0;
+            position: relative;
         }
         .portal-card ul li:before {
-            content: "✓ ";
+            content: "•";
             font-weight: bold;
             margin-right: 8px;
+            position: absolute;
+            left: 0;
         }
 
         .portal-btn {
@@ -165,15 +167,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏢 PropertyMaster</h1>
+            <h1>PropertyMaster</h1>
             <p>Enterprise Property Management Platform</p>
             <p class="tagline">Manage properties, tenants, and financials with ease</p>
-            <span class="status">✓ System Online</span>
+            <span class="status">System Online</span>
         </div>
 
         <div class="portals">
             <div class="portal-card admin">
-                <div class="portal-icon">👨‍💼</div>
                 <h2>Platform Admin</h2>
                 <p>Full system control and management for PropertyMaster administrators</p>
                 <ul>
@@ -187,7 +188,6 @@
             </div>
 
             <div class="portal-card landlord">
-                <div class="portal-icon">🏘️</div>
                 <h2>Property Manager</h2>
                 <p>Complete property management suite for landlords and property managers</p>
                 <ul>
@@ -201,7 +201,6 @@
             </div>
 
             <div class="portal-card tenant">
-                <div class="portal-icon">🏠</div>
                 <h2>Tenant Portal</h2>
                 <p>Easy-to-use interface for tenants to manage their rental experience</p>
                 <ul>
@@ -216,37 +215,37 @@
         </div>
 
         <div class="features">
-            <h3>🚀 Platform Features</h3>
+            <h3>Platform Features</h3>
             <div class="feature-grid">
                 <div class="feature-item">
-                    <h4>💰 Financial Core</h4>
+                    <h4>Financial Core</h4>
                     <p>Double-entry bookkeeping, chart of accounts, and comprehensive financial reporting</p>
                 </div>
                 <div class="feature-item">
-                    <h4>🏢 Multi-Tenant</h4>
+                    <h4>Multi-Tenant</h4>
                     <p>Isolated data for each organization with role-based access control</p>
                 </div>
                 <div class="feature-item">
-                    <h4>💳 Payment Processing</h4>
+                    <h4>Payment Processing</h4>
                     <p>Stripe integration for secure online rent payments and automatic tracking</p>
                 </div>
                 <div class="feature-item">
-                    <h4>🔧 Work Orders</h4>
+                    <h4>Work Orders</h4>
                     <p>Complete maintenance request workflow with vendor management</p>
                 </div>
                 <div class="feature-item">
-                    <h4>📊 Analytics</h4>
+                    <h4>Analytics</h4>
                     <p>Real-time dashboards, occupancy reports, and financial insights</p>
                 </div>
                 <div class="feature-item">
-                    <h4>🔐 Secure</h4>
+                    <h4>Secure</h4>
                     <p>JWT authentication, encrypted data, and enterprise-grade security</p>
                 </div>
             </div>
 
             <div class="api-links">
-                <a href="/api/v1/docs" class="api-link" target="_blank">📚 API Documentation</a>
-                <a href="/health" class="api-link" target="_blank">💚 System Health</a>
+                <a href="/api/v1/docs" class="api-link" target="_blank">API Documentation</a>
+                <a href="/health" class="api-link" target="_blank">System Health</a>
             </div>
         </div>
     </div>

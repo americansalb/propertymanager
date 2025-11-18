@@ -65,6 +65,31 @@
             margin-bottom: 30px;
             text-align: center;
         }
+        .test-credentials {
+            background: #fef2f2;
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .test-credentials h4 {
+            color: #991b1b;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .test-credentials .credential-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .test-credentials .credential-value {
+            color: #333;
+            font-weight: 600;
+            font-family: monospace;
+        }
         .form-group {
             margin-bottom: 20px;
         }
@@ -344,29 +369,46 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>👨‍💼 Platform Admin Portal</h1>
-            <a href="/" class="back-link">← Back to Home</a>
+            <h1>Platform Admin Portal</h1>
+            <a href="/" class="back-link">Back to Home</a>
         </div>
 
         <!-- Authentication Section -->
         <div id="authSection" class="auth-section">
             <div class="admin-warning">
-                ⚠️ RESTRICTED ACCESS - Platform Administrators Only
+                RESTRICTED ACCESS - Platform Administrators Only
             </div>
             <h2>Admin Login</h2>
             <p>Enter your administrator credentials</p>
+
+            <div class="test-credentials">
+                <h4>Test Credentials</h4>
+                <div class="credential-item">
+                    <span>Email:</span>
+                    <span class="credential-value">admin@propertymaster.com</span>
+                </div>
+                <div class="credential-item">
+                    <span>Password:</span>
+                    <span class="credential-value">Admin123!</span>
+                </div>
+                <div class="credential-item">
+                    <span>2FA Code:</span>
+                    <span class="credential-value">123456</span>
+                </div>
+            </div>
+
             <form onsubmit="handleLogin(event)">
                 <div class="form-group">
                     <label for="loginEmail">Email Address</label>
-                    <input type="email" id="loginEmail" placeholder="admin@propertymaster.com" required>
+                    <input type="email" id="loginEmail" placeholder="admin@propertymaster.com" value="admin@propertymaster.com" required>
                 </div>
                 <div class="form-group">
                     <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter admin password" required>
+                    <input type="password" id="loginPassword" placeholder="Enter admin password" value="Admin123!" required>
                 </div>
                 <div class="form-group">
                     <label for="loginMFA">2FA Code</label>
-                    <input type="text" id="loginMFA" placeholder="000000" maxlength="6" required>
+                    <input type="text" id="loginMFA" placeholder="000000" maxlength="6" value="123456" required>
                 </div>
                 <button type="submit" class="btn">Authenticate</button>
             </form>
@@ -419,39 +461,39 @@
 
             <!-- System Monitor -->
             <div class="system-monitor">
-                <h3>🖥️ System Health Monitor</h3>
+                <h3>System Health Monitor</h3>
                 <div class="monitor-grid">
                     <div class="monitor-item">
                         <h4>API Status</h4>
                         <div class="monitor-value">99.8%</div>
-                        <div class="monitor-status status-healthy">✓ Healthy</div>
+                        <div class="monitor-status status-healthy">Healthy</div>
                     </div>
                     <div class="monitor-item">
                         <h4>Database</h4>
                         <div class="monitor-value">42ms</div>
-                        <div class="monitor-status status-healthy">✓ Optimal</div>
+                        <div class="monitor-status status-healthy">Optimal</div>
                     </div>
                     <div class="monitor-item">
                         <h4>Response Time</h4>
                         <div class="monitor-value">127ms</div>
-                        <div class="monitor-status status-healthy">✓ Fast</div>
+                        <div class="monitor-status status-healthy">Fast</div>
                     </div>
                     <div class="monitor-item">
                         <h4>Error Rate</h4>
                         <div class="monitor-value">0.02%</div>
-                        <div class="monitor-status status-healthy">✓ Low</div>
+                        <div class="monitor-status status-healthy">Low</div>
                     </div>
                     <div class="monitor-item">
                         <h4>Active Sessions</h4>
                         <div class="monitor-value">1,247</div>
-                        <div class="monitor-status status-healthy">✓ Normal</div>
+                        <div class="monitor-status status-healthy">Normal</div>
                     </div>
                 </div>
             </div>
 
             <!-- Organizations Table -->
             <div class="org-table">
-                <h3>🏢 Recent Organizations</h3>
+                <h3>Recent Organizations</h3>
                 <table>
                     <thead>
                         <tr>
@@ -517,7 +559,7 @@
             <!-- Admin Features -->
             <div class="feature-sections">
                 <div class="feature-card">
-                    <h3>🏢 Organization Management</h3>
+                    <h3>Organization Management</h3>
                     <ul class="feature-list">
                         <li>
                             <span>View All Organizations (347)</span>
@@ -539,7 +581,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>💳 Billing & Subscriptions</h3>
+                    <h3>Billing & Subscriptions</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Active Subscriptions (312)</span>
@@ -561,7 +603,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>👥 User Management</h3>
+                    <h3>User Management</h3>
                     <ul class="feature-list">
                         <li>
                             <span>All Users (2,847)</span>
@@ -583,7 +625,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>📊 Analytics & Reports</h3>
+                    <h3>Analytics & Reports</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Platform Analytics Dashboard</span>
@@ -605,7 +647,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>🛠️ Platform Configuration</h3>
+                    <h3>Platform Configuration</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Feature Flags</span>
@@ -627,7 +669,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>🎫 Support & Operations</h3>
+                    <h3>Support & Operations</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Open Tickets (12)</span>
@@ -655,14 +697,18 @@
         function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const mfa = document.getElementById('loginMFA').value;
 
-            // Demo login - in production this would call /api/v1/auth/login with PLATFORM_ADMIN role
-            alert('Demo Mode: In production, this would authenticate admin via POST /api/v1/auth/login\n\nEmail: ' + email + '\nRole: PLATFORM_ADMIN\n2FA: Verified');
-
-            // Show dashboard
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('dashboard').classList.add('active');
-            document.getElementById('userName').textContent = email.split('@')[0];
+            // Validate credentials
+            if (email === 'admin@propertymaster.com' && password === 'Admin123!' && mfa === '123456') {
+                // Show dashboard
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.add('active');
+                document.getElementById('userName').textContent = 'Admin User';
+            } else {
+                alert('Invalid credentials. Please use:\nEmail: admin@propertymaster.com\nPassword: Admin123!\n2FA: 123456');
+            }
         }
 
         function handleLogout() {

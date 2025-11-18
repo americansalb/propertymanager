@@ -65,6 +65,31 @@
             margin-bottom: 30px;
             text-align: center;
         }
+        .test-credentials {
+            background: #eff6ff;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .test-credentials h4 {
+            color: #1e40af;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .test-credentials .credential-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .test-credentials .credential-value {
+            color: #333;
+            font-weight: 600;
+            font-family: monospace;
+        }
         .form-group {
             margin-bottom: 20px;
         }
@@ -286,8 +311,8 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🏘️ Property Manager Portal</h1>
-            <a href="/" class="back-link">← Back to Home</a>
+            <h1>Property Manager Portal</h1>
+            <a href="/" class="back-link">Back to Home</a>
         </div>
 
         <!-- Authentication Section -->
@@ -296,14 +321,27 @@
             <div id="loginForm">
                 <h2>Welcome Back</h2>
                 <p>Sign in to manage your properties</p>
+
+                <div class="test-credentials">
+                    <h4>Test Credentials</h4>
+                    <div class="credential-item">
+                        <span>Email:</span>
+                        <span class="credential-value">landlord@propertymaster.com</span>
+                    </div>
+                    <div class="credential-item">
+                        <span>Password:</span>
+                        <span class="credential-value">Landlord123!</span>
+                    </div>
+                </div>
+
                 <form onsubmit="handleLogin(event)">
                     <div class="form-group">
                         <label for="loginEmail">Email Address</label>
-                        <input type="email" id="loginEmail" placeholder="landlord@example.com" required>
+                        <input type="email" id="loginEmail" placeholder="landlord@propertymaster.com" value="landlord@propertymaster.com" required>
                     </div>
                     <div class="form-group">
                         <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" value="Landlord123!" required>
                     </div>
                     <button type="submit" class="btn">Sign In</button>
                 </form>
@@ -391,7 +429,7 @@
             <!-- Feature Sections -->
             <div class="feature-sections">
                 <div class="feature-card">
-                    <h3>🏢 Property Management</h3>
+                    <h3>Property Management</h3>
                     <ul class="feature-list">
                         <li>
                             <span>View All Properties</span>
@@ -413,7 +451,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>📋 Lease Management</h3>
+                    <h3>Lease Management</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Active Leases (42)</span>
@@ -435,7 +473,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>💰 Financial Management</h3>
+                    <h3>Financial Management</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Chart of Accounts</span>
@@ -457,7 +495,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>💳 Payment Processing</h3>
+                    <h3>Payment Processing</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Pending Payments (12)</span>
@@ -479,7 +517,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>🔧 Work Orders</h3>
+                    <h3>Work Orders</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Open Requests (7)</span>
@@ -501,7 +539,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>👥 Tenant Management</h3>
+                    <h3>Tenant Management</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Active Tenants (42)</span>
@@ -525,7 +563,7 @@
 
             <!-- API Demo Section -->
             <div class="api-demo">
-                <h3>🔌 Live API Integration Demo</h3>
+                <h3>Live API Integration Demo</h3>
                 <p style="color: #666; margin-bottom: 20px;">Test live API endpoints to see real backend integration</p>
                 <div class="api-buttons">
                     <button class="api-btn" onclick="testHealthCheck()">Health Check</button>
@@ -554,14 +592,17 @@
         function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
 
-            // Demo login - in production this would call /api/v1/auth/login
-            alert('Demo Mode: In production, this would authenticate via POST /api/v1/auth/login\n\nEmail: ' + email);
-
-            // Show dashboard
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('dashboard').classList.add('active');
-            document.getElementById('userName').textContent = email.split('@')[0];
+            // Validate credentials
+            if (email === 'landlord@propertymaster.com' && password === 'Landlord123!') {
+                // Show dashboard
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.add('active');
+                document.getElementById('userName').textContent = 'Property Manager';
+            } else {
+                alert('Invalid credentials. Please use:\nEmail: landlord@propertymaster.com\nPassword: Landlord123!');
+            }
         }
 
         function handleRegister(event) {

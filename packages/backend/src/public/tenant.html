@@ -65,6 +65,31 @@
             margin-bottom: 30px;
             text-align: center;
         }
+        .test-credentials {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .test-credentials h4 {
+            color: #065f46;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .test-credentials .credential-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .test-credentials .credential-value {
+            color: #333;
+            font-weight: 600;
+            font-family: monospace;
+        }
         .form-group {
             margin-bottom: 20px;
         }
@@ -337,13 +362,10 @@
             transform: translateY(-5px);
             box-shadow: 0 15px 40px rgba(0,0,0,0.2);
         }
-        .action-icon {
-            font-size: 3em;
-            margin-bottom: 15px;
-        }
         .action-card h4 {
             color: #10b981;
             font-size: 1.2em;
+            padding: 20px 0;
         }
     </style>
 </head>
@@ -351,8 +373,8 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🏠 Tenant Portal</h1>
-            <a href="/" class="back-link">← Back to Home</a>
+            <h1>Tenant Portal</h1>
+            <a href="/" class="back-link">Back to Home</a>
         </div>
 
         <!-- Authentication Section -->
@@ -361,14 +383,27 @@
             <div id="loginForm">
                 <h2>Welcome Home</h2>
                 <p>Sign in to access your rental account</p>
+
+                <div class="test-credentials">
+                    <h4>Test Credentials</h4>
+                    <div class="credential-item">
+                        <span>Email:</span>
+                        <span class="credential-value">tenant@propertymaster.com</span>
+                    </div>
+                    <div class="credential-item">
+                        <span>Password:</span>
+                        <span class="credential-value">Tenant123!</span>
+                    </div>
+                </div>
+
                 <form onsubmit="handleLogin(event)">
                     <div class="form-group">
                         <label for="loginEmail">Email Address</label>
-                        <input type="email" id="loginEmail" placeholder="tenant@example.com" required>
+                        <input type="email" id="loginEmail" placeholder="tenant@propertymaster.com" value="tenant@propertymaster.com" required>
                     </div>
                     <div class="form-group">
                         <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" value="Tenant123!" required>
                     </div>
                     <button type="submit" class="btn">Sign In</button>
                 </form>
@@ -423,26 +458,22 @@
             <!-- Quick Actions -->
             <div class="quick-actions">
                 <div class="action-card" onclick="alert('Navigate to payment page')">
-                    <div class="action-icon">💳</div>
                     <h4>Pay Rent</h4>
                 </div>
                 <div class="action-card" onclick="alert('Submit maintenance request')">
-                    <div class="action-icon">🔧</div>
                     <h4>Maintenance</h4>
                 </div>
                 <div class="action-card" onclick="alert('View lease details')">
-                    <div class="action-icon">📄</div>
                     <h4>My Lease</h4>
                 </div>
                 <div class="action-card" onclick="alert('Contact property manager')">
-                    <div class="action-icon">💬</div>
                     <h4>Contact</h4>
                 </div>
             </div>
 
             <!-- Property Info -->
             <div class="property-info">
-                <h3>🏢 Your Rental Property</h3>
+                <h3>Your Rental Property</h3>
                 <div class="info-grid">
                     <div class="info-item">
                         <h4>Property Address</h4>
@@ -473,7 +504,7 @@
 
             <!-- Payment Section -->
             <div class="payment-section">
-                <h3>💰 Rent & Payments</h3>
+                <h3>Rent & Payments</h3>
                 <div class="payment-card">
                     <h4>Next Payment Due</h4>
                     <div class="amount">$1,500.00</div>
@@ -525,7 +556,7 @@
             <!-- Feature Sections -->
             <div class="feature-sections">
                 <div class="feature-card">
-                    <h3>🔧 Maintenance Requests</h3>
+                    <h3>Maintenance Requests</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Submit New Request</span>
@@ -547,7 +578,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>📄 Lease & Documents</h3>
+                    <h3>Lease & Documents</h3>
                     <ul class="feature-list">
                         <li>
                             <span>View Lease Agreement</span>
@@ -569,7 +600,7 @@
                 </div>
 
                 <div class="feature-card">
-                    <h3>💬 Communication</h3>
+                    <h3>Communication</h3>
                     <ul class="feature-list">
                         <li>
                             <span>Messages (3 new)</span>
@@ -609,13 +640,16 @@
         function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
 
-            // Demo login - in production this would call /api/v1/auth/login
-            alert('Demo Mode: In production, this would authenticate via POST /api/v1/auth/login\n\nEmail: ' + email + '\nRole: TENANT');
-
-            // Show dashboard
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('dashboard').classList.add('active');
+            // Validate credentials
+            if (email === 'tenant@propertymaster.com' && password === 'Tenant123!') {
+                // Show dashboard
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.add('active');
+            } else {
+                alert('Invalid credentials. Please use:\nEmail: tenant@propertymaster.com\nPassword: Tenant123!');
+            }
         }
 
         function handleRegister(event) {
