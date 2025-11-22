@@ -315,6 +315,10 @@ Transform PropertyMaster from a solid foundation (7.2/10) into the **world-class
 - [ ] Rent increase suggestions
 - [ ] Dynamic vacancy pricing
 - [ ] Lease term optimization
+- [ ] **Rent reliability score per lease** (payment history, job stability, tenure)
+- [ ] **Portfolio cashflow forecast** with confidence intervals
+- [ ] **Collection performance metrics** (on-time %, delinquency rate, avg recovery time)
+- [ ] **Risk-adjusted pricing recommendations** based on tenant reliability
 
 **4.3 Document Intelligence**
 - [ ] AI lease parsing (upload PDF → extract all fields)
@@ -638,6 +642,32 @@ Transform PropertyMaster from a solid foundation (7.2/10) into the **world-class
 | **Dark mode** | ✅ | ❌ | ❌ | ❌ |
 | **Offline support** | ✅ | ❌ | ❌ | ❌ |
 | **Price (per unit/mo)** | $10 | $25 | $20 | $18 |
+
+### **Rent Predictability vs "Guaranteed Rent"**
+
+PropertyMaster will **not** advertise blanket "guaranteed rent" that we can't mathematically and legally stand behind.
+
+Instead, we compete on:
+
+- **On-time collection rate** (via auto-pay, smart reminders, late fees)
+  - Target: 95-98% on-time collection vs industry avg 75%
+- **Vacancy reduction** (pricing + workflow automation)
+  - Target: <14 days vacancy vs industry avg 30+ days
+- **Cashflow visibility** (forecasts, dashboards, risk scores)
+  - Real-time financial dashboards (Phase 1-2)
+  - AI-powered cashflow forecasting (Phase 4)
+- **Cost advantage** ($10/unit vs 8-10% of rent for guarantee schemes)
+  - On a $2,000/mo property: **$120/year vs $1,920-2,400/year**
+  - Landlords keep **94-95% more** vs guaranteed rent competitors
+
+**Why this matters:**
+- Belong/Nomad charge 8-10% of monthly rent for "guaranteed income"
+- Fine print often includes: pricing control, screening restrictions, property condition requirements
+- Our approach: Help landlords achieve 95-98% collection through automation while keeping 100% of rent
+
+**Long-term (Phase 6+):** We may add **optional rent-protection integrations** with licensed partners, clearly labeled and transparently priced (4-6% vs 8-10%).
+
+**See:** `docs/COMPETITIVE_STRATEGY.md` for full positioning and sales scripts.
 
 ---
 
