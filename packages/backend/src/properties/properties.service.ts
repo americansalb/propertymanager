@@ -60,7 +60,6 @@ export class PropertiesService {
         zipCode: dto.postalCode,
         country: dto.country,
         type: dto.propertyType,
-        notes: dto.notes ?? null,
         // Map active boolean to status enum
         status: dto.active ? 'ACTIVE' : 'INACTIVE',
       },

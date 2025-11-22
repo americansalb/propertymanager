@@ -16,7 +16,6 @@ const makeValidDto = (): UpdatePropertyDto => {
   dto.postalCode = '78701';
   dto.country = 'US';
   dto.propertyType = PropertyType.MULTIFAMILY;
-  dto.notes = null; // Optional
   dto.active = true;
   return dto;
 };
@@ -217,35 +216,8 @@ describe('UpdatePropertyDto', () => {
     });
   });
 
-  describe('notes validation', () => {
-    it('should accept null notes (optional)', async () => {
-      const dto = makeValidDto();
-      dto.notes = null;
-      const errors = await validate(dto);
-      expect(errors.filter(e => e.property === 'notes')).toHaveLength(0);
-    });
-
-    it('should accept undefined notes (optional)', async () => {
-      const dto = makeValidDto();
-      dto.notes = undefined;
-      const errors = await validate(dto);
-      expect(errors.filter(e => e.property === 'notes')).toHaveLength(0);
-    });
-
-    it('should accept notes up to 2000 characters', async () => {
-      const dto = makeValidDto();
-      dto.notes = 'a'.repeat(2000);
-      const errors = await validate(dto);
-      expect(errors.filter(e => e.property === 'notes')).toHaveLength(0);
-    });
-
-    it('should reject notes exceeding 2000 characters', async () => {
-      const dto = makeValidDto();
-      dto.notes = 'a'.repeat(2001);
-      const errors = await validate(dto);
-      expect(errors.some(e => e.property === 'notes')).toBe(true);
-    });
-  });
+  // NOTE: 'notes' field removed - not in Prisma schema
+  // If notes field is added to schema.prisma, add validation tests here
 
   describe('active validation', () => {
     it('should accept true for active', async () => {
@@ -274,7 +246,6 @@ describe('UpdatePropertyDto', () => {
     it('should accept a fully populated valid dto', async () => {
       const dto = makeValidDto();
       dto.addressLine2 = 'Suite 100';
-      dto.notes = 'This is a premium property with excellent amenities.';
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);

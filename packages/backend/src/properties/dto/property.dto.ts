@@ -157,11 +157,8 @@ export class UpdatePropertyDto {
   @IsEnum(PropertyType)
   propertyType: PropertyType;
 
-  @ApiPropertyOptional({ description: 'Additional notes', maxLength: 2000 })
-  @IsString()
-  @IsOptional()
-  @MaxLength(2000)
-  notes?: string | null;
+  // NOTE: 'notes' field removed - not in Prisma schema yet
+  // TODO: Add 'notes String?' to Property model in schema.prisma if needed
 
   @ApiProperty({ example: true, description: 'Whether property is active in the system' })
   @IsBoolean()

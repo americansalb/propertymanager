@@ -17,7 +17,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    // @ts-expect-error - Prisma event types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.$on('query', (e: any) => {
       if (process.env.NODE_ENV === 'development') {
         this.logger.debug(`Query: ${e.query}`);
@@ -25,7 +25,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       }
     });
 
-    // @ts-expect-error - Prisma event types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.$on('error', (e: any) => {
       this.logger.error(e);
     });
