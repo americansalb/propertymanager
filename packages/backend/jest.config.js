@@ -12,9 +12,7 @@ module.exports = {
   ],
   coverageDirectory: './coverage',
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
-  transformIgnorePatterns: [
-    'node_modules/(?!(uuid)/)', // Transform uuid package
-  ],
+  transformIgnorePatterns: [],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
