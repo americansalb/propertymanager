@@ -3,6 +3,7 @@ import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
+import { EventsService } from '../events/events.service';
 import { OrganizationId } from '../common/decorators/organization.decorator';
 import { CreatePropertyDto, UpdatePropertyDto } from './dto/property.dto';
 
@@ -11,7 +12,10 @@ import { CreatePropertyDto, UpdatePropertyDto } from './dto/property.dto';
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth()
 export class PropertiesController {
-  constructor(private propertiesService: PropertiesService) {}
+  constructor(
+    private propertiesService: PropertiesService,
+    private eventsService: EventsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all properties for organization' })
@@ -44,6 +48,19 @@ export class PropertiesController {
   ) {
     const user = (req as any).user as { id?: string } | undefined;
     const property = await this.propertiesService.update(id, data, organizationId, user?.id);
+
+    // Track property update event
+    await this.eventsService.track(
+      {
+        name: 'property_updated',
+        category: 'property_management',
+        properties: { propertyId: property.id },
+      },
+      organizationId,
+      user?.id,
+      req,
+    );
+
     return { success: true, data: property };
   }
 
