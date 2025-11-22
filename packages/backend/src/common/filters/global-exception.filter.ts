@@ -10,6 +10,7 @@ import {
 import { Request, Response } from 'express';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import * as Sentry from '@sentry/node';
+import { getRequestContextMeta } from '../request-context';
 
 /**
  * Global exception filter that:
@@ -31,9 +32,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const correlationId = (request as any).correlationId;
-    const userId = (request as any).user?.id;
-    const organizationId = (request as any).user?.organizationId;
+    // Extract request context (correlationId, userId, organizationId)
+    const { correlationId, userId, organizationId } = getRequestContextMeta(request);
 
     // Determine HTTP status and error message
     const { status, message, code, errors } = this.parseException(exception);

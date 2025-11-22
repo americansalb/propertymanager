@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
@@ -38,9 +39,11 @@ export class PropertiesController {
   async update(
     @Param('id') id: string,
     @Body() data: UpdatePropertyDto,
-    @OrganizationId() organizationId: string
+    @OrganizationId() organizationId: string,
+    @Req() req: Request,
   ) {
-    const property = await this.propertiesService.update(id, data, organizationId);
+    const user = (req as any).user as { id?: string } | undefined;
+    const property = await this.propertiesService.update(id, data, organizationId, user?.id);
     return { success: true, data: property };
   }
 
