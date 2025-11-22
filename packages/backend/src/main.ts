@@ -4,10 +4,23 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { WinstonModule } from 'nest-winston';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { AppModule } from './app.module';
 import { createWinstonOptions } from './logger/logger.config';
 
 async function bootstrap() {
+  // Initialize Sentry as early as possible (production only)
+  if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'production',
+      tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1'),
+      profilesSampleRate: parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || '0.1'),
+      integrations: [nodeProfilingIntegration()],
+    });
+  }
+
   const logger = WinstonModule.createLogger(createWinstonOptions());
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
