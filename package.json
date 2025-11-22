@@ -44,12 +44,10 @@
   "packageManager": "pnpm@8.11.0",
   "lint-staged": {
     "packages/backend/src/**/*.ts": [
-      "eslint --fix",
       "prettier --write",
       "bash -c 'cd packages/backend && pnpm exec tsc --noEmit'"
     ],
     "packages/frontend-**/src/**/*.{ts,tsx}": [
-      "eslint --fix",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [

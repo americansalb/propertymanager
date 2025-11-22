@@ -57,6 +57,7 @@ model Organization {
   chartOfAccounts ChartOfAccounts[]
   vendors   Vendor[]
   bankAccounts BankAccount[]
+  events    Event[]
 
   @@index([slug])
 }
@@ -102,6 +103,7 @@ model User {
   createdTransactions Transaction[]
   assignedWorkOrders WorkOrder[]
   auditLogs      AuditLog[]
+  events         Event[]
 
   @@index([organizationId])
   @@index([email])
@@ -973,6 +975,45 @@ model AuditLog {
   @@index([userId])
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+// ============================================================================
+// ANALYTICS & FEATURE TRACKING
+// ============================================================================
+
+model Event {
+  id             String   @id @default(cuid())
+
+  // Event identification
+  name           String   // e.g., "property_created", "modal_opened", "report_generated"
+  category       String?  // e.g., "property_management", "financial", "user_interaction"
+
+  // Context
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Metadata (flexible JSON for event-specific data)
+  properties     Json     @default("{}")
+
+  // Session tracking
+  sessionId      String?
+
+  // Request metadata
+  ipAddress      String?
+  userAgent      String?
+  url            String?
+
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([name])
+  @@index([category])
+  @@index([createdAt])
+  @@index([sessionId])
 }
 
 // ============================================================================

@@ -19,6 +19,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { WorkOrdersModule } from './work-orders/work-orders.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { ReportsModule } from './reports/reports.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   controllers: [AppController],
@@ -50,6 +51,7 @@ import { ReportsModule } from './reports/reports.module';
     WorkOrdersModule,
     VendorsModule,
     ReportsModule,
+    EventsModule,
   ],
   providers: [
     {
