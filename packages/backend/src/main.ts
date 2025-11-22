@@ -3,11 +3,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { WinstonModule } from 'nest-winston';
 import { AppModule } from './app.module';
+import { createWinstonOptions } from './logger/logger.config';
 
 async function bootstrap() {
+  const logger = WinstonModule.createLogger(createWinstonOptions());
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    logger,
   });
 
   // Serve static files

@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Inject, LoggerService } from '@nestjs/common';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePropertyDto } from './dto/property.dto';
 
 @Injectable()
 export class PropertiesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(WINSTON_MODULE_NEST_PROVIDER)
+    private readonly logger: LoggerService,
+  ) {}
 
   async findAll(organizationId: string) {
     return this.prisma.property.findMany({
@@ -34,17 +39,34 @@ export class PropertiesService {
     });
   }
 
-  async update(id: string, dto: UpdatePropertyDto, organizationId: string) {
+  async update(id: string, dto: UpdatePropertyDto, organizationId: string, userId?: string) {
     // 1) Fetch by id to distinguish 404 vs 403
     const existing = await this.prisma.property.findUnique({
       where: { id },
     });
 
     if (!existing) {
+      this.logger.warn(
+        {
+          message: 'property.update_not_found',
+          propertyId: id,
+          organizationId,
+        },
+        PropertiesService.name,
+      );
       throw new NotFoundException('Property not found');
     }
 
     if (existing.organizationId !== organizationId) {
+      this.logger.warn(
+        {
+          message: 'property.update_forbidden',
+          propertyId: id,
+          requestedOrgId: organizationId,
+          actualOrgId: existing.organizationId,
+        },
+        PropertiesService.name,
+      );
       throw new ForbiddenException('You do not have access to this property');
     }
 
@@ -67,6 +89,40 @@ export class PropertiesService {
         units: true,
       },
     });
+
+    // 3) Compute before/after changes for logging
+    const changes: Record<string, { before: unknown; after: unknown }> = {};
+    const fieldMap: Record<string, keyof typeof existing> = {
+      name: 'name',
+      addressLine1: 'address1',
+      addressLine2: 'address2',
+      city: 'city',
+      state: 'state',
+      postalCode: 'zipCode',
+      country: 'country',
+      propertyType: 'type',
+      active: 'status',
+    };
+
+    for (const [dtoKey, entityKey] of Object.entries(fieldMap)) {
+      const before = (existing as any)[entityKey];
+      const after = (updated as any)[entityKey];
+
+      if (before !== after) {
+        changes[dtoKey] = { before, after };
+      }
+    }
+
+    this.logger.log(
+      {
+        message: 'property.updated',
+        propertyId: id,
+        organizationId,
+        userId,
+        changes,
+      },
+      PropertiesService.name,
+    );
 
     return updated;
   }
