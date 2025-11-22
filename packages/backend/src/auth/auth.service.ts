@@ -3,8 +3,45 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { JwtPayload, LoginResponse, AuthUser, RegisterRequest } from '@propertymaster/shared';
-import { UserRole, OrganizationType, SubscriptionPlan, Prisma, AccountType, AccountSubType } from '@propertymaster/database';
+import { UserRole, OrganizationType, SubscriptionPlan, Prisma, AccountType, AccountSubType, User, Organization } from '@propertymaster/database';
+
+// Local type definitions (TODO: move to @propertymaster/shared when available)
+export interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+  organizationId: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  organizationId: string;
+  organizationName: string;
+  avatarUrl: string | null;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthUser;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  organizationName: string;
+  organizationType: string;
+}
+
+// Type for user with organization relation (exported for use in strategies/controllers)
+export type UserWithOrganization = User & { organization: Organization };
 
 @Injectable()
 export class AuthService {
@@ -18,7 +55,7 @@ export class AuthService {
   /**
    * Validate user credentials (used by LocalStrategy)
    */
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(email: string, password: string): Promise<UserWithOrganization> {
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: { organization: true },
@@ -50,7 +87,7 @@ export class AuthService {
   /**
    * Login and generate JWT tokens
    */
-  async login(user: any): Promise<LoginResponse> {
+  async login(user: UserWithOrganization): Promise<LoginResponse> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -160,7 +197,7 @@ export class AuthService {
   /**
    * Validate JWT payload
    */
-  async validateJwtPayload(payload: JwtPayload): Promise<any> {
+  async validateJwtPayload(payload: JwtPayload): Promise<UserWithOrganization> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       include: { organization: true },

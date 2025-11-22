@@ -1,9 +1,28 @@
 import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiOperation, ApiResponse as SwaggerResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse as SwaggerResponse } from '@nestjs/swagger';
+import { Request as ExpressRequest } from 'express';
 
-import { AuthService } from './auth.service';
-import { LoginRequest, LoginResponse, RegisterRequest, RefreshTokenRequest, ApiResponse } from '@propertymaster/shared';
+import { AuthService, LoginResponse, RegisterRequest, UserWithOrganization } from './auth.service';
+
+// Local type definitions
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: {
+    message: string;
+    code?: string;
+  };
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+// Augment Express Request with authenticated user
+interface AuthenticatedRequest extends ExpressRequest {
+  user: UserWithOrganization;
+}
 
 @ApiTags('auth')
 @Controller('auth')
@@ -29,7 +48,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with email and password' })
   @SwaggerResponse({ status: 200, description: 'Login successful' })
   @SwaggerResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Request() req: any): Promise<ApiResponse<LoginResponse>> {
+  async login(@Request() req: AuthenticatedRequest): Promise<ApiResponse<LoginResponse>> {
     const result = await this.authService.login(req.user);
 
     return {

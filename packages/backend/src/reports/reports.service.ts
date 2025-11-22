@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ReportsService {
+  // Prisma will be used when report queries are implemented
+  // @ts-expect-error - Reserved for future use
   constructor(private prisma: PrismaService) {}
 
   async getOccupancyReport(organizationId: string) {

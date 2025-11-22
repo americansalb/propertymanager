@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class StripeService {
-  private stripe: Stripe;
+  private stripe!: Stripe;
   private readonly logger = new Logger(StripeService.name);
 
   constructor(

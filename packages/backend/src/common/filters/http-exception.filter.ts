@@ -1,6 +1,12 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiResponse, ErrorCode } from '@propertymaster/shared';
+
+// Local type definitions
+interface HttpExceptionResponse {
+  message?: string | string[];
+  code?: string;
+  statusCode?: number;
+}
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -13,7 +19,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
-    let code = ErrorCode.INTERNAL_ERROR;
+    let code = 'INTERNAL_ERROR';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -22,8 +28,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object') {
-        message = (exceptionResponse as any).message || message;
-        code = (exceptionResponse as any).code || code;
+        const typedResponse = exceptionResponse as HttpExceptionResponse;
+        message = typedResponse.message ?
+          (Array.isArray(typedResponse.message) ? typedResponse.message[0] : typedResponse.message) :
+          message;
+        code = typedResponse.code || code;
       }
     } else if (exception instanceof Error) {
       message = exception.message;
@@ -35,7 +44,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       exception instanceof Error ? exception.stack : exception,
     );
 
-    const errorResponse: ApiResponse = {
+    const errorResponse = {
       success: false,
       error: {
         code,

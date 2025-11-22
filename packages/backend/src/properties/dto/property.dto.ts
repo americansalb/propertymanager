@@ -31,11 +31,11 @@ export enum PropertyStatus {
 export class CreatePropertyDto {
   @ApiProperty({ description: 'Property name' })
   @IsString()
-  name: string;
+  name!: string;
 
   @ApiProperty({ enum: PropertyType, description: 'Type of property' })
   @IsEnum(PropertyType)
-  type: PropertyType;
+  type!: PropertyType;
 
   @ApiPropertyOptional({ enum: PropertyStatus, description: 'Property status', default: PropertyStatus.ACTIVE })
   @IsEnum(PropertyStatus)
@@ -44,7 +44,7 @@ export class CreatePropertyDto {
 
   @ApiProperty({ description: 'Street address line 1' })
   @IsString()
-  address1: string;
+  address1!: string;
 
   @ApiPropertyOptional({ description: 'Street address line 2' })
   @IsString()
@@ -53,15 +53,15 @@ export class CreatePropertyDto {
 
   @ApiProperty({ description: 'City' })
   @IsString()
-  city: string;
+  city!: string;
 
   @ApiProperty({ description: 'State' })
   @IsString()
-  state: string;
+  state!: string;
 
   @ApiProperty({ description: 'ZIP code' })
   @IsString()
-  zipCode: string;
+  zipCode!: string;
 
   @ApiPropertyOptional({ description: 'Country', default: 'US' })
   @IsString()
@@ -76,7 +76,7 @@ export class CreatePropertyDto {
   @ApiProperty({ description: 'Total number of units' })
   @IsInt()
   @Min(1)
-  totalUnits: number;
+  totalUnits!: number;
 
   @ApiPropertyOptional({ description: 'Total square footage' })
   @IsInt()
@@ -93,9 +93,9 @@ export class CreatePropertyDto {
   @IsOptional()
   acquisitionCost?: number;
 
-  @ApiPropertyOptional({ description: 'Additional property settings' })
+  @ApiPropertyOptional({ description: 'Additional property settings as JSON' })
   @IsOptional()
-  settings?: any;
+  settings?: Record<string, unknown>;
 }
 
 /**
@@ -108,13 +108,13 @@ export class UpdatePropertyDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
-  name: string;
+  name!: string;
 
   @ApiProperty({ example: '123 Main St', description: 'Street address line 1', maxLength: 200 })
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  addressLine1: string;
+  addressLine1!: string;
 
   @ApiPropertyOptional({ example: 'Apt 4B', description: 'Street address line 2', maxLength: 200 })
   @IsString()
@@ -126,13 +126,13 @@ export class UpdatePropertyDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
-  city: string;
+  city!: string;
 
   @ApiProperty({ example: 'TX', description: 'State (2-letter code)', maxLength: 64 })
   @IsString()
   @IsNotEmpty()
   @MaxLength(64)
-  state: string;
+  state!: string;
 
   @ApiProperty({
     example: '78701',
@@ -145,22 +145,22 @@ export class UpdatePropertyDto {
   @Matches(/^[A-Za-z0-9\- ]{3,16}$/, {
     message: 'postalCode must be 3-16 chars, letters/numbers/hyphen/space only',
   })
-  postalCode: string;
+  postalCode!: string;
 
   @ApiProperty({ example: 'US', description: 'Country (2-letter code)', default: 'US' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(2)
-  country: string;
+  country!: string;
 
   @ApiProperty({ enum: PropertyType, example: PropertyType.MULTIFAMILY, description: 'Type of property' })
   @IsEnum(PropertyType)
-  propertyType: PropertyType;
+  propertyType!: PropertyType;
 
   // NOTE: 'notes' field removed - not in Prisma schema yet
   // TODO: Add 'notes String?' to Property model in schema.prisma if needed
 
   @ApiProperty({ example: true, description: 'Whether property is active in the system' })
   @IsBoolean()
-  active: boolean;
+  active!: boolean;
 }

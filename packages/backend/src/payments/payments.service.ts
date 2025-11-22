@@ -5,7 +5,8 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PaymentsService {
-  private stripe: Stripe;
+  // @ts-expect-error - Stripe instance for future use
+  private stripe!: Stripe;
 
   constructor(
     private prisma: PrismaService,

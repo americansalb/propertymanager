@@ -67,25 +67,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Build error response
-    const errorResponse: any = {
+    const errorResponse = {
       success: false,
       error: {
         message,
         code,
         statusCode: status,
         correlationId,
+        ...(errors && { errors }),
+        ...(process.env.NODE_ENV !== 'production' && exception instanceof Error && { stack: exception.stack }),
       },
     };
-
-    // Include validation errors if present
-    if (errors) {
-      errorResponse.error.errors = errors;
-    }
-
-    // Include stack trace in development
-    if (process.env.NODE_ENV !== 'production' && exception instanceof Error) {
-      errorResponse.error.stack = exception.stack;
-    }
 
     response.status(status).json(errorResponse);
   }
@@ -94,7 +86,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     status: number;
     message: string;
     code: string;
-    errors?: any[];
+    errors?: string[];
   } {
     // Handle NestJS HttpException (includes BadRequestException, NotFoundException, etc.)
     if (exception instanceof HttpException) {
@@ -141,16 +133,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
   }
 
-  private isPrismaError(exception: unknown): exception is { code: string; meta?: any } {
+  private isPrismaError(exception: unknown): exception is { code: string; meta?: { target?: string[] } } {
     return (
       typeof exception === 'object' &&
       exception !== null &&
       'code' in exception &&
-      typeof (exception as any).code === 'string'
+      typeof (exception as { code: unknown }).code === 'string'
     );
   }
 
-  private parsePrismaError(error: { code: string; meta?: any }): {
+  private parsePrismaError(error: { code: string; meta?: { target?: string[] } }): {
     status: number;
     message: string;
     code: string;

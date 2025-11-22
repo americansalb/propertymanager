@@ -21,7 +21,7 @@ export enum UnitStatus {
 export class CreateUnitDto {
   @ApiProperty({ description: 'Unit number/identifier' })
   @IsString()
-  unitNumber: string;
+  unitNumber!: string;
 
   @ApiPropertyOptional({ description: 'Floor number' })
   @IsInt()
@@ -30,7 +30,7 @@ export class CreateUnitDto {
 
   @ApiProperty({ enum: UnitType, description: 'Type of unit' })
   @IsEnum(UnitType)
-  type: UnitType;
+  type!: UnitType;
 
   @ApiPropertyOptional({ enum: UnitStatus, description: 'Unit status', default: UnitStatus.VACANT })
   @IsEnum(UnitStatus)
@@ -40,12 +40,12 @@ export class CreateUnitDto {
   @ApiProperty({ description: 'Number of bedrooms' })
   @IsInt()
   @Min(0)
-  bedrooms: number;
+  bedrooms!: number;
 
   @ApiProperty({ description: 'Number of bathrooms (e.g., 1.5, 2.0)' })
   @IsNumber()
   @Min(0)
-  bathrooms: number;
+  bathrooms!: number;
 
   @ApiPropertyOptional({ description: 'Square footage' })
   @IsInt()
@@ -55,11 +55,11 @@ export class CreateUnitDto {
   @ApiProperty({ description: 'Market rent amount' })
   @IsNumber()
   @Min(0)
-  marketRent: number;
+  marketRent!: number;
 
   @ApiProperty({ description: 'Property ID this unit belongs to' })
   @IsString()
-  propertyId: string;
+  propertyId!: string;
 }
 
 export class UpdateUnitDto {

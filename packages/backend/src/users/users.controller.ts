@@ -5,7 +5,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { OrganizationId } from '../common/decorators/organization.decorator';
-import { ApiResponse } from '@propertymaster/shared';
+import { JwtPayload } from '../auth/auth.service';
+import { ApiResponse } from '../auth/auth.controller';
 
 @ApiTags('users')
 @Controller('users')
@@ -16,7 +17,7 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
-  async getMe(@CurrentUser() user: any): Promise<ApiResponse> {
+  async getMe(@CurrentUser() user: JwtPayload): Promise<ApiResponse> {
     const profile = await this.usersService.findById(user.sub);
 
     return {

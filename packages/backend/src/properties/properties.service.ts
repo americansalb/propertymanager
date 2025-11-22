@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, Inject, LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdatePropertyDto } from './dto/property.dto';
+import { CreatePropertyDto, UpdatePropertyDto } from './dto/property.dto';
 
 @Injectable()
 export class PropertiesService {
@@ -30,10 +30,20 @@ export class PropertiesService {
     });
   }
 
-  async create(data: any, organizationId: string) {
+  async create(data: CreatePropertyDto, organizationId: string) {
     return this.prisma.property.create({
       data: {
-        ...data,
+        name: data.name,
+        address1: data.address1,
+        address2: data.address2,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zipCode,
+        country: data.country,
+        type: data.type,
+        totalUnits: data.totalUnits,
+        yearBuilt: data.yearBuilt,
+        squareFeet: data.squareFeet,
         organizationId,
       },
     });
@@ -105,8 +115,8 @@ export class PropertiesService {
     };
 
     for (const [dtoKey, entityKey] of Object.entries(fieldMap)) {
-      const before = (existing as any)[entityKey];
-      const after = (updated as any)[entityKey];
+      const before = existing[entityKey];
+      const after = updated[entityKey];
 
       if (before !== after) {
         changes[dtoKey] = { before, after };
