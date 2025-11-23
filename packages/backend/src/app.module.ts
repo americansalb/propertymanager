@@ -2,8 +2,10 @@ import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_FILTER } from '@nestjs/core';
+import { WinstonModule } from 'nest-winston';
 import { CorrelationIdMiddleware } from './logger/correlation-id.middleware';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { createWinstonOptions } from './logger/logger.config';
 
 // Core modules
 import { AppController } from './app.controller';
@@ -29,6 +31,9 @@ import { EventsModule } from './events/events.module';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
+
+    // Logging
+    WinstonModule.forRoot(createWinstonOptions()),
 
     // Rate limiting
     ThrottlerModule.forRoot([
