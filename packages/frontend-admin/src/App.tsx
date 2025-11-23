@@ -9,6 +9,7 @@ import LeasesPage from './pages/LeasesPage';
 import FinancialPage from './pages/FinancialPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
 import VendorsPage from './pages/VendorsPage';
+import { QADashboard } from './pages/QADashboard';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/financial" element={<FinancialPage />} />
                 <Route path="/work-orders" element={<WorkOrdersPage />} />
                 <Route path="/vendors" element={<VendorsPage />} />
+                <Route path="/qa" element={<QADashboard />} />
               </Routes>
             </DashboardLayout>
           </PrivateRoute>
