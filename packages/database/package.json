@@ -12,11 +12,11 @@
     }
   },
   "scripts": {
-    "generate": "npx prisma generate",
+    "generate": "PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate",
     "migrate": "npx prisma migrate dev",
     "studio": "npx prisma studio",
     "seed": "npx tsx prisma/seed.ts",
-    "build": "npx prisma generate && pnpm exec tsc && ls -la dist/"
+    "build": "PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate && pnpm exec tsc && ls -la dist/"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
