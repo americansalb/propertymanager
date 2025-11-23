@@ -12,12 +12,12 @@
     }
   },
   "scripts": {
-    "postinstall": "prisma generate",
-    "generate": "prisma generate",
+    "postinstall": "npx prisma generate",
+    "generate": "npx prisma generate",
     "migrate": "npx prisma migrate dev",
     "studio": "npx prisma studio",
     "seed": "npx tsx prisma/seed.ts",
-    "build": "prisma generate && pnpm exec tsc && ls -la dist/"
+    "build": "npx prisma generate && pnpm exec tsc && ls -la dist/"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
