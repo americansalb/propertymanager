@@ -26,7 +26,7 @@ export class EventsService {
         data: {
           name: dto.name,
           category: dto.category,
-          properties: dto.properties || {},
+          properties: (dto.properties || {}) as any,
           sessionId: dto.sessionId,
           organizationId,
           userId: userId || null,
