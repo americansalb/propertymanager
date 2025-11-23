@@ -27,8 +27,18 @@ async function bootstrap() {
     logger,
   });
 
-  // Serve static files
-  app.useStaticAssets(join(__dirname, '..', 'src', 'public'));
+  // Serve static files from frontend build
+  const frontendDistPath = join(__dirname, '..', '..', 'frontend-admin', 'dist');
+  app.useStaticAssets(frontendDistPath);
+
+  // Serve index.html for all non-API routes (SPA routing)
+  app.use((req: any, res: any, next: any) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(join(frontendDistPath, 'index.html'));
+    } else {
+      next();
+    }
+  });
 
   // Global validation pipe
   app.useGlobalPipes(

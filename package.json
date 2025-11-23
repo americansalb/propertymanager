@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "build:production": "pnpm --filter @propertymaster/database build && test -f packages/database/dist/index.js && pnpm --filter @propertymaster/shared build && ls -laR packages/database/dist packages/shared/dist && pnpm --filter @propertymaster/backend build",
+    "build:production": "pnpm --filter @propertymaster/database build && test -f packages/database/dist/index.js && pnpm --filter @propertymaster/shared build && pnpm --filter @propertymaster/frontend-admin build && pnpm --filter @propertymaster/backend build",
     "start": "node packages/backend/dist/main.js",
     "test": "turbo run test",
     "lint": "turbo run lint",
