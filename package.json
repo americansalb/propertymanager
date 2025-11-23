@@ -24,7 +24,7 @@
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "prepare": "husky"
+    "prepare": "[ \"$NODE_ENV\" = \"production\" ] || husky"
   },
   "dependencies": {
     "tsx": "^4.7.0",
