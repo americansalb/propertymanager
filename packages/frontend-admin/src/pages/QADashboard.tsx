@@ -24,7 +24,7 @@ import { useState } from 'react';
 
 const TEST_CONFIG = {
   // Your backend API base URL (should match what your app uses)
-  API_BASE_URL: (import.meta as any).env?.VITE_API_URL || '/api',
+  API_BASE_URL: (import.meta as any).env?.VITE_API_URL || '/api/v1',
 
   // Valid JWT token (get from DevTools after logging in)
   // This should be a real token from your deployed backend
