@@ -153,16 +153,21 @@ export function QADashboard() {
 
     setPropertyUpdate({ status: 'loading' });
     try {
+      // ⚠️ IMPORTANT: This payload MUST match exactly what PropertyEditModal sends
+      // to ensure QA tests mirror real UI usage (see PropertyEditModal.tsx lines 168-187)
       const testPayload = {
         name: `QA Test Property ${new Date().toLocaleTimeString()}`,
-        addressLine1: selectedProperty.name || '123 Test St',
+        type: 'MULTIFAMILY',
+        status: 'ACTIVE',
+        address1: '123 QA Test Street',  // Fixed: was addressLine1
+        address2: null,  // Match modal: null for empty, not undefined
         city: 'Test City',
         state: 'CA',
         zipCode: '90210',
         country: 'US',
-        type: 'MULTIFAMILY',
-        status: 'ACTIVE',
-        totalUnits: 1,
+        totalUnits: 10,
+        yearBuilt: 2020,  // Include optional fields to test full payload
+        squareFeet: 5000,
       };
 
       const { data, timing, statusCode } = await apiCall(`/properties/${selectedProperty.id}`, {

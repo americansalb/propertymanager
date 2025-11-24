@@ -75,18 +75,20 @@ export default function PropertyEditModal({
       });
       setErrors({});
     } else {
-      // Initialize with defaults for create mode
+      // Initialize with smart defaults for create mode
       setFormData({
         name: '',
-        type: 'MULTIFAMILY',
-        status: 'ACTIVE',
+        type: 'MULTIFAMILY',  // Most common property type
+        status: 'ACTIVE',  // Default to active status
         address1: '',
         address2: '',
         city: '',
         state: '',
         zipCode: '',
-        country: 'US',
-        totalUnits: 1,
+        country: 'US',  // Default country
+        totalUnits: 1,  // Minimum units
+        yearBuilt: undefined,
+        squareFeet: undefined,
       });
       setErrors({});
     }

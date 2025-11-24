@@ -63,7 +63,16 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
     e.preventDefault();
     setError(null);
 
-    if (!workOrder) return;
+    // Defensive check: Ensure work order exists and has a valid ID
+    if (!workOrder) {
+      setError('No work order selected. Please close and reopen from the work orders list.');
+      return;
+    }
+
+    if (!workOrder.id) {
+      setError('Work order ID is missing. Please close and reopen from the work orders list.');
+      return;
+    }
 
     try {
       // Normalize numeric fields to prevent NaN
@@ -98,14 +107,18 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
     } catch (error: any) {
       console.error('Failed to update work order:', error);
 
-      // Extract error message from backend response
+      // Extract error message from backend response (handle NestJS validation errors)
       let errorMessage = 'Failed to update work order. Please try again.';
 
       if (error?.response?.data?.message) {
-        // NestJS structured error response
-        errorMessage = error.response.data.message;
+        const msg = error.response.data.message;
+        // NestJS ValidationPipe returns array of error messages
+        if (Array.isArray(msg)) {
+          errorMessage = msg.join(', ');
+        } else {
+          errorMessage = msg;
+        }
       } else if (error?.message) {
-        // Generic error message
         errorMessage = error.message;
       }
 
