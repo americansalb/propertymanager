@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, MapPin, Users } from 'lucide-react';
+import { Building2, MapPin, Users, Edit } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import PropertyEditModal from '../components/properties/PropertyEditModal';
 
 export default function PropertiesPage() {
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
   const { data: properties, isLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
@@ -12,6 +17,11 @@ export default function PropertiesPage() {
       return response.data.data;
     },
   });
+
+  const handlePropertyClick = (property: any) => {
+    setSelectedProperty(property);
+    setEditModalOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -37,22 +47,37 @@ export default function PropertiesPage() {
       {properties && properties.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {properties.map((property: any) => (
-            <Card key={property.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+            <Card
+              key={property.id}
+              className="hover:shadow-lg transition-all cursor-pointer group"
+              onClick={() => handlePropertyClick(property)}
+            >
               <CardHeader>
                 <CardTitle className="flex items-start justify-between">
-                  <span className="text-lg">{property.name}</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    property.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {property.status}
+                  <span className="text-lg group-hover:text-primary transition-colors">
+                    {property.name}
                   </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        property.status === 'ACTIVE'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {property.status}
+                    </span>
+                    <Edit className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" />
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <MapPin className="w-4 h-4" />
-                    <span>{property.address1}, {property.city}, {property.state}</span>
+                    <span>
+                      {property.address1}, {property.city}, {property.state}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Users className="w-4 h-4" />
@@ -63,9 +88,7 @@ export default function PropertiesPage() {
                     <span>{property.type?.replace('_', ' ')}</span>
                   </div>
                   {property.yearBuilt && (
-                    <div className="text-sm text-gray-500">
-                      Built in {property.yearBuilt}
-                    </div>
+                    <div className="text-sm text-gray-500">Built in {property.yearBuilt}</div>
                   )}
                 </div>
               </CardContent>
@@ -87,6 +110,12 @@ export default function PropertiesPage() {
           </CardContent>
         </Card>
       )}
+
+      <PropertyEditModal
+        property={selectedProperty}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+      />
     </div>
   );
 }
