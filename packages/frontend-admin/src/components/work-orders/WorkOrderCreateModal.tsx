@@ -29,6 +29,8 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
     permissionToEnter: false,
   });
 
+  const [error, setError] = useState<string | null>(null);
+
   const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
@@ -42,9 +44,10 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (!formData.title || !formData.description || !formData.propertyId || !formData.type) {
-      alert('Please fill in required fields: Title, Description, Property, and Type');
+      setError('Please fill in required fields: Title, Description, Property, and Type');
       return;
     }
 
@@ -58,22 +61,48 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
         priority: 'MEDIUM',
         permissionToEnter: false,
       });
+      setError(null);
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create work order:', error);
-      alert('Failed to create work order. Please try again.');
+
+      // Extract error message from backend response
+      let errorMessage = 'Failed to create work order. Please try again.';
+
+      if (error?.response?.data?.message) {
+        // NestJS structured error response
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        // Generic error message
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setError(null);
+    }
+    onOpenChange(open);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
-        <DialogHeader onClose={() => onOpenChange(false)}>
+        <DialogHeader onClose={() => handleOpenChange(false)}>
           <DialogTitle>Create Work Order</DialogTitle>
           <DialogDescription>Create a new work order for maintenance or repairs</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Error message display */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
+              {error}
+            </div>
+          )}
           {/* Title */}
           <div>
             <Label htmlFor="title">

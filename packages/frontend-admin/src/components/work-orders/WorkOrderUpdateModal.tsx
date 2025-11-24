@@ -21,6 +21,7 @@ interface WorkOrderUpdateModalProps {
 
 export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrderUpdateModalProps) {
   const [formData, setFormData] = useState<Partial<UpdateWorkOrderDto>>({});
+  const [error, setError] = useState<string | null>(null);
 
   const updateWorkOrder = useUpdateWorkOrder();
 
@@ -47,6 +48,7 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (!workOrder) return;
 
@@ -55,24 +57,50 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
         id: workOrder.id,
         data: formData,
       });
+      setError(null);
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update work order:', error);
-      alert('Failed to update work order. Please try again.');
+
+      // Extract error message from backend response
+      let errorMessage = 'Failed to update work order. Please try again.';
+
+      if (error?.response?.data?.message) {
+        // NestJS structured error response
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        // Generic error message
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
     }
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setError(null);
+    }
+    onOpenChange(open);
   };
 
   if (!workOrder) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
-        <DialogHeader onClose={() => onOpenChange(false)}>
+        <DialogHeader onClose={() => handleOpenChange(false)}>
           <DialogTitle>Edit Work Order</DialogTitle>
           <DialogDescription>Update work order details and status</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Error message display */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
+              {error}
+            </div>
+          )}
           {/* Title */}
           <div>
             <Label htmlFor="title">Title</Label>

@@ -106,20 +106,47 @@ export class WorkOrdersService {
       }
     }
 
+    // Verify vendor exists if provided
+    if (dto.vendorId) {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { id: dto.vendorId },
+      });
+
+      if (!vendor) {
+        throw new BadRequestException('Vendor not found');
+      }
+    }
+
+    // Verify assigned user exists if provided
+    if (dto.assignedToId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: dto.assignedToId },
+      });
+
+      if (!user) {
+        throw new BadRequestException('Assigned user not found');
+      }
+    }
+
+    // Normalize numeric fields (convert null/undefined/NaN to null)
+    const estimatedCost =
+      dto.estimatedCost == null || isNaN(Number(dto.estimatedCost)) ? null : Number(dto.estimatedCost);
+
     const workOrder = await this.prisma.workOrder.create({
       data: {
         title: dto.title,
         description: dto.description,
         type: dto.type,
         priority: dto.priority || 'MEDIUM',
+        status: 'SUBMITTED',
         propertyId: dto.propertyId,
-        unitId: dto.unitId,
-        location: dto.location,
-        assignedToId: dto.assignedToId,
-        vendorId: dto.vendorId,
-        estimatedCost: dto.estimatedCost,
-        tenantReportedBy: dto.tenantReportedBy,
-        tenantPhone: dto.tenantPhone,
+        unitId: dto.unitId || null,
+        location: dto.location || null,
+        assignedToId: dto.assignedToId || null,
+        vendorId: dto.vendorId || null,
+        estimatedCost,
+        tenantReportedBy: dto.tenantReportedBy || null,
+        tenantPhone: dto.tenantPhone || null,
         permissionToEnter: dto.permissionToEnter || false,
       },
       include: {
@@ -130,14 +157,17 @@ export class WorkOrdersService {
       },
     });
 
-    this.logger.info('work_order.created', {
+    // Use correct Winston logging API
+    this.logger.log('info', 'work_order.created', {
       workOrderId: workOrder.id,
       propertyId: workOrder.propertyId,
       type: workOrder.type,
       priority: workOrder.priority,
+      organizationId,
+      userId,
     });
 
-    // Track event
+    // Track event - wrap in try/catch so analytics never breaks the request
     try {
       await this.eventsService.track(
         {
@@ -155,7 +185,9 @@ export class WorkOrdersService {
         userId,
       );
     } catch (error) {
-      this.logger.error('Failed to track work order creation event', { error });
+      // Log but don't throw - analytics failures should not break the request
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.log('warn', 'Failed to track work order creation event', { error: errorMessage });
     }
 
     return workOrder;
@@ -165,17 +197,67 @@ export class WorkOrdersService {
     // Verify work order exists and belongs to organization
     const existingWorkOrder = await this.findOne(id, organizationId);
 
+    // Verify vendor exists if being updated
+    if (dto.vendorId) {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { id: dto.vendorId },
+      });
+
+      if (!vendor) {
+        throw new BadRequestException('Vendor not found');
+      }
+    }
+
+    // Verify assigned user exists if being updated
+    if (dto.assignedToId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: dto.assignedToId },
+      });
+
+      if (!user) {
+        throw new BadRequestException('Assigned user not found');
+      }
+    }
+
+    // Verify unit belongs to property if being updated
+    if (dto.unitId) {
+      const unit = await this.prisma.unit.findFirst({
+        where: {
+          id: dto.unitId,
+          propertyId: existingWorkOrder.propertyId,
+        },
+      });
+
+      if (!unit) {
+        throw new BadRequestException('Unit not found or does not belong to the property');
+      }
+    }
+
+    // Normalize numeric fields
+    const estimatedCost =
+      dto.estimatedCost == null || isNaN(Number(dto.estimatedCost)) ? undefined : Number(dto.estimatedCost);
+    const actualCost =
+      dto.actualCost == null || isNaN(Number(dto.actualCost)) ? undefined : Number(dto.actualCost);
+
     // Track status change if status is being updated
     const statusChanged = dto.status && dto.status !== existingWorkOrder.status;
     const oldStatus = existingWorkOrder.status;
 
+    // Prepare update data
+    const updateData: any = {
+      ...dto,
+      estimatedCost,
+      actualCost,
+    };
+
+    // Set completedDate when status changes to COMPLETED
+    if (dto.status === 'COMPLETED' && !existingWorkOrder.completedDate) {
+      updateData.completedDate = new Date();
+    }
+
     const workOrder = await this.prisma.workOrder.update({
       where: { id },
-      data: {
-        ...dto,
-        // Set completedDate when status changes to COMPLETED
-        completedDate: dto.status === 'COMPLETED' ? new Date() : undefined,
-      },
+      data: updateData,
       include: {
         property: true,
         unit: true,
@@ -184,15 +266,18 @@ export class WorkOrdersService {
       },
     });
 
-    this.logger.info('work_order.updated', {
+    // Use correct Winston logging API
+    this.logger.log('info', 'work_order.updated', {
       workOrderId: workOrder.id,
       propertyId: workOrder.propertyId,
       statusChanged,
       oldStatus,
       newStatus: workOrder.status,
+      organizationId,
+      userId,
     });
 
-    // Track event
+    // Track event - wrap in try/catch so analytics never breaks the request
     try {
       await this.eventsService.track(
         {
@@ -209,7 +294,9 @@ export class WorkOrdersService {
         userId,
       );
     } catch (error) {
-      this.logger.error('Failed to track work order update event', { error });
+      // Log but don't throw - analytics failures should not break the request
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.log('warn', 'Failed to track work order update event', { error: errorMessage });
     }
 
     return workOrder;

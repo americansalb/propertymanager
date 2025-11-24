@@ -30,6 +30,13 @@ interface Property {
   organizationId: string;
 }
 
+interface WorkOrder {
+  id: string;
+  title: string;
+  status: string;
+  propertyId: string;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // QA Dashboard Component
 // ═══════════════════════════════════════════════════════════════
@@ -38,11 +45,16 @@ export function QADashboard() {
   const { accessToken, isAuthenticated, user } = useAuthStore();
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [createdWorkOrder, setCreatedWorkOrder] = useState<WorkOrder | null>(null);
 
   const [healthCheck, setHealthCheck] = useState<TestResult>({ status: 'idle' });
   const [propertiesList, setPropertiesList] = useState<TestResult>({ status: 'idle' });
   const [propertyUpdate, setPropertyUpdate] = useState<TestResult>({ status: 'idle' });
   const [eventTracking, setEventTracking] = useState<TestResult>({ status: 'idle' });
+  const [workOrdersList, setWorkOrdersList] = useState<TestResult>({ status: 'idle' });
+  const [workOrderCreate, setWorkOrderCreate] = useState<TestResult>({ status: 'idle' });
+  const [workOrderUpdate, setWorkOrderUpdate] = useState<TestResult>({ status: 'idle' });
 
   // API helper with auth
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
@@ -208,10 +220,120 @@ export function QADashboard() {
     }
   }
 
+  async function testLoadWorkOrders() {
+    setWorkOrdersList({ status: 'loading' });
+    try {
+      const { data, timing, statusCode } = await apiCall('/work-orders');
+      const orders = data.data || data;
+      setWorkOrders(orders);
+      setWorkOrdersList({
+        status: 'success',
+        message: `✅ Loaded ${orders.length} work orders (${timing}ms)`,
+        data: orders,
+        timing,
+        statusCode,
+      });
+    } catch (error: any) {
+      setWorkOrdersList({
+        status: 'error',
+        message: `❌ Failed to load work orders: ${error.message}`,
+        statusCode: error.statusCode,
+      });
+    }
+  }
+
+  async function testCreateWorkOrder() {
+    if (!selectedProperty) {
+      setWorkOrderCreate({
+        status: 'error',
+        message: '❌ No property selected - load properties first',
+      });
+      return;
+    }
+
+    setWorkOrderCreate({ status: 'loading' });
+    try {
+      const testPayload = {
+        title: `QA Test Work Order ${new Date().toLocaleTimeString()}`,
+        description: 'This is a test work order created by the QA Dashboard',
+        type: 'MAINTENANCE',
+        priority: 'MEDIUM',
+        propertyId: selectedProperty.id,
+        permissionToEnter: false,
+      };
+
+      const { data, timing, statusCode } = await apiCall('/work-orders', {
+        method: 'POST',
+        body: JSON.stringify(testPayload),
+      });
+
+      const workOrder = data.data || data;
+      setCreatedWorkOrder(workOrder);
+
+      setWorkOrderCreate({
+        status: 'success',
+        message: `✅ Created work order "${workOrder.title}" (${timing}ms)`,
+        data: workOrder,
+        timing,
+        statusCode,
+      });
+    } catch (error: any) {
+      setWorkOrderCreate({
+        status: 'error',
+        message: `❌ Create failed: ${error.message}`,
+        data: error.data,
+        statusCode: error.statusCode,
+      });
+    }
+  }
+
+  async function testUpdateWorkOrder() {
+    if (!createdWorkOrder) {
+      setWorkOrderUpdate({
+        status: 'error',
+        message: '❌ No work order to update - create one first',
+      });
+      return;
+    }
+
+    setWorkOrderUpdate({ status: 'loading' });
+    try {
+      const testPayload = {
+        status: 'IN_PROGRESS',
+        completionNotes: `Updated by QA Dashboard at ${new Date().toLocaleTimeString()}`,
+      };
+
+      const { data, timing, statusCode } = await apiCall(`/work-orders/${createdWorkOrder.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(testPayload),
+      });
+
+      const updated = data.data || data;
+
+      setWorkOrderUpdate({
+        status: 'success',
+        message: `✅ Updated work order to status "${updated.status}" (${timing}ms)`,
+        data: updated,
+        timing,
+        statusCode,
+      });
+    } catch (error: any) {
+      setWorkOrderUpdate({
+        status: 'error',
+        message: `❌ Update failed: ${error.message}`,
+        data: error.data,
+        statusCode: error.statusCode,
+      });
+    }
+  }
+
   async function runAllTests() {
     await testHealthCheck();
     if (isAuthenticated) {
       await testLoadProperties();
+      await testLoadWorkOrders();
+      await testCreateWorkOrder();
+      await testUpdateWorkOrder();
       await testEventTracking();
     }
   }
@@ -228,7 +350,15 @@ export function QADashboard() {
   // ═══════════════════════════════════════════════════════════════
 
   const getOverallStatus = () => {
-    const tests = [healthCheck, propertiesList, propertyUpdate, eventTracking];
+    const tests = [
+      healthCheck,
+      propertiesList,
+      propertyUpdate,
+      eventTracking,
+      workOrdersList,
+      workOrderCreate,
+      workOrderUpdate,
+    ];
     const ran = tests.filter((t) => t.status !== 'idle');
     const failed = ran.filter((t) => t.status === 'error');
     const running = tests.some((t) => t.status === 'loading');
@@ -401,6 +531,55 @@ export function QADashboard() {
           onRun={testEventTracking}
           requiresAuth={true}
           isAuthenticated={isAuthenticated}
+        />
+
+        <TestSection
+          number={5}
+          title="Load Work Orders"
+          description="Fetches all work orders for the organization"
+          endpoint="GET /work-orders"
+          result={workOrdersList}
+          onRun={testLoadWorkOrders}
+          requiresAuth={true}
+          isAuthenticated={isAuthenticated}
+        />
+
+        <TestSection
+          number={6}
+          title="Create Work Order"
+          description="Creates a new test work order"
+          endpoint="POST /work-orders"
+          result={workOrderCreate}
+          onRun={testCreateWorkOrder}
+          requiresAuth={true}
+          isAuthenticated={isAuthenticated}
+          note={
+            selectedProperty
+              ? `⚠️ Creates a test work order for "${selectedProperty.name}"`
+              : '⚠️ Load properties first to select a test property'
+          }
+          disabled={!selectedProperty}
+        />
+
+        <TestSection
+          number={7}
+          title="Update Work Order"
+          description="Updates the test work order to IN_PROGRESS status"
+          endpoint={
+            createdWorkOrder
+              ? `PUT /work-orders/${createdWorkOrder.id}`
+              : 'PUT /work-orders/:id'
+          }
+          result={workOrderUpdate}
+          onRun={testUpdateWorkOrder}
+          requiresAuth={true}
+          isAuthenticated={isAuthenticated}
+          note={
+            createdWorkOrder
+              ? `⚠️ Updates test work order "${createdWorkOrder.title}"`
+              : '⚠️ Create a work order first to test updates'
+          }
+          disabled={!createdWorkOrder}
         />
       </div>
 
