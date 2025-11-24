@@ -1,0 +1,276 @@
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { useUpdateWorkOrder, UpdateWorkOrderDto, WorkOrder } from '../../hooks/useWorkOrders';
+
+interface WorkOrderUpdateModalProps {
+  workOrder: WorkOrder | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrderUpdateModalProps) {
+  const [formData, setFormData] = useState<Partial<UpdateWorkOrderDto>>({});
+
+  const updateWorkOrder = useUpdateWorkOrder();
+
+  // Initialize form data when modal opens or work order changes
+  useEffect(() => {
+    if (workOrder) {
+      setFormData({
+        title: workOrder.title,
+        description: workOrder.description,
+        type: workOrder.type,
+        priority: workOrder.priority,
+        status: workOrder.status,
+        location: workOrder.location || '',
+        scheduledDate: workOrder.scheduledDate || '',
+        estimatedCost: workOrder.estimatedCost,
+        actualCost: workOrder.actualCost,
+        tenantReportedBy: workOrder.tenantReportedBy || '',
+        tenantPhone: workOrder.tenantPhone || '',
+        permissionToEnter: workOrder.permissionToEnter,
+        completionNotes: workOrder.completionNotes || '',
+      });
+    }
+  }, [workOrder]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!workOrder) return;
+
+    try {
+      await updateWorkOrder.mutateAsync({
+        id: workOrder.id,
+        data: formData,
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to update work order:', error);
+      alert('Failed to update work order. Please try again.');
+    }
+  };
+
+  if (!workOrder) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader onClose={() => onOpenChange(false)}>
+          <DialogTitle>Edit Work Order</DialogTitle>
+          <DialogDescription>Update work order details and status</DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Title */}
+          <div>
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Work order title"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Work order description"
+              className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <select
+              id="status"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="DRAFT">Draft</option>
+              <option value="SUBMITTED">Submitted</option>
+              <option value="ASSIGNED">Assigned</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+
+          {/* Type and Priority */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="type">Type</Label>
+              <select
+                id="type"
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="MAINTENANCE">Maintenance</option>
+                <option value="REPAIR">Repair</option>
+                <option value="INSPECTION">Inspection</option>
+                <option value="TURNOVER">Turnover</option>
+                <option value="EMERGENCY">Emergency</option>
+                <option value="PREVENTIVE">Preventive</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="priority">Priority</Label>
+              <select
+                id="priority"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="EMERGENCY">Emergency</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              value={formData.location || ''}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="e.g., Lobby, Roof, Unit 201 Kitchen"
+            />
+          </div>
+
+          {/* Scheduled Date */}
+          <div>
+            <Label htmlFor="scheduledDate">Scheduled Date</Label>
+            <Input
+              id="scheduledDate"
+              type="datetime-local"
+              value={
+                formData.scheduledDate
+                  ? new Date(formData.scheduledDate).toISOString().slice(0, 16)
+                  : ''
+              }
+              onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+            />
+          </div>
+
+          {/* Costs */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="estimatedCost">Estimated Cost</Label>
+              <Input
+                id="estimatedCost"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.estimatedCost || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    estimatedCost: e.target.value ? parseFloat(e.target.value) : undefined,
+                  })
+                }
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="actualCost">Actual Cost</Label>
+              <Input
+                id="actualCost"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.actualCost || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    actualCost: e.target.value ? parseFloat(e.target.value) : undefined,
+                  })
+                }
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          {/* Tenant Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="tenantReportedBy">Reported By</Label>
+              <Input
+                id="tenantReportedBy"
+                value={formData.tenantReportedBy || ''}
+                onChange={(e) => setFormData({ ...formData, tenantReportedBy: e.target.value })}
+                placeholder="Tenant name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="tenantPhone">Tenant Phone</Label>
+              <Input
+                id="tenantPhone"
+                value={formData.tenantPhone || ''}
+                onChange={(e) => setFormData({ ...formData, tenantPhone: e.target.value })}
+                placeholder="(555) 123-4567"
+              />
+            </div>
+          </div>
+
+          {/* Permission to Enter */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="permissionToEnter"
+              checked={formData.permissionToEnter}
+              onChange={(e) => setFormData({ ...formData, permissionToEnter: e.target.checked })}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <Label htmlFor="permissionToEnter" className="font-normal cursor-pointer">
+              Permission to enter unit
+            </Label>
+          </div>
+
+          {/* Completion Notes */}
+          <div>
+            <Label htmlFor="completionNotes">Completion Notes</Label>
+            <textarea
+              id="completionNotes"
+              value={formData.completionNotes || ''}
+              onChange={(e) => setFormData({ ...formData, completionNotes: e.target.value })}
+              placeholder="Add notes about the completed work..."
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={updateWorkOrder.isPending}>
+              {updateWorkOrder.isPending ? 'Updating...' : 'Update Work Order'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

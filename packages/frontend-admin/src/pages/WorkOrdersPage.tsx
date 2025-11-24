@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { formatDate } from '../lib/utils';
 import { WorkOrderDetailDrawer } from '../components/work-orders/WorkOrderDetailDrawer';
+import { WorkOrderCreateModal } from '../components/work-orders/WorkOrderCreateModal';
+import { WorkOrderUpdateModal } from '../components/work-orders/WorkOrderUpdateModal';
 
 type StatusFilter = 'ALL' | 'SUBMITTED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED';
 type PriorityFilter = 'ALL' | 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
@@ -15,6 +17,8 @@ export default function WorkOrdersPage() {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
 
   const { data: workOrders, isLoading } = useQuery({
     queryKey: ['work-orders'],
@@ -70,7 +74,7 @@ export default function WorkOrdersPage() {
           <h1 className="text-3xl font-bold text-gray-900">Work Orders</h1>
           <p className="text-gray-500 mt-1">Manage maintenance requests and work orders</p>
         </div>
-        <Button>
+        <Button onClick={() => setCreateModalOpen(true)}>
           <Wrench className="w-4 h-4 mr-2" />
           Create Work Order
         </Button>
@@ -249,7 +253,7 @@ export default function WorkOrdersPage() {
                   <Button variant="outline" onClick={clearFilters}>
                     Clear Filters
                   </Button>
-                  <Button>
+                  <Button onClick={() => setCreateModalOpen(true)}>
                     <Wrench className="w-4 h-4 mr-2" />
                     Create Work Order
                   </Button>
@@ -267,7 +271,7 @@ export default function WorkOrdersPage() {
               <p className="text-gray-500 mb-6">
                 Create your first work order to track maintenance
               </p>
-              <Button>
+              <Button onClick={() => setCreateModalOpen(true)}>
                 <Wrench className="w-4 h-4 mr-2" />
                 Create Your First Work Order
               </Button>
@@ -281,6 +285,20 @@ export default function WorkOrdersPage() {
         workOrder={selectedWorkOrder}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        onEdit={() => {
+          setDrawerOpen(false);
+          setUpdateModalOpen(true);
+        }}
+      />
+
+      {/* Create Modal */}
+      <WorkOrderCreateModal open={createModalOpen} onOpenChange={setCreateModalOpen} />
+
+      {/* Update Modal */}
+      <WorkOrderUpdateModal
+        workOrder={selectedWorkOrder}
+        open={updateModalOpen}
+        onOpenChange={setUpdateModalOpen}
       />
     </div>
   );

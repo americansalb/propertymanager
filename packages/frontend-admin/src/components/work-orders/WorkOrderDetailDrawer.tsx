@@ -1,13 +1,20 @@
-import { X, Building2, Home, User, Briefcase, Calendar, DollarSign } from 'lucide-react';
+import { X, Building2, Home, User, Briefcase, Calendar, DollarSign, Edit } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../lib/utils';
+import { Button } from '../ui/button';
 
 interface WorkOrderDetailDrawerProps {
   workOrder: any;
   open: boolean;
   onClose: () => void;
+  onEdit?: () => void;
 }
 
-export function WorkOrderDetailDrawer({ workOrder, open, onClose }: WorkOrderDetailDrawerProps) {
+export function WorkOrderDetailDrawer({
+  workOrder,
+  open,
+  onClose,
+  onEdit,
+}: WorkOrderDetailDrawerProps) {
   if (!open || !workOrder) return null;
 
   const statusColors: Record<string, string> = {
@@ -37,9 +44,20 @@ export function WorkOrderDetailDrawer({ workOrder, open, onClose }: WorkOrderDet
             <h2 className="text-xl font-semibold text-gray-900">Work Order Details</h2>
             <p className="text-sm text-gray-500 mt-0.5">#{workOrder.id.slice(0, 8)}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <Button variant="outline" size="sm" onClick={onEdit}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
