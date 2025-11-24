@@ -41,9 +41,6 @@ Thumbs.db
 *.db-journal
 .turbo
 
-# Prisma
-packages/database/prisma/migrations
-
 # Docker
 docker-compose.override.yml
 
