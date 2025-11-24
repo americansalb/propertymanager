@@ -242,13 +242,13 @@ export function QADashboard() {
     }
   }
 
-  async function testCreateWorkOrder() {
+  async function testCreateWorkOrder(): Promise<WorkOrder | null> {
     if (!selectedProperty) {
       setWorkOrderCreate({
         status: 'error',
         message: '❌ No property selected - load properties first',
       });
-      return;
+      return null;
     }
 
     setWorkOrderCreate({ status: 'loading' });
@@ -277,6 +277,8 @@ export function QADashboard() {
         timing,
         statusCode,
       });
+
+      return workOrder;
     } catch (error: any) {
       setWorkOrderCreate({
         status: 'error',
@@ -284,11 +286,14 @@ export function QADashboard() {
         data: error.data,
         statusCode: error.statusCode,
       });
+      return null;
     }
   }
 
-  async function testUpdateWorkOrder() {
-    if (!createdWorkOrder) {
+  async function testUpdateWorkOrder(workOrderToUpdate?: WorkOrder | null) {
+    const workOrder = workOrderToUpdate || createdWorkOrder;
+
+    if (!workOrder) {
       setWorkOrderUpdate({
         status: 'error',
         message: '❌ No work order to update - create one first',
@@ -303,7 +308,7 @@ export function QADashboard() {
         completionNotes: `Updated by QA Dashboard at ${new Date().toLocaleTimeString()}`,
       };
 
-      const { data, timing, statusCode } = await apiCall(`/work-orders/${createdWorkOrder.id}`, {
+      const { data, timing, statusCode } = await apiCall(`/work-orders/${workOrder.id}`, {
         method: 'PUT',
         body: JSON.stringify(testPayload),
       });
@@ -332,8 +337,8 @@ export function QADashboard() {
     if (isAuthenticated) {
       await testLoadProperties();
       await testLoadWorkOrders();
-      await testCreateWorkOrder();
-      await testUpdateWorkOrder();
+      const createdWO = await testCreateWorkOrder();
+      await testUpdateWorkOrder(createdWO);
       await testEventTracking();
     }
   }

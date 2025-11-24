@@ -30,6 +30,7 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const { data: properties } = useQuery({
     queryKey: ['properties'],
@@ -42,17 +43,69 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
 
   const createWorkOrder = useCreateWorkOrder();
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // Title validation
+    if (!formData.title?.trim()) {
+      errors.title = 'Title is required';
+    } else if (formData.title.trim().length < 5) {
+      errors.title = 'Title must be at least 5 characters';
+    }
+
+    // Description validation
+    if (!formData.description?.trim()) {
+      errors.description = 'Description is required';
+    } else if (formData.description.trim().length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+
+    // Property validation
+    if (!formData.propertyId) {
+      errors.propertyId = 'Property is required';
+    }
+
+    // Type validation
+    if (!formData.type) {
+      errors.type = 'Type is required';
+    }
+
+    // Estimated cost validation - ensure it's null or valid number
+    if (formData.estimatedCost !== undefined && formData.estimatedCost !== null) {
+      const cost = Number(formData.estimatedCost);
+      if (isNaN(cost) || cost < 0) {
+        errors.estimatedCost = 'Estimated cost must be a valid positive number';
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!formData.title || !formData.description || !formData.propertyId || !formData.type) {
-      setError('Please fill in required fields: Title, Description, Property, and Type');
+    if (!validateForm()) {
       return;
     }
 
     try {
-      await createWorkOrder.mutateAsync(formData as CreateWorkOrderDto);
+      // Normalize estimated cost to prevent NaN
+      const payload = {
+        ...formData,
+        estimatedCost:
+          formData.estimatedCost !== undefined && formData.estimatedCost !== null
+            ? Number(formData.estimatedCost)
+            : undefined,
+      };
+
+      // Remove undefined values and ensure we only send valid numbers or null
+      if (payload.estimatedCost !== undefined && isNaN(payload.estimatedCost)) {
+        delete payload.estimatedCost;
+      }
+
+      await createWorkOrder.mutateAsync(payload as CreateWorkOrderDto);
       // Reset form
       setFormData({
         title: '',
@@ -62,6 +115,7 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
         permissionToEnter: false,
       });
       setError(null);
+      setFieldErrors({});
       onOpenChange(false);
     } catch (error: any) {
       console.error('Failed to create work order:', error);
@@ -84,6 +138,7 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setError(null);
+      setFieldErrors({});
     }
     onOpenChange(open);
   };
@@ -111,10 +166,18 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
             <Input
               id="title"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, title: e.target.value });
+                if (fieldErrors.title) {
+                  setFieldErrors({ ...fieldErrors, title: '' });
+                }
+              }}
               placeholder="e.g., Leaking faucet in Unit 201"
-              required
+              className={fieldErrors.title ? 'border-red-500' : ''}
             />
+            {fieldErrors.title && (
+              <p className="text-red-500 text-sm mt-1">{fieldErrors.title}</p>
+            )}
           </div>
 
           {/* Description */}
@@ -125,11 +188,18 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
             <textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, description: e.target.value });
+                if (fieldErrors.description) {
+                  setFieldErrors({ ...fieldErrors, description: '' });
+                }
+              }}
               placeholder="Provide details about the issue..."
-              className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              required
+              className={`flex min-h-[100px] w-full rounded-md border ${fieldErrors.description ? 'border-red-500' : 'border-input'} bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
             />
+            {fieldErrors.description && (
+              <p className="text-red-500 text-sm mt-1">{fieldErrors.description}</p>
+            )}
           </div>
 
           {/* Property */}
@@ -140,9 +210,13 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
             <select
               id="propertyId"
               value={formData.propertyId || ''}
-              onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              required
+              onChange={(e) => {
+                setFormData({ ...formData, propertyId: e.target.value });
+                if (fieldErrors.propertyId) {
+                  setFieldErrors({ ...fieldErrors, propertyId: '' });
+                }
+              }}
+              className={`flex h-10 w-full rounded-md border ${fieldErrors.propertyId ? 'border-red-500' : 'border-input'} bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
             >
               <option value="">Select a property</option>
               {properties?.map((property: any) => (
@@ -151,6 +225,9 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
                 </option>
               ))}
             </select>
+            {fieldErrors.propertyId && (
+              <p className="text-red-500 text-sm mt-1">{fieldErrors.propertyId}</p>
+            )}
           </div>
 
           {/* Type and Priority */}
@@ -210,15 +287,23 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
               type="number"
               step="0.01"
               min="0"
-              value={formData.estimatedCost || ''}
-              onChange={(e) =>
+              value={formData.estimatedCost ?? ''}
+              onChange={(e) => {
+                const value = e.target.value;
                 setFormData({
                   ...formData,
-                  estimatedCost: e.target.value ? parseFloat(e.target.value) : undefined,
-                })
-              }
+                  estimatedCost: value ? parseFloat(value) : undefined,
+                });
+                if (fieldErrors.estimatedCost) {
+                  setFieldErrors({ ...fieldErrors, estimatedCost: '' });
+                }
+              }}
               placeholder="0.00"
+              className={fieldErrors.estimatedCost ? 'border-red-500' : ''}
             />
+            {fieldErrors.estimatedCost && (
+              <p className="text-red-500 text-sm mt-1">{fieldErrors.estimatedCost}</p>
+            )}
           </div>
 
           {/* Tenant Info */}

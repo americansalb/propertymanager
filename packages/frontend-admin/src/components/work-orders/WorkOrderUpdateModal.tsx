@@ -25,6 +25,19 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
   const updateWorkOrder = useUpdateWorkOrder();
 
+  // Get valid status transitions based on current status
+  const getValidStatusTransitions = (currentStatus: string): string[] => {
+    const transitions: Record<string, string[]> = {
+      DRAFT: ['SUBMITTED', 'CANCELLED'],
+      SUBMITTED: ['ASSIGNED', 'IN_PROGRESS', 'CANCELLED'],
+      ASSIGNED: ['IN_PROGRESS', 'CANCELLED'],
+      IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
+      COMPLETED: ['COMPLETED'], // No transitions from completed
+      CANCELLED: ['SUBMITTED'], // Allow resubmission
+    };
+    return transitions[currentStatus] || [];
+  };
+
   // Initialize form data when modal opens or work order changes
   useEffect(() => {
     if (workOrder) {
@@ -53,9 +66,32 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
     if (!workOrder) return;
 
     try {
+      // Normalize numeric fields to prevent NaN
+      const payload: Partial<UpdateWorkOrderDto> = { ...formData };
+
+      // Handle estimated cost
+      if (payload.estimatedCost !== undefined && payload.estimatedCost !== null) {
+        const cost = Number(payload.estimatedCost);
+        if (isNaN(cost)) {
+          delete payload.estimatedCost;
+        } else {
+          payload.estimatedCost = cost;
+        }
+      }
+
+      // Handle actual cost
+      if (payload.actualCost !== undefined && payload.actualCost !== null) {
+        const cost = Number(payload.actualCost);
+        if (isNaN(cost)) {
+          delete payload.actualCost;
+        } else {
+          payload.actualCost = cost;
+        }
+      }
+
       await updateWorkOrder.mutateAsync({
         id: workOrder.id,
-        data: formData,
+        data: payload,
       });
       setError(null);
       onOpenChange(false);
@@ -133,13 +169,32 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <option value="DRAFT">Draft</option>
-              <option value="SUBMITTED">Submitted</option>
-              <option value="ASSIGNED">Assigned</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
+              {/* Always show current status */}
+              {workOrder.status === 'DRAFT' && <option value="DRAFT">Draft</option>}
+              {(workOrder.status === 'SUBMITTED' ||
+                getValidStatusTransitions(workOrder.status).includes('SUBMITTED')) && (
+                <option value="SUBMITTED">Submitted</option>
+              )}
+              {(workOrder.status === 'ASSIGNED' ||
+                getValidStatusTransitions(workOrder.status).includes('ASSIGNED')) && (
+                <option value="ASSIGNED">Assigned</option>
+              )}
+              {(workOrder.status === 'IN_PROGRESS' ||
+                getValidStatusTransitions(workOrder.status).includes('IN_PROGRESS')) && (
+                <option value="IN_PROGRESS">In Progress</option>
+              )}
+              {(workOrder.status === 'COMPLETED' ||
+                getValidStatusTransitions(workOrder.status).includes('COMPLETED')) && (
+                <option value="COMPLETED">Completed</option>
+              )}
+              {(workOrder.status === 'CANCELLED' ||
+                getValidStatusTransitions(workOrder.status).includes('CANCELLED')) && (
+                <option value="CANCELLED">Cancelled</option>
+              )}
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Only valid status transitions are shown
+            </p>
           </div>
 
           {/* Type and Priority */}

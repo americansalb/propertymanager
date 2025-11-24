@@ -23,6 +23,11 @@ export default function PropertiesPage() {
     setEditModalOpen(true);
   };
 
+  const handleAddProperty = () => {
+    setSelectedProperty(null);
+    setEditModalOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -38,7 +43,7 @@ export default function PropertiesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Properties</h1>
           <p className="text-gray-500 mt-1">Manage your property portfolio</p>
         </div>
-        <Button>
+        <Button onClick={handleAddProperty}>
           <Building2 className="w-4 h-4 mr-2" />
           Add Property
         </Button>
@@ -102,7 +107,7 @@ export default function PropertiesPage() {
               <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No properties yet</h3>
               <p className="text-gray-500 mb-6">Get started by adding your first property</p>
-              <Button>
+              <Button onClick={handleAddProperty}>
                 <Building2 className="w-4 h-4 mr-2" />
                 Add Your First Property
               </Button>

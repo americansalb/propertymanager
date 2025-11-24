@@ -13,7 +13,12 @@ export default function FinancialPage() {
     },
   });
 
-  const { data: chartOfAccounts } = useQuery({
+  const {
+    data: chartOfAccounts,
+    isLoading: isLoadingAccounts,
+    isError: isErrorAccounts,
+    error: accountsError,
+  } = useQuery({
     queryKey: ['chart-of-accounts'],
     queryFn: async () => {
       const response = await api.get('/financial/chart-of-accounts');
@@ -89,7 +94,20 @@ export default function FinancialPage() {
           <CardTitle>Chart of Accounts</CardTitle>
         </CardHeader>
         <CardContent>
-          {chartOfAccounts && chartOfAccounts.length > 0 ? (
+          {isLoadingAccounts ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <p className="text-sm text-gray-500">Loading chart of accounts...</p>
+              </div>
+            </div>
+          ) : isErrorAccounts ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-red-600">
+                Failed to load chart of accounts: {(accountsError as any)?.message || 'Unknown error'}
+              </p>
+            </div>
+          ) : chartOfAccounts && chartOfAccounts.length > 0 ? (
             <div className="space-y-4">
               {['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'].map((type) => {
                 const accounts = chartOfAccounts.filter((a: any) => a.type === type);
@@ -102,9 +120,14 @@ export default function FinancialPage() {
                     </h3>
                     <div className="space-y-1">
                       {accounts.map((account: any) => (
-                        <div key={account.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                        <div
+                          key={account.id}
+                          className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+                        >
                           <div className="flex items-center gap-3">
-                            <span className="text-xs font-mono text-gray-500 w-16">{account.accountNumber}</span>
+                            <span className="text-xs font-mono text-gray-500 w-16">
+                              {account.accountNumber}
+                            </span>
                             <span className="text-sm font-medium">{account.name}</span>
                           </div>
                           <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
@@ -118,7 +141,9 @@ export default function FinancialPage() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 text-center py-8">Loading chart of accounts...</p>
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-500">No accounts yet.</p>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -74,8 +74,40 @@ export default function PropertyEditModal({
         squareFeet: property.squareFeet || undefined,
       });
       setErrors({});
+    } else {
+      // Initialize with defaults for create mode
+      setFormData({
+        name: '',
+        type: 'MULTIFAMILY',
+        status: 'ACTIVE',
+        address1: '',
+        address2: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'US',
+        totalUnits: 1,
+      });
+      setErrors({});
     }
-  }, [property]);
+  }, [property, open]);
+
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<Property>) => {
+      const response = await api.post('/properties', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      onOpenChange(false);
+    },
+    onError: (error: any) => {
+      console.error('Failed to create property:', error);
+      setErrors({
+        submit: error.response?.data?.message || 'Failed to create property',
+      });
+    },
+  });
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<Property>) => {
@@ -136,7 +168,12 @@ export default function PropertyEditModal({
       dataToSubmit.squareFeet = Number(formData.squareFeet);
     }
 
-    updateMutation.mutate(dataToSubmit);
+    // Call create or update based on whether property exists
+    if (property) {
+      updateMutation.mutate(dataToSubmit);
+    } else {
+      createMutation.mutate(dataToSubmit);
+    }
   };
 
   const handleChange = (field: keyof Property, value: any) => {
@@ -151,7 +188,8 @@ export default function PropertyEditModal({
     }
   };
 
-  if (!property) return null;
+  const isCreating = !property;
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,8 +200,12 @@ export default function PropertyEditModal({
               <Building2 className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <DialogTitle>Edit Property</DialogTitle>
-              <DialogDescription>Update property details and information</DialogDescription>
+              <DialogTitle>{isCreating ? 'Add Property' : 'Edit Property'}</DialogTitle>
+              <DialogDescription>
+                {isCreating
+                  ? 'Create a new property in your portfolio'
+                  : 'Update property details and information'}
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -369,16 +411,18 @@ export default function PropertyEditModal({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={updateMutation.isPending}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? (
+            <Button type="submit" disabled={isPending}>
+              {isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
+                  {isCreating ? 'Creating...' : 'Saving...'}
                 </>
+              ) : isCreating ? (
+                'Create Property'
               ) : (
                 'Save Changes'
               )}

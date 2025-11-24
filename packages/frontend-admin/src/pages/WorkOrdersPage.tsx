@@ -96,7 +96,7 @@ export default function WorkOrdersPage() {
                   .length
               }
             </div>
-            <p className="text-sm text-gray-600 mt-1">High Priority</p>
+            <p className="text-sm text-gray-600 mt-1">Urgent (High + Emergency)</p>
           </CardContent>
         </Card>
         <Card>
