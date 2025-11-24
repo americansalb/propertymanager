@@ -1,43 +1,17 @@
 /**
  * QA / Testing Dashboard
  *
- * Visual smoke test page for verifying deployed backend APIs work.
+ * Founder-friendly smoke test page - just log in and click buttons!
  * Access at: /qa
  *
- * ⚠️ TEST CREDENTIALS ONLY - Update these for your environment:
- * - TEST_JWT: Valid JWT token from your deployed backend
- * - TEST_PROPERTY_ID: A property ID that exists in your database
- * - TEST_ORG_ID: The organizationId for the test property
- *
- * How to get these:
- * 1. Log in to your app normally
- * 2. Open DevTools > Network tab
- * 3. Look at any API request headers for Authorization: Bearer <JWT>
- * 4. Look at any /properties response for a property ID
+ * No code editing required - uses your real login session automatically.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuthStore } from '../store/auth.store';
 
 // ═══════════════════════════════════════════════════════════════
-// ⚠️ UPDATE THESE VALUES FOR YOUR ENVIRONMENT
-// ═══════════════════════════════════════════════════════════════
-
-const TEST_CONFIG = {
-  // Your backend API base URL (should match what your app uses)
-  API_BASE_URL: (import.meta as any).env?.VITE_API_URL || '/api/v1',
-
-  // Valid JWT token (get from DevTools after logging in)
-  // This should be a real token from your deployed backend
-  TEST_JWT:
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoiT1JHQU5JWkFUSU9OX0FETUlOIiwib3JnYW5pemF0aW9uSWQiOiJ0ZXN0LW9yZy1pZCIsImlhdCI6MTYwOTQ1OTIwMCwiZXhwIjoxOTI0ODE5MjAwfQ.test-signature',
-
-  // A property ID that exists in your database
-  TEST_PROPERTY_ID: 'test-property-id-123',
-
-  // The organization ID for the test property
-  TEST_ORG_ID: 'test-org-id',
-};
-
+// Types
 // ═══════════════════════════════════════════════════════════════
 
 type TestStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -47,127 +21,159 @@ interface TestResult {
   message?: string;
   data?: any;
   timing?: number;
+  statusCode?: number;
 }
 
+interface Property {
+  id: string;
+  name: string;
+  organizationId: string;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// QA Dashboard Component
+// ═══════════════════════════════════════════════════════════════
+
 export function QADashboard() {
+  const { accessToken, isAuthenticated, user } = useAuthStore();
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+
   const [healthCheck, setHealthCheck] = useState<TestResult>({ status: 'idle' });
   const [propertiesList, setPropertiesList] = useState<TestResult>({ status: 'idle' });
   const [propertyUpdate, setPropertyUpdate] = useState<TestResult>({ status: 'idle' });
   const [eventTracking, setEventTracking] = useState<TestResult>({ status: 'idle' });
 
-  // Helper to make API calls with timing
-  async function apiCall(
-    endpoint: string,
-    options: RequestInit = {},
-  ): Promise<{ data: any; timing: number }> {
+  // API helper with auth
+  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const startTime = performance.now();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...((options.headers as Record<string, string>) || {}),
+    };
 
-    const response = await fetch(`${TEST_CONFIG.API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${TEST_CONFIG.TEST_JWT}`,
-        ...options.headers,
-      },
-    });
-
-    const data = await response.json();
-    const timing = Math.round(performance.now() - startTime);
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || `HTTP ${response.status}`);
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
-    return { data, timing };
-  }
+    const response = await fetch(`/api/v1${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    const timing = Math.round(performance.now() - startTime);
+    let data;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = await response.text();
+    }
+
+    if (!response.ok) {
+      throw {
+        statusCode: response.status,
+        message: data.message || data.error || `HTTP ${response.status}`,
+        data,
+      };
+    }
+
+    return { data, timing, statusCode: response.status };
+  };
 
   // ═══════════════════════════════════════════════════════════════
-  // Test 1: Health Check
+  // Test Functions
   // ═══════════════════════════════════════════════════════════════
 
   async function testHealthCheck() {
     setHealthCheck({ status: 'loading' });
     try {
-      const { data, timing } = await apiCall('/health');
+      const { data, timing, statusCode } = await apiCall('/health');
       setHealthCheck({
         status: 'success',
         message: `✅ Backend is healthy (${timing}ms)`,
         data,
         timing,
+        statusCode,
       });
-    } catch (error) {
+    } catch (error: any) {
       setHealthCheck({
         status: 'error',
-        message: `❌ Health check failed: ${(error as Error).message}`,
+        message: `❌ Health check failed: ${error.message}`,
+        statusCode: error.statusCode,
       });
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // Test 2: Load Properties
-  // ═══════════════════════════════════════════════════════════════
-
-  async function testPropertiesList() {
+  async function testLoadProperties() {
     setPropertiesList({ status: 'loading' });
     try {
-      const { data, timing } = await apiCall('/properties');
-
-      const properties = data.data || [];
+      const { data, timing, statusCode } = await apiCall('/properties');
+      const props = data.data || data;
+      setProperties(props);
+      if (props.length > 0 && !selectedProperty) {
+        setSelectedProperty(props[0]);
+      }
       setPropertiesList({
         status: 'success',
-        message: `✅ Loaded ${properties.length} properties (${timing}ms)`,
-        data: properties,
+        message: `✅ Loaded ${props.length} properties (${timing}ms)`,
+        data: props,
         timing,
+        statusCode,
       });
-    } catch (error) {
+    } catch (error: any) {
       setPropertiesList({
         status: 'error',
-        message: `❌ Failed to load properties: ${(error as Error).message}`,
+        message: `❌ Failed to load properties: ${error.message}`,
+        statusCode: error.statusCode,
       });
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // Test 3: Update Property
-  // ═══════════════════════════════════════════════════════════════
-
   async function testPropertyUpdate() {
+    if (!selectedProperty) {
+      setPropertyUpdate({
+        status: 'error',
+        message: '❌ No property selected - load properties first',
+      });
+      return;
+    }
+
     setPropertyUpdate({ status: 'loading' });
     try {
       const testPayload = {
         name: `QA Test Property ${new Date().toLocaleTimeString()}`,
-        addressLine1: '123 Test St',
-        addressLine2: null,
-        city: 'Austin',
-        state: 'TX',
-        postalCode: '78701',
+        addressLine1: selectedProperty.name || '123 Test St',
+        city: 'Test City',
+        state: 'CA',
+        zipCode: '90210',
         country: 'US',
-        propertyType: 'MULTIFAMILY',
-        active: true,
+        type: 'MULTIFAMILY',
+        status: 'ACTIVE',
+        totalUnits: 1,
       };
 
-      const { data, timing } = await apiCall(`/properties/${TEST_CONFIG.TEST_PROPERTY_ID}`, {
+      const { data, timing, statusCode } = await apiCall(`/properties/${selectedProperty.id}`, {
         method: 'PUT',
         body: JSON.stringify(testPayload),
       });
 
       setPropertyUpdate({
         status: 'success',
-        message: `✅ Updated property "${data.data?.name}" (${timing}ms)`,
+        message: `✅ Updated property "${data.data?.name || selectedProperty.name}" (${timing}ms)`,
         data: data.data,
         timing,
+        statusCode,
       });
-    } catch (error) {
+    } catch (error: any) {
       setPropertyUpdate({
         status: 'error',
-        message: `❌ Update failed: ${(error as Error).message}`,
+        message: `❌ Update failed: ${error.message}`,
+        data: error.data,
+        statusCode: error.statusCode,
       });
     }
   }
-
-  // ═══════════════════════════════════════════════════════════════
-  // Test 4: Event Tracking
-  // ═══════════════════════════════════════════════════════════════
 
   async function testEventTracking() {
     setEventTracking({ status: 'loading' });
@@ -177,11 +183,11 @@ export function QADashboard() {
         category: 'qa',
         properties: {
           timestamp: new Date().toISOString(),
-          testRun: Math.random().toString(36).substring(7),
+          testRunId: Math.random().toString(36).substring(7),
         },
       };
 
-      const { data, timing } = await apiCall('/events', {
+      const { data, timing, statusCode } = await apiCall('/events', {
         method: 'POST',
         body: JSON.stringify(testEvent),
       });
@@ -189,174 +195,233 @@ export function QADashboard() {
       setEventTracking({
         status: 'success',
         message: `✅ Event tracked (${timing}ms)`,
-        data: data.data,
+        data,
         timing,
+        statusCode,
       });
-    } catch (error) {
+    } catch (error: any) {
       setEventTracking({
         status: 'error',
-        message: `❌ Event tracking failed: ${(error as Error).message}`,
+        message: `❌ Event tracking failed: ${error.message}`,
+        statusCode: error.statusCode,
       });
     }
   }
 
+  async function runAllTests() {
+    await testHealthCheck();
+    if (isAuthenticated) {
+      await testLoadProperties();
+      await testEventTracking();
+    }
+  }
+
+  // Auto-load properties when authenticated
+  useEffect(() => {
+    if (isAuthenticated && properties.length === 0) {
+      testLoadProperties();
+    }
+  }, [isAuthenticated]);
+
   // ═══════════════════════════════════════════════════════════════
-  // UI Rendering
+  // Overall Status
+  // ═══════════════════════════════════════════════════════════════
+
+  const getOverallStatus = () => {
+    const tests = [healthCheck, propertiesList, propertyUpdate, eventTracking];
+    const ran = tests.filter((t) => t.status !== 'idle');
+    const failed = ran.filter((t) => t.status === 'error');
+    const running = tests.some((t) => t.status === 'loading');
+
+    if (running) return { icon: '⏳', text: 'Running tests...', color: 'text-yellow-600' };
+    if (ran.length === 0)
+      return { icon: '⚪', text: 'No tests run yet', color: 'text-gray-500' };
+    if (failed.length === 0)
+      return { icon: '✅', text: `All ${ran.length} tests passed`, color: 'text-green-600' };
+    return {
+      icon: '❌',
+      text: `${failed.length} test${failed.length > 1 ? 's' : ''} failed`,
+      color: 'text-red-600',
+    };
+  };
+
+  const overall = getOverallStatus();
+
+  // ═══════════════════════════════════════════════════════════════
+  // Render
   // ═══════════════════════════════════════════════════════════════
 
   return (
-    <div
-      style={{
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '2rem',
-      }}
-    >
-      {/* Header */}
-      <div style={{ marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-          QA / Testing Dashboard
-        </h1>
-        <p style={{ color: '#666', marginBottom: '1rem' }}>
-          Visual smoke tests for deployed backend APIs
-        </p>
+    <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', fontFamily: 'system-ui' }}>
+      <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+        QA / Testing Dashboard
+      </h1>
+      <p style={{ color: '#666', marginBottom: '2rem' }}>
+        Visual smoke tests for deployed backend APIs
+      </p>
 
-        {/* Config Display */}
+      {/* Auth Status */}
+      {!isAuthenticated && (
         <div
           style={{
-            background: '#fff3cd',
-            border: '2px solid #ffc107',
-            borderRadius: '8px',
             padding: '1rem',
+            marginBottom: '2rem',
+            backgroundColor: '#fef3c7',
+            border: '1px solid #fbbf24',
+            borderRadius: '8px',
           }}
         >
-          <strong>⚠️ Test Configuration:</strong>
-          <div style={{ fontFamily: 'monospace', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-            <div>
-              API Base: <code>{TEST_CONFIG.API_BASE_URL}</code>
-            </div>
-            <div>
-              JWT: <code>{TEST_CONFIG.TEST_JWT.substring(0, 40)}...</code>
-            </div>
-            <div>
-              Property ID: <code>{TEST_CONFIG.TEST_PROPERTY_ID}</code>
-            </div>
-            <div>
-              Org ID: <code>{TEST_CONFIG.TEST_ORG_ID}</code>
-            </div>
-          </div>
-          <p style={{ fontSize: '0.875rem', marginTop: '0.5rem', color: '#856404' }}>
-            📝 Update these in: <code>src/pages/QADashboard.tsx</code>
+          <strong>⚠️ You're not logged in</strong>
+          <p style={{ margin: '0.5rem 0 0 0' }}>
+            Please{' '}
+            <a href="/login" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+              log in
+            </a>{' '}
+            first, then return to this page.
           </p>
+        </div>
+      )}
+
+      {isAuthenticated && user && (
+        <div
+          style={{
+            padding: '1rem',
+            marginBottom: '2rem',
+            backgroundColor: '#dbeafe',
+            border: '1px solid #3b82f6',
+            borderRadius: '8px',
+          }}
+        >
+          <strong>✅ Logged in as:</strong> {user.email} ({user.role})
+        </div>
+      )}
+
+      {/* Overall Status */}
+      <div
+        style={{
+          padding: '1rem',
+          marginBottom: '2rem',
+          backgroundColor: '#f9fafb',
+          border: '2px solid #e5e7eb',
+          borderRadius: '8px',
+        }}
+      >
+        <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
+          <span className={overall.color}>
+            {overall.icon} {overall.text}
+          </span>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ marginBottom: '2rem' }}>
-        <button
-          onClick={() => {
-            testHealthCheck();
-            testPropertiesList();
-            testEventTracking();
-          }}
+      {/* Selected Property Info */}
+      {selectedProperty && (
+        <div
           style={{
-            padding: '1rem 2rem',
-            fontSize: '1.125rem',
-            fontWeight: 'bold',
-            background: '#0066cc',
-            color: 'white',
-            border: 'none',
+            padding: '1rem',
+            marginBottom: '2rem',
+            backgroundColor: '#f0fdf4',
+            border: '1px solid #86efac',
             borderRadius: '8px',
-            cursor: 'pointer',
           }}
         >
-          🚀 Run All Tests
-        </button>
-      </div>
+          <strong>🏢 Test Property:</strong> {selectedProperty.name} (
+          <code>{selectedProperty.id}</code>)
+        </div>
+      )}
+
+      {/* Run All Button */}
+      <button
+        onClick={runAllTests}
+        style={{
+          padding: '0.75rem 1.5rem',
+          marginBottom: '2rem',
+          fontSize: '1.1rem',
+          fontWeight: 'bold',
+          backgroundColor: '#3b82f6',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          width: '100%',
+        }}
+      >
+        🚀 Run All Tests
+      </button>
 
       {/* Test Sections */}
-      <div style={{ display: 'grid', gap: '2rem' }}>
-        {/* Section 1: Health Check */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <TestSection
-          title="1. Backend Health Check"
+          number={1}
+          title="Backend Health Check"
           description="Verifies backend is running and responding"
-          result={healthCheck}
-          onTest={testHealthCheck}
           endpoint="GET /health"
+          result={healthCheck}
+          onRun={testHealthCheck}
+          requiresAuth={false}
         />
 
-        {/* Section 2: Properties List */}
         <TestSection
-          title="2. Load Properties"
+          number={2}
+          title="Load Properties"
           description="Fetches all properties for the organization"
-          result={propertiesList}
-          onTest={testPropertiesList}
           endpoint="GET /properties"
+          result={propertiesList}
+          onRun={testLoadProperties}
+          requiresAuth={true}
+          isAuthenticated={isAuthenticated}
         />
 
-        {/* Section 3: Property Update */}
         <TestSection
-          title="3. Update Property"
+          number={3}
+          title="Update Property"
           description="Tests PUT endpoint with safe test data"
+          endpoint={
+            selectedProperty
+              ? `PUT /properties/${selectedProperty.id}`
+              : 'PUT /properties/:id'
+          }
           result={propertyUpdate}
-          onTest={testPropertyUpdate}
-          endpoint={`PUT /properties/${TEST_CONFIG.TEST_PROPERTY_ID}`}
-          warning="⚠️ This modifies the test property name with timestamp"
+          onRun={testPropertyUpdate}
+          requiresAuth={true}
+          isAuthenticated={isAuthenticated}
+          note={
+            selectedProperty
+              ? `⚠️ This modifies "${selectedProperty.name}" (adds timestamp to name)`
+              : '⚠️ Load properties first to select a test property'
+          }
+          disabled={!selectedProperty}
         />
 
-        {/* Section 4: Event Tracking */}
         <TestSection
-          title="4. Track Event"
+          number={4}
+          title="Track Event"
           description="Sends a test analytics event"
-          result={eventTracking}
-          onTest={testEventTracking}
           endpoint="POST /events"
+          result={eventTracking}
+          onRun={testEventTracking}
+          requiresAuth={true}
+          isAuthenticated={isAuthenticated}
         />
       </div>
 
-      {/* Footer */}
+      {/* Instructions */}
       <div
         style={{
           marginTop: '3rem',
           padding: '1.5rem',
-          background: '#f8f9fa',
+          backgroundColor: '#f9fafb',
+          border: '1px solid #e5e7eb',
           borderRadius: '8px',
         }}
       >
         <h3 style={{ marginTop: 0 }}>How to Use This Dashboard</h3>
-        <ol style={{ paddingLeft: '1.5rem' }}>
-          <li>
-            <strong>Click "Run All Tests"</strong> to check everything at once
-          </li>
-          <li>
-            <strong>Or click individual test buttons</strong> to run one at a time
-          </li>
-          <li>
-            <strong>Look for ✅ green success</strong> or ❌ red errors
-          </li>
-          <li>
-            <strong>Check response data</strong> to see what the API returned
-          </li>
-        </ol>
-
-        <h4 style={{ marginTop: '1.5rem' }}>Updating Test Credentials</h4>
-        <ol style={{ paddingLeft: '1.5rem' }}>
-          <li>Log in to your app normally</li>
-          <li>Open DevTools → Network tab</li>
-          <li>
-            Look at any API request for <code>Authorization: Bearer &lt;JWT&gt;</code>
-          </li>
-          <li>
-            Update <code>TEST_JWT</code> in <code>src/pages/QADashboard.tsx</code>
-          </li>
-          <li>
-            Get a property ID from any <code>/properties</code> response
-          </li>
-          <li>
-            Update <code>TEST_PROPERTY_ID</code> in the same file
-          </li>
-        </ol>
+        <ul style={{ paddingLeft: '1.5rem' }}>
+          <li>Log in to your app normally (if not already logged in)</li>
+          <li>Click "Run All Tests" to check everything at once</li>
+          <li>Or click individual test buttons to run one at a time</li>
+          <li>Look for ✅ green success or ❌ red errors</li>
+          <li>Check HTTP status codes to understand failures (401 = unauthorized, etc.)</li>
+        </ul>
       </div>
     </div>
   );
@@ -367,28 +432,30 @@ export function QADashboard() {
 // ═══════════════════════════════════════════════════════════════
 
 interface TestSectionProps {
+  number: number;
   title: string;
   description: string;
-  result: TestResult;
-  onTest: () => void;
   endpoint: string;
-  warning?: string;
+  result: TestResult;
+  onRun: () => void;
+  requiresAuth: boolean;
+  isAuthenticated?: boolean;
+  note?: string;
+  disabled?: boolean;
 }
 
-function TestSection({ title, description, result, onTest, endpoint, warning }: TestSectionProps) {
-  const getStatusColor = () => {
-    switch (result.status) {
-      case 'idle':
-        return '#6c757d';
-      case 'loading':
-        return '#0066cc';
-      case 'success':
-        return '#28a745';
-      case 'error':
-        return '#dc3545';
-    }
-  };
-
+function TestSection({
+  number,
+  title,
+  description,
+  endpoint,
+  result,
+  onRun,
+  requiresAuth,
+  isAuthenticated = false,
+  note,
+  disabled = false,
+}: TestSectionProps) {
   const getStatusIcon = () => {
     switch (result.status) {
       case 'idle':
@@ -402,120 +469,116 @@ function TestSection({ title, description, result, onTest, endpoint, warning }: 
     }
   };
 
+  const getStatusColor = () => {
+    switch (result.status) {
+      case 'success':
+        return '#10b981';
+      case 'error':
+        return '#ef4444';
+      case 'loading':
+        return '#f59e0b';
+      default:
+        return '#6b7280';
+    }
+  };
+
+  const canRun = !disabled && (!requiresAuth || isAuthenticated);
+
   return (
     <div
       style={{
-        border: '2px solid #dee2e6',
-        borderRadius: '8px',
         padding: '1.5rem',
-        background: 'white',
+        border: `2px solid ${getStatusColor()}`,
+        borderRadius: '8px',
+        backgroundColor: 'white',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'start',
-          marginBottom: '1rem',
-        }}
-      >
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{title}</h2>
-          <p style={{ color: '#666', margin: '0.25rem 0 0 0' }}>{description}</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ margin: '0 0 0.5rem 0' }}>
+            {number}. {title} {requiresAuth && !isAuthenticated && '🔒'}
+          </h3>
+          <p style={{ margin: '0 0 0.5rem 0', color: '#666' }}>{description}</p>
           <code
             style={{
-              display: 'inline-block',
-              marginTop: '0.5rem',
               padding: '0.25rem 0.5rem',
-              background: '#f8f9fa',
+              backgroundColor: '#f3f4f6',
               borderRadius: '4px',
               fontSize: '0.875rem',
             }}
           >
             {endpoint}
           </code>
+          {note && (
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#f59e0b' }}>
+              {note}
+            </p>
+          )}
         </div>
-
         <button
-          onClick={onTest}
-          disabled={result.status === 'loading'}
+          onClick={onRun}
+          disabled={!canRun || result.status === 'loading'}
           style={{
-            padding: '0.75rem 1.5rem',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            background: result.status === 'loading' ? '#ccc' : '#0066cc',
+            padding: '0.5rem 1rem',
+            marginLeft: '1rem',
+            backgroundColor: canRun ? '#3b82f6' : '#d1d5db',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
-            cursor: result.status === 'loading' ? 'not-allowed' : 'pointer',
-            minWidth: '120px',
+            cursor: canRun ? 'pointer' : 'not-allowed',
+            fontWeight: 'bold',
           }}
         >
-          {result.status === 'loading' ? 'Testing...' : 'Run Test'}
+          {result.status === 'loading' ? 'Running...' : 'Run Test'}
         </button>
       </div>
 
-      {warning && (
-        <div
-          style={{
-            background: '#fff3cd',
-            padding: '0.75rem',
-            borderRadius: '4px',
-            marginBottom: '1rem',
-            fontSize: '0.875rem',
-          }}
-        >
-          {warning}
+      {/* Status */}
+      {result.status !== 'idle' && (
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ fontWeight: 'bold', color: getStatusColor() }}>
+            {getStatusIcon()} Status: {result.status.toUpperCase()}
+            {result.statusCode && ` (HTTP ${result.statusCode})`}
+          </div>
+          {result.message && (
+            <div style={{ marginTop: '0.5rem', color: getStatusColor() }}>{result.message}</div>
+          )}
+          {result.timing && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#666' }}>
+              Response time: {result.timing}ms
+            </div>
+          )}
+
+          {/* Response Data */}
+          {result.data && (
+            <details style={{ marginTop: '1rem' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 'bold', color: '#666' }}>
+                📦 Response Data
+              </summary>
+              <pre
+                style={{
+                  marginTop: '0.5rem',
+                  padding: '1rem',
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: '4px',
+                  overflow: 'auto',
+                  fontSize: '0.75rem',
+                }}
+              >
+                {JSON.stringify(result.data, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
       )}
 
-      {/* Status */}
-      <div
-        style={{
-          padding: '1rem',
-          background: '#f8f9fa',
-          borderRadius: '6px',
-          borderLeft: `4px solid ${getStatusColor()}`,
-        }}
-      >
-        <div
-          style={{
-            fontSize: '1.125rem',
-            fontWeight: 'bold',
-            marginBottom: '0.5rem',
-          }}
-        >
-          {getStatusIcon()} Status: {result.status.toUpperCase()}
+      {!canRun && requiresAuth && !isAuthenticated && (
+        <div style={{ marginTop: '1rem', color: '#f59e0b', fontSize: '0.875rem' }}>
+          🔒 Login required to run this test
         </div>
-
-        {result.message && <div style={{ marginBottom: '0.5rem' }}>{result.message}</div>}
-
-        {result.timing !== undefined && (
-          <div style={{ fontSize: '0.875rem', color: '#666' }}>
-            Response time: {result.timing}ms
-          </div>
-        )}
-      </div>
-
-      {/* Response Data */}
-      {result.data && (
-        <details style={{ marginTop: '1rem' }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-            📦 Response Data
-          </summary>
-          <pre
-            style={{
-              background: '#f8f9fa',
-              padding: '1rem',
-              borderRadius: '6px',
-              overflow: 'auto',
-              fontSize: '0.875rem',
-            }}
-          >
-            {JSON.stringify(result.data, null, 2)}
-          </pre>
-        </details>
       )}
     </div>
   );
 }
+
+export default QADashboard;
