@@ -80,56 +80,35 @@ export class PropertiesService {
       throw new ForbiddenException('You do not have access to this property');
     }
 
-    // 2) Map DTO fields → DB fields (accounting for field name differences)
+    // 2) Update property with DTO fields (now aligned with DB schema)
     const updated = await this.prisma.property.update({
       where: { id },
       data: {
         name: dto.name,
-        address1: dto.addressLine1,
-        address2: dto.addressLine2 ?? null,
+        address1: dto.address1,
+        address2: dto.address2 ?? null,
         city: dto.city,
         state: dto.state,
-        zipCode: dto.postalCode,
+        zipCode: dto.zipCode,
         country: dto.country,
-        type: dto.propertyType,
-        // Map active boolean to status enum
-        status: dto.active ? 'ACTIVE' : 'INACTIVE',
+        type: dto.type,
+        status: dto.status,
+        totalUnits: dto.totalUnits,
+        yearBuilt: dto.yearBuilt,
+        squareFeet: dto.squareFeet,
       },
       include: {
         units: true,
       },
     });
 
-    // 3) Compute before/after changes for logging
-    const changes: Record<string, { before: unknown; after: unknown }> = {};
-    const fieldMap: Record<string, keyof typeof existing> = {
-      name: 'name',
-      addressLine1: 'address1',
-      addressLine2: 'address2',
-      city: 'city',
-      state: 'state',
-      postalCode: 'zipCode',
-      country: 'country',
-      propertyType: 'type',
-      active: 'status',
-    };
-
-    for (const [dtoKey, entityKey] of Object.entries(fieldMap)) {
-      const before = existing[entityKey];
-      const after = updated[entityKey];
-
-      if (before !== after) {
-        changes[dtoKey] = { before, after };
-      }
-    }
-
+    // 3) Log the update
     this.logger.log(
       {
         message: 'property.updated',
         propertyId: id,
         organizationId,
         userId,
-        changes,
       },
       PropertiesService.name,
     );

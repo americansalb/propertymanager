@@ -7,7 +7,6 @@ import {
   IsDateString,
   IsNumber,
   IsNotEmpty,
-  IsBoolean,
   MaxLength,
   Matches,
   Min,
@@ -99,9 +98,7 @@ export class CreatePropertyDto {
 }
 
 /**
- * UpdatePropertyDto - Aligned with Property Edit Modal feature spec
- * See: docs/features/property-edit-modal.md
- * See: docs/tasks/PROPERTY_EDIT_MODAL_TASKS.md (TASK-020)
+ * UpdatePropertyDto - Aligned with CreatePropertyDto for consistency
  */
 export class UpdatePropertyDto {
   @ApiProperty({ example: 'Sunset Villas', description: 'Property name', maxLength: 120 })
@@ -114,13 +111,13 @@ export class UpdatePropertyDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  addressLine1!: string;
+  address1!: string;
 
   @ApiPropertyOptional({ example: 'Apt 4B', description: 'Street address line 2', maxLength: 200 })
   @IsString()
   @IsOptional()
   @MaxLength(200)
-  addressLine2?: string | null;
+  address2?: string | null;
 
   @ApiProperty({ example: 'Austin', description: 'City', maxLength: 120 })
   @IsString()
@@ -143,9 +140,9 @@ export class UpdatePropertyDto {
   @IsNotEmpty()
   @MaxLength(16)
   @Matches(/^[A-Za-z0-9\- ]{3,16}$/, {
-    message: 'postalCode must be 3-16 chars, letters/numbers/hyphen/space only',
+    message: 'zipCode must be 3-16 chars, letters/numbers/hyphen/space only',
   })
-  postalCode!: string;
+  zipCode!: string;
 
   @ApiProperty({ example: 'US', description: 'Country (2-letter code)', default: 'US' })
   @IsString()
@@ -155,12 +152,24 @@ export class UpdatePropertyDto {
 
   @ApiProperty({ enum: PropertyType, example: PropertyType.MULTIFAMILY, description: 'Type of property' })
   @IsEnum(PropertyType)
-  propertyType!: PropertyType;
+  type!: PropertyType;
 
-  // NOTE: 'notes' field removed - not in Prisma schema yet
-  // TODO: Add 'notes String?' to Property model in schema.prisma if needed
+  @ApiProperty({ enum: PropertyStatus, example: PropertyStatus.ACTIVE, description: 'Property status' })
+  @IsEnum(PropertyStatus)
+  status!: PropertyStatus;
 
-  @ApiProperty({ example: true, description: 'Whether property is active in the system' })
-  @IsBoolean()
-  active!: boolean;
+  @ApiPropertyOptional({ description: 'Year the property was built' })
+  @IsInt()
+  @IsOptional()
+  yearBuilt?: number;
+
+  @ApiProperty({ description: 'Total number of units' })
+  @IsInt()
+  @Min(1)
+  totalUnits!: number;
+
+  @ApiPropertyOptional({ description: 'Total square footage' })
+  @IsInt()
+  @IsOptional()
+  squareFeet?: number;
 }

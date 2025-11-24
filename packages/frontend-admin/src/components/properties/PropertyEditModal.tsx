@@ -103,8 +103,23 @@ export default function PropertyEditModal({
     },
     onError: (error: any) => {
       console.error('Failed to create property:', error);
+
+      // Extract error message from NestJS validation error format
+      let errorMessage = 'Failed to create property';
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        // NestJS ValidationPipe returns array of error messages
+        if (Array.isArray(msg)) {
+          errorMessage = msg.join(', ');
+        } else {
+          errorMessage = msg;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       setErrors({
-        submit: error.response?.data?.message || 'Failed to create property',
+        submit: errorMessage,
       });
     },
   });
@@ -121,8 +136,23 @@ export default function PropertyEditModal({
     },
     onError: (error: any) => {
       console.error('Failed to update property:', error);
+
+      // Extract error message from NestJS validation error format
+      let errorMessage = 'Failed to update property';
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        // NestJS ValidationPipe returns array of error messages
+        if (Array.isArray(msg)) {
+          errorMessage = msg.join(', ');
+        } else {
+          errorMessage = msg;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       setErrors({
-        submit: error.response?.data?.message || 'Failed to update property',
+        submit: errorMessage,
       });
     },
   });
@@ -146,7 +176,25 @@ export default function PropertyEditModal({
       return;
     }
 
-    // Prepare data for submission
+    // Prepare data for submission with robust numeric handling
+    const totalUnits = Number(formData.totalUnits);
+    const yearBuilt = formData.yearBuilt ? Number(formData.yearBuilt) : undefined;
+    const squareFeet = formData.squareFeet ? Number(formData.squareFeet) : undefined;
+
+    // Validate numeric fields to ensure no NaN values
+    if (isNaN(totalUnits) || totalUnits < 1) {
+      setErrors({ totalUnits: 'Total units must be a valid number (at least 1)' });
+      return;
+    }
+    if (yearBuilt !== undefined && isNaN(yearBuilt)) {
+      setErrors({ yearBuilt: 'Year built must be a valid number' });
+      return;
+    }
+    if (squareFeet !== undefined && isNaN(squareFeet)) {
+      setErrors({ squareFeet: 'Square feet must be a valid number' });
+      return;
+    }
+
     const dataToSubmit: any = {
       name: formData.name,
       type: formData.type,
@@ -157,15 +205,15 @@ export default function PropertyEditModal({
       state: formData.state,
       zipCode: formData.zipCode,
       country: formData.country || 'US',
-      totalUnits: Number(formData.totalUnits),
+      totalUnits,
     };
 
-    // Add optional fields if provided
-    if (formData.yearBuilt) {
-      dataToSubmit.yearBuilt = Number(formData.yearBuilt);
+    // Add optional fields only if they have valid values
+    if (yearBuilt !== undefined) {
+      dataToSubmit.yearBuilt = yearBuilt;
     }
-    if (formData.squareFeet) {
-      dataToSubmit.squareFeet = Number(formData.squareFeet);
+    if (squareFeet !== undefined) {
+      dataToSubmit.squareFeet = squareFeet;
     }
 
     // Call create or update based on whether property exists
