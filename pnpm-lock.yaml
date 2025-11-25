@@ -253,9 +253,6 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
-      react-google-autocomplete:
-        specifier: ^2.7.5
-        version: 2.7.5(react@18.3.1)
       react-router-dom:
         specifier: ^6.21.0
         version: 6.30.2(react-dom@18.3.1)(react@18.3.1)
@@ -10358,13 +10355,6 @@ packages:
       p-locate: 5.0.0
     dev: true
 
-  /lodash.debounce@4.0.8:
-    resolution:
-      {
-        integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==,
-      }
-    dev: false
-
   /lodash.includes@4.3.0:
     resolution:
       {
@@ -11724,19 +11714,6 @@ packages:
       loose-envify: 1.4.0
       react: 18.3.1
       scheduler: 0.23.2
-    dev: false
-
-  /react-google-autocomplete@2.7.5(react@18.3.1):
-    resolution:
-      {
-        integrity: sha512-CPHMFBCgaJER19iA/y9Isjxh5au8mRxkt6przu9miOHLqrno+ifwJGXQOzMvtwdqNPXhb5Z6jpTtiJrbFeUvHg==,
-      }
-    peerDependencies:
-      react: '>=16.8.0'
-    dependencies:
-      lodash.debounce: 4.0.8
-      prop-types: 15.8.1
-      react: 18.3.1
     dev: false
 
   /react-is@16.13.1:
