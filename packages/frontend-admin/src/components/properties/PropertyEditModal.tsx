@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
@@ -10,8 +10,6 @@ import {
   Ruler,
   MapPin,
   X,
-  CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 import api from '../../services/api';
 import {
@@ -96,60 +94,8 @@ const PROPERTY_STATUSES = [
   },
 ];
 
-// US state abbreviations for validation
-const US_STATES = new Set([
-  'AL',
-  'AK',
-  'AZ',
-  'AR',
-  'CA',
-  'CO',
-  'CT',
-  'DE',
-  'FL',
-  'GA',
-  'HI',
-  'ID',
-  'IL',
-  'IN',
-  'IA',
-  'KS',
-  'KY',
-  'LA',
-  'ME',
-  'MD',
-  'MA',
-  'MI',
-  'MN',
-  'MS',
-  'MO',
-  'MT',
-  'NE',
-  'NV',
-  'NH',
-  'NJ',
-  'NM',
-  'NY',
-  'NC',
-  'ND',
-  'OH',
-  'OK',
-  'OR',
-  'PA',
-  'RI',
-  'SC',
-  'SD',
-  'TN',
-  'TX',
-  'UT',
-  'VT',
-  'VA',
-  'WA',
-  'WV',
-  'WI',
-  'WY',
-  'DC',
-]);
+// Get Google Maps API key from environment
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 export default function PropertyEditModal({
   property,
@@ -159,7 +105,8 @@ export default function PropertyEditModal({
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<Property>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [fieldValidation, setFieldValidation] = useState<Record<string, boolean>>({});
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   // Initialize form data when property changes
   useEffect(() => {
@@ -179,9 +126,7 @@ export default function PropertyEditModal({
         squareFeet: property.squareFeet || undefined,
       });
       setErrors({});
-      setFieldValidation({});
     } else {
-      // Initialize with smart defaults for create mode
       setFormData({
         name: '',
         type: 'MULTIFAMILY',
@@ -197,59 +142,93 @@ export default function PropertyEditModal({
         squareFeet: undefined,
       });
       setErrors({});
-      setFieldValidation({});
     }
   }, [property, open]);
 
-  // Real-time address validation
-  const validateAddress = (field: string, value: string) => {
-    switch (field) {
-      case 'state':
-        const stateUpper = value.toUpperCase();
-        const isValid = US_STATES.has(stateUpper);
-        setFieldValidation((prev) => ({ ...prev, state: isValid }));
-        if (!isValid && value.length === 2) {
-          setErrors((prev) => ({ ...prev, state: 'Invalid US state code' }));
-        } else {
-          setErrors((prev) => {
-            const { state, ...rest } = prev;
-            return rest;
-          });
-        }
-        break;
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+    if (!open || !GOOGLE_MAPS_API_KEY || !addressInputRef.current) return;
 
-      case 'zipCode':
-        // US ZIP code: 5 digits or 5+4 format
-        const zipValid = /^\d{5}(-\d{4})?$/.test(value);
-        setFieldValidation((prev) => ({ ...prev, zipCode: zipValid }));
-        if (!zipValid && value.length >= 5) {
-          setErrors((prev) => ({
-            ...prev,
-            zipCode: 'Invalid ZIP code format (use 12345 or 12345-6789)',
-          }));
-        } else {
-          setErrors((prev) => {
-            const { zipCode, ...rest } = prev;
-            return rest;
-          });
-        }
-        break;
-
-      case 'city':
-        // City should only contain letters, spaces, hyphens, apostrophes
-        const cityValid = /^[a-zA-Z\s\-']+$/.test(value);
-        setFieldValidation((prev) => ({ ...prev, city: cityValid }));
-        if (!cityValid && value.length > 0) {
-          setErrors((prev) => ({ ...prev, city: 'City name contains invalid characters' }));
-        } else {
-          setErrors((prev) => {
-            const { city, ...rest } = prev;
-            return rest;
-          });
-        }
-        break;
+    // Load Google Maps API if not already loaded
+    if (!window.google?.maps?.places) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = initAutocomplete;
+      document.head.appendChild(script);
+    } else {
+      initAutocomplete();
     }
-  };
+
+    function initAutocomplete() {
+      if (!addressInputRef.current) return;
+
+      const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'formatted_address', 'name'],
+      });
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (!place.address_components) return;
+
+        let street_number = '';
+        let route = '';
+        let city = '';
+        let state = '';
+        let zip = '';
+
+        // Parse address components
+        place.address_components.forEach((component) => {
+          const types = component.types;
+          if (types.includes('street_number')) {
+            street_number = component.long_name;
+          }
+          if (types.includes('route')) {
+            route = component.long_name;
+          }
+          if (types.includes('locality')) {
+            city = component.long_name;
+          }
+          if (types.includes('administrative_area_level_1')) {
+            state = component.short_name;
+          }
+          if (types.includes('postal_code')) {
+            zip = component.long_name;
+          }
+        });
+
+        const address1 = `${street_number} ${route}`.trim();
+
+        // Auto-fill all address fields
+        setFormData((prev) => ({
+          ...prev,
+          address1,
+          city,
+          state,
+          zipCode: zip,
+          name: prev.name || `${address1} Property`, // Auto-generate name if empty
+        }));
+
+        // Clear any address errors
+        setErrors((prev) => {
+          const { address1: _, city: __, state: ___, zipCode: ____, ...rest } = prev;
+          return rest;
+        });
+      });
+
+      autocompleteRef.current = autocomplete;
+    }
+
+    return () => {
+      if (autocompleteRef.current) {
+        google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        autocompleteRef.current = null;
+      }
+    };
+  }, [open]);
 
   const createMutation = useMutation({
     mutationFn: async (data: Partial<Property>) => {
@@ -326,14 +305,6 @@ export default function PropertyEditModal({
       newErrors.totalUnits = 'Total units must be at least 1';
     }
 
-    // Validate address fields
-    if (formData.state && !US_STATES.has(formData.state.toUpperCase())) {
-      newErrors.state = 'Invalid US state code';
-    }
-    if (formData.zipCode && !/^\d{5}(-\d{4})?$/.test(formData.zipCode)) {
-      newErrors.zipCode = 'Invalid ZIP code format';
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -364,7 +335,7 @@ export default function PropertyEditModal({
       address1: formData.address1,
       address2: formData.address2 || null,
       city: formData.city,
-      state: formData.state!.toUpperCase(), // Normalize to uppercase
+      state: formData.state!.toUpperCase(),
       zipCode: formData.zipCode,
       country: formData.country || 'US',
       totalUnits,
@@ -386,11 +357,6 @@ export default function PropertyEditModal({
 
   const handleChange = (field: keyof Property, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-
-    // Real-time validation for address fields
-    if (['state', 'zipCode', 'city'].includes(field) && typeof value === 'string') {
-      validateAddress(field, value);
-    }
 
     if (errors[field]) {
       setErrors((prev) => {
@@ -434,7 +400,7 @@ export default function PropertyEditModal({
 
         {/* SCROLLABLE CONTENT */}
         <div className="flex-1 overflow-y-auto bg-slate-50/50">
-          <form onSubmit={handleSubmit} autoComplete="on">
+          <form onSubmit={handleSubmit}>
             <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* MAIN COLUMN */}
               <div className="lg:col-span-7 space-y-6">
@@ -446,7 +412,6 @@ export default function PropertyEditModal({
                     <input
                       type="text"
                       name="property-name"
-                      autoComplete="organization"
                       value={formData.name || ''}
                       onChange={(e) => handleChange('name', e.target.value)}
                       placeholder="e.g. Sunset Apartments"
@@ -457,22 +422,36 @@ export default function PropertyEditModal({
                     {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                   </div>
 
-                  {/* Address Section with HTML5 autocomplete */}
+                  {/* Address Section with Google Places Autocomplete */}
                   <div className="pt-4 border-t border-slate-100 space-y-4">
-                    <label className="text-base font-semibold flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-indigo-500" />
-                      Address
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-base font-semibold flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-indigo-500" />
+                        Address
+                      </label>
+                      {!GOOGLE_MAPS_API_KEY && (
+                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                          Add VITE_GOOGLE_MAPS_API_KEY for autocomplete
+                        </span>
+                      )}
+                    </div>
 
-                    {/* Street Address */}
+                    {/* Street Address with autocomplete */}
                     <div className="relative">
-                      <Input
+                      <input
+                        ref={addressInputRef}
+                        type="text"
                         name="street-address"
-                        autoComplete="address-line1"
                         value={formData.address1 || ''}
                         onChange={(e) => handleChange('address1', e.target.value)}
-                        placeholder="Street Address"
-                        className={errors.address1 ? 'border-red-500' : ''}
+                        placeholder={
+                          GOOGLE_MAPS_API_KEY ? 'Start typing address...' : 'Street Address'
+                        }
+                        className={`w-full h-11 rounded-lg border px-3 text-sm ${
+                          errors.address1
+                            ? 'border-red-500'
+                            : 'border-slate-200 focus:border-indigo-500'
+                        } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
                       />
                       {errors.address1 && (
                         <p className="text-sm text-red-600 mt-1">{errors.address1}</p>
@@ -482,7 +461,6 @@ export default function PropertyEditModal({
                     {/* Apt/Suite */}
                     <Input
                       name="address-line2"
-                      autoComplete="address-line2"
                       value={formData.address2 || ''}
                       onChange={(e) => handleChange('address2', e.target.value)}
                       placeholder="Apt, Suite, etc. (Optional)"
@@ -490,60 +468,36 @@ export default function PropertyEditModal({
 
                     {/* City/State - ONE LINE */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2 relative">
+                      <div className="col-span-2">
                         <Input
                           name="city"
-                          autoComplete="address-level2"
                           value={formData.city || ''}
                           onChange={(e) => handleChange('city', e.target.value)}
                           placeholder="City"
                           className={errors.city ? 'border-red-500' : ''}
                         />
-                        {fieldValidation.city === true && (
-                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
-                        )}
                         {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city}</p>}
                       </div>
-                      <div className="relative">
-                        <Input
-                          name="state"
-                          autoComplete="address-level1"
-                          value={formData.state || ''}
-                          onChange={(e) => handleChange('state', e.target.value.toUpperCase())}
-                          placeholder="State"
-                          className={`text-center uppercase ${errors.state ? 'border-red-500' : ''}`}
-                          maxLength={2}
-                        />
-                        {fieldValidation.state === true && (
-                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
-                        )}
-                        {fieldValidation.state === false &&
-                          formData.state &&
-                          formData.state.length === 2 && (
-                            <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
-                          )}
-                      </div>
+                      <Input
+                        name="state"
+                        value={formData.state || ''}
+                        onChange={(e) => handleChange('state', e.target.value.toUpperCase())}
+                        placeholder="State"
+                        className={`text-center uppercase ${errors.state ? 'border-red-500' : ''}`}
+                        maxLength={2}
+                      />
                     </div>
                     {errors.state && <p className="text-sm text-red-600 -mt-2">{errors.state}</p>}
 
                     {/* ZIP Code */}
-                    <div className="w-1/2 relative">
+                    <div className="w-1/2">
                       <Input
                         name="postal-code"
-                        autoComplete="postal-code"
                         value={formData.zipCode || ''}
                         onChange={(e) => handleChange('zipCode', e.target.value)}
                         placeholder="ZIP Code"
                         className={errors.zipCode ? 'border-red-500' : ''}
                       />
-                      {fieldValidation.zipCode === true && (
-                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
-                      )}
-                      {fieldValidation.zipCode === false &&
-                        formData.zipCode &&
-                        formData.zipCode.length >= 5 && (
-                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
-                        )}
                       {errors.zipCode && (
                         <p className="text-sm text-red-600 mt-1">{errors.zipCode}</p>
                       )}
