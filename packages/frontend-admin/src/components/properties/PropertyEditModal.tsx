@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, Loader2 } from 'lucide-react';
+import { Building2, Loader2, Home, Hammer, Briefcase, Calendar, Hash, Ruler } from 'lucide-react';
 import api from '../../services/api';
 import {
   Dialog,
@@ -12,7 +12,6 @@ import {
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 
 interface Property {
   id: string;
@@ -37,15 +36,53 @@ interface PropertyEditModalProps {
 }
 
 const PROPERTY_TYPES = [
-  'MULTIFAMILY',
-  'SINGLE_FAMILY',
-  'COMMERCIAL',
-  'MIXED_USE',
-  'STUDENT_HOUSING',
-  'SENIOR_LIVING',
+  {
+    value: 'MULTIFAMILY',
+    label: 'Multifamily',
+    icon: Building2,
+    className: 'bg-blue-50 text-blue-700 border-blue-200',
+  },
+  {
+    value: 'SINGLE_FAMILY',
+    label: 'Single Family',
+    icon: Home,
+    className: 'bg-green-50 text-green-700 border-green-200',
+  },
+  {
+    value: 'COMMERCIAL',
+    label: 'Commercial',
+    icon: Briefcase,
+    className: 'bg-purple-50 text-purple-700 border-purple-200',
+  },
+  {
+    value: 'MIXED_USE',
+    label: 'Mixed Use',
+    icon: Building2,
+    className: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  },
+  {
+    value: 'STUDENT_HOUSING',
+    label: 'Student Housing',
+    icon: Home,
+    className: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  },
+  {
+    value: 'SENIOR_LIVING',
+    label: 'Senior Living',
+    icon: Home,
+    className: 'bg-teal-50 text-teal-700 border-teal-200',
+  },
 ];
 
-const PROPERTY_STATUSES = ['ACTIVE', 'INACTIVE', 'UNDER_CONSTRUCTION'];
+const PROPERTY_STATUSES = [
+  { value: 'ACTIVE', label: 'Active', className: 'bg-green-50 text-green-700 border-green-200' },
+  { value: 'INACTIVE', label: 'Inactive', className: 'bg-gray-50 text-gray-700 border-gray-200' },
+  {
+    value: 'UNDER_CONSTRUCTION',
+    label: 'Under Construction',
+    className: 'bg-orange-50 text-orange-700 border-orange-200',
+  },
+];
 
 export default function PropertyEditModal({
   property,
@@ -78,15 +115,15 @@ export default function PropertyEditModal({
       // Initialize with smart defaults for create mode
       setFormData({
         name: '',
-        type: 'MULTIFAMILY',  // Most common property type
-        status: 'ACTIVE',  // Default to active status
+        type: 'MULTIFAMILY', // Most common property type
+        status: 'ACTIVE', // Default to active status
         address1: '',
         address2: '',
         city: '',
         state: '',
         zipCode: '',
-        country: 'US',  // Default country
-        totalUnits: 1,  // Minimum units
+        country: 'US', // Default country
+        totalUnits: 1, // Minimum units
         yearBuilt: undefined,
         squareFeet: undefined,
       });
@@ -243,11 +280,12 @@ export default function PropertyEditModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-4xl">
+        {/* Header with gradient icon */}
         <DialogHeader onClose={() => onOpenChange(false)}>
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Building2 className="w-6 h-6 text-primary" />
+            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
+              <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
               <DialogTitle>{isCreating ? 'Add Property' : 'Edit Property'}</DialogTitle>
@@ -261,67 +299,36 @@ export default function PropertyEditModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Basic Information</h3>
-              <div className="grid gap-4">
-                <div>
-                  <Label htmlFor="name">Property Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name || ''}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    placeholder="e.g., Sunset Apartments"
-                    className={errors.name ? 'border-red-500' : ''}
-                  />
-                  {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="type">Property Type *</Label>
-                    <select
-                      id="type"
-                      value={formData.type || ''}
-                      onChange={(e) => handleChange('type', e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {PROPERTY_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {type.replace(/_/g, ' ')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="status">Status *</Label>
-                    <select
-                      id="status"
-                      value={formData.status || ''}
-                      onChange={(e) => handleChange('status', e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {PROPERTY_STATUSES.map((status) => (
-                        <option key={status} value={status}>
-                          {status.replace(/_/g, ' ')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+          {/* 2-COLUMN GRID LAYOUT */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+            {/* MAIN COLUMN - Property Information (col-span-2) */}
+            <div className="md:col-span-2 space-y-6">
+              {/* Property Name - Document Header Style */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">
+                  Property Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name || ''}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  placeholder="e.g., Sunset Apartments"
+                  className={`w-full text-xl font-medium border-0 border-b-2 ${
+                    errors.name ? 'border-red-500' : 'border-gray-200'
+                  } focus:border-blue-500 focus:outline-none px-0 py-2 transition-colors placeholder:text-gray-400`}
+                />
+                {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
               </div>
-            </div>
 
-            {/* Address */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Address</h3>
-              <div className="grid gap-4">
+              {/* Address Section - Tight Grid */}
+              <div className="space-y-4">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 block">
+                  Property Address
+                </label>
+
+                {/* Street Address - Full Width */}
                 <div>
-                  <Label htmlFor="address1">Street Address *</Label>
                   <Input
-                    id="address1"
                     value={formData.address1 || ''}
                     onChange={(e) => handleChange('address1', e.target.value)}
                     placeholder="123 Main Street"
@@ -332,79 +339,142 @@ export default function PropertyEditModal({
                   )}
                 </div>
 
+                {/* Apt/Suite - Full Width */}
                 <div>
-                  <Label htmlFor="address2">Apt, Suite, etc. (Optional)</Label>
                   <Input
-                    id="address2"
                     value={formData.address2 || ''}
                     onChange={(e) => handleChange('address2', e.target.value)}
-                    placeholder="Suite 100"
+                    placeholder="Apt, Suite, etc. (Optional)"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="city">City *</Label>
+                {/* City/State/Zip - ONE LINE (grid-cols-3) */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-1">
                     <Input
-                      id="city"
                       value={formData.city || ''}
                       onChange={(e) => handleChange('city', e.target.value)}
-                      placeholder="San Francisco"
+                      placeholder="City"
                       className={errors.city ? 'border-red-500' : ''}
                     />
                     {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city}</p>}
                   </div>
 
-                  <div>
-                    <Label htmlFor="state">State *</Label>
+                  <div className="col-span-1">
                     <Input
-                      id="state"
                       value={formData.state || ''}
                       onChange={(e) => handleChange('state', e.target.value)}
-                      placeholder="CA"
+                      placeholder="ST"
                       maxLength={2}
                       className={errors.state ? 'border-red-500' : ''}
                     />
                     {errors.state && <p className="text-sm text-red-600 mt-1">{errors.state}</p>}
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="zipCode">ZIP Code *</Label>
+                  <div className="col-span-1">
                     <Input
-                      id="zipCode"
                       value={formData.zipCode || ''}
                       onChange={(e) => handleChange('zipCode', e.target.value)}
-                      placeholder="94102"
+                      placeholder="ZIP"
                       className={errors.zipCode ? 'border-red-500' : ''}
                     />
                     {errors.zipCode && (
                       <p className="text-sm text-red-600 mt-1">{errors.zipCode}</p>
                     )}
                   </div>
+                </div>
 
-                  <div>
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      value={formData.country || 'US'}
-                      onChange={(e) => handleChange('country', e.target.value)}
-                      placeholder="US"
-                    />
-                  </div>
+                {/* Country */}
+                <div>
+                  <Input
+                    value={formData.country || 'US'}
+                    onChange={(e) => handleChange('country', e.target.value)}
+                    placeholder="Country"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Property Details */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Property Details</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="totalUnits">Total Units *</Label>
+            {/* SIDEBAR - Control Panel (col-span-1) */}
+            <div className="md:col-span-1 bg-slate-50/50 -mr-6 -my-6 p-6 rounded-r-lg space-y-6">
+              {/* Property Type - Rich Button Selector */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 block">
+                  Property Type
+                </label>
+                <div className="space-y-2">
+                  {PROPERTY_TYPES.map((type) => {
+                    const Icon = type.icon;
+                    const isSelected = formData.type === type.value;
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => handleChange('type', type.value)}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? type.className + ' ring-2 ring-offset-1 ring-blue-300'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${isSelected ? '' : 'text-gray-400'}`} />
+                        <span className="text-sm font-medium">{type.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Status - Rich Button Selector */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 block">
+                  Status
+                </label>
+                <div className="space-y-2">
+                  {PROPERTY_STATUSES.map((status) => {
+                    const isSelected = formData.status === status.value;
+                    return (
+                      <button
+                        key={status.value}
+                        type="button"
+                        onClick={() => handleChange('status', status.value)}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? status.className + ' ring-2 ring-offset-1 ring-green-300'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            isSelected
+                              ? status.value === 'ACTIVE'
+                                ? 'bg-green-500'
+                                : status.value === 'INACTIVE'
+                                  ? 'bg-gray-400'
+                                  : 'bg-orange-500'
+                              : 'bg-gray-300'
+                          }`}
+                        />
+                        <span className="text-sm font-medium">{status.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Property Stats */}
+              <div className="pt-4 border-t border-slate-200">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 block">
+                  Property Details
+                </label>
+
+                {/* Total Units */}
+                <div className="mb-3">
+                  <label className="text-xs text-gray-600 mb-1.5 flex items-center gap-1.5">
+                    <Hash className="w-3 h-3" />
+                    Total Units
+                  </label>
                   <Input
-                    id="totalUnits"
                     type="number"
                     min="1"
                     value={formData.totalUnits || ''}
@@ -417,10 +487,13 @@ export default function PropertyEditModal({
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="yearBuilt">Year Built</Label>
+                {/* Year Built */}
+                <div className="mb-3">
+                  <label className="text-xs text-gray-600 mb-1.5 flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" />
+                    Year Built
+                  </label>
                   <Input
-                    id="yearBuilt"
                     type="number"
                     min="1800"
                     max={new Date().getFullYear()}
@@ -432,10 +505,13 @@ export default function PropertyEditModal({
                   />
                 </div>
 
+                {/* Square Feet */}
                 <div>
-                  <Label htmlFor="squareFeet">Square Feet</Label>
+                  <label className="text-xs text-gray-600 mb-1.5 flex items-center gap-1.5">
+                    <Ruler className="w-3 h-3" />
+                    Square Feet
+                  </label>
                   <Input
-                    id="squareFeet"
                     type="number"
                     min="0"
                     value={formData.squareFeet || ''}
@@ -447,14 +523,14 @@ export default function PropertyEditModal({
                 </div>
               </div>
             </div>
-
-            {/* Error Message */}
-            {errors.submit && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">{errors.submit}</p>
-              </div>
-            )}
           </div>
+
+          {/* Error Message */}
+          {errors.submit && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md mx-6 mb-4">
+              <p className="text-sm text-red-600">{errors.submit}</p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button
@@ -465,7 +541,11 @@ export default function PropertyEditModal({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+            >
               {isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
