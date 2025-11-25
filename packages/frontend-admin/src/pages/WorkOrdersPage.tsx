@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Wrench, AlertCircle, Clock, Play, CheckCircle } from 'lucide-react';
+import { Wrench, AlertCircle, Clock, Play, CheckCircle, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -15,6 +16,8 @@ type StatusFilter = 'ALL' | 'SUBMITTED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETE
 type PriorityFilter = 'ALL' | 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
 
 export default function WorkOrdersPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
@@ -23,6 +26,9 @@ export default function WorkOrdersPage() {
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [propertyEditModalOpen, setPropertyEditModalOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
+
+  // Get property filter from URL
+  const propertyIdFilter = searchParams.get('propertyId');
 
   const { data: workOrders, isLoading } = useQuery({
     queryKey: ['work-orders'],
@@ -33,6 +39,38 @@ export default function WorkOrdersPage() {
   });
 
   const updateWorkOrder = useUpdateWorkOrder();
+
+  // Initialize filters from URL params on mount
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
+
+    if (status && ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].includes(status)) {
+      setStatusFilter(status as StatusFilter);
+    }
+    if (priority && ['LOW', 'MEDIUM', 'HIGH', 'EMERGENCY'].includes(priority)) {
+      setPriorityFilter(priority as PriorityFilter);
+    }
+  }, []);
+
+  // Update URL when filters change
+  const updateFiltersInUrl = (
+    newStatus?: StatusFilter,
+    newPriority?: PriorityFilter,
+    newPropertyId?: string | null,
+  ) => {
+    const params = new URLSearchParams();
+
+    const status = newStatus !== undefined ? newStatus : statusFilter;
+    const priority = newPriority !== undefined ? newPriority : priorityFilter;
+    const propertyId = newPropertyId !== undefined ? newPropertyId : propertyIdFilter;
+
+    if (status !== 'ALL') params.set('status', status);
+    if (priority !== 'ALL') params.set('priority', priority);
+    if (propertyId) params.set('propertyId', propertyId);
+
+    setSearchParams(params);
+  };
 
   // Calculate age from createdAt
   const getWorkOrderAge = (createdAt: string): number => {
@@ -81,8 +119,14 @@ export default function WorkOrdersPage() {
     workOrders?.filter((order: any) => {
       const statusMatch = statusFilter === 'ALL' || order.status === statusFilter;
       const priorityMatch = priorityFilter === 'ALL' || order.priority === priorityFilter;
-      return statusMatch && priorityMatch;
+      const propertyMatch = !propertyIdFilter || order.propertyId === propertyIdFilter;
+      return statusMatch && priorityMatch && propertyMatch;
     }) || [];
+
+  // Get filtered property name for display
+  const filteredProperty = workOrders?.find(
+    (wo: any) => wo.propertyId === propertyIdFilter,
+  )?.property;
 
   const openOrders =
     workOrders?.filter((w: any) => w.status !== 'COMPLETED' && w.status !== 'CANCELLED') || [];
@@ -102,6 +146,11 @@ export default function WorkOrdersPage() {
   const clearFilters = () => {
     setStatusFilter('ALL');
     setPriorityFilter('ALL');
+    updateFiltersInUrl('ALL', 'ALL', propertyIdFilter);
+  };
+
+  const clearPropertyFilter = () => {
+    updateFiltersInUrl(statusFilter, priorityFilter, null);
   };
 
   const handlePropertyClick = (property: any) => {
@@ -161,6 +210,31 @@ export default function WorkOrdersPage() {
         </Card>
       </div>
 
+      {/* Property Filter Banner */}
+      {propertyIdFilter && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-blue-900">
+                  Filtered by property:{' '}
+                  {filteredProperty?.name || <span className="font-mono">{propertyIdFilter}</span>}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearPropertyFilter}
+                className="h-7 text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filter Chips */}
       {workOrders && workOrders.length > 0 && (
         <div className="space-y-3">
@@ -171,7 +245,10 @@ export default function WorkOrdersPage() {
                 (status) => (
                   <button
                     key={status}
-                    onClick={() => setStatusFilter(status)}
+                    onClick={() => {
+                      setStatusFilter(status);
+                      updateFiltersInUrl(status, undefined, undefined);
+                    }}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                       statusFilter === status
                         ? 'bg-blue-600 text-white'
@@ -191,7 +268,10 @@ export default function WorkOrdersPage() {
                 (priority) => (
                   <button
                     key={priority}
-                    onClick={() => setPriorityFilter(priority)}
+                    onClick={() => {
+                      setPriorityFilter(priority);
+                      updateFiltersInUrl(undefined, priority, undefined);
+                    }}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                       priorityFilter === priority
                         ? priority === 'EMERGENCY'

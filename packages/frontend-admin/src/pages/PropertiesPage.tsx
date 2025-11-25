@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, MapPin, Users, Edit, Wrench } from 'lucide-react';
+import { Building2, MapPin, Users, Edit, Wrench, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import PropertyEditModal from '../components/properties/PropertyEditModal';
 import { WorkOrderCreateModal } from '../components/work-orders/WorkOrderCreateModal';
+import { useWorkOrders } from '../hooks/useWorkOrders';
 
 export default function PropertiesPage() {
+  const navigate = useNavigate();
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [createWorkOrderOpen, setCreateWorkOrderOpen] = useState(false);
@@ -20,6 +23,60 @@ export default function PropertiesPage() {
       return response.data.data;
     },
   });
+
+  // Fetch all work orders for ops snapshot
+  const { data: workOrders } = useWorkOrders();
+
+  // Calculate ops stats per property
+  const propertyOpsStats = useMemo(() => {
+    if (!workOrders) return {};
+
+    const stats: Record<
+      string,
+      { openCount: number; emergencyCount: number; mostRecentDate: string | null }
+    > = {};
+
+    properties?.forEach((property: any) => {
+      const propertyWorkOrders = workOrders.filter((wo) => wo.propertyId === property.id);
+
+      const openWorkOrders = propertyWorkOrders.filter(
+        (wo) =>
+          wo.status === 'SUBMITTED' || wo.status === 'ASSIGNED' || wo.status === 'IN_PROGRESS',
+      );
+
+      const emergencyOrHighWorkOrders = openWorkOrders.filter(
+        (wo) => wo.priority === 'EMERGENCY' || wo.priority === 'HIGH',
+      );
+
+      // Find most recent work order
+      const sortedByDate = [...propertyWorkOrders].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      const mostRecent = sortedByDate[0];
+
+      stats[property.id] = {
+        openCount: openWorkOrders.length,
+        emergencyCount: emergencyOrHighWorkOrders.length,
+        mostRecentDate: mostRecent?.createdAt || null,
+      };
+    });
+
+    return stats;
+  }, [workOrders, properties]);
+
+  // Format age text for most recent work order
+  const formatAge = (dateString: string | null): string => {
+    if (!dateString) return 'No work orders yet';
+
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Last: today';
+    if (diffDays === 1) return 'Last: yesterday';
+    return `Last: ${diffDays}d ago`;
+  };
 
   const handlePropertyClick = (property: any) => {
     setSelectedProperty(property);
@@ -35,6 +92,11 @@ export default function PropertiesPage() {
     e.stopPropagation();
     setSelectedPropertyForWorkOrder(property);
     setCreateWorkOrderOpen(true);
+  };
+
+  const handleViewWorkOrders = (propertyId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/work-orders?propertyId=${propertyId}`);
   };
 
   if (isLoading) {
@@ -104,12 +166,53 @@ export default function PropertiesPage() {
                   {property.yearBuilt && (
                     <div className="text-sm text-gray-500">Built in {property.yearBuilt}</div>
                   )}
-                  <div className="pt-2 border-t border-gray-100">
+
+                  {/* Ops Snapshot */}
+                  {propertyOpsStats[property.id] && (
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span>
+                            {propertyOpsStats[property.id].openCount > 0 ? (
+                              <>
+                                <span className="font-semibold text-gray-900">
+                                  {propertyOpsStats[property.id].openCount}
+                                </span>{' '}
+                                open
+                                {propertyOpsStats[property.id].emergencyCount > 0 && (
+                                  <span className="text-red-600 font-semibold">
+                                    {' '}
+                                    • {propertyOpsStats[property.id].emergencyCount} urgent
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-gray-500">No open work orders</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="text-gray-500">
+                          {formatAge(propertyOpsStats[property.id].mostRecentDate)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-gray-100 flex gap-2">
+                    <Button
+                      onClick={(e) => handleViewWorkOrders(property.id, e)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-xs"
+                    >
+                      <FileText className="w-3 h-3 mr-1.5" />
+                      View Work Orders
+                    </Button>
                     <Button
                       onClick={(e) => handleCreateWorkOrder(property, e)}
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs"
+                      className="flex-1 text-xs"
                     >
                       <Wrench className="w-3 h-3 mr-1.5" />
                       Create Work Order
