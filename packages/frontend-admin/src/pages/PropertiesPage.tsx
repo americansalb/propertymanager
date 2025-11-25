@@ -27,6 +27,15 @@ export default function PropertiesPage() {
   // Fetch all work orders for ops snapshot
   const { data: workOrders } = useWorkOrders();
 
+  // Fetch all leases for lease snapshot
+  const { data: leases } = useQuery({
+    queryKey: ['leases'],
+    queryFn: async () => {
+      const response = await api.get('/leases');
+      return response.data.data;
+    },
+  });
+
   // Calculate ops stats per property
   const propertyOpsStats = useMemo(() => {
     if (!workOrders) return {};
@@ -63,6 +72,33 @@ export default function PropertiesPage() {
 
     return stats;
   }, [workOrders, properties]);
+
+  // Calculate lease stats per property
+  const propertyLeaseStats = useMemo(() => {
+    if (!leases) return {};
+
+    const stats: Record<string, { activeCount: number; totalRent: number }> = {};
+
+    properties?.forEach((property: any) => {
+      const propertyLeases = leases.filter(
+        (lease: any) => lease.unit?.property?.id === property.id,
+      );
+
+      const activeLeases = propertyLeases.filter((lease: any) => lease.status === 'ACTIVE');
+
+      const totalRent = activeLeases.reduce(
+        (sum: number, lease: any) => sum + Number(lease.monthlyRent),
+        0,
+      );
+
+      stats[property.id] = {
+        activeCount: activeLeases.length,
+        totalRent,
+      };
+    });
+
+    return stats;
+  }, [leases, properties]);
 
   // Format age text for most recent work order
   const formatAge = (dateString: string | null): string => {
@@ -194,6 +230,40 @@ export default function PropertiesPage() {
                         <div className="text-gray-500">
                           {formatAge(propertyOpsStats[property.id].mostRecentDate)}
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lease Snapshot */}
+                  {propertyLeaseStats[property.id] && (
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span>
+                            {propertyLeaseStats[property.id].activeCount > 0 ? (
+                              <>
+                                <span className="font-semibold text-gray-900">
+                                  {propertyLeaseStats[property.id].activeCount}
+                                </span>{' '}
+                                active lease
+                                {propertyLeaseStats[property.id].activeCount !== 1 ? 's' : ''}
+                              </>
+                            ) : (
+                              <span className="text-gray-500">No active leases</span>
+                            )}
+                          </span>
+                        </div>
+                        {propertyLeaseStats[property.id].totalRent > 0 && (
+                          <div className="text-gray-500">
+                            {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 0,
+                            }).format(propertyLeaseStats[property.id].totalRent)}{' '}
+                            / mo
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
