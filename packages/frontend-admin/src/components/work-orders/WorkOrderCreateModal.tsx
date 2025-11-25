@@ -39,6 +39,8 @@ import api from '../../services/api';
 interface WorkOrderCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultPropertyId?: string | null;
+  defaultPropertyName?: string;
 }
 
 type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
@@ -50,7 +52,12 @@ type WorkOrderType =
   | 'EMERGENCY'
   | 'PREVENTIVE';
 
-export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModalProps) {
+export function WorkOrderCreateModal({
+  open,
+  onOpenChange,
+  defaultPropertyId,
+  defaultPropertyName,
+}: WorkOrderCreateModalProps) {
   const [formData, setFormData] = useState<Partial<CreateWorkOrderDto>>({
     title: '',
     description: '',
@@ -74,12 +81,14 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
 
   const createWorkOrder = useCreateWorkOrder();
 
-  // Auto-select property if there's only one
+  // Auto-select property if there's only one OR if defaultPropertyId is provided
   useEffect(() => {
-    if (properties?.length === 1 && !formData.propertyId && open) {
+    if (defaultPropertyId && open) {
+      setFormData((prev) => ({ ...prev, propertyId: defaultPropertyId }));
+    } else if (properties?.length === 1 && !formData.propertyId && open) {
       setFormData((prev) => ({ ...prev, propertyId: properties[0].id }));
     }
-  }, [properties, formData.propertyId, open]);
+  }, [properties, formData.propertyId, open, defaultPropertyId]);
 
   // Smart priority suggestion based on title keywords
   useEffect(() => {
@@ -349,7 +358,11 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
               <Wrench className="w-6 h-6 text-indigo-300" />
             </div>
             <div>
-              <DialogTitle className="text-white text-xl">New Maintenance Request</DialogTitle>
+              <DialogTitle className="text-white text-xl">
+                {defaultPropertyName
+                  ? `Create Work Order – ${defaultPropertyName}`
+                  : 'New Maintenance Request'}
+              </DialogTitle>
               <DialogDescription className="text-slate-400 mt-1">
                 Create a work order for your team
               </DialogDescription>

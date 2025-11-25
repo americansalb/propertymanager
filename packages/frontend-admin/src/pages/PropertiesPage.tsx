@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, MapPin, Users, Edit } from 'lucide-react';
+import { Building2, MapPin, Users, Edit, Wrench } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import PropertyEditModal from '../components/properties/PropertyEditModal';
+import { WorkOrderCreateModal } from '../components/work-orders/WorkOrderCreateModal';
 
 export default function PropertiesPage() {
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [createWorkOrderOpen, setCreateWorkOrderOpen] = useState(false);
+  const [selectedPropertyForWorkOrder, setSelectedPropertyForWorkOrder] = useState<any>(null);
 
   const { data: properties, isLoading } = useQuery({
     queryKey: ['properties'],
@@ -26,6 +29,12 @@ export default function PropertiesPage() {
   const handleAddProperty = () => {
     setSelectedProperty(null);
     setEditModalOpen(true);
+  };
+
+  const handleCreateWorkOrder = (property: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedPropertyForWorkOrder(property);
+    setCreateWorkOrderOpen(true);
   };
 
   if (isLoading) {
@@ -95,6 +104,17 @@ export default function PropertiesPage() {
                   {property.yearBuilt && (
                     <div className="text-sm text-gray-500">Built in {property.yearBuilt}</div>
                   )}
+                  <div className="pt-2 border-t border-gray-100">
+                    <Button
+                      onClick={(e) => handleCreateWorkOrder(property, e)}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                    >
+                      <Wrench className="w-3 h-3 mr-1.5" />
+                      Create Work Order
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -120,6 +140,13 @@ export default function PropertiesPage() {
         property={selectedProperty}
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
+      />
+
+      <WorkOrderCreateModal
+        open={createWorkOrderOpen}
+        onOpenChange={setCreateWorkOrderOpen}
+        defaultPropertyId={selectedPropertyForWorkOrder?.id}
+        defaultPropertyName={selectedPropertyForWorkOrder?.name}
       />
     </div>
   );
