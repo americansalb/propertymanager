@@ -11,6 +11,16 @@ import {
   AlertTriangle,
   CheckCircle2,
   Info,
+  X,
+  Droplets,
+  Zap,
+  Thermometer,
+  Key,
+  Bug,
+  Wifi,
+  Trash2,
+  Refrigerator,
+  MessageSquare,
 } from 'lucide-react';
 import {
   Dialog,
@@ -224,6 +234,75 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
     onOpenChange(open);
   };
 
+  // ONE-TAP PRESETS (Gemini's smart feature)
+  const applyQuickPreset = (preset: string) => {
+    const presets: Record<
+      string,
+      Partial<CreateWorkOrderDto> & { title: string; description: string }
+    > = {
+      LEAK: {
+        title: 'Active Water Leak',
+        type: 'REPAIR',
+        priority: 'HIGH',
+        description:
+          'Water leak detected. Potential for water damage. Please assess and repair immediately.',
+      },
+      HVAC: {
+        title: 'Heating/Cooling Issue',
+        type: 'MAINTENANCE',
+        priority: 'MEDIUM',
+        description:
+          'Unit not maintaining temperature. Check thermostat, filters, and HVAC system operation.',
+      },
+      ELECTRIC: {
+        title: 'Electrical Issue',
+        type: 'REPAIR',
+        priority: 'HIGH',
+        description:
+          'Electrical problem reported. Power outage, sparking outlet, or circuit breaker issue.',
+      },
+      LOCK: {
+        title: 'Lockout / Key Issue',
+        type: 'MAINTENANCE',
+        priority: 'MEDIUM',
+        description: 'Tenant locked out or lock malfunction. Requires immediate access assistance.',
+      },
+      PEST: {
+        title: 'Pest Control Request',
+        type: 'MAINTENANCE',
+        priority: 'LOW',
+        description:
+          'Tenant reported pests (ants, roaches, rodents). Schedule pest control treatment.',
+      },
+      APPLIANCE: {
+        title: 'Appliance Malfunction',
+        type: 'REPAIR',
+        priority: 'MEDIUM',
+        description:
+          'Appliance not working correctly. Refrigerator, stove, dishwasher, or washer/dryer issue.',
+      },
+      WIFI: {
+        title: 'Internet/Access Issue',
+        type: 'MAINTENANCE',
+        priority: 'LOW',
+        description:
+          'Building WiFi down or gate code access issue. Check network and access systems.',
+      },
+      TRASH: {
+        title: 'Trash/Debris Removal',
+        type: 'MAINTENANCE',
+        priority: 'LOW',
+        description: 'Excess trash or debris needs removal from common area or unit.',
+      },
+    };
+
+    if (presets[preset]) {
+      setFormData((prev) => ({ ...prev, ...presets[preset] }));
+      setTouched({});
+      setFieldErrors({});
+    }
+  };
+
   const priorityOptions: { value: Priority; label: string; icon: any; className: string }[] = [
     {
       value: 'LOW',
@@ -262,308 +341,339 @@ export function WorkOrderCreateModal({ open, onOpenChange }: WorkOrderCreateModa
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
-              <Wrench className="w-5 h-5 text-white" />
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] p-0 flex flex-col overflow-hidden">
+        {/* DARK HEADER (Gemini's design) */}
+        <div className="bg-slate-900 px-8 py-6 shrink-0 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-500/20 rounded-xl border border-indigo-500/30">
+              <Wrench className="w-6 h-6 text-indigo-300" />
             </div>
             <div>
-              <DialogTitle className="text-xl">Create Work Order</DialogTitle>
-              <DialogDescription className="text-sm">
-                Submit a new maintenance request
+              <DialogTitle className="text-white text-xl">New Maintenance Request</DialogTitle>
+              <DialogDescription className="text-slate-400 mt-1">
+                Create a work order for your team
               </DialogDescription>
             </div>
           </div>
-        </DialogHeader>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="text-slate-400 hover:text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Global Error */}
-          {error && (
-            <div className="mx-6 mt-4 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm font-medium text-red-800">{error}</p>
-            </div>
-          )}
-
-          {/* 2-Column Grid Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-            {/* MAIN COLUMN - The Story (col-span-2) */}
-            <div className="md:col-span-2 space-y-6">
-              {/* Title - Document Header Style */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">
-                  Issue Title
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => {
-                    setFormData({ ...formData, title: e.target.value });
-                    if (touched.title) handleBlur('title');
-                  }}
-                  onBlur={() => handleBlur('title')}
-                  placeholder="e.g., Leaking faucet in Unit 201 bathroom"
-                  className={`w-full text-xl font-medium border-0 border-b-2 ${
-                    fieldErrors.title ? 'border-red-500' : 'border-gray-200'
-                  } focus:border-blue-500 focus:outline-none px-0 py-2 transition-colors placeholder:text-gray-400`}
-                />
-                {fieldErrors.title && (
-                  <p className="text-xs text-red-600 mt-2">{fieldErrors.title}</p>
-                )}
+        {/* SCROLLABLE CONTENT */}
+        <div className="flex-1 overflow-y-auto bg-slate-50/50">
+          <form onSubmit={handleSubmit}>
+            {/* Global Error */}
+            {error && (
+              <div className="mx-8 mt-6 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm font-medium text-red-800">{error}</p>
               </div>
+            )}
 
-              {/* Description - Clean Textarea */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">
-                  Full Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => {
-                    setFormData({ ...formData, description: e.target.value });
-                    if (touched.description) handleBlur('description');
-                  }}
-                  onBlur={() => handleBlur('description')}
-                  placeholder="Provide full details about what needs to be done, including any specific observations or tenant concerns..."
-                  rows={6}
-                  className={`w-full rounded-lg border ${
-                    fieldErrors.description ? 'border-red-500' : 'border-gray-200'
-                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none px-4 py-3 text-sm transition-all placeholder:text-gray-400`}
-                />
-                {fieldErrors.description && (
-                  <p className="text-xs text-red-600 mt-2">{fieldErrors.description}</p>
-                )}
-                <p className="text-xs text-gray-500 mt-2">
-                  Include location details, when the issue started, and tenant concerns
-                </p>
-              </div>
-
-              {/* Tenant Contact Info */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 block">
-                  Tenant Contact
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      value={formData.tenantReportedBy || ''}
-                      onChange={(e) =>
-                        setFormData({ ...formData, tenantReportedBy: e.target.value })
-                      }
-                      placeholder="Reported by"
-                      className="pl-10 border-gray-200 focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      value={formData.tenantPhone || ''}
-                      onChange={(e) => setFormData({ ...formData, tenantPhone: e.target.value })}
-                      placeholder="Phone number"
-                      className="pl-10 border-gray-200 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SIDEBAR - Control Panel (col-span-1) */}
-            <div className="md:col-span-1 bg-slate-50/50 -mr-6 -my-6 p-6 rounded-r-lg space-y-6">
-              {/* Priority - Rich Selector */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 block">
-                  Priority
-                </label>
-                <div className="space-y-2">
-                  {priorityOptions.map((option) => {
-                    const Icon = option.icon;
-                    const isSelected = formData.priority === option.value;
-                    return (
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* MAIN COLUMN */}
+              <div className="lg:col-span-8 space-y-6">
+                {/* HORIZONTAL SCROLLABLE PRESETS (Gemini's killer feature) */}
+                <div className="space-y-3">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Common Issues (One-Tap)
+                  </Label>
+                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x -mx-1 px-1 scrollbar-hide">
+                    {[
+                      { id: 'LEAK', icon: Droplets, label: 'Leak', color: 'blue' },
+                      { id: 'ELECTRIC', icon: Zap, label: 'Power', color: 'yellow' },
+                      { id: 'HVAC', icon: Thermometer, label: 'HVAC', color: 'orange' },
+                      { id: 'LOCK', icon: Key, label: 'Lockout', color: 'slate' },
+                      { id: 'PEST', icon: Bug, label: 'Pests', color: 'red' },
+                      { id: 'APPLIANCE', icon: Refrigerator, label: 'Appliances', color: 'indigo' },
+                      { id: 'WIFI', icon: Wifi, label: 'Access', color: 'cyan' },
+                      { id: 'TRASH', icon: Trash2, label: 'Trash', color: 'green' },
+                    ].map((item) => (
                       <button
-                        key={option.value}
+                        key={item.id}
                         type="button"
-                        onClick={() => {
-                          setFormData({ ...formData, priority: option.value });
-                          setTouched((prev) => ({ ...prev, priority: true }));
-                        }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 transition-all ${
-                          isSelected
-                            ? option.className +
-                              ' ring-2 ring-offset-1 ' +
-                              (option.value === 'EMERGENCY'
-                                ? 'ring-red-300'
-                                : option.value === 'HIGH'
-                                  ? 'ring-orange-300'
-                                  : 'ring-blue-300')
-                            : 'bg-white border-gray-200 hover:border-gray-300'
-                        }`}
+                        onClick={() => applyQuickPreset(item.id)}
+                        className="flex-shrink-0 w-24 bg-white p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all flex flex-col items-center gap-2 group snap-start"
                       >
-                        <Icon className={`w-4 h-4 ${isSelected ? '' : 'text-gray-400'}`} />
-                        <span
-                          className={`text-sm font-medium ${isSelected ? '' : 'text-gray-600'}`}
+                        <div
+                          className={`p-2 rounded-full bg-${item.color}-50 text-${item.color}-600 group-hover:bg-${item.color}-100`}
                         >
-                          {option.label}
-                        </span>
+                          <item.icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-600">{item.label}</span>
                       </button>
-                    );
-                  })}
-                </div>
-                {formData.priority === 'EMERGENCY' && (
-                  <p className="text-xs text-red-600 mt-2 font-medium">
-                    Emergency requests are treated with highest urgency
-                  </p>
-                )}
-              </div>
-
-              {/* Type */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">
-                  Type
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-                >
-                  {typeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Property */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">
-                  Property *
-                </label>
-                <select
-                  value={formData.propertyId || ''}
-                  onChange={(e) => {
-                    setFormData({ ...formData, propertyId: e.target.value });
-                    if (touched.propertyId) handleBlur('propertyId');
-                  }}
-                  onBlur={() => handleBlur('propertyId')}
-                  className={`w-full h-10 rounded-lg border ${
-                    fieldErrors.propertyId ? 'border-red-500' : 'border-gray-200'
-                  } bg-white px-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none`}
-                >
-                  <option value="">Select property</option>
-                  {properties?.map((property: any) => (
-                    <option key={property.id} value={property.id}>
-                      {property.name}
-                    </option>
-                  ))}
-                </select>
-                {fieldErrors.propertyId && (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.propertyId}</p>
-                )}
-                {properties?.length === 1 && (
-                  <p className="text-xs text-green-600 mt-1">✓ Auto-selected</p>
-                )}
-              </div>
-
-              {/* Location */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    value={formData.location || ''}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Unit 201, Lobby, etc."
-                    className="pl-10 border-gray-200 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Cost */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">
-                  Est. Cost
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.estimatedCost ?? ''}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        estimatedCost: e.target.value ? parseFloat(e.target.value) : undefined,
-                      });
-                      if (touched.estimatedCost) handleBlur('estimatedCost');
-                    }}
-                    onBlur={() => handleBlur('estimatedCost')}
-                    placeholder="0.00"
-                    className={`pl-10 border-gray-200 focus:border-blue-500 ${
-                      fieldErrors.estimatedCost ? 'border-red-500' : ''
-                    }`}
-                  />
-                </div>
-                {fieldErrors.estimatedCost && (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.estimatedCost}</p>
-                )}
-              </div>
-
-              {/* Permission Checkbox */}
-              <div className="pt-2">
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={formData.permissionToEnter}
-                    onChange={(e) =>
-                      setFormData({ ...formData, permissionToEnter: e.target.checked })
-                    }
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                      Permission to enter
-                    </span>
-                    <p className="text-xs text-gray-500 mt-0.5">Tenant has granted access</p>
+                    ))}
                   </div>
-                </label>
+                </div>
+
+                {/* Divider */}
+                <div className="relative flex items-center">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-medium uppercase tracking-wider">
+                    Or describe manually
+                  </span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                {/* Main Form Content */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+                  {/* Title */}
+                  <div>
+                    <Label className="text-base mb-2 block">Issue Title</Label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => {
+                        setFormData({ ...formData, title: e.target.value });
+                        if (touched.title) handleBlur('title');
+                      }}
+                      onBlur={() => handleBlur('title')}
+                      placeholder="e.g. Leaking faucet in Unit 201"
+                      className={`w-full text-lg py-6 font-medium border rounded-lg px-4 ${
+                        fieldErrors.title
+                          ? 'border-red-500'
+                          : 'border-slate-200 focus:border-indigo-500'
+                      } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
+                      autoFocus
+                    />
+                    {fieldErrors.title && (
+                      <p className="text-xs text-red-600 mt-2">{fieldErrors.title}</p>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <Label className="block mb-2">Detailed Description</Label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => {
+                        setFormData({ ...formData, description: e.target.value });
+                        if (touched.description) handleBlur('description');
+                      }}
+                      onBlur={() => handleBlur('description')}
+                      placeholder="Describe the issue..."
+                      rows={6}
+                      className={`w-full resize-none text-base rounded-lg border px-4 py-3 ${
+                        fieldErrors.description
+                          ? 'border-red-500'
+                          : 'border-slate-200 focus:border-indigo-500'
+                      } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-gray-400`}
+                    />
+                    {fieldErrors.description && (
+                      <p className="text-xs text-red-600 mt-2">{fieldErrors.description}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Priority Selection */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                  <Label className="text-base block">Priority Level</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {priorityOptions.map((option) => {
+                      const Icon = option.icon;
+                      const isSelected = formData.priority === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, priority: option.value });
+                            setTouched((prev) => ({ ...prev, priority: true }));
+                          }}
+                          className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 gap-3 ${
+                            isSelected
+                              ? option.className + ' shadow-sm ring-1 ring-offset-1'
+                              : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-500'
+                          }`}
+                        >
+                          <Icon className={`w-6 h-6 ${isSelected ? '' : 'text-slate-400'}`} />
+                          <span
+                            className={`text-sm font-medium ${isSelected ? 'text-slate-900' : 'text-slate-600'}`}
+                          >
+                            {option.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* SIDEBAR */}
+              <div className="lg:col-span-4 space-y-6">
+                {/* Location Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-5">
+                  <div className="flex items-center gap-2 text-slate-800 font-semibold border-b border-slate-100 pb-3">
+                    <MapPin className="w-4 h-4 text-indigo-500" />
+                    Location
+                  </div>
+                  <div className="space-y-4">
+                    {/* Property */}
+                    <div className="space-y-1.5">
+                      <Label>Property</Label>
+                      <select
+                        value={formData.propertyId || ''}
+                        onChange={(e) => {
+                          setFormData({ ...formData, propertyId: e.target.value });
+                          if (touched.propertyId) handleBlur('propertyId');
+                        }}
+                        onBlur={() => handleBlur('propertyId')}
+                        className={`w-full h-11 rounded-lg border ${
+                          fieldErrors.propertyId ? 'border-red-500' : 'border-slate-200'
+                        } bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none`}
+                      >
+                        <option value="">Select property...</option>
+                        {properties?.map((property: any) => (
+                          <option key={property.id} value={property.id}>
+                            {property.name}
+                          </option>
+                        ))}
+                      </select>
+                      {fieldErrors.propertyId && (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors.propertyId}</p>
+                      )}
+                    </div>
+
+                    {/* Unit/Area */}
+                    <div className="space-y-1.5">
+                      <Label>Unit / Area</Label>
+                      <Input
+                        value={formData.location || ''}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="e.g. Unit 4B"
+                      />
+                    </div>
+
+                    {/* Type */}
+                    <div className="space-y-1.5">
+                      <Label>Type</Label>
+                      <select
+                        value={formData.type}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        className="w-full h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                      >
+                        {typeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Estimated Cost */}
+                    <div className="space-y-1.5">
+                      <Label>Est. Cost</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.estimatedCost ?? ''}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              estimatedCost: e.target.value
+                                ? parseFloat(e.target.value)
+                                : undefined,
+                            });
+                            if (touched.estimatedCost) handleBlur('estimatedCost');
+                          }}
+                          onBlur={() => handleBlur('estimatedCost')}
+                          placeholder="0.00"
+                          className={`pl-10 ${fieldErrors.estimatedCost ? 'border-red-500' : ''}`}
+                        />
+                      </div>
+                      {fieldErrors.estimatedCost && (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors.estimatedCost}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* SMS PREVIEW (Gemini's smart feature) */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-5">
+                  <div className="flex items-center gap-2 text-slate-800 font-semibold border-b border-slate-100 pb-3">
+                    <MessageSquare className="w-4 h-4 text-indigo-500" />
+                    Tenant Notification
+                  </div>
+                  <div className="space-y-4">
+                    {/* SMS Preview */}
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 text-xs text-slate-500 italic">
+                      <span className="font-semibold text-slate-700 block mb-1">
+                        Preview of SMS to Tenant:
+                      </span>
+                      "Hi {formData.tenantReportedBy || 'Tenant'}, a new work order '
+                      {formData.title || '...'}' has been scheduled..."
+                    </div>
+
+                    {/* Tenant Name */}
+                    <div className="space-y-1.5">
+                      <Label>Reported By</Label>
+                      <Input
+                        value={formData.tenantReportedBy || ''}
+                        onChange={(e) =>
+                          setFormData({ ...formData, tenantReportedBy: e.target.value })
+                        }
+                        placeholder="Name (Optional)"
+                      />
+                    </div>
+
+                    {/* Permission Checkbox */}
+                    <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50 cursor-pointer hover:border-indigo-200 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={formData.permissionToEnter}
+                        onChange={(e) =>
+                          setFormData({ ...formData, permissionToEnter: e.target.checked })
+                        }
+                        className="mt-1 w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-sm font-medium text-slate-900 block">
+                          Permission to enter
+                        </span>
+                        <span className="text-xs text-slate-500 block">
+                          Grant access if tenant is absent
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </form>
+        </div>
 
-          {/* Footer */}
-          <DialogFooter className="px-6 py-4 border-t bg-gray-50/50">
-            <div className="flex gap-3 w-full sm:w-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={createWorkOrder.isPending}
-                className="flex-1 sm:flex-initial"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createWorkOrder.isPending}
-                className="flex-1 sm:flex-initial bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-              >
-                {createWorkOrder.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Work Order'
-                )}
-              </Button>
-            </div>
-          </DialogFooter>
-        </form>
+        {/* FOOTER */}
+        <div className="bg-white px-8 py-5 border-t border-slate-200 flex justify-end gap-3 shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={createWorkOrder.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={createWorkOrder.isPending}
+            className="bg-slate-900 hover:bg-slate-800 text-white min-w-[140px]"
+          >
+            {createWorkOrder.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              'Create Ticket'
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
