@@ -9,8 +9,9 @@ import {
   Hash,
   Ruler,
   MapPin,
-  Wand2,
   X,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 import api from '../../services/api';
 import {
@@ -95,6 +96,61 @@ const PROPERTY_STATUSES = [
   },
 ];
 
+// US state abbreviations for validation
+const US_STATES = new Set([
+  'AL',
+  'AK',
+  'AZ',
+  'AR',
+  'CA',
+  'CO',
+  'CT',
+  'DE',
+  'FL',
+  'GA',
+  'HI',
+  'ID',
+  'IL',
+  'IN',
+  'IA',
+  'KS',
+  'KY',
+  'LA',
+  'ME',
+  'MD',
+  'MA',
+  'MI',
+  'MN',
+  'MS',
+  'MO',
+  'MT',
+  'NE',
+  'NV',
+  'NH',
+  'NJ',
+  'NM',
+  'NY',
+  'NC',
+  'ND',
+  'OH',
+  'OK',
+  'OR',
+  'PA',
+  'RI',
+  'SC',
+  'SD',
+  'TN',
+  'TX',
+  'UT',
+  'VT',
+  'VA',
+  'WA',
+  'WV',
+  'WI',
+  'WY',
+  'DC',
+]);
+
 export default function PropertyEditModal({
   property,
   open,
@@ -103,7 +159,7 @@ export default function PropertyEditModal({
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<Property>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [smartPasteValue, setSmartPasteValue] = useState('');
+  const [fieldValidation, setFieldValidation] = useState<Record<string, boolean>>({});
 
   // Initialize form data when property changes
   useEffect(() => {
@@ -123,25 +179,77 @@ export default function PropertyEditModal({
         squareFeet: property.squareFeet || undefined,
       });
       setErrors({});
+      setFieldValidation({});
     } else {
       // Initialize with smart defaults for create mode
       setFormData({
         name: '',
-        type: 'MULTIFAMILY', // Most common property type
-        status: 'ACTIVE', // Default to active status
+        type: 'MULTIFAMILY',
+        status: 'ACTIVE',
         address1: '',
         address2: '',
         city: '',
         state: '',
         zipCode: '',
-        country: 'US', // Default country
-        totalUnits: 1, // Minimum units
+        country: 'US',
+        totalUnits: 1,
         yearBuilt: undefined,
         squareFeet: undefined,
       });
       setErrors({});
+      setFieldValidation({});
     }
   }, [property, open]);
+
+  // Real-time address validation
+  const validateAddress = (field: string, value: string) => {
+    switch (field) {
+      case 'state':
+        const stateUpper = value.toUpperCase();
+        const isValid = US_STATES.has(stateUpper);
+        setFieldValidation((prev) => ({ ...prev, state: isValid }));
+        if (!isValid && value.length === 2) {
+          setErrors((prev) => ({ ...prev, state: 'Invalid US state code' }));
+        } else {
+          setErrors((prev) => {
+            const { state, ...rest } = prev;
+            return rest;
+          });
+        }
+        break;
+
+      case 'zipCode':
+        // US ZIP code: 5 digits or 5+4 format
+        const zipValid = /^\d{5}(-\d{4})?$/.test(value);
+        setFieldValidation((prev) => ({ ...prev, zipCode: zipValid }));
+        if (!zipValid && value.length >= 5) {
+          setErrors((prev) => ({
+            ...prev,
+            zipCode: 'Invalid ZIP code format (use 12345 or 12345-6789)',
+          }));
+        } else {
+          setErrors((prev) => {
+            const { zipCode, ...rest } = prev;
+            return rest;
+          });
+        }
+        break;
+
+      case 'city':
+        // City should only contain letters, spaces, hyphens, apostrophes
+        const cityValid = /^[a-zA-Z\s\-']+$/.test(value);
+        setFieldValidation((prev) => ({ ...prev, city: cityValid }));
+        if (!cityValid && value.length > 0) {
+          setErrors((prev) => ({ ...prev, city: 'City name contains invalid characters' }));
+        } else {
+          setErrors((prev) => {
+            const { city, ...rest } = prev;
+            return rest;
+          });
+        }
+        break;
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: Partial<Property>) => {
@@ -155,11 +263,9 @@ export default function PropertyEditModal({
     onError: (error: any) => {
       console.error('Failed to create property:', error);
 
-      // Extract error message from NestJS validation error format
       let errorMessage = 'Failed to create property';
       if (error.response?.data?.message) {
         const msg = error.response.data.message;
-        // NestJS ValidationPipe returns array of error messages
         if (Array.isArray(msg)) {
           errorMessage = msg.join(', ');
         } else {
@@ -188,11 +294,9 @@ export default function PropertyEditModal({
     onError: (error: any) => {
       console.error('Failed to update property:', error);
 
-      // Extract error message from NestJS validation error format
       let errorMessage = 'Failed to update property';
       if (error.response?.data?.message) {
         const msg = error.response.data.message;
-        // NestJS ValidationPipe returns array of error messages
         if (Array.isArray(msg)) {
           errorMessage = msg.join(', ');
         } else {
@@ -208,67 +312,6 @@ export default function PropertyEditModal({
     },
   });
 
-  // SMART ADDRESS PASTE (Gemini's killer feature)
-  const handleSmartPaste = () => {
-    if (!smartPasteValue.trim()) return;
-
-    // Simple but effective parsing logic for common formats:
-    // "123 Main St, Chicago, IL 60605"
-    // "123 Main Street, Suite 100, Chicago, IL 60605"
-    const parts = smartPasteValue.split(',').map((s) => s.trim());
-
-    if (parts.length >= 3) {
-      const street = parts[0];
-      let city = '';
-      let state = '';
-      let zip = '';
-
-      // Check if second part looks like a suite/apt (contains keywords)
-      const suiteKeywords = ['suite', 'apt', 'unit', '#'];
-      const secondPartIsSuite = suiteKeywords.some((keyword) =>
-        parts[1].toLowerCase().includes(keyword),
-      );
-
-      if (secondPartIsSuite && parts.length >= 4) {
-        // Format: "123 Main St, Suite 100, Chicago, IL 60605"
-        const suite = parts[1];
-        city = parts[2];
-        const stateZip = parts[3];
-        const stateZipParts = stateZip.split(' ').filter((p) => p.length > 0);
-        state = stateZipParts[0] || '';
-        zip = stateZipParts[1] || '';
-
-        setFormData((prev) => ({
-          ...prev,
-          name: prev.name || `${street} Property`,
-          address1: street,
-          address2: suite,
-          city: city,
-          state: state.toUpperCase(),
-          zipCode: zip,
-        }));
-      } else {
-        // Format: "123 Main St, Chicago, IL 60605"
-        city = parts[1];
-        const stateZip = parts[2];
-        const stateZipParts = stateZip.split(' ').filter((p) => p.length > 0);
-        state = stateZipParts[0] || '';
-        zip = stateZipParts[1] || '';
-
-        setFormData((prev) => ({
-          ...prev,
-          name: prev.name || `${street} Property`,
-          address1: street,
-          city: city,
-          state: state.toUpperCase(),
-          zipCode: zip,
-        }));
-      }
-
-      setSmartPasteValue(''); // Clear the paste box
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -283,17 +326,24 @@ export default function PropertyEditModal({
       newErrors.totalUnits = 'Total units must be at least 1';
     }
 
+    // Validate address fields
+    if (formData.state && !US_STATES.has(formData.state.toUpperCase())) {
+      newErrors.state = 'Invalid US state code';
+    }
+    if (formData.zipCode && !/^\d{5}(-\d{4})?$/.test(formData.zipCode)) {
+      newErrors.zipCode = 'Invalid ZIP code format';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    // Prepare data for submission with robust numeric handling
+    // Prepare data for submission
     const totalUnits = Number(formData.totalUnits);
     const yearBuilt = formData.yearBuilt ? Number(formData.yearBuilt) : undefined;
     const squareFeet = formData.squareFeet ? Number(formData.squareFeet) : undefined;
 
-    // Validate numeric fields to ensure no NaN values
     if (isNaN(totalUnits) || totalUnits < 1) {
       setErrors({ totalUnits: 'Total units must be a valid number (at least 1)' });
       return;
@@ -314,13 +364,12 @@ export default function PropertyEditModal({
       address1: formData.address1,
       address2: formData.address2 || null,
       city: formData.city,
-      state: formData.state,
+      state: formData.state!.toUpperCase(), // Normalize to uppercase
       zipCode: formData.zipCode,
       country: formData.country || 'US',
       totalUnits,
     };
 
-    // Add optional fields only if they have valid values
     if (yearBuilt !== undefined) {
       dataToSubmit.yearBuilt = yearBuilt;
     }
@@ -328,7 +377,6 @@ export default function PropertyEditModal({
       dataToSubmit.squareFeet = squareFeet;
     }
 
-    // Call create or update based on whether property exists
     if (property) {
       updateMutation.mutate(dataToSubmit);
     } else {
@@ -338,7 +386,12 @@ export default function PropertyEditModal({
 
   const handleChange = (field: keyof Property, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error for this field
+
+    // Real-time validation for address fields
+    if (['state', 'zipCode', 'city'].includes(field) && typeof value === 'string') {
+      validateAddress(field, value);
+    }
+
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -354,7 +407,7 @@ export default function PropertyEditModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] p-0 flex flex-col overflow-hidden">
-        {/* DARK HEADER (Gemini's design) */}
+        {/* DARK HEADER */}
         <div className="bg-slate-900 px-8 py-6 shrink-0 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-indigo-500/20 rounded-xl border border-indigo-500/30">
@@ -381,44 +434,10 @@ export default function PropertyEditModal({
 
         {/* SCROLLABLE CONTENT */}
         <div className="flex-1 overflow-y-auto bg-slate-50/50">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="on">
             <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* MAIN COLUMN */}
               <div className="lg:col-span-7 space-y-6">
-                {/* SMART PASTE CARD (Gemini's killer feature) */}
-                <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-indigo-900 flex items-center gap-2 font-semibold">
-                      <Wand2 className="w-4 h-4 text-indigo-600" /> Magic Address Fill
-                    </label>
-                    <span className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">
-                      For lazy people
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Paste full address (e.g. 123 Main St, Chicago, IL 60605)"
-                      className="bg-white border-indigo-200 focus:ring-indigo-500"
-                      value={smartPasteValue}
-                      onChange={(e) => setSmartPasteValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleSmartPaste();
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
-                      onClick={handleSmartPaste}
-                    >
-                      Auto-Fill Form
-                    </Button>
-                  </div>
-                </div>
-
                 {/* Main Form Content */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
                   {/* Property Name */}
@@ -426,6 +445,8 @@ export default function PropertyEditModal({
                     <label className="text-base font-semibold">Property Name</label>
                     <input
                       type="text"
+                      name="property-name"
+                      autoComplete="organization"
                       value={formData.name || ''}
                       onChange={(e) => handleChange('name', e.target.value)}
                       placeholder="e.g. Sunset Apartments"
@@ -436,7 +457,7 @@ export default function PropertyEditModal({
                     {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                   </div>
 
-                  {/* Address Section */}
+                  {/* Address Section with HTML5 autocomplete */}
                   <div className="pt-4 border-t border-slate-100 space-y-4">
                     <label className="text-base font-semibold flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-indigo-500" />
@@ -444,51 +465,85 @@ export default function PropertyEditModal({
                     </label>
 
                     {/* Street Address */}
-                    <Input
-                      value={formData.address1 || ''}
-                      onChange={(e) => handleChange('address1', e.target.value)}
-                      placeholder="Street Address"
-                      className={errors.address1 ? 'border-red-500' : ''}
-                    />
-                    {errors.address1 && (
-                      <p className="text-sm text-red-600 mt-1">{errors.address1}</p>
-                    )}
+                    <div className="relative">
+                      <Input
+                        name="street-address"
+                        autoComplete="address-line1"
+                        value={formData.address1 || ''}
+                        onChange={(e) => handleChange('address1', e.target.value)}
+                        placeholder="Street Address"
+                        className={errors.address1 ? 'border-red-500' : ''}
+                      />
+                      {errors.address1 && (
+                        <p className="text-sm text-red-600 mt-1">{errors.address1}</p>
+                      )}
+                    </div>
 
                     {/* Apt/Suite */}
                     <Input
+                      name="address-line2"
+                      autoComplete="address-line2"
                       value={formData.address2 || ''}
                       onChange={(e) => handleChange('address2', e.target.value)}
                       placeholder="Apt, Suite, etc. (Optional)"
                     />
 
-                    {/* City/State/Zip - ONE LINE (grid-cols-3) */}
+                    {/* City/State - ONE LINE */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2">
+                      <div className="col-span-2 relative">
                         <Input
+                          name="city"
+                          autoComplete="address-level2"
                           value={formData.city || ''}
                           onChange={(e) => handleChange('city', e.target.value)}
                           placeholder="City"
                           className={errors.city ? 'border-red-500' : ''}
                         />
+                        {fieldValidation.city === true && (
+                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                        )}
                         {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city}</p>}
                       </div>
-                      <Input
-                        value={formData.state || ''}
-                        onChange={(e) => handleChange('state', e.target.value)}
-                        placeholder="State"
-                        className={`text-center uppercase ${errors.state ? 'border-red-500' : ''}`}
-                        maxLength={2}
-                      />
+                      <div className="relative">
+                        <Input
+                          name="state"
+                          autoComplete="address-level1"
+                          value={formData.state || ''}
+                          onChange={(e) => handleChange('state', e.target.value.toUpperCase())}
+                          placeholder="State"
+                          className={`text-center uppercase ${errors.state ? 'border-red-500' : ''}`}
+                          maxLength={2}
+                        />
+                        {fieldValidation.state === true && (
+                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                        )}
+                        {fieldValidation.state === false &&
+                          formData.state &&
+                          formData.state.length === 2 && (
+                            <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
+                          )}
+                      </div>
                     </div>
+                    {errors.state && <p className="text-sm text-red-600 -mt-2">{errors.state}</p>}
 
                     {/* ZIP Code */}
-                    <div className="w-1/2">
+                    <div className="w-1/2 relative">
                       <Input
+                        name="postal-code"
+                        autoComplete="postal-code"
                         value={formData.zipCode || ''}
                         onChange={(e) => handleChange('zipCode', e.target.value)}
                         placeholder="ZIP Code"
                         className={errors.zipCode ? 'border-red-500' : ''}
                       />
+                      {fieldValidation.zipCode === true && (
+                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                      )}
+                      {fieldValidation.zipCode === false &&
+                        formData.zipCode &&
+                        formData.zipCode.length >= 5 && (
+                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
+                        )}
                       {errors.zipCode && (
                         <p className="text-sm text-red-600 mt-1">{errors.zipCode}</p>
                       )}
@@ -499,7 +554,7 @@ export default function PropertyEditModal({
 
               {/* SIDEBAR */}
               <div className="lg:col-span-5 space-y-6">
-                {/* Property Type - Rich Button Selector */}
+                {/* Property Type */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                   <label className="text-base font-semibold">Property Type</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -529,7 +584,7 @@ export default function PropertyEditModal({
                   </div>
                 </div>
 
-                {/* Status - Rich Button Selector */}
+                {/* Status */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                   <label className="text-base font-semibold">Status</label>
                   <div className="space-y-2">
