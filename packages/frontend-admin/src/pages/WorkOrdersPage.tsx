@@ -8,6 +8,7 @@ import { formatDate } from '../lib/utils';
 import { WorkOrderDetailDrawer } from '../components/work-orders/WorkOrderDetailDrawer';
 import { WorkOrderCreateModal } from '../components/work-orders/WorkOrderCreateModal';
 import { WorkOrderUpdateModal } from '../components/work-orders/WorkOrderUpdateModal';
+import PropertyEditModal from '../components/properties/PropertyEditModal';
 import { useUpdateWorkOrder } from '../hooks/useWorkOrders';
 
 type StatusFilter = 'ALL' | 'SUBMITTED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED';
@@ -20,6 +21,8 @@ export default function WorkOrdersPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [propertyEditModalOpen, setPropertyEditModalOpen] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
 
   const { data: workOrders, isLoading } = useQuery({
     queryKey: ['work-orders'],
@@ -99,6 +102,12 @@ export default function WorkOrdersPage() {
   const clearFilters = () => {
     setStatusFilter('ALL');
     setPriorityFilter('ALL');
+  };
+
+  const handlePropertyClick = (property: any) => {
+    setSelectedProperty(property);
+    setPropertyEditModalOpen(true);
+    setDrawerOpen(false);
   };
 
   if (isLoading) {
@@ -373,6 +382,7 @@ export default function WorkOrdersPage() {
           setDrawerOpen(false);
           setUpdateModalOpen(true);
         }}
+        onPropertyClick={handlePropertyClick}
       />
 
       {/* Create Modal */}
@@ -383,6 +393,13 @@ export default function WorkOrdersPage() {
         workOrder={selectedWorkOrder}
         open={updateModalOpen}
         onOpenChange={setUpdateModalOpen}
+      />
+
+      {/* Property Edit Modal */}
+      <PropertyEditModal
+        property={selectedProperty}
+        open={propertyEditModalOpen}
+        onOpenChange={setPropertyEditModalOpen}
       />
     </div>
   );

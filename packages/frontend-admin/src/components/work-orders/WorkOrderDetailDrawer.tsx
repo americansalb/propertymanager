@@ -1,4 +1,14 @@
-import { X, Building2, Home, User, Briefcase, Calendar, DollarSign, Edit } from 'lucide-react';
+import {
+  X,
+  Building2,
+  Home,
+  User,
+  Briefcase,
+  Calendar,
+  DollarSign,
+  Edit,
+  ExternalLink,
+} from 'lucide-react';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { Button } from '../ui/button';
 
@@ -7,6 +17,7 @@ interface WorkOrderDetailDrawerProps {
   open: boolean;
   onClose: () => void;
   onEdit?: () => void;
+  onPropertyClick?: (property: any) => void;
 }
 
 export function WorkOrderDetailDrawer({
@@ -14,6 +25,7 @@ export function WorkOrderDetailDrawer({
   open,
   onClose,
   onEdit,
+  onPropertyClick,
 }: WorkOrderDetailDrawerProps) {
   if (!open || !workOrder) return null;
 
@@ -89,17 +101,33 @@ export function WorkOrderDetailDrawer({
 
           {/* Property & Unit */}
           <div className="space-y-3">
-            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-              <Building2 className="w-5 h-5 text-gray-600 mt-0.5" />
-              <div>
-                <label className="text-xs font-medium text-gray-600 uppercase">Property</label>
-                <p className="font-medium text-gray-900">{workOrder.property?.name || 'N/A'}</p>
-                {workOrder.property?.address1 && (
-                  <p className="text-sm text-gray-600 mt-0.5">
-                    {workOrder.property.address1}
-                    {workOrder.property.city && `, ${workOrder.property.city}`}
-                    {workOrder.property.state && `, ${workOrder.property.state}`}
-                  </p>
+            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <Building2 className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div className="flex-1">
+                <label className="text-xs font-medium text-blue-700 uppercase">Property</label>
+                {workOrder.property ? (
+                  <>
+                    {onPropertyClick ? (
+                      <button
+                        onClick={() => onPropertyClick(workOrder.property)}
+                        className="font-medium text-blue-900 hover:text-blue-700 transition-colors flex items-center gap-1 group"
+                      >
+                        {workOrder.property.name}
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ) : (
+                      <p className="font-medium text-blue-900">{workOrder.property.name}</p>
+                    )}
+                    {(workOrder.property.city || workOrder.property.state) && (
+                      <p className="text-sm text-blue-700 mt-0.5">
+                        {workOrder.property.city}
+                        {workOrder.property.city && workOrder.property.state && ', '}
+                        {workOrder.property.state}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="font-medium text-gray-500">N/A</p>
                 )}
               </div>
             </div>
