@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Wrench, AlertCircle, Clock, Play, CheckCircle, X } from 'lucide-react';
+import { Wrench, AlertCircle, Clock, Play, CheckCircle, X, Briefcase } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -20,6 +20,7 @@ export default function WorkOrdersPage() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL');
+  const [vendorFilter, setVendorFilter] = useState<string>('ALL');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -34,6 +35,15 @@ export default function WorkOrdersPage() {
     queryKey: ['work-orders'],
     queryFn: async () => {
       const response = await api.get('/work-orders');
+      return response.data.data;
+    },
+  });
+
+  // Fetch vendors for filtering
+  const { data: vendors } = useQuery({
+    queryKey: ['vendors'],
+    queryFn: async () => {
+      const response = await api.get('/vendors');
       return response.data.data;
     },
   });
@@ -120,7 +130,8 @@ export default function WorkOrdersPage() {
       const statusMatch = statusFilter === 'ALL' || order.status === statusFilter;
       const priorityMatch = priorityFilter === 'ALL' || order.priority === priorityFilter;
       const propertyMatch = !propertyIdFilter || order.propertyId === propertyIdFilter;
-      return statusMatch && priorityMatch && propertyMatch;
+      const vendorMatch = vendorFilter === 'ALL' || order.vendorId === vendorFilter;
+      return statusMatch && priorityMatch && propertyMatch && vendorMatch;
     }) || [];
 
   // Get filtered property name for display
@@ -288,6 +299,37 @@ export default function WorkOrdersPage() {
               )}
             </div>
           </div>
+          {vendors && vendors.length > 0 && (
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Vendor</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setVendorFilter('ALL')}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    vendorFilter === 'ALL'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All Vendors
+                </button>
+                {vendors.map((vendor: any) => (
+                  <button
+                    key={vendor.id}
+                    onClick={() => setVendorFilter(vendor.id)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      vendorFilter === vendor.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Briefcase className="w-3 h-3 inline mr-1" />
+                    {vendor.companyName}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -400,9 +442,19 @@ export default function WorkOrdersPage() {
                           )}
                         </div>
                       </div>
-                      {order.assignedTo && (
-                        <div className="text-xs text-gray-600">
-                          Assigned to: {order.assignedTo.firstName} {order.assignedTo.lastName}
+                      {(order.assignedTo || order.vendor) && (
+                        <div className="flex items-center gap-4 text-xs text-gray-600">
+                          {order.assignedTo && (
+                            <span>
+                              Assigned to: {order.assignedTo.firstName} {order.assignedTo.lastName}
+                            </span>
+                          )}
+                          {order.vendor && (
+                            <span className="flex items-center gap-1">
+                              <Briefcase className="w-3 h-3" />
+                              Vendor: {order.vendor.companyName}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>

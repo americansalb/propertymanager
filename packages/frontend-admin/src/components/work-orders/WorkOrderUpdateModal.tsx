@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, Wrench, Loader2, CheckCircle2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, Wrench, Loader2, CheckCircle2, Briefcase } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useUpdateWorkOrder, UpdateWorkOrderDto, WorkOrder } from '../../hooks/useWorkOrders';
+import api from '../../services/api';
 
 interface WorkOrderUpdateModalProps {
   workOrder: WorkOrder | null;
@@ -27,8 +29,18 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
   const updateWorkOrder = useUpdateWorkOrder();
 
+  // Fetch vendors for assignment
+  const { data: vendors } = useQuery({
+    queryKey: ['vendors'],
+    queryFn: async () => {
+      const response = await api.get('/vendors');
+      return response.data.data;
+    },
+  });
+
   // CRITICAL: Validate work order exists and has ID before any operations
-  const isValidWorkOrder = workOrder && workOrder.id && typeof workOrder.id === 'string' && workOrder.id.length > 0;
+  const isValidWorkOrder =
+    workOrder && workOrder.id && typeof workOrder.id === 'string' && workOrder.id.length > 0;
 
   // Get valid status transitions based on current status
   const getValidStatusTransitions = (currentStatus: string): string[] => {
@@ -53,6 +65,7 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
         priority: workOrder.priority,
         status: workOrder.status,
         location: workOrder.location || '',
+        vendorId: workOrder.vendorId || '',
         scheduledDate: workOrder.scheduledDate || '',
         estimatedCost: workOrder.estimatedCost,
         actualCost: workOrder.actualCost,
@@ -109,20 +122,29 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
     // EXTREME DEFENSIVE CHECKS - Prevent undefined ID at all costs
     if (!workOrder) {
-      setError('⚠️ No work order selected. Please close this modal and select a work order from the list.');
+      setError(
+        '⚠️ No work order selected. Please close this modal and select a work order from the list.',
+      );
       console.error('[WorkOrderUpdateModal] Attempted submit without workOrder');
       return;
     }
 
     if (!workOrder.id) {
-      setError('⚠️ Work order ID is missing. Please close this modal and reopen from the work orders list.');
+      setError(
+        '⚠️ Work order ID is missing. Please close this modal and reopen from the work orders list.',
+      );
       console.error('[WorkOrderUpdateModal] Attempted submit without workOrder.id:', { workOrder });
       return;
     }
 
     if (typeof workOrder.id !== 'string' || workOrder.id.length === 0) {
-      setError('⚠️ Work order ID is invalid. Please close this modal and reopen from the work orders list.');
-      console.error('[WorkOrderUpdateModal] Invalid workOrder.id type or length:', { id: workOrder.id, type: typeof workOrder.id });
+      setError(
+        '⚠️ Work order ID is invalid. Please close this modal and reopen from the work orders list.',
+      );
+      console.error('[WorkOrderUpdateModal] Invalid workOrder.id type or length:', {
+        id: workOrder.id,
+        type: typeof workOrder.id,
+      });
       return;
     }
 
@@ -151,9 +173,14 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
       // Optional text fields
       if (formData.location?.trim()) payload.location = formData.location.trim();
-      if (formData.tenantReportedBy?.trim()) payload.tenantReportedBy = formData.tenantReportedBy.trim();
+      if (formData.tenantReportedBy?.trim())
+        payload.tenantReportedBy = formData.tenantReportedBy.trim();
       if (formData.tenantPhone?.trim()) payload.tenantPhone = formData.tenantPhone.trim();
-      if (formData.completionNotes?.trim()) payload.completionNotes = formData.completionNotes.trim();
+      if (formData.completionNotes?.trim())
+        payload.completionNotes = formData.completionNotes.trim();
+
+      // Vendor assignment
+      if (formData.vendorId) payload.vendorId = formData.vendorId;
 
       // Scheduled date
       if (formData.scheduledDate) payload.scheduledDate = formData.scheduledDate;
@@ -162,14 +189,22 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
       payload.permissionToEnter = formData.permissionToEnter || false;
 
       // Handle numeric cost fields carefully
-      if (formData.estimatedCost !== undefined && formData.estimatedCost !== null && formData.estimatedCost !== '') {
+      if (
+        formData.estimatedCost !== undefined &&
+        formData.estimatedCost !== null &&
+        formData.estimatedCost !== ''
+      ) {
         const cost = Number(formData.estimatedCost);
         if (!isNaN(cost) && cost >= 0) {
           payload.estimatedCost = cost;
         }
       }
 
-      if (formData.actualCost !== undefined && formData.actualCost !== null && formData.actualCost !== '') {
+      if (
+        formData.actualCost !== undefined &&
+        formData.actualCost !== null &&
+        formData.actualCost !== ''
+      ) {
         const cost = Number(formData.actualCost);
         if (!isNaN(cost) && cost >= 0) {
           payload.actualCost = cost;
@@ -220,7 +255,10 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
   // Don't render if work order is invalid
   if (!isValidWorkOrder) {
-    console.warn('[WorkOrderUpdateModal] Attempted to render with invalid work order:', { workOrder, open });
+    console.warn('[WorkOrderUpdateModal] Attempted to render with invalid work order:', {
+      workOrder,
+      open,
+    });
     return null;
   }
 
@@ -237,12 +275,8 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
             </div>
             <div>
               <DialogTitle>Edit Work Order</DialogTitle>
-              <DialogDescription>
-                Update work order details and status
-              </DialogDescription>
-              <p className="text-xs text-gray-500 mt-1">
-                ID: {workOrder.id.slice(0, 12)}...
-              </p>
+              <DialogDescription>Update work order details and status</DialogDescription>
+              <p className="text-xs text-gray-500 mt-1">ID: {workOrder.id.slice(0, 12)}...</p>
             </div>
           </div>
         </DialogHeader>
@@ -260,9 +294,7 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
           {/* Status & Progress Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
-              Status & Progress
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Status & Progress</h3>
 
             <div>
               <Label htmlFor="status">
@@ -320,9 +352,7 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
           {/* Request Details Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
-              Request Details
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Request Details</h3>
 
             <div>
               <Label htmlFor="title">Title</Label>
@@ -429,11 +459,41 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
             </div>
           </div>
 
+          {/* Assignment Section */}
+          {vendors && vendors.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Assignment</h3>
+
+              <div>
+                <Label htmlFor="vendorId">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    Assign to Vendor
+                  </div>
+                </Label>
+                <select
+                  id="vendorId"
+                  value={formData.vendorId || ''}
+                  onChange={(e) => setFormData({ ...formData, vendorId: e.target.value })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">No vendor assigned</option>
+                  {vendors.map((vendor: any) => (
+                    <option key={vendor.id} value={vendor.id}>
+                      {vendor.companyName}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Assign this work order to a vendor for external service
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Cost & Contact Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
-              Cost & Contact
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Cost & Contact</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
