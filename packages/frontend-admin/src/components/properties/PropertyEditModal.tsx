@@ -45,6 +45,18 @@ interface PropertyEditModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface AddressSuggestion {
+  display_name: string;
+  address: {
+    house_number?: string;
+    road?: string;
+    city?: string;
+    town?: string;
+    state?: string;
+    postcode?: string;
+  };
+}
+
 const PROPERTY_TYPES = [
   {
     value: 'MULTIFAMILY',
@@ -94,9 +106,6 @@ const PROPERTY_STATUSES = [
   },
 ];
 
-// Get Google Maps API key from environment
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-
 export default function PropertyEditModal({
   property,
   open,
@@ -105,8 +114,11 @@ export default function PropertyEditModal({
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<Property>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const addressInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Initialize form data when property changes
   useEffect(() => {
@@ -143,92 +155,98 @@ export default function PropertyEditModal({
       });
       setErrors({});
     }
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
   }, [property, open]);
 
-  // Initialize Google Places Autocomplete
+  // Close suggestions when clicking outside
   useEffect(() => {
-    if (!open || !GOOGLE_MAPS_API_KEY || !addressInputRef.current) return;
-
-    // Load Google Maps API if not already loaded
-    if (!window.google?.maps?.places) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = initAutocomplete;
-      document.head.appendChild(script);
-    } else {
-      initAutocomplete();
-    }
-
-    function initAutocomplete() {
-      if (!addressInputRef.current) return;
-
-      const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
-        types: ['address'],
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'formatted_address', 'name'],
-      });
-
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (!place.address_components) return;
-
-        let street_number = '';
-        let route = '';
-        let city = '';
-        let state = '';
-        let zip = '';
-
-        // Parse address components
-        place.address_components.forEach((component) => {
-          const types = component.types;
-          if (types.includes('street_number')) {
-            street_number = component.long_name;
-          }
-          if (types.includes('route')) {
-            route = component.long_name;
-          }
-          if (types.includes('locality')) {
-            city = component.long_name;
-          }
-          if (types.includes('administrative_area_level_1')) {
-            state = component.short_name;
-          }
-          if (types.includes('postal_code')) {
-            zip = component.long_name;
-          }
-        });
-
-        const address1 = `${street_number} ${route}`.trim();
-
-        // Auto-fill all address fields
-        setFormData((prev) => ({
-          ...prev,
-          address1,
-          city,
-          state,
-          zipCode: zip,
-          name: prev.name || `${address1} Property`, // Auto-generate name if empty
-        }));
-
-        // Clear any address errors
-        setErrors((prev) => {
-          const { address1: _, city: __, state: ___, zipCode: ____, ...rest } = prev;
-          return rest;
-        });
-      });
-
-      autocompleteRef.current = autocomplete;
-    }
-
-    return () => {
-      if (autocompleteRef.current) {
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        autocompleteRef.current = null;
+    function handleClickOutside(event: MouseEvent) {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
       }
-    };
-  }, [open]);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch address suggestions from Nominatim (OpenStreetMap)
+  const fetchAddressSuggestions = async (query: string) => {
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?` +
+          new URLSearchParams({
+            q: query,
+            format: 'json',
+            addressdetails: '1',
+            countrycodes: 'us',
+            limit: '5',
+          }),
+        {
+          headers: {
+            'User-Agent': 'PropertyManager/1.0', // Nominatim requires a User-Agent
+          },
+        },
+      );
+      const data = await response.json();
+      setAddressSuggestions(data);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Failed to fetch address suggestions:', error);
+      setAddressSuggestions([]);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  const handleAddressChange = (value: string) => {
+    handleChange('address1', value);
+
+    // Debounce API calls
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchAddressSuggestions(value);
+    }, 300);
+  };
+
+  const selectAddress = (suggestion: AddressSuggestion) => {
+    const addr = suggestion.address;
+    const street =
+      addr.house_number && addr.road ? `${addr.house_number} ${addr.road}` : addr.road || '';
+    const city = addr.city || addr.town || '';
+    const state = addr.state || '';
+    const zip = addr.postcode || '';
+
+    // Extract state abbreviation if it's full name
+    const stateAbbr = state.length > 2 ? state.substring(0, 2).toUpperCase() : state.toUpperCase();
+
+    setFormData((prev) => ({
+      ...prev,
+      address1: street,
+      city,
+      state: stateAbbr,
+      zipCode: zip,
+      name: prev.name || `${street} Property`,
+    }));
+
+    setShowSuggestions(false);
+    setAddressSuggestions([]);
+
+    // Clear errors
+    setErrors((prev) => {
+      const { address1, city, state, zipCode, ...rest } = prev;
+      return rest;
+    });
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: Partial<Property>) => {
@@ -422,37 +440,60 @@ export default function PropertyEditModal({
                     {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                   </div>
 
-                  {/* Address Section with Google Places Autocomplete */}
+                  {/* Address Section with Autocomplete */}
                   <div className="pt-4 border-t border-slate-100 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <label className="text-base font-semibold flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-indigo-500" />
-                        Address
-                      </label>
-                      {!GOOGLE_MAPS_API_KEY && (
-                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                          Add VITE_GOOGLE_MAPS_API_KEY for autocomplete
-                        </span>
-                      )}
-                    </div>
+                    <label className="text-base font-semibold flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-indigo-500" />
+                      Address
+                    </label>
 
-                    {/* Street Address with autocomplete */}
-                    <div className="relative">
+                    {/* Street Address with autocomplete dropdown */}
+                    <div className="relative" ref={suggestionsRef}>
                       <input
-                        ref={addressInputRef}
                         type="text"
                         name="street-address"
                         value={formData.address1 || ''}
-                        onChange={(e) => handleChange('address1', e.target.value)}
-                        placeholder={
-                          GOOGLE_MAPS_API_KEY ? 'Start typing address...' : 'Street Address'
-                        }
+                        onChange={(e) => handleAddressChange(e.target.value)}
+                        onFocus={() => {
+                          if (addressSuggestions.length > 0) setShowSuggestions(true);
+                        }}
+                        placeholder="Start typing address..."
                         className={`w-full h-11 rounded-lg border px-3 text-sm ${
                           errors.address1
                             ? 'border-red-500'
                             : 'border-slate-200 focus:border-indigo-500'
                         } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
                       />
+
+                      {/* Loading indicator */}
+                      {isLoadingSuggestions && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                        </div>
+                      )}
+
+                      {/* Suggestions dropdown */}
+                      {showSuggestions && addressSuggestions.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {addressSuggestions.map((suggestion, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => selectAddress(suggestion)}
+                              className="w-full text-left px-4 py-3 hover:bg-indigo-50 border-b border-slate-100 last:border-b-0 transition-colors text-sm"
+                            >
+                              <div className="font-medium text-slate-900">
+                                {suggestion.address.house_number} {suggestion.address.road}
+                              </div>
+                              <div className="text-xs text-slate-500 mt-1">
+                                {suggestion.address.city || suggestion.address.town},{' '}
+                                {suggestion.address.state} {suggestion.address.postcode}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       {errors.address1 && (
                         <p className="text-sm text-red-600 mt-1">{errors.address1}</p>
                       )}
