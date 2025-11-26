@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Wrench,
@@ -14,6 +14,9 @@ import {
   CheckSquare,
   Square,
   Download,
+  UserPlus,
+  FileText,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
@@ -51,6 +54,22 @@ export default function WorkOrdersPage() {
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkActionInProgress, setBulkActionInProgress] = useState(false);
+  const [showBulkVendorAssign, setShowBulkVendorAssign] = useState(false);
+  const [showBulkActionsMenu, setShowBulkActionsMenu] = useState(false);
+
+  // Log component mount
+  useEffect(() => {
+    console.log('[WorkOrdersPage] Component mounted');
+    console.log('[WorkOrdersPage] URL params:', Object.fromEntries(searchParams.entries()));
+  }, [searchParams]);
+
+  // Log selection changes
+  useEffect(() => {
+    console.log('[WorkOrdersPage] Selection changed:', {
+      count: selectedIds.size,
+      ids: Array.from(selectedIds),
+    });
+  }, [selectedIds]);
 
   // Get property and vendor filters from URL
   const propertyIdFilter = searchParams.get('propertyId');
@@ -157,7 +176,7 @@ export default function WorkOrdersPage() {
   };
 
   // Get date range based on preset
-  const getDateRange = (): { from: Date | null; to: Date | null } => {
+  const getDateRange = useCallback((): { from: Date | null; to: Date | null } => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -184,37 +203,50 @@ export default function WorkOrdersPage() {
       default:
         return { from: null, to: null };
     }
-  };
+  }, [dateRangePreset, dateFrom, dateTo]);
 
   // Filter work orders in memory
-  const filteredWorkOrders =
-    workOrders?.filter((order: any) => {
-      const statusMatch = statusFilter === 'ALL' || order.status === statusFilter;
-      const priorityMatch = priorityFilter === 'ALL' || order.priority === priorityFilter;
-      const propertyMatch = !propertyIdFilter || order.propertyId === propertyIdFilter;
-      // Use URL vendor filter or state vendor filter
-      const effectiveVendorFilter =
-        vendorIdFilter || (vendorFilter !== 'ALL' ? vendorFilter : null);
-      const vendorMatch = !effectiveVendorFilter || order.vendorId === effectiveVendorFilter;
+  const filteredWorkOrders = useMemo(() => {
+    console.log('[WorkOrdersPage] Filtering work orders');
+    return (
+      workOrders?.filter((order: any) => {
+        const statusMatch = statusFilter === 'ALL' || order.status === statusFilter;
+        const priorityMatch = priorityFilter === 'ALL' || order.priority === priorityFilter;
+        const propertyMatch = !propertyIdFilter || order.propertyId === propertyIdFilter;
+        // Use URL vendor filter or state vendor filter
+        const effectiveVendorFilter =
+          vendorIdFilter || (vendorFilter !== 'ALL' ? vendorFilter : null);
+        const vendorMatch = !effectiveVendorFilter || order.vendorId === effectiveVendorFilter;
 
-      // Text search filter
-      const searchLower = searchQuery.toLowerCase().trim();
-      const searchMatch =
-        !searchLower ||
-        order.title?.toLowerCase().includes(searchLower) ||
-        order.description?.toLowerCase().includes(searchLower) ||
-        order.property?.name?.toLowerCase().includes(searchLower) ||
-        order.unit?.unitNumber?.toLowerCase().includes(searchLower);
+        // Text search filter
+        const searchLower = searchQuery.toLowerCase().trim();
+        const searchMatch =
+          !searchLower ||
+          order.title?.toLowerCase().includes(searchLower) ||
+          order.description?.toLowerCase().includes(searchLower) ||
+          order.property?.name?.toLowerCase().includes(searchLower) ||
+          order.unit?.unitNumber?.toLowerCase().includes(searchLower);
 
-      // Date range filter
-      const { from, to } = getDateRange();
-      const orderDate = new Date(order.createdAt);
-      const dateMatch = (!from || orderDate >= from) && (!to || orderDate <= to);
+        // Date range filter
+        const { from, to } = getDateRange();
+        const orderDate = new Date(order.createdAt);
+        const dateMatch = (!from || orderDate >= from) && (!to || orderDate <= to);
 
-      return (
-        statusMatch && priorityMatch && propertyMatch && vendorMatch && searchMatch && dateMatch
-      );
-    }) || [];
+        return (
+          statusMatch && priorityMatch && propertyMatch && vendorMatch && searchMatch && dateMatch
+        );
+      }) || []
+    );
+  }, [
+    workOrders,
+    statusFilter,
+    priorityFilter,
+    propertyIdFilter,
+    vendorIdFilter,
+    vendorFilter,
+    searchQuery,
+    getDateRange,
+  ]);
 
   // Get filtered property name for display
   const filteredProperty = workOrders?.find(
@@ -269,73 +301,385 @@ export default function WorkOrdersPage() {
   };
 
   // Bulk selection handlers
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
+    console.log('[WorkOrdersPage] toggleSelectAll called, current selection:', selectedIds.size);
     if (selectedIds.size === filteredWorkOrders.length) {
+      console.log('[WorkOrdersPage] Deselecting all');
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredWorkOrders.map((wo: any) => wo.id)));
+      const allIds = filteredWorkOrders.map((wo: any) => wo.id);
+      console.log('[WorkOrdersPage] Selecting all:', allIds.length, 'items');
+      setSelectedIds(new Set(allIds));
     }
-  };
+  }, [selectedIds.size, filteredWorkOrders]);
 
-  const toggleSelectOne = (id: string, e: React.MouseEvent) => {
+  const toggleSelectOne = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
+    console.log('[WorkOrdersPage] toggleSelectOne called for:', id);
+    setSelectedIds((prev) => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(id)) {
+        console.log('[WorkOrdersPage] Deselecting:', id);
+        newSelected.delete(id);
+      } else {
+        console.log('[WorkOrdersPage] Selecting:', id);
+        newSelected.add(id);
+      }
+      return newSelected;
+    });
+  }, []);
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
+    console.log('[WorkOrdersPage] Clearing selection');
     setSelectedIds(new Set());
-  };
+    setShowBulkActionsMenu(false);
+    setShowBulkVendorAssign(false);
+  }, []);
 
   // Bulk actions
-  const handleBulkStatusChange = async (newStatus: string) => {
-    if (selectedIds.size === 0) return;
+  const handleBulkStatusChange = useCallback(
+    async (newStatus: string) => {
+      if (selectedIds.size === 0) {
+        console.log('[WorkOrdersPage] handleBulkStatusChange: No items selected');
+        return;
+      }
 
-    setBulkActionInProgress(true);
-    try {
-      const promises = Array.from(selectedIds).map((id) =>
-        updateWorkOrder.mutateAsync({ id, data: { status: newStatus } }),
-      );
-      await Promise.all(promises);
-      clearSelection();
-    } catch (error: any) {
-      console.error('Bulk status update failed:', error);
-      alert('Some updates failed. Please try again.');
-    } finally {
-      setBulkActionInProgress(false);
-    }
-  };
+      console.log('[WorkOrdersPage] handleBulkStatusChange started:', {
+        newStatus,
+        count: selectedIds.size,
+        ids: Array.from(selectedIds),
+      });
 
-  const handleExportCSV = () => {
-    const selectedOrders = filteredWorkOrders.filter((wo: any) => selectedIds.has(wo.id));
-    const headers = ['ID', 'Title', 'Status', 'Priority', 'Property', 'Unit', 'Created', 'Vendor'];
+      setBulkActionInProgress(true);
+      const startTime = Date.now();
+
+      try {
+        const promises = Array.from(selectedIds).map((id) => {
+          console.log('[WorkOrdersPage] Updating work order:', id, 'to status:', newStatus);
+          return updateWorkOrder.mutateAsync({ id, data: { status: newStatus } });
+        });
+
+        const results = await Promise.allSettled(promises);
+        const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+        const failed = results.filter((r) => r.status === 'rejected').length;
+
+        console.log('[WorkOrdersPage] handleBulkStatusChange completed:', {
+          duration: Date.now() - startTime,
+          succeeded,
+          failed,
+        });
+
+        if (failed > 0) {
+          alert(`${succeeded} updated successfully, ${failed} failed.`);
+        }
+
+        clearSelection();
+      } catch (error: any) {
+        console.error('[WorkOrdersPage] Bulk status update failed:', error);
+        alert('Some updates failed. Please try again.');
+      } finally {
+        setBulkActionInProgress(false);
+      }
+    },
+    [selectedIds, updateWorkOrder, clearSelection],
+  );
+
+  // Bulk vendor assignment
+  const handleBulkVendorAssign = useCallback(
+    async (vendorId: string | null) => {
+      if (selectedIds.size === 0) {
+        console.log('[WorkOrdersPage] handleBulkVendorAssign: No items selected');
+        return;
+      }
+
+      console.log('[WorkOrdersPage] handleBulkVendorAssign started:', {
+        vendorId,
+        count: selectedIds.size,
+        ids: Array.from(selectedIds),
+      });
+
+      setBulkActionInProgress(true);
+      setShowBulkVendorAssign(false);
+      const startTime = Date.now();
+
+      try {
+        const promises = Array.from(selectedIds).map((id) => {
+          console.log('[WorkOrdersPage] Assigning vendor to work order:', id, 'vendor:', vendorId);
+          return updateWorkOrder.mutateAsync({ id, data: { vendorId } });
+        });
+
+        const results = await Promise.allSettled(promises);
+        const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+        const failed = results.filter((r) => r.status === 'rejected').length;
+
+        console.log('[WorkOrdersPage] handleBulkVendorAssign completed:', {
+          duration: Date.now() - startTime,
+          succeeded,
+          failed,
+          vendorId,
+        });
+
+        if (failed > 0) {
+          alert(`${succeeded} assigned successfully, ${failed} failed.`);
+        }
+
+        clearSelection();
+      } catch (error: any) {
+        console.error('[WorkOrdersPage] Bulk vendor assign failed:', error);
+        alert('Some assignments failed. Please try again.');
+      } finally {
+        setBulkActionInProgress(false);
+      }
+    },
+    [selectedIds, updateWorkOrder, clearSelection],
+  );
+
+  // Export selected to CSV
+  const handleExportCSV = useCallback(() => {
+    const selectedOrders =
+      selectedIds.size > 0
+        ? filteredWorkOrders.filter((wo: any) => selectedIds.has(wo.id))
+        : filteredWorkOrders;
+
+    console.log('[WorkOrdersPage] handleExportCSV:', {
+      exporting: selectedOrders.length,
+      selected: selectedIds.size,
+      filtered: filteredWorkOrders.length,
+    });
+
+    const headers = [
+      'ID',
+      'Title',
+      'Description',
+      'Status',
+      'Priority',
+      'Property',
+      'Property Address',
+      'Unit',
+      'Vendor',
+      'Assigned To',
+      'Created Date',
+      'Scheduled Date',
+      'Completed Date',
+      'Estimated Cost',
+      'Actual Cost',
+    ];
+
     const rows = selectedOrders.map((wo: any) => [
       wo.id,
-      wo.title,
-      wo.status,
-      wo.priority,
+      wo.title || '',
+      wo.description || '',
+      wo.status || '',
+      wo.priority || '',
       wo.property?.name || '',
+      wo.property?.address || '',
       wo.unit?.unitNumber || '',
-      formatDate(wo.createdAt),
       wo.vendor?.companyName || 'Unassigned',
+      wo.assignedTo ? `${wo.assignedTo.firstName} ${wo.assignedTo.lastName}` : '',
+      formatDate(wo.createdAt) || '',
+      wo.scheduledDate ? formatDate(wo.scheduledDate) : '',
+      wo.completedAt ? formatDate(wo.completedAt) : '',
+      wo.estimatedCost?.toString() || '',
+      wo.actualCost?.toString() || '',
     ]);
 
     const csvContent = [
       headers.join(','),
-      ...rows.map((row: string[]) => row.map((cell) => `"${cell}"`).join(',')),
+      ...rows.map((row: string[]) =>
+        row.map((cell) => `"${(cell || '').replace(/"/g, '""')}"`).join(','),
+      ),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    link.href = url;
     link.download = `work-orders-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    console.log('[WorkOrdersPage] Downloading CSV:', {
+      filename: link.download,
+      rows: rows.length,
+      size: csvContent.length,
+    });
+
     link.click();
-  };
+    URL.revokeObjectURL(url);
+  }, [selectedIds, filteredWorkOrders]);
+
+  // Export to JSON
+  const handleExportJSON = useCallback(() => {
+    const selectedOrders =
+      selectedIds.size > 0
+        ? filteredWorkOrders.filter((wo: any) => selectedIds.has(wo.id))
+        : filteredWorkOrders;
+
+    console.log('[WorkOrdersPage] handleExportJSON:', {
+      exporting: selectedOrders.length,
+    });
+
+    const exportData = selectedOrders.map((wo: any) => ({
+      id: wo.id,
+      title: wo.title,
+      description: wo.description,
+      status: wo.status,
+      priority: wo.priority,
+      property: wo.property?.name,
+      propertyAddress: wo.property?.address,
+      unit: wo.unit?.unitNumber,
+      vendor: wo.vendor?.companyName,
+      assignedTo: wo.assignedTo ? `${wo.assignedTo.firstName} ${wo.assignedTo.lastName}` : null,
+      createdAt: wo.createdAt,
+      scheduledDate: wo.scheduledDate,
+      completedAt: wo.completedAt,
+      estimatedCost: wo.estimatedCost,
+      actualCost: wo.actualCost,
+    }));
+
+    const jsonContent = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `work-orders-export-${new Date().toISOString().split('T')[0]}.json`;
+
+    console.log('[WorkOrdersPage] Downloading JSON:', {
+      filename: link.download,
+      records: exportData.length,
+    });
+
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [selectedIds, filteredWorkOrders]);
+
+  // Generate PDF report
+  const handleGenerateReport = useCallback(() => {
+    const selectedOrders =
+      selectedIds.size > 0
+        ? filteredWorkOrders.filter((wo: any) => selectedIds.has(wo.id))
+        : filteredWorkOrders;
+
+    console.log('[WorkOrdersPage] handleGenerateReport:', {
+      generating: selectedOrders.length,
+    });
+
+    // Create a printable HTML document
+    const statusCounts = {
+      SUBMITTED: selectedOrders.filter((wo: any) => wo.status === 'SUBMITTED').length,
+      ASSIGNED: selectedOrders.filter((wo: any) => wo.status === 'ASSIGNED').length,
+      IN_PROGRESS: selectedOrders.filter((wo: any) => wo.status === 'IN_PROGRESS').length,
+      COMPLETED: selectedOrders.filter((wo: any) => wo.status === 'COMPLETED').length,
+    };
+
+    const priorityCounts = {
+      EMERGENCY: selectedOrders.filter((wo: any) => wo.priority === 'EMERGENCY').length,
+      HIGH: selectedOrders.filter((wo: any) => wo.priority === 'HIGH').length,
+      MEDIUM: selectedOrders.filter((wo: any) => wo.priority === 'MEDIUM').length,
+      LOW: selectedOrders.filter((wo: any) => wo.priority === 'LOW').length,
+    };
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Work Orders Report - ${new Date().toLocaleDateString()}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+          h1 { color: #1a1a1a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
+          h2 { color: #374151; margin-top: 30px; }
+          .summary { display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+          .summary-card { background: #f3f4f6; padding: 15px 25px; border-radius: 8px; }
+          .summary-card h3 { margin: 0 0 5px 0; font-size: 14px; color: #6b7280; }
+          .summary-card .value { font-size: 24px; font-weight: bold; color: #1f2937; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
+          th { background: #f9fafb; font-weight: 600; }
+          tr:nth-child(even) { background: #f9fafb; }
+          .status { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+          .status-submitted { background: #e5e7eb; }
+          .status-in_progress { background: #dbeafe; color: #1d4ed8; }
+          .status-completed { background: #dcfce7; color: #166534; }
+          .priority-emergency { background: #fee2e2; color: #dc2626; }
+          .priority-high { background: #ffedd5; color: #ea580c; }
+          .footer { margin-top: 40px; text-align: center; color: #9ca3af; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <h1>Work Orders Report</h1>
+        <p>Generated on ${new Date().toLocaleString()}</p>
+
+        <h2>Summary</h2>
+        <div class="summary">
+          <div class="summary-card">
+            <h3>Total Work Orders</h3>
+            <div class="value">${selectedOrders.length}</div>
+          </div>
+          <div class="summary-card">
+            <h3>Open</h3>
+            <div class="value">${statusCounts.SUBMITTED + statusCounts.ASSIGNED + statusCounts.IN_PROGRESS}</div>
+          </div>
+          <div class="summary-card">
+            <h3>Completed</h3>
+            <div class="value">${statusCounts.COMPLETED}</div>
+          </div>
+          <div class="summary-card">
+            <h3>Urgent (Emergency + High)</h3>
+            <div class="value">${priorityCounts.EMERGENCY + priorityCounts.HIGH}</div>
+          </div>
+        </div>
+
+        <h2>Status Breakdown</h2>
+        <div class="summary">
+          <div class="summary-card"><h3>Submitted</h3><div class="value">${statusCounts.SUBMITTED}</div></div>
+          <div class="summary-card"><h3>Assigned</h3><div class="value">${statusCounts.ASSIGNED}</div></div>
+          <div class="summary-card"><h3>In Progress</h3><div class="value">${statusCounts.IN_PROGRESS}</div></div>
+          <div class="summary-card"><h3>Completed</h3><div class="value">${statusCounts.COMPLETED}</div></div>
+        </div>
+
+        <h2>Work Order Details</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Property</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Vendor</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${selectedOrders
+              .map(
+                (wo: any) => `
+              <tr>
+                <td>${wo.title || '-'}</td>
+                <td>${wo.property?.name || '-'}${wo.unit ? ` - Unit ${wo.unit.unitNumber}` : ''}</td>
+                <td><span class="status status-${wo.status?.toLowerCase()}">${wo.status?.replace('_', ' ') || '-'}</span></td>
+                <td><span class="status priority-${wo.priority?.toLowerCase()}">${wo.priority || '-'}</span></td>
+                <td>${wo.vendor?.companyName || 'Unassigned'}</td>
+                <td>${wo.createdAt ? formatDate(wo.createdAt) : '-'}</td>
+              </tr>
+            `,
+              )
+              .join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>PropertyMaster - Work Orders Report</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.print();
+      console.log('[WorkOrdersPage] Report generated and print dialog opened');
+    }
+  }, [selectedIds, filteredWorkOrders]);
 
   const isAllSelected =
     filteredWorkOrders.length > 0 && selectedIds.size === filteredWorkOrders.length;
@@ -640,7 +984,7 @@ export default function WorkOrdersPage() {
       {hasSelection && (
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="py-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-blue-900">
                   {selectedIds.size} work order{selectedIds.size > 1 ? 's' : ''} selected
@@ -655,11 +999,15 @@ export default function WorkOrdersPage() {
                   Clear
                 </Button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Status Actions */}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleBulkStatusChange('IN_PROGRESS')}
+                  onClick={() => {
+                    console.log('[WorkOrdersPage] Start All clicked');
+                    handleBulkStatusChange('IN_PROGRESS');
+                  }}
                   disabled={bulkActionInProgress}
                   className="bg-white"
                 >
@@ -669,21 +1017,132 @@ export default function WorkOrdersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleBulkStatusChange('COMPLETED')}
+                  onClick={() => {
+                    console.log('[WorkOrdersPage] Complete All clicked');
+                    handleBulkStatusChange('COMPLETED');
+                  }}
                   disabled={bulkActionInProgress}
                   className="bg-white"
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
                   Complete All
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportCSV} className="bg-white">
-                  <Download className="w-4 h-4 mr-1" />
-                  Export CSV
-                </Button>
+
+                {/* Vendor Assignment Dropdown */}
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      console.log('[WorkOrdersPage] Assign Vendor button clicked');
+                      setShowBulkVendorAssign(!showBulkVendorAssign);
+                    }}
+                    disabled={bulkActionInProgress}
+                    className="bg-white"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Assign Vendor
+                  </Button>
+                  {showBulkVendorAssign && (
+                    <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
+                      <button
+                        onClick={() => {
+                          console.log('[WorkOrdersPage] Removing vendor assignment');
+                          handleBulkVendorAssign(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <X className="w-4 h-4 text-gray-400" />
+                        Remove Vendor Assignment
+                      </button>
+                      <div className="border-t border-gray-100 my-1" />
+                      {vendors?.map((vendor: any) => (
+                        <button
+                          key={vendor.id}
+                          onClick={() => {
+                            console.log('[WorkOrdersPage] Assigning vendor:', vendor.companyName);
+                            handleBulkVendorAssign(vendor.id);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <Briefcase className="w-4 h-4 text-gray-400" />
+                          {vendor.companyName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Export Menu */}
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      console.log('[WorkOrdersPage] Export menu toggled');
+                      setShowBulkActionsMenu(!showBulkActionsMenu);
+                    }}
+                    className="bg-white"
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    Export
+                    <MoreHorizontal className="w-4 h-4 ml-1" />
+                  </Button>
+                  {showBulkActionsMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
+                      <button
+                        onClick={() => {
+                          console.log('[WorkOrdersPage] Export CSV clicked');
+                          handleExportCSV();
+                          setShowBulkActionsMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4 text-gray-400" />
+                        Export as CSV
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log('[WorkOrdersPage] Export JSON clicked');
+                          handleExportJSON();
+                          setShowBulkActionsMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <FileText className="w-4 h-4 text-gray-400" />
+                        Export as JSON
+                      </button>
+                      <div className="border-t border-gray-100 my-1" />
+                      <button
+                        onClick={() => {
+                          console.log('[WorkOrdersPage] Generate Report clicked');
+                          handleGenerateReport();
+                          setShowBulkActionsMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <FileText className="w-4 h-4 text-gray-400" />
+                        Generate PDF Report
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Click outside to close dropdowns */}
+      {(showBulkVendorAssign || showBulkActionsMenu) && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            console.log('[WorkOrdersPage] Closing dropdowns via overlay');
+            setShowBulkVendorAssign(false);
+            setShowBulkActionsMenu(false);
+          }}
+        />
       )}
 
       {/* Work Orders List */}

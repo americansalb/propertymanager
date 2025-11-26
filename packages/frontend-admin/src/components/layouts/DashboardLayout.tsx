@@ -17,6 +17,7 @@ import {
   User,
   Search,
   HelpCircle,
+  Download,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { Button } from '../ui/button';
@@ -43,6 +44,7 @@ const navItems: NavItem[] = [
   { title: 'Calendar', href: '/calendar', icon: Calendar },
   { title: 'Activity', href: '/activity', icon: Bell },
   { title: 'Reports', href: '/reports', icon: BarChart3 },
+  { title: 'Export Data', href: '/export', icon: Download },
   { title: 'Tenant Portal', href: '/tenant-portal', icon: User },
   { title: 'Settings', href: '/settings', icon: Settings },
 ];
