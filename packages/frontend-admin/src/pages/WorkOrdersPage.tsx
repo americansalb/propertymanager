@@ -28,8 +28,9 @@ export default function WorkOrdersPage() {
   const [propertyEditModalOpen, setPropertyEditModalOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
 
-  // Get property filter from URL
+  // Get property and vendor filters from URL
   const propertyIdFilter = searchParams.get('propertyId');
+  const vendorIdFilter = searchParams.get('vendorId');
 
   const { data: workOrders, isLoading } = useQuery({
     queryKey: ['work-orders'],
@@ -54,12 +55,16 @@ export default function WorkOrdersPage() {
   useEffect(() => {
     const status = searchParams.get('status');
     const priority = searchParams.get('priority');
+    const vendorId = searchParams.get('vendorId');
 
     if (status && ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].includes(status)) {
       setStatusFilter(status as StatusFilter);
     }
     if (priority && ['LOW', 'MEDIUM', 'HIGH', 'EMERGENCY'].includes(priority)) {
       setPriorityFilter(priority as PriorityFilter);
+    }
+    if (vendorId) {
+      setVendorFilter(vendorId);
     }
   }, [searchParams]);
 
@@ -68,16 +73,19 @@ export default function WorkOrdersPage() {
     newStatus?: StatusFilter,
     newPriority?: PriorityFilter,
     newPropertyId?: string | null,
+    newVendorId?: string | null,
   ) => {
     const params = new URLSearchParams();
 
     const status = newStatus !== undefined ? newStatus : statusFilter;
     const priority = newPriority !== undefined ? newPriority : priorityFilter;
     const propertyId = newPropertyId !== undefined ? newPropertyId : propertyIdFilter;
+    const vendorId = newVendorId !== undefined ? newVendorId : vendorIdFilter;
 
     if (status !== 'ALL') params.set('status', status);
     if (priority !== 'ALL') params.set('priority', priority);
     if (propertyId) params.set('propertyId', propertyId);
+    if (vendorId) params.set('vendorId', vendorId);
 
     setSearchParams(params);
   };
@@ -130,7 +138,10 @@ export default function WorkOrdersPage() {
       const statusMatch = statusFilter === 'ALL' || order.status === statusFilter;
       const priorityMatch = priorityFilter === 'ALL' || order.priority === priorityFilter;
       const propertyMatch = !propertyIdFilter || order.propertyId === propertyIdFilter;
-      const vendorMatch = vendorFilter === 'ALL' || order.vendorId === vendorFilter;
+      // Use URL vendor filter or state vendor filter
+      const effectiveVendorFilter =
+        vendorIdFilter || (vendorFilter !== 'ALL' ? vendorFilter : null);
+      const vendorMatch = !effectiveVendorFilter || order.vendorId === effectiveVendorFilter;
       return statusMatch && priorityMatch && propertyMatch && vendorMatch;
     }) || [];
 
@@ -138,6 +149,9 @@ export default function WorkOrdersPage() {
   const filteredProperty = workOrders?.find(
     (wo: any) => wo.propertyId === propertyIdFilter,
   )?.property;
+
+  // Get filtered vendor name for display
+  const filteredVendor = vendors?.find((v: any) => v.id === vendorIdFilter);
 
   const openOrders =
     workOrders?.filter((w: any) => w.status !== 'COMPLETED' && w.status !== 'CANCELLED') || [];
@@ -161,7 +175,12 @@ export default function WorkOrdersPage() {
   };
 
   const clearPropertyFilter = () => {
-    updateFiltersInUrl(statusFilter, priorityFilter, null);
+    updateFiltersInUrl(statusFilter, priorityFilter, null, vendorIdFilter);
+  };
+
+  const clearVendorFilter = () => {
+    setVendorFilter('ALL');
+    updateFiltersInUrl(statusFilter, priorityFilter, propertyIdFilter, null);
   };
 
   const handlePropertyClick = (property: any) => {
@@ -237,6 +256,34 @@ export default function WorkOrdersPage() {
                 size="sm"
                 onClick={clearPropertyFilter}
                 className="h-7 text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Vendor Filter Banner */}
+      {vendorIdFilter && (
+        <Card className="bg-purple-50 border-purple-200">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-purple-600" />
+                <span className="text-sm font-medium text-purple-900">
+                  Filtered by vendor:{' '}
+                  {filteredVendor?.companyName || (
+                    <span className="font-mono">{vendorIdFilter}</span>
+                  )}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearVendorFilter}
+                className="h-7 text-purple-700 hover:text-purple-900 hover:bg-purple-100"
               >
                 <X className="w-4 h-4 mr-1" />
                 Clear
