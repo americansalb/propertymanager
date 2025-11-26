@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Wrench, AlertCircle, Clock, Play, CheckCircle, X, Briefcase } from 'lucide-react';
+import {
+  Wrench,
+  AlertCircle,
+  Clock,
+  Play,
+  CheckCircle,
+  X,
+  Briefcase,
+  Search,
+  Calendar,
+  Filter,
+} from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -14,6 +25,7 @@ import { useUpdateWorkOrder } from '../hooks/useWorkOrders';
 
 type StatusFilter = 'ALL' | 'SUBMITTED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED';
 type PriorityFilter = 'ALL' | 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
+type DateRangePreset = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'CUSTOM';
 
 export default function WorkOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,6 +33,11 @@ export default function WorkOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL');
   const [vendorFilter, setVendorFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('ALL');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -132,6 +149,36 @@ export default function WorkOrdersPage() {
     }
   };
 
+  // Get date range based on preset
+  const getDateRange = (): { from: Date | null; to: Date | null } => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (dateRangePreset) {
+      case 'TODAY':
+        return { from: today, to: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
+      case 'WEEK': {
+        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return { from: weekAgo, to: now };
+      }
+      case 'MONTH': {
+        const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+        return { from: monthAgo, to: now };
+      }
+      case 'QUARTER': {
+        const quarterAgo = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
+        return { from: quarterAgo, to: now };
+      }
+      case 'CUSTOM':
+        return {
+          from: dateFrom ? new Date(dateFrom) : null,
+          to: dateTo ? new Date(dateTo + 'T23:59:59') : null,
+        };
+      default:
+        return { from: null, to: null };
+    }
+  };
+
   // Filter work orders in memory
   const filteredWorkOrders =
     workOrders?.filter((order: any) => {
@@ -142,7 +189,24 @@ export default function WorkOrdersPage() {
       const effectiveVendorFilter =
         vendorIdFilter || (vendorFilter !== 'ALL' ? vendorFilter : null);
       const vendorMatch = !effectiveVendorFilter || order.vendorId === effectiveVendorFilter;
-      return statusMatch && priorityMatch && propertyMatch && vendorMatch;
+
+      // Text search filter
+      const searchLower = searchQuery.toLowerCase().trim();
+      const searchMatch =
+        !searchLower ||
+        order.title?.toLowerCase().includes(searchLower) ||
+        order.description?.toLowerCase().includes(searchLower) ||
+        order.property?.name?.toLowerCase().includes(searchLower) ||
+        order.unit?.unitNumber?.toLowerCase().includes(searchLower);
+
+      // Date range filter
+      const { from, to } = getDateRange();
+      const orderDate = new Date(order.createdAt);
+      const dateMatch = (!from || orderDate >= from) && (!to || orderDate <= to);
+
+      return (
+        statusMatch && priorityMatch && propertyMatch && vendorMatch && searchMatch && dateMatch
+      );
     }) || [];
 
   // Get filtered property name for display
@@ -171,8 +235,16 @@ export default function WorkOrdersPage() {
   const clearFilters = () => {
     setStatusFilter('ALL');
     setPriorityFilter('ALL');
+    setSearchQuery('');
+    setDateRangePreset('ALL');
+    setDateFrom('');
+    setDateTo('');
     updateFiltersInUrl('ALL', 'ALL', propertyIdFilter);
   };
+
+  // Check if any advanced filters are active
+  const hasActiveFilters =
+    searchQuery || dateRangePreset !== 'ALL' || statusFilter !== 'ALL' || priorityFilter !== 'ALL';
 
   const clearPropertyFilter = () => {
     updateFiltersInUrl(statusFilter, priorityFilter, null, vendorIdFilter);
@@ -239,6 +311,110 @@ export default function WorkOrdersPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Search and Advanced Filters */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by title, description, property, or unit..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={showAdvancedFilters ? 'bg-gray-100' : ''}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                {showAdvancedFilters ? 'Hide Filters' : 'More Filters'}
+              </Button>
+              {hasActiveFilters && (
+                <Button variant="ghost" onClick={clearFilters} className="text-gray-600">
+                  <X className="w-4 h-4 mr-1" />
+                  Clear All
+                </Button>
+              )}
+            </div>
+
+            {/* Advanced Filters */}
+            {showAdvancedFilters && (
+              <div className="pt-4 border-t space-y-4">
+                {/* Date Range Presets */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Date Range
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        { value: 'ALL', label: 'All Time' },
+                        { value: 'TODAY', label: 'Today' },
+                        { value: 'WEEK', label: 'Last 7 Days' },
+                        { value: 'MONTH', label: 'Last 30 Days' },
+                        { value: 'QUARTER', label: 'Last 90 Days' },
+                        { value: 'CUSTOM', label: 'Custom' },
+                      ] as { value: DateRangePreset; label: string }[]
+                    ).map(({ value, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => setDateRangePreset(value)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          dateRangePreset === value
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Date Range */}
+                {dateRangePreset === 'CUSTOM' && (
+                  <div className="flex gap-4 items-center">
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">From</label>
+                      <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">To</label>
+                      <input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Property Filter Banner */}
       {propertyIdFilter && (
