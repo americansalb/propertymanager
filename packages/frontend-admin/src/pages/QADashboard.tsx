@@ -45,7 +45,6 @@ export function QADashboard() {
   const { accessToken, isAuthenticated, user } = useAuthStore();
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [createdWorkOrder, setCreatedWorkOrder] = useState<WorkOrder | null>(null);
 
   const [healthCheck, setHealthCheck] = useState<TestResult>({ status: 'idle' });
@@ -230,7 +229,7 @@ export function QADashboard() {
     try {
       const { data, timing, statusCode } = await apiCall('/work-orders');
       const orders = data.data || data;
-      setWorkOrders(orders);
+      // Removed setWorkOrders(orders) as it was unused
       setWorkOrdersList({
         status: 'success',
         message: `✅ Loaded ${orders.length} work orders (${timing}ms)`,
@@ -353,6 +352,7 @@ export function QADashboard() {
     if (isAuthenticated && properties.length === 0) {
       testLoadProperties();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // ═══════════════════════════════════════════════════════════════

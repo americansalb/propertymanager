@@ -5,8 +5,6 @@ import {
   Wrench,
   Loader2,
   MapPin,
-  User,
-  Phone,
   DollarSign,
   AlertTriangle,
   CheckCircle2,
@@ -25,10 +23,8 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -446,11 +442,10 @@ export function WorkOrderCreateModal({
                       }}
                       onBlur={() => handleBlur('title')}
                       placeholder="e.g. Leaking faucet in Unit 201"
-                      className={`w-full text-lg py-6 font-medium border rounded-lg px-4 ${
-                        fieldErrors.title
+                      className={`w-full text-lg py-6 font-medium border rounded-lg px-4 ${fieldErrors.title
                           ? 'border-red-500'
                           : 'border-slate-200 focus:border-indigo-500'
-                      } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
+                        } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
                       autoFocus
                     />
                     {fieldErrors.title && (
@@ -470,11 +465,10 @@ export function WorkOrderCreateModal({
                       onBlur={() => handleBlur('description')}
                       placeholder="Describe the issue..."
                       rows={6}
-                      className={`w-full resize-none text-base rounded-lg border px-4 py-3 ${
-                        fieldErrors.description
+                      className={`w-full resize-none text-base rounded-lg border px-4 py-3 ${fieldErrors.description
                           ? 'border-red-500'
                           : 'border-slate-200 focus:border-indigo-500'
-                      } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-gray-400`}
+                        } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-gray-400`}
                     />
                     {fieldErrors.description && (
                       <p className="text-xs text-red-600 mt-2">{fieldErrors.description}</p>
@@ -497,11 +491,10 @@ export function WorkOrderCreateModal({
                             setFormData({ ...formData, priority: option.value });
                             setTouched((prev) => ({ ...prev, priority: true }));
                           }}
-                          className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 gap-3 ${
-                            isSelected
+                          className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 gap-3 ${isSelected
                               ? option.className + ' shadow-sm ring-1 ring-offset-1'
                               : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-500'
-                          }`}
+                            }`}
                         >
                           <Icon className={`w-6 h-6 ${isSelected ? '' : 'text-slate-400'}`} />
                           <span
@@ -535,9 +528,8 @@ export function WorkOrderCreateModal({
                           if (touched.propertyId) handleBlur('propertyId');
                         }}
                         onBlur={() => handleBlur('propertyId')}
-                        className={`w-full h-11 rounded-lg border ${
-                          fieldErrors.propertyId ? 'border-red-500' : 'border-slate-200'
-                        } bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none`}
+                        className={`w-full h-11 rounded-lg border ${fieldErrors.propertyId ? 'border-red-500' : 'border-slate-200'
+                          } bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none`}
                       >
                         <option value="">Select property...</option>
                         {properties?.map((property: any) => (

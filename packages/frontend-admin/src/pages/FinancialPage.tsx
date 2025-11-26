@@ -546,7 +546,6 @@ function ChartOfAccountsSection() {
     data: chartOfAccounts,
     isLoading: isLoadingAccounts,
     isError: isErrorAccounts,
-    error: accountsError,
   } = useQuery<ChartOfAccount[]>({
     queryKey: ['chart-of-accounts'],
     queryFn: async () => {

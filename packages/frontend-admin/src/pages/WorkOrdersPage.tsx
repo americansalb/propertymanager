@@ -61,7 +61,7 @@ export default function WorkOrdersPage() {
     if (priority && ['LOW', 'MEDIUM', 'HIGH', 'EMERGENCY'].includes(priority)) {
       setPriorityFilter(priority as PriorityFilter);
     }
-  }, []);
+  }, [searchParams]);
 
   // Update URL when filters change
   const updateFiltersInUrl = (
@@ -260,11 +260,10 @@ export default function WorkOrdersPage() {
                       setStatusFilter(status);
                       updateFiltersInUrl(status, undefined, undefined);
                     }}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      statusFilter === status
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === status
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {status.replace('_', ' ')}
                   </button>
@@ -283,15 +282,14 @@ export default function WorkOrdersPage() {
                       setPriorityFilter(priority);
                       updateFiltersInUrl(undefined, priority, undefined);
                     }}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      priorityFilter === priority
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${priorityFilter === priority
                         ? priority === 'EMERGENCY'
                           ? 'bg-red-600 text-white'
                           : priority === 'HIGH'
                             ? 'bg-orange-600 text-white'
                             : 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {priority}
                   </button>
@@ -305,11 +303,10 @@ export default function WorkOrdersPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setVendorFilter('ALL')}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    vendorFilter === 'ALL'
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${vendorFilter === 'ALL'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   All Vendors
                 </button>
@@ -317,11 +314,10 @@ export default function WorkOrdersPage() {
                   <button
                     key={vendor.id}
                     onClick={() => setVendorFilter(vendor.id)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      vendorFilter === vendor.id
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${vendorFilter === vendor.id
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     <Briefcase className="w-3 h-3 inline mr-1" />
                     {vendor.companyName}
@@ -355,24 +351,22 @@ export default function WorkOrdersPage() {
                     <div
                       key={order.id}
                       onClick={() => handleWorkOrderClick(order)}
-                      className={`p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
-                        order.priority === 'EMERGENCY' ? 'border-red-300 bg-red-50/50' : ''
-                      } ${isOverdue(order) ? 'border-orange-300 bg-orange-50/50' : ''}`}
+                      className={`p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${order.priority === 'EMERGENCY' ? 'border-red-300 bg-red-50/50' : ''
+                        } ${isOverdue(order) ? 'border-orange-300 bg-orange-50/50' : ''}`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h4 className="font-medium">{order.title}</h4>
                             <span
-                              className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                order.priority === 'EMERGENCY'
+                              className={`text-xs px-2 py-1 rounded-full font-medium ${order.priority === 'EMERGENCY'
                                   ? 'bg-red-100 text-red-700'
                                   : order.priority === 'HIGH'
                                     ? 'bg-orange-100 text-orange-700'
                                     : order.priority === 'MEDIUM'
                                       ? 'bg-yellow-100 text-yellow-700'
                                       : 'bg-gray-100 text-gray-700'
-                              }`}
+                                }`}
                             >
                               {order.priority}
                             </span>
@@ -403,15 +397,14 @@ export default function WorkOrdersPage() {
                         </div>
                         <div className="flex flex-col items-end gap-2 ml-4">
                           <span
-                            className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
-                              order.status === 'COMPLETED'
+                            className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${order.status === 'COMPLETED'
                                 ? 'bg-green-100 text-green-700'
                                 : order.status === 'IN_PROGRESS'
                                   ? 'bg-blue-100 text-blue-700'
                                   : order.status === 'ASSIGNED'
                                     ? 'bg-purple-100 text-purple-700'
                                     : 'bg-gray-100 text-gray-700'
-                            }`}
+                              }`}
                           >
                             {order.status.replace('_', ' ')}
                           </span>
