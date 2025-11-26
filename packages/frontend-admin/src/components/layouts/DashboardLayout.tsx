@@ -14,11 +14,13 @@ import {
   BarChart3,
   Settings,
   FolderOpen,
+  User,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 import { useState } from 'react';
+import NotificationsDropdown from '../NotificationsDropdown';
 
 interface NavItem {
   title: string;
@@ -37,6 +39,7 @@ const navItems: NavItem[] = [
   { title: 'Calendar', href: '/calendar', icon: Calendar },
   { title: 'Activity', href: '/activity', icon: Bell },
   { title: 'Reports', href: '/reports', icon: BarChart3 },
+  { title: 'Tenant Portal', href: '/tenant-portal', icon: User },
   { title: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -115,6 +118,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main content */}
       <div className="lg:pl-64">
+        {/* Desktop header */}
+        <header className="sticky top-0 z-40 bg-white border-b border-gray-200 hidden lg:block">
+          <div className="flex items-center justify-end px-6 py-3">
+            <div className="flex items-center gap-4">
+              <NotificationsDropdown />
+              <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
+                  {user?.firstName?.[0]}
+                  {user?.lastName?.[0]}
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  {user?.firstName} {user?.lastName}
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+
         {/* Mobile header */}
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
@@ -125,7 +146,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Building2 className="w-6 h-6 text-primary" />
               <span className="font-semibold">PropertyMaster</span>
             </div>
-            <div className="w-10" /> {/* Spacer */}
+            <NotificationsDropdown />
           </div>
         </header>
 

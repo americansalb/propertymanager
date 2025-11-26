@@ -14,6 +14,8 @@ import CalendarPage from './pages/CalendarPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import DocumentsPage from './pages/DocumentsPage';
+import NotificationsPage from './pages/NotificationsPage';
+import TenantPortalPage from './pages/TenantPortalPage';
 import { QADashboard } from './pages/QADashboard';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -43,6 +45,8 @@ function App() {
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/documents" element={<DocumentsPage />} />
+                <Route path="/notifications" element={<NotificationsPage />} />
+                <Route path="/tenant-portal" element={<TenantPortalPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/qa" element={<QADashboard />} />
               </Routes>
