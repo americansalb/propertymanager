@@ -12,6 +12,7 @@ import {
   Bell,
   Calendar,
   BarChart3,
+  Settings,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { Button } from '../ui/button';
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { title: 'Calendar', href: '/calendar', icon: Calendar },
   { title: 'Activity', href: '/activity', icon: Bell },
   { title: 'Reports', href: '/reports', icon: BarChart3 },
+  { title: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

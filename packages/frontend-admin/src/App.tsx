@@ -12,6 +12,7 @@ import VendorsPage from './pages/VendorsPage';
 import ActivityPage from './pages/ActivityPage';
 import CalendarPage from './pages/CalendarPage';
 import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 import { QADashboard } from './pages/QADashboard';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/activity" element={<ActivityPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/qa" element={<QADashboard />} />
               </Routes>
             </DashboardLayout>
