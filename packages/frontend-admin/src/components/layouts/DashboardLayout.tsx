@@ -8,7 +8,10 @@ import {
   Wrench,
   Users,
   LogOut,
-  Menu
+  Menu,
+  Bell,
+  Calendar,
+  BarChart3,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { Button } from '../ui/button';
@@ -28,6 +31,9 @@ const navItems: NavItem[] = [
   { title: 'Financial', href: '/financial', icon: DollarSign },
   { title: 'Work Orders', href: '/work-orders', icon: Wrench },
   { title: 'Vendors', href: '/vendors', icon: Users },
+  { title: 'Calendar', href: '/calendar', icon: Calendar },
+  { title: 'Activity', href: '/activity', icon: Bell },
+  { title: 'Reports', href: '/reports', icon: BarChart3 },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -41,7 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside
         className={cn(
           'fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         <div className="flex flex-col h-full">
@@ -71,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-primary text-primary-foreground'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      : 'text-gray-700 hover:bg-gray-100',
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -85,7 +91,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-                {user?.firstName[0]}{user?.lastName[0]}
+                {user?.firstName[0]}
+                {user?.lastName[0]}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
@@ -94,12 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="text-xs text-gray-500 truncate">{user?.organizationName}</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={logout}
-            >
+            <Button variant="outline" size="sm" className="w-full" onClick={logout}>
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
             </Button>
@@ -112,11 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile header */}
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-            >
+            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <Menu className="w-6 h-6" />
             </Button>
             <div className="flex items-center gap-2">
@@ -128,9 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="p-6">
-          {children}
-        </main>
+        <main className="p-6">{children}</main>
       </div>
 
       {/* Mobile sidebar overlay */}

@@ -16,8 +16,6 @@ import {
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -31,8 +29,6 @@ import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { formatCurrency } from '../lib/utils';
-
-const COLORS = ['#22c55e', '#f97316', '#ef4444', '#6b7280'];
 
 export default function DashboardPage() {
   const navigate = useNavigate();

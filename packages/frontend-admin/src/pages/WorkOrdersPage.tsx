@@ -14,8 +14,6 @@ import {
   CheckSquare,
   Square,
   Download,
-  UserPlus,
-  ArrowRight,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
@@ -565,10 +563,11 @@ export default function WorkOrdersPage() {
                       setStatusFilter(status);
                       updateFiltersInUrl(status, undefined, undefined);
                     }}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === status
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      statusFilter === status
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                    }`}
                   >
                     {status.replace('_', ' ')}
                   </button>
@@ -587,14 +586,15 @@ export default function WorkOrdersPage() {
                       setPriorityFilter(priority);
                       updateFiltersInUrl(undefined, priority, undefined);
                     }}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${priorityFilter === priority
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      priorityFilter === priority
                         ? priority === 'EMERGENCY'
                           ? 'bg-red-600 text-white'
                           : priority === 'HIGH'
                             ? 'bg-orange-600 text-white'
                             : 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                    }`}
                   >
                     {priority}
                   </button>
@@ -608,10 +608,11 @@ export default function WorkOrdersPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setVendorFilter('ALL')}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${vendorFilter === 'ALL'
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    vendorFilter === 'ALL'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                  }`}
                 >
                   All Vendors
                 </button>
@@ -619,10 +620,11 @@ export default function WorkOrdersPage() {
                   <button
                     key={vendor.id}
                     onClick={() => setVendorFilter(vendor.id)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${vendorFilter === vendor.id
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      vendorFilter === vendor.id
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                    }`}
                   >
                     <Briefcase className="w-3 h-3 inline mr-1" />
                     {vendor.companyName}
