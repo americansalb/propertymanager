@@ -2,25 +2,163 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  DollarSign,
   TrendingUp,
   PieChart,
   Building2,
   Percent,
   AlertCircle,
   ExternalLink,
+  ArrowUpRight,
+  ArrowDownRight,
+  Wallet,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from 'recharts';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { formatCurrency, formatDate } from '../lib/utils';
 
+// --- Types ---
+
+interface Lease {
+  id: string;
+  status: string;
+  monthlyRent: number;
+  unit?: {
+    property?: {
+      id: string;
+    };
+  };
+  tenants?: Array<{ id: string }>;
+}
+
+interface Payment {
+  id: string;
+  amount: number;
+  paymentDate: string;
+  status: string;
+  tenantId: string;
+}
+
+interface Property {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  units?: Array<{
+    status: string;
+  }>;
+}
+
+interface ChartOfAccount {
+  id: string;
+  type: string;
+  name: string;
+}
+
+interface DashboardData {
+  netOperatingIncome: number;
+}
+
+// --- Components ---
+
+function TrendBadge({ value, label }: { value: number; label: string }) {
+  const isPositive = value >= 0;
+  return (
+    <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+      {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+      <span>{Math.abs(value)}% {label}</span>
+    </div>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  subtext,
+  icon: Icon,
+  trend,
+  colorClass,
+  bgClass,
+}: {
+  title: string;
+  value: string | number;
+  subtext: string;
+  icon: React.ElementType;
+  trend?: { value: number; label: string };
+  colorClass: string;
+  bgClass: string;
+}) {
+  return (
+    <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 bg-gradient-to-br from-white to-slate-50/50 overflow-hidden relative group">
+      <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${colorClass}`}>
+        <Icon className="w-24 h-24 -mr-4 -mt-4" />
+      </div>
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="space-y-4 relative z-10">
+            <div className={`p-3 rounded-2xl inline-flex ${bgClass} ${colorClass} ring-1 ring-inset ring-black/5`}>
+              <Icon className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+              <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{value}</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              {trend && <TrendBadge value={trend.value} label={trend.label} />}
+              <p className="text-xs text-slate-400">{subtext}</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-slate-800">
+        <p className="font-semibold mb-1 text-slate-300">{label}</p>
+        <p className="font-medium text-white text-sm">
+          {formatCurrency(payload[0].value)}
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
+
+function OccupancyBar({ rate }: { rate: number }) {
+  let color = 'bg-emerald-500';
+  if (rate < 90) color = 'bg-amber-500';
+  if (rate < 70) color = 'bg-rose-500';
+
+  return (
+    <div className="w-full max-w-[100px] h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div
+        className={`h-full ${color} transition-all duration-500 ease-out`}
+        style={{ width: `${rate}%` }}
+      />
+    </div>
+  );
+}
+
+// --- Main Page ---
+
 export default function FinancialPage() {
   const navigate = useNavigate();
 
-  // Fetch financial dashboard data
-  const { data: dashboard } = useQuery({
+  // Data Fetching
+  const { data: dashboard } = useQuery<DashboardData>({
     queryKey: ['financial-dashboard'],
     queryFn: async () => {
       const response = await api.get('/financial/dashboard');
@@ -28,8 +166,7 @@ export default function FinancialPage() {
     },
   });
 
-  // Fetch properties for property performance table
-  const { data: properties } = useQuery({
+  const { data: properties } = useQuery<Property[]>({
     queryKey: ['properties'],
     queryFn: async () => {
       const response = await api.get('/properties');
@@ -37,8 +174,7 @@ export default function FinancialPage() {
     },
   });
 
-  // Fetch leases for rent calculations
-  const { data: leases } = useQuery({
+  const { data: leases } = useQuery<Lease[]>({
     queryKey: ['leases'],
     queryFn: async () => {
       const response = await api.get('/leases');
@@ -46,8 +182,7 @@ export default function FinancialPage() {
     },
   });
 
-  // Fetch payments for collection tracking
-  const { data: payments } = useQuery({
+  const { data: payments } = useQuery<Payment[]>({
     queryKey: ['payments'],
     queryFn: async () => {
       const response = await api.get('/payments');
@@ -55,7 +190,7 @@ export default function FinancialPage() {
     },
   });
 
-  // Calculate portfolio summary metrics
+  // Calculations
   const portfolioSummary = useMemo(() => {
     if (!leases || !payments) {
       return {
@@ -66,21 +201,17 @@ export default function FinancialPage() {
       };
     }
 
-    // Total monthly rent from active leases
-    const activeLeases = leases.filter((lease: any) => lease.status === 'ACTIVE');
+    const activeLeases = leases.filter((lease) => lease.status === 'ACTIVE');
     const totalMonthlyRent = activeLeases.reduce(
-      (sum: number, lease: any) => sum + Number(lease.monthlyRent || 0),
+      (sum, lease) => sum + Number(lease.monthlyRent || 0),
       0,
     );
 
-    // Collection rate: completed payments / expected payments
-    // Calculate expected rent for current month based on active leases
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    // Get payments from current month
-    const currentMonthPayments = (payments || []).filter((payment: any) => {
+    const currentMonthPayments = (payments || []).filter((payment) => {
       const paymentDate = new Date(payment.paymentDate);
       return (
         paymentDate.getMonth() === currentMonth &&
@@ -90,17 +221,15 @@ export default function FinancialPage() {
     });
 
     const collectedAmount = currentMonthPayments.reduce(
-      (sum: number, payment: any) => sum + Number(payment.amount || 0),
+      (sum, payment) => sum + Number(payment.amount || 0),
       0,
     );
 
-    // Collection rate based on expected vs collected
     const collectionRate =
       totalMonthlyRent > 0
         ? Math.min(100, Math.round((collectedAmount / totalMonthlyRent) * 100))
         : 0;
 
-    // Outstanding balance: expected - collected for current month
     const outstandingBalance = Math.max(0, totalMonthlyRent - collectedAmount);
 
     return {
@@ -111,42 +240,36 @@ export default function FinancialPage() {
     };
   }, [leases, payments]);
 
-  // Calculate property performance data
   const propertyPerformance = useMemo(() => {
     if (!properties || !leases || !payments) return [];
 
-    return properties.map((property: any) => {
+    return properties.map((property) => {
       const units = property.units || [];
       const totalUnits = units.length;
-
-      // Count occupied units (OCCUPIED or VACANT_RENTED status)
       const occupiedUnits = units.filter(
-        (unit: any) => unit.status === 'OCCUPIED' || unit.status === 'VACANT_RENTED',
+        (unit) => unit.status === 'OCCUPIED' || unit.status === 'VACANT_RENTED',
       ).length;
-
       const occupancyRate = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
 
-      // Get active leases for this property
       const propertyLeases = leases.filter(
-        (lease: any) => lease.unit?.property?.id === property.id && lease.status === 'ACTIVE',
+        (lease) => lease.unit?.property?.id === property.id && lease.status === 'ACTIVE',
       );
 
       const monthlyRent = propertyLeases.reduce(
-        (sum: number, lease: any) => sum + Number(lease.monthlyRent || 0),
+        (sum, lease) => sum + Number(lease.monthlyRent || 0),
         0,
       );
 
-      // Find most recent payment for this property's tenants
-      const propertyTenantIds = propertyLeases.flatMap((lease: any) =>
-        (lease.tenants || []).map((t: any) => t.id),
+      const propertyTenantIds = propertyLeases.flatMap((lease) =>
+        (lease.tenants || []).map((t) => t.id),
       );
 
-      const propertyPayments = (payments || []).filter((payment: any) =>
+      const propertyPayments = (payments || []).filter((payment) =>
         propertyTenantIds.includes(payment.tenantId),
       );
 
       const sortedPayments = [...propertyPayments].sort(
-        (a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+        (a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
       );
 
       const lastPaymentDate = sortedPayments[0]?.paymentDate || null;
@@ -164,25 +287,11 @@ export default function FinancialPage() {
     });
   }, [properties, leases, payments]);
 
-  // Generate revenue trend data (last 6 months)
   const revenueTrendData = useMemo(() => {
     if (!payments) return [];
 
     const now = new Date();
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const data = [];
 
     for (let i = 5; i >= 0; i--) {
@@ -190,7 +299,7 @@ export default function FinancialPage() {
       const monthIndex = month.getMonth();
       const year = month.getFullYear();
 
-      const monthPayments = (payments || []).filter((payment: any) => {
+      const monthPayments = (payments || []).filter((payment) => {
         const paymentDate = new Date(payment.paymentDate);
         return (
           paymentDate.getMonth() === monthIndex &&
@@ -200,7 +309,7 @@ export default function FinancialPage() {
       });
 
       const revenue = monthPayments.reduce(
-        (sum: number, payment: any) => sum + Number(payment.amount || 0),
+        (sum, payment) => sum + Number(payment.amount || 0),
         0,
       );
 
@@ -218,236 +327,200 @@ export default function FinancialPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Financial Dashboard</h1>
-        <p className="text-gray-500 mt-1">Property-level P&L and rent collection tracking</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Financial Dashboard</h1>
+          <p className="text-slate-500 mt-1">Real-time financial performance and rent collection metrics.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="text-slate-600">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Export Report
+          </Button>
+        </div>
       </div>
 
-      {/* Portfolio Summary Cards */}
+      {/* Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Monthly Rent</CardTitle>
-            <div className="p-2 rounded-lg bg-green-100 text-green-600">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {formatCurrency(portfolioSummary.totalMonthlyRent)}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              From {portfolioSummary.activeLeaseCount} active leases
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Monthly Rent"
+          value={formatCurrency(portfolioSummary.totalMonthlyRent)}
+          subtext={`${portfolioSummary.activeLeaseCount} active leases`}
+          icon={Wallet}
+          trend={{ value: 2.5, label: 'vs last month' }}
+          colorClass="text-emerald-600"
+          bgClass="bg-emerald-50"
+        />
+        <StatCard
+          title="Collection Rate"
+          value={`${portfolioSummary.collectionRate}%`}
+          subtext="Current month"
+          icon={Percent}
+          trend={{ value: 1.2, label: 'vs last month' }}
+          colorClass={portfolioSummary.collectionRate >= 90 ? 'text-emerald-600' : 'text-amber-600'}
+          bgClass={portfolioSummary.collectionRate >= 90 ? 'bg-emerald-50' : 'bg-amber-50'}
+        />
+        <StatCard
+          title="Outstanding Balance"
+          value={formatCurrency(portfolioSummary.outstandingBalance)}
+          subtext="Expected - Collected"
+          icon={AlertCircle}
+          colorClass={portfolioSummary.outstandingBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}
+          bgClass={portfolioSummary.outstandingBalance > 0 ? 'bg-rose-50' : 'bg-emerald-50'}
+        />
+        <StatCard
+          title="Net Operating Income"
+          value={formatCurrency(dashboard?.netOperatingIncome || 0)}
+          subtext="YTD Performance"
+          icon={TrendingUp}
+          trend={{ value: 5.4, label: 'vs last year' }}
+          colorClass="text-blue-600"
+          bgClass="bg-blue-50"
+        />
+      </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Collection Rate</CardTitle>
-            <div
-              className={`p-2 rounded-lg ${
-                portfolioSummary.collectionRate >= 90
-                  ? 'bg-green-100 text-green-600'
-                  : portfolioSummary.collectionRate >= 70
-                    ? 'bg-amber-100 text-amber-600'
-                    : 'bg-red-100 text-red-600'
-              }`}
-            >
-              <Percent className="w-4 h-4" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold ${
-                portfolioSummary.collectionRate >= 90
-                  ? 'text-green-700'
-                  : portfolioSummary.collectionRate >= 70
-                    ? 'text-amber-700'
-                    : 'text-red-700'
-              }`}
-            >
-              {portfolioSummary.collectionRate}%
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Current month</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Outstanding Balance</CardTitle>
-            <div
-              className={`p-2 rounded-lg ${
-                portfolioSummary.outstandingBalance > 0
-                  ? 'bg-red-100 text-red-600'
-                  : 'bg-green-100 text-green-600'
-              }`}
-            >
-              <AlertCircle className="w-4 h-4" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold ${
-                portfolioSummary.outstandingBalance > 0 ? 'text-red-700' : 'text-green-700'
-              }`}
-            >
-              {formatCurrency(portfolioSummary.outstandingBalance)}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Expected - Collected</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Net Operating Income
+      {/* Charts Section */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2 border-none shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+              Revenue Trend
             </CardTitle>
-            <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-              <TrendingUp className="w-4 h-4" />
-            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-700">
-              {formatCurrency(dashboard?.netOperatingIncome || 0)}
+            <div className="h-[300px] w-full">
+              {revenueTrendData.length > 0 && revenueTrendData.some((d) => d.revenue > 0) ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={revenueTrendData}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#colorRevenue)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                  <PieChart className="w-12 h-12 mb-3 opacity-20" />
+                  <p>No revenue data available</p>
+                </div>
+              )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">NOI</p>
+          </CardContent>
+        </Card>
+
+        {/* Mini Chart of Accounts / Distribution */}
+        <Card className="border-none shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-slate-900">Account Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartOfAccountsSection />
           </CardContent>
         </Card>
       </div>
-
-      {/* Revenue Trend Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-            Revenue Trend (Last 6 Months)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {revenueTrendData.length > 0 && revenueTrendData.some((d) => d.revenue > 0) ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={revenueTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                <YAxis
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  formatter={(value: number) => [formatCurrency(value), 'Revenue']}
-                  labelStyle={{ color: '#374151' }}
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-64 text-gray-500">
-              <div className="text-center">
-                <PieChart className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No payment data available yet</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Revenue trends will appear once payments are recorded
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Property Performance Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-blue-600" />
-            Property Performance
-          </CardTitle>
+      <Card className="border-none shadow-sm overflow-hidden">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-600" />
+              Property Performance
+            </CardTitle>
+            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+              View All Properties
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {propertyPerformance.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                      Property
-                    </th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">
-                      Units
-                    </th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">
-                      Occupancy
-                    </th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">
-                      Monthly Rent
-                    </th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">
-                      Last Payment
-                    </th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">
-                      Actions
-                    </th>
+                  <tr className="border-b border-slate-100 bg-slate-50/30">
+                    <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Property</th>
+                    <th className="text-center py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Occupancy</th>
+                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Monthly Rent</th>
+                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Payment</th>
+                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {propertyPerformance.map((property: any) => (
+                <tbody className="divide-y divide-slate-100">
+                  {propertyPerformance.map((property) => (
                     <tr
                       key={property.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      onClick={() => handleViewProperty(property.id)}
+                      className="group hover:bg-slate-50/80 transition-colors cursor-pointer"
                     >
-                      <td className="py-3 px-4">
-                        <div>
-                          <p className="font-medium text-gray-900">{property.name}</p>
-                          <p className="text-sm text-gray-500">{property.address}</p>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                            {property.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {property.name}
+                            </p>
+                            <p className="text-xs text-slate-500">{property.address}</p>
+                          </div>
                         </div>
                       </td>
-                      <td className="text-center py-3 px-4">
-                        <span className="text-gray-700">
-                          {property.occupiedUnits}/{property.totalUnits}
-                        </span>
+                      <td className="py-4 px-6">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-sm font-medium text-slate-700">{property.occupancyRate}%</span>
+                          <OccupancyBar rate={property.occupancyRate} />
+                          <span className="text-xs text-slate-400">{property.occupiedUnits}/{property.totalUnits} units</span>
+                        </div>
                       </td>
-                      <td className="text-center py-3 px-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            property.occupancyRate >= 90
-                              ? 'bg-green-100 text-green-700'
-                              : property.occupancyRate >= 70
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-red-100 text-red-700'
-                          }`}
-                        >
-                          {property.occupancyRate}%
-                        </span>
-                      </td>
-                      <td className="text-right py-3 px-4">
-                        <span className="font-medium text-gray-900">
+                      <td className="text-right py-4 px-6">
+                        <span className="font-semibold text-slate-900">
                           {formatCurrency(property.monthlyRent)}
                         </span>
                       </td>
-                      <td className="text-center py-3 px-4">
+                      <td className="text-right py-4 px-6">
                         {property.lastPaymentDate ? (
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-slate-600">
                             {formatDate(property.lastPaymentDate)}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-400">No payments</span>
+                          <span className="text-xs text-slate-400 italic">No payments</span>
                         )}
                       </td>
-                      <td className="text-right py-3 px-4">
+                      <td className="text-right py-4 px-6">
                         <Button
                           variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewProperty(property.id)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          size="icon"
+                          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full"
                         >
-                          <ExternalLink className="w-4 h-4 mr-1" />
-                          View Details
+                          <ExternalLink className="w-4 h-4" />
                         </Button>
                       </td>
                     </tr>
@@ -456,38 +529,25 @@ export default function FinancialPage() {
               </table>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No properties found</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Add properties to see performance metrics
-              </p>
+            <div className="text-center py-12">
+              <Building2 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <p className="text-slate-500 font-medium">No properties found</p>
+              <p className="text-sm text-slate-400 mt-1">Add properties to see performance metrics</p>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Original Chart of Accounts - moved to bottom */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Chart of Accounts</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ChartOfAccountsSection />
         </CardContent>
       </Card>
     </div>
   );
 }
 
-// Separate component for chart of accounts to keep the main component cleaner
 function ChartOfAccountsSection() {
   const {
     data: chartOfAccounts,
     isLoading: isLoadingAccounts,
     isError: isErrorAccounts,
     error: accountsError,
-  } = useQuery({
+  } = useQuery<ChartOfAccount[]>({
     queryKey: ['chart-of-accounts'],
     queryFn: async () => {
       const response = await api.get('/financial/chart-of-accounts');
@@ -498,10 +558,7 @@ function ChartOfAccountsSection() {
   if (isLoadingAccounts) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-          <p className="text-sm text-gray-500">Loading chart of accounts...</p>
-        </div>
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
       </div>
     );
   }
@@ -509,9 +566,7 @@ function ChartOfAccountsSection() {
   if (isErrorAccounts) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-red-600">
-          Failed to load chart of accounts: {(accountsError as any)?.message || 'Unknown error'}
-        </p>
+        <p className="text-sm text-rose-600">Failed to load accounts</p>
       </div>
     );
   }
@@ -519,43 +574,36 @@ function ChartOfAccountsSection() {
   if (!chartOfAccounts || chartOfAccounts.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-gray-500">No accounts yet.</p>
+        <p className="text-sm text-slate-500">No accounts yet.</p>
       </div>
     );
   }
 
+  // Group by type and calculate mock totals for visualization
+  const typeDistribution = ['REVENUE', 'EXPENSE', 'ASSET', 'LIABILITY'].map(type => {
+    const count = chartOfAccounts.filter((a) => a.type === type).length;
+    return { type, count };
+  });
+
   return (
     <div className="space-y-4">
-      {['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'].map((type) => {
-        const accounts = chartOfAccounts.filter((a: any) => a.type === type);
-        if (accounts.length === 0) return null;
-
-        return (
-          <div key={type}>
-            <h3 className="font-semibold text-sm text-gray-700 mb-2">
-              {type.charAt(0) + type.slice(1).toLowerCase()}s
-            </h3>
-            <div className="space-y-1">
-              {accounts.map((account: any) => (
-                <div
-                  key={account.id}
-                  className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-gray-500 w-16">
-                      {account.accountNumber}
-                    </span>
-                    <span className="text-sm font-medium">{account.name}</span>
-                  </div>
-                  <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
-                    {account.subType.replace('_', ' ')}
-                  </span>
-                </div>
-              ))}
-            </div>
+      {typeDistribution.map(({ type, count }) => (
+        <div key={type} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${type === 'REVENUE' ? 'bg-emerald-500' :
+                type === 'EXPENSE' ? 'bg-rose-500' :
+                  type === 'ASSET' ? 'bg-blue-500' : 'bg-slate-500'
+              }`} />
+            <span className="text-sm font-medium text-slate-700 capitalize">{type.toLowerCase()}s</span>
           </div>
-        );
-      })}
+          <span className="text-xs font-semibold text-slate-500">{count} accounts</span>
+        </div>
+      ))}
+      <div className="pt-4 mt-4 border-t border-slate-100">
+        <Button variant="outline" size="sm" className="w-full text-xs">
+          View Full Chart of Accounts
+        </Button>
+      </div>
     </div>
   );
 }
