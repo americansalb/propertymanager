@@ -13,6 +13,7 @@ import {
   Calendar,
   BarChart3,
   Settings,
+  FolderOpen,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { Button } from '../ui/button';
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { title: 'Financial', href: '/financial', icon: DollarSign },
   { title: 'Work Orders', href: '/work-orders', icon: Wrench },
   { title: 'Vendors', href: '/vendors', icon: Users },
+  { title: 'Documents', href: '/documents', icon: FolderOpen },
   { title: 'Calendar', href: '/calendar', icon: Calendar },
   { title: 'Activity', href: '/activity', icon: Bell },
   { title: 'Reports', href: '/reports', icon: BarChart3 },
