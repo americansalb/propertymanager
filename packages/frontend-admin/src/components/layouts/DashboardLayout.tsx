@@ -15,12 +15,16 @@ import {
   Settings,
   FolderOpen,
   User,
+  Search,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NotificationsDropdown from '../NotificationsDropdown';
+import CommandPalette, { useCommandPalette } from '../CommandPalette';
+import HelpPanel, { useHelpPanel } from '../HelpPanel';
 
 interface NavItem {
   title: string;
@@ -47,6 +51,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const commandPalette = useCommandPalette();
+  const helpPanel = useHelpPanel();
+
+  // Log component mount
+  useEffect(() => {
+    console.log('[DashboardLayout] Mounted with command palette and help panel hooks');
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -120,8 +131,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="lg:pl-64">
         {/* Desktop header */}
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 hidden lg:block">
-          <div className="flex items-center justify-end px-6 py-3">
+          <div className="flex items-center justify-between px-6 py-3">
+            {/* Search Button */}
+            <button
+              onClick={() => {
+                console.log('[DashboardLayout] Search button clicked');
+                commandPalette.open();
+              }}
+              className="flex items-center gap-3 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors group"
+            >
+              <Search className="w-4 h-4 text-gray-500" />
+              <span className="text-sm text-gray-500">Search anything...</span>
+              <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 bg-white rounded border border-gray-200 text-xs text-gray-400 font-mono">
+                ⌘K
+              </kbd>
+            </button>
+
             <div className="flex items-center gap-4">
+              {/* Help Button */}
+              <button
+                onClick={() => {
+                  console.log('[DashboardLayout] Help button clicked');
+                  helpPanel.open();
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Help & Resources (⌘/)"
+              >
+                <HelpCircle className="w-5 h-5 text-gray-600" />
+              </button>
               <NotificationsDropdown />
               <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
                 <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
@@ -142,11 +179,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <Menu className="w-6 h-6" />
             </Button>
-            <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                console.log('[DashboardLayout] Mobile search button clicked');
+                commandPalette.open();
+              }}
+              className="flex items-center gap-2"
+            >
               <Building2 className="w-6 h-6 text-primary" />
               <span className="font-semibold">PropertyMaster</span>
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  console.log('[DashboardLayout] Mobile search icon clicked');
+                  commandPalette.open();
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100"
+              >
+                <Search className="w-5 h-5 text-gray-600" />
+              </button>
+              <button
+                onClick={() => {
+                  console.log('[DashboardLayout] Mobile help button clicked');
+                  helpPanel.open();
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100"
+              >
+                <HelpCircle className="w-5 h-5 text-gray-600" />
+              </button>
+              <NotificationsDropdown />
             </div>
-            <NotificationsDropdown />
           </div>
         </header>
 
@@ -161,6 +224,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Global Components */}
+      <CommandPalette />
+      <HelpPanel />
     </div>
   );
 }
