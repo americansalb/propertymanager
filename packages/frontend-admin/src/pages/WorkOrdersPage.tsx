@@ -11,6 +11,11 @@ import {
   Search,
   Calendar,
   Filter,
+  CheckSquare,
+  Square,
+  Download,
+  UserPlus,
+  ArrowRight,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
@@ -44,6 +49,10 @@ export default function WorkOrdersPage() {
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [propertyEditModalOpen, setPropertyEditModalOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActionInProgress, setBulkActionInProgress] = useState(false);
 
   // Get property and vendor filters from URL
   const propertyIdFilter = searchParams.get('propertyId');
@@ -260,6 +269,79 @@ export default function WorkOrdersPage() {
     setPropertyEditModalOpen(true);
     setDrawerOpen(false);
   };
+
+  // Bulk selection handlers
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredWorkOrders.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredWorkOrders.map((wo: any) => wo.id)));
+    }
+  };
+
+  const toggleSelectOne = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Bulk actions
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedIds.size === 0) return;
+
+    setBulkActionInProgress(true);
+    try {
+      const promises = Array.from(selectedIds).map((id) =>
+        updateWorkOrder.mutateAsync({ id, data: { status: newStatus } }),
+      );
+      await Promise.all(promises);
+      clearSelection();
+    } catch (error: any) {
+      console.error('Bulk status update failed:', error);
+      alert('Some updates failed. Please try again.');
+    } finally {
+      setBulkActionInProgress(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const selectedOrders = filteredWorkOrders.filter((wo: any) => selectedIds.has(wo.id));
+    const headers = ['ID', 'Title', 'Status', 'Priority', 'Property', 'Unit', 'Created', 'Vendor'];
+    const rows = selectedOrders.map((wo: any) => [
+      wo.id,
+      wo.title,
+      wo.status,
+      wo.priority,
+      wo.property?.name || '',
+      wo.unit?.unitNumber || '',
+      formatDate(wo.createdAt),
+      wo.vendor?.companyName || 'Unassigned',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row: string[]) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `work-orders-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const isAllSelected =
+    filteredWorkOrders.length > 0 && selectedIds.size === filteredWorkOrders.length;
+  const hasSelection = selectedIds.size > 0;
 
   if (isLoading) {
     return (
@@ -552,16 +634,79 @@ export default function WorkOrdersPage() {
         </div>
       )}
 
+      {/* Bulk Action Bar */}
+      {hasSelection && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-blue-900">
+                  {selectedIds.size} work order{selectedIds.size > 1 ? 's' : ''} selected
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSelection}
+                  className="text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkStatusChange('IN_PROGRESS')}
+                  disabled={bulkActionInProgress}
+                  className="bg-white"
+                >
+                  <Play className="w-4 h-4 mr-1" />
+                  Start All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkStatusChange('COMPLETED')}
+                  disabled={bulkActionInProgress}
+                  className="bg-white"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Complete All
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportCSV} className="bg-white">
+                  <Download className="w-4 h-4 mr-1" />
+                  Export CSV
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Work Orders List */}
       {workOrders && workOrders.length > 0 ? (
         filteredWorkOrders.length > 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>
-                {statusFilter !== 'ALL' || priorityFilter !== 'ALL'
-                  ? `Filtered Work Orders (${filteredWorkOrders.length})`
-                  : 'All Work Orders'}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>
+                  {statusFilter !== 'ALL' || priorityFilter !== 'ALL'
+                    ? `Filtered Work Orders (${filteredWorkOrders.length})`
+                    : 'All Work Orders'}
+                </CardTitle>
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  {isAllSelected ? (
+                    <CheckSquare className="w-5 h-5 text-blue-600" />
+                  ) : (
+                    <Square className="w-5 h-5" />
+                  )}
+                  {isAllSelected ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -569,110 +714,131 @@ export default function WorkOrdersPage() {
                   const age = getWorkOrderAge(order.createdAt);
                   const ageBadgeText = getAgeBadgeText(age);
                   const ageBadgeClass = getAgeBadgeClass(age);
+                  const isSelected = selectedIds.has(order.id);
 
                   return (
                     <div
                       key={order.id}
                       onClick={() => handleWorkOrderClick(order)}
-                      className={`p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${order.priority === 'EMERGENCY' ? 'border-red-300 bg-red-50/50' : ''
-                        } ${isOverdue(order) ? 'border-orange-300 bg-orange-50/50' : ''}`}
+                      className={`p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
+                        order.priority === 'EMERGENCY' ? 'border-red-300 bg-red-50/50' : ''
+                      } ${isOverdue(order) ? 'border-orange-300 bg-orange-50/50' : ''} ${
+                        isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30' : ''
+                      }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h4 className="font-medium">{order.title}</h4>
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full font-medium ${order.priority === 'EMERGENCY'
-                                  ? 'bg-red-100 text-red-700'
-                                  : order.priority === 'HIGH'
-                                    ? 'bg-orange-100 text-orange-700'
-                                    : order.priority === 'MEDIUM'
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-gray-100 text-gray-700'
-                                }`}
-                            >
-                              {order.priority}
-                            </span>
-                            {/* Age Badge */}
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full font-medium ${ageBadgeClass}`}
-                            >
-                              {ageBadgeText}
-                            </span>
-                            {isOverdue(order) && (
-                              <span className="flex items-center gap-1 text-xs text-orange-600 font-medium">
-                                <Clock className="w-3 h-3" />
-                                Overdue
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                            {order.description}
-                          </p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="font-medium">{order.property?.name}</span>
-                            {order.unit && <span>Unit {order.unit.unitNumber}</span>}
-                            <span>Created {formatDate(order.createdAt)}</span>
-                            {order.scheduledDate && (
-                              <span>Target {formatDate(order.scheduledDate)}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2 ml-4">
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${order.status === 'COMPLETED'
-                                ? 'bg-green-100 text-green-700'
-                                : order.status === 'IN_PROGRESS'
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : order.status === 'ASSIGNED'
-                                    ? 'bg-purple-100 text-purple-700'
-                                    : 'bg-gray-100 text-gray-700'
-                              }`}
-                          >
-                            {order.status.replace('_', ' ')}
-                          </span>
-                          {/* Quick Status Actions */}
-                          {order.status === 'SUBMITTED' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => handleQuickStatusChange(order.id, 'IN_PROGRESS', e)}
-                              className="text-xs h-7 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-                              disabled={updateWorkOrder.isPending}
-                            >
-                              <Play className="w-3 h-3 mr-1" />
-                              Start
-                            </Button>
+                      <div className="flex items-start gap-3">
+                        <button
+                          onClick={(e) => toggleSelectOne(order.id, e)}
+                          className="mt-1 flex-shrink-0"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-5 h-5 text-blue-600" />
+                          ) : (
+                            <Square className="w-5 h-5 text-gray-400 hover:text-gray-600" />
                           )}
-                          {order.status === 'IN_PROGRESS' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => handleQuickStatusChange(order.id, 'COMPLETED', e)}
-                              className="text-xs h-7 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                              disabled={updateWorkOrder.isPending}
-                            >
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Complete
-                            </Button>
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 className="font-medium">{order.title}</h4>
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                    order.priority === 'EMERGENCY'
+                                      ? 'bg-red-100 text-red-700'
+                                      : order.priority === 'HIGH'
+                                        ? 'bg-orange-100 text-orange-700'
+                                        : order.priority === 'MEDIUM'
+                                          ? 'bg-yellow-100 text-yellow-700'
+                                          : 'bg-gray-100 text-gray-700'
+                                  }`}
+                                >
+                                  {order.priority}
+                                </span>
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full font-medium ${ageBadgeClass}`}
+                                >
+                                  {ageBadgeText}
+                                </span>
+                                {isOverdue(order) && (
+                                  <span className="flex items-center gap-1 text-xs text-orange-600 font-medium">
+                                    <Clock className="w-3 h-3" />
+                                    Overdue
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                {order.description}
+                              </p>
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span className="font-medium">{order.property?.name}</span>
+                                {order.unit && <span>Unit {order.unit.unitNumber}</span>}
+                                <span>Created {formatDate(order.createdAt)}</span>
+                                {order.scheduledDate && (
+                                  <span>Target {formatDate(order.scheduledDate)}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2 ml-4">
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
+                                  order.status === 'COMPLETED'
+                                    ? 'bg-green-100 text-green-700'
+                                    : order.status === 'IN_PROGRESS'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : order.status === 'ASSIGNED'
+                                        ? 'bg-purple-100 text-purple-700'
+                                        : 'bg-gray-100 text-gray-700'
+                                }`}
+                              >
+                                {order.status.replace('_', ' ')}
+                              </span>
+                              {order.status === 'SUBMITTED' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) =>
+                                    handleQuickStatusChange(order.id, 'IN_PROGRESS', e)
+                                  }
+                                  className="text-xs h-7 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                                  disabled={updateWorkOrder.isPending}
+                                >
+                                  <Play className="w-3 h-3 mr-1" />
+                                  Start
+                                </Button>
+                              )}
+                              {order.status === 'IN_PROGRESS' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => handleQuickStatusChange(order.id, 'COMPLETED', e)}
+                                  className="text-xs h-7 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                  disabled={updateWorkOrder.isPending}
+                                >
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Complete
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          {(order.assignedTo || order.vendor) && (
+                            <div className="flex items-center gap-4 text-xs text-gray-600">
+                              {order.assignedTo && (
+                                <span>
+                                  Assigned to: {order.assignedTo.firstName}{' '}
+                                  {order.assignedTo.lastName}
+                                </span>
+                              )}
+                              {order.vendor && (
+                                <span className="flex items-center gap-1">
+                                  <Briefcase className="w-3 h-3" />
+                                  Vendor: {order.vendor.companyName}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
-                      {(order.assignedTo || order.vendor) && (
-                        <div className="flex items-center gap-4 text-xs text-gray-600">
-                          {order.assignedTo && (
-                            <span>
-                              Assigned to: {order.assignedTo.firstName} {order.assignedTo.lastName}
-                            </span>
-                          )}
-                          {order.vendor && (
-                            <span className="flex items-center gap-1">
-                              <Briefcase className="w-3 h-3" />
-                              Vendor: {order.vendor.companyName}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
