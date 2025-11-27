@@ -22,6 +22,8 @@ import { WorkOrdersModule } from './work-orders/work-orders.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { ReportsModule } from './reports/reports.module';
 import { EventsModule } from './events/events.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ScheduledTasksModule } from './scheduled/scheduled-tasks.module';
 
 @Module({
   controllers: [AppController],
@@ -57,6 +59,8 @@ import { EventsModule } from './events/events.module';
     VendorsModule,
     ReportsModule,
     EventsModule,
+    NotificationsModule,
+    ScheduledTasksModule,
   ],
   providers: [
     {

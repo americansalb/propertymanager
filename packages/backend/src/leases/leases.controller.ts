@@ -213,4 +213,97 @@ export class LeasesController {
     const lease = await this.leasesService.setPrimaryTenant(id, tenantId, organizationId, userId);
     return { success: true, data: lease, message: 'Primary tenant updated successfully' };
   }
+
+  // ============================================================
+  // LEASE EXPIRATION TRACKING ENDPOINTS (Phase 50)
+  // ============================================================
+
+  @Get('expiring/:days')
+  @ApiOperation({ summary: 'Get leases expiring within specified days' })
+  @ApiParam({ name: 'days', description: 'Number of days ahead to check (default 30)' })
+  @ApiResponse({ status: 200, description: 'List of expiring leases' })
+  async getExpiringLeases(
+    @Param('days') days: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    const daysAhead = parseInt(days, 10) || 30;
+    const leases = await this.leasesService.getExpiringLeases(organizationId, daysAhead);
+    return { success: true, data: leases };
+  }
+
+  @Get('expiration/summary')
+  @ApiOperation({ summary: 'Get lease expiration summary by time period' })
+  @ApiResponse({ status: 200, description: 'Expiration summary counts' })
+  async getExpirationSummary(@OrganizationId() organizationId: string) {
+    const summary = await this.leasesService.getExpirationSummary(organizationId);
+    return { success: true, data: summary };
+  }
+
+  @Post('expiration/process')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Process expired leases (admin only)' })
+  @ApiResponse({ status: 200, description: 'Expired leases processed' })
+  async processExpiredLeases(@OrganizationId() organizationId: string) {
+    const result = await this.leasesService.processExpiredLeases(organizationId);
+    return { success: true, data: result };
+  }
+
+  // ============================================================
+  // AUTO-PAY MANAGEMENT ENDPOINTS (Phase 70)
+  // ============================================================
+
+  @Post(':id/autopay')
+  @ApiOperation({ summary: 'Enable auto-pay for a lease' })
+  @ApiParam({ name: 'id', description: 'Lease ID' })
+  @ApiResponse({ status: 200, description: 'Auto-pay enabled successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid auto-pay settings or lease not active' })
+  async enableAutoPay(
+    @Param('id') id: string,
+    @Body() dto: { autoPayDay: number; paymentMethodId: string },
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+  ) {
+    const lease = await this.leasesService.enableAutoPay(
+      id,
+      dto.autoPayDay,
+      dto.paymentMethodId,
+      organizationId,
+      userId,
+    );
+    return { success: true, data: lease, message: 'Auto-pay enabled successfully' };
+  }
+
+  @Delete(':id/autopay')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Disable auto-pay for a lease' })
+  @ApiParam({ name: 'id', description: 'Lease ID' })
+  @ApiResponse({ status: 200, description: 'Auto-pay disabled successfully' })
+  async disableAutoPay(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+  ) {
+    const lease = await this.leasesService.disableAutoPay(id, organizationId, userId);
+    return { success: true, data: lease, message: 'Auto-pay disabled successfully' };
+  }
+
+  @Put(':id/autopay')
+  @ApiOperation({ summary: 'Update auto-pay settings for a lease' })
+  @ApiParam({ name: 'id', description: 'Lease ID' })
+  @ApiResponse({ status: 200, description: 'Auto-pay settings updated successfully' })
+  async updateAutoPaySettings(
+    @Param('id') id: string,
+    @Body() dto: { autoPayDay: number; paymentMethodId?: string },
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+  ) {
+    const lease = await this.leasesService.updateAutoPaySettings(
+      id,
+      dto.autoPayDay,
+      dto.paymentMethodId,
+      organizationId,
+      userId,
+    );
+    return { success: true, data: lease, message: 'Auto-pay settings updated successfully' };
+  }
 }

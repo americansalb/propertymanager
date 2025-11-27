@@ -727,4 +727,338 @@ export class LeasesService {
       );
     }
   }
+
+  // ============================================================
+  // PHASE 50: LEASE EXPIRATION TRACKING
+  // ============================================================
+
+  /**
+   * Get leases expiring within a specified number of days
+   */
+  async getExpiringLeases(organizationId: string, daysAhead: number = 30) {
+    const today = new Date();
+    const futureDate = new Date();
+    futureDate.setDate(today.getDate() + daysAhead);
+
+    return this.prisma.lease.findMany({
+      where: {
+        status: 'ACTIVE',
+        endDate: {
+          gte: today,
+          lte: futureDate,
+        },
+        unit: {
+          property: {
+            organizationId,
+          },
+        },
+      },
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+        tenants: true,
+      },
+      orderBy: { endDate: 'asc' },
+    });
+  }
+
+  /**
+   * Get lease expiration summary (counts by time period)
+   */
+  async getExpirationSummary(organizationId: string) {
+    const today = new Date();
+
+    const thirtyDays = new Date();
+    thirtyDays.setDate(today.getDate() + 30);
+
+    const sixtyDays = new Date();
+    sixtyDays.setDate(today.getDate() + 60);
+
+    const ninetyDays = new Date();
+    ninetyDays.setDate(today.getDate() + 90);
+
+    const baseWhere = {
+      status: 'ACTIVE' as const,
+      unit: {
+        property: {
+          organizationId,
+        },
+      },
+    };
+
+    const [expiring30, expiring60, expiring90, expired] = await Promise.all([
+      this.prisma.lease.count({
+        where: {
+          ...baseWhere,
+          endDate: { gte: today, lte: thirtyDays },
+        },
+      }),
+      this.prisma.lease.count({
+        where: {
+          ...baseWhere,
+          endDate: { gt: thirtyDays, lte: sixtyDays },
+        },
+      }),
+      this.prisma.lease.count({
+        where: {
+          ...baseWhere,
+          endDate: { gt: sixtyDays, lte: ninetyDays },
+        },
+      }),
+      this.prisma.lease.count({
+        where: {
+          ...baseWhere,
+          endDate: { lt: today },
+        },
+      }),
+    ]);
+
+    return {
+      expiring30Days: expiring30,
+      expiring60Days: expiring60,
+      expiring90Days: expiring90,
+      expired,
+      total: expiring30 + expiring60 + expiring90,
+    };
+  }
+
+  /**
+   * Process expired leases - update status to EXPIRED
+   * This should be called by a scheduled job
+   */
+  async processExpiredLeases(organizationId?: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const whereClause: any = {
+      status: 'ACTIVE',
+      endDate: { lt: today },
+    };
+
+    if (organizationId) {
+      whereClause.unit = {
+        property: {
+          organizationId,
+        },
+      };
+    }
+
+    const expiredLeases = await this.prisma.lease.findMany({
+      where: whereClause,
+      include: {
+        unit: true,
+        tenants: true,
+      },
+    });
+
+    const results = [];
+
+    for (const lease of expiredLeases) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          // Update lease status
+          await tx.lease.update({
+            where: { id: lease.id },
+            data: { status: 'EXPIRED' },
+          });
+
+          // Update unit status
+          await tx.unit.update({
+            where: { id: lease.unitId },
+            data: { status: 'NOTICE' },
+          });
+        });
+
+        results.push({ leaseId: lease.id, status: 'expired' });
+
+        this.logger.log({
+          message: 'lease.auto_expired',
+          leaseId: lease.id,
+          unitId: lease.unitId,
+          endDate: lease.endDate,
+        });
+      } catch (error) {
+        results.push({ leaseId: lease.id, status: 'error', error: (error as Error).message });
+        this.logger.error({
+          message: 'lease.auto_expire_failed',
+          leaseId: lease.id,
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    return {
+      processed: results.length,
+      results,
+    };
+  }
+
+  // ============================================================
+  // PHASE 70: AUTO-PAY MANAGEMENT
+  // ============================================================
+
+  /**
+   * Enable auto-pay for a lease
+   */
+  async enableAutoPay(
+    leaseId: string,
+    autoPayDay: number,
+    paymentMethodId: string,
+    organizationId: string,
+    userId?: string,
+  ) {
+    const lease = await this.findOne(leaseId, organizationId);
+
+    if (lease.status !== 'ACTIVE') {
+      throw new BadRequestException('Auto-pay can only be enabled for active leases');
+    }
+
+    if (autoPayDay < 1 || autoPayDay > 28) {
+      throw new BadRequestException('Auto-pay day must be between 1 and 28');
+    }
+
+    const updated = await this.prisma.lease.update({
+      where: { id: leaseId },
+      data: {
+        autoPayEnabled: true,
+        autoPayDay,
+        autoPayPaymentMethodId: paymentMethodId,
+      },
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+        tenants: true,
+      },
+    });
+
+    this.logger.log({
+      message: 'lease.autopay_enabled',
+      leaseId,
+      autoPayDay,
+      organizationId,
+      userId,
+    });
+
+    return updated;
+  }
+
+  /**
+   * Disable auto-pay for a lease
+   */
+  async disableAutoPay(leaseId: string, organizationId: string, userId?: string) {
+    const lease = await this.findOne(leaseId, organizationId);
+
+    const updated = await this.prisma.lease.update({
+      where: { id: leaseId },
+      data: {
+        autoPayEnabled: false,
+        autoPayDay: null,
+        autoPayPaymentMethodId: null,
+      },
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+        tenants: true,
+      },
+    });
+
+    this.logger.log({
+      message: 'lease.autopay_disabled',
+      leaseId,
+      organizationId,
+      userId,
+    });
+
+    return updated;
+  }
+
+  /**
+   * Get leases with auto-pay enabled that should be processed today
+   */
+  async getAutoPayLeasesForToday() {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+
+    // Handle end of month - if today is 29, 30, or 31, also include leases set for day 28
+    const daysToCheck = [dayOfMonth];
+    if (dayOfMonth > 28) {
+      daysToCheck.push(28);
+    }
+
+    return this.prisma.lease.findMany({
+      where: {
+        status: 'ACTIVE',
+        autoPayEnabled: true,
+        autoPayDay: { in: daysToCheck },
+        autoPayPaymentMethodId: { not: null },
+      },
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+        tenants: {
+          where: { isPrimary: true },
+        },
+        charges: {
+          where: {
+            status: { in: ['POSTED', 'PARTIALLY_PAID'] },
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Update auto-pay settings
+   */
+  async updateAutoPaySettings(
+    leaseId: string,
+    autoPayDay: number,
+    paymentMethodId?: string,
+    organizationId?: string,
+    userId?: string,
+  ) {
+    if (autoPayDay < 1 || autoPayDay > 28) {
+      throw new BadRequestException('Auto-pay day must be between 1 and 28');
+    }
+
+    const updateData: any = { autoPayDay };
+    if (paymentMethodId) {
+      updateData.autoPayPaymentMethodId = paymentMethodId;
+    }
+
+    const updated = await this.prisma.lease.update({
+      where: { id: leaseId },
+      data: updateData,
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+        tenants: true,
+      },
+    });
+
+    this.logger.log({
+      message: 'lease.autopay_updated',
+      leaseId,
+      autoPayDay,
+      organizationId,
+      userId,
+    });
+
+    return updated;
+  }
 }

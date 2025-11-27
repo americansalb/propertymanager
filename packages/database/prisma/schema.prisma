@@ -258,6 +258,11 @@ model Lease {
   monthlyRent Decimal  @db.Decimal(10, 2)
   securityDeposit Decimal @db.Decimal(10, 2)
 
+  // Auto-pay settings
+  autoPayEnabled Boolean @default(false)
+  autoPayDay     Int?    // Day of month (1-28) when auto-pay runs
+  autoPayPaymentMethodId String? // Stripe payment method ID
+
   // Lease terms
   terms       Json     @default("{}")
   documentUrl String?
@@ -276,6 +281,7 @@ model Lease {
   @@index([status])
   @@index([startDate])
   @@index([endDate])
+  @@index([autoPayEnabled])
 }
 
 model Tenant {
@@ -293,6 +299,9 @@ model Tenant {
 
   // Linked user account (for portal access)
   userId      String?  @unique
+
+  // Stripe integration for payments
+  stripeCustomerId String? @unique
 
   leaseId     String
   lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
@@ -1015,6 +1024,75 @@ model Event {
   @@index([category])
   @@index([createdAt])
   @@index([sessionId])
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+enum NotificationType {
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  PAYMENT_REMINDER
+  AUTOPAY_UPCOMING
+  AUTOPAY_PROCESSED
+  AUTOPAY_FAILED
+  LEASE_EXPIRING
+  LEASE_EXPIRED
+  LATE_FEE_APPLIED
+  WORK_ORDER_UPDATE
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+
+  type        NotificationType
+  status      NotificationStatus @default(PENDING)
+  channel     NotificationChannel @default(EMAIL)
+
+  // Recipient
+  recipientEmail String?
+  recipientPhone String?
+  recipientUserId String?
+
+  // Content
+  subject     String
+  body        String   @db.Text
+  htmlBody    String?  @db.Text
+
+  // Reference
+  referenceType String? // "Lease", "Payment", "Charge", etc.
+  referenceId   String?
+
+  // Tracking
+  sentAt      DateTime?
+  readAt      DateTime?
+  errorMessage String?
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([type])
+  @@index([recipientUserId])
+  @@index([createdAt])
 }
 
 // ============================================================================
