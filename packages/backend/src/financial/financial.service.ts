@@ -1,14 +1,9 @@
-import { Injectable, Inject, LoggerService, NotFoundException } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class FinancialService {
-  constructor(
-    private prisma: PrismaService,
-    @Inject(WINSTON_MODULE_NEST_PROVIDER)
-    private readonly logger: LoggerService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Get chart of accounts for an organization
@@ -257,13 +252,13 @@ export class FinancialService {
         }
       } else {
         const payment = tx.item as (typeof payments)[0];
-        if (payment.status === 'COMPLETED' || payment.status === 'PARTIALLY_REFUNDED') {
-          const effectiveAmount = Number(payment.amount) - (Number(payment.refundedAmount) || 0);
+        if (payment.status === 'COMPLETED') {
+          const effectiveAmount = Number(payment.amount);
           runningBalance -= effectiveAmount;
           ledgerEntries.push({
             date: tx.date,
             type: 'PAYMENT',
-            description: `Payment - ${payment.method}${payment.referenceNumber ? ` (${payment.referenceNumber})` : ''}`,
+            description: `Payment - ${payment.method}${payment.checkNumber ? ` (${payment.checkNumber})` : ''}`,
             chargeAmount: null,
             paymentAmount: effectiveAmount,
             balance: Math.round(runningBalance * 100) / 100,
@@ -279,8 +274,8 @@ export class FinancialService {
       .reduce((sum, c) => sum + Number(c.amount), 0);
 
     const totalPayments = payments
-      .filter((p) => p.status === 'COMPLETED' || p.status === 'PARTIALLY_REFUNDED')
-      .reduce((sum, p) => sum + Number(p.amount) - (Number(p.refundedAmount) || 0), 0);
+      .filter((p) => p.status === 'COMPLETED')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
 
     return {
       lease: {
