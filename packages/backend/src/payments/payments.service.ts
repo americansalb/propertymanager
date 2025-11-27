@@ -149,8 +149,8 @@ export class PaymentsService {
         status: PaymentStatus.COMPLETED,
         amount: dto.amount,
         paymentDate: new Date(dto.paymentDate),
-        referenceNumber: dto.referenceNumber,
-        notes: dto.notes,
+        checkNumber: dto.checkNumber,
+        memo: dto.memo,
       },
     });
 
@@ -223,7 +223,6 @@ export class PaymentsService {
       dto.amount,
       dto.tenantId,
       dto.chargeIds || [],
-      dto.metadata,
     );
 
     this.logger.log({
@@ -269,15 +268,17 @@ export class PaymentsService {
       );
     }
 
-    // Update payment status
+    // Update payment status (only full refunds change status to REFUNDED)
     const isFullRefund = refundAmount === Number(payment.amount);
-    await this.prisma.payment.update({
-      where: { id },
-      data: {
-        status: isFullRefund ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED,
-        refundedAmount: refundAmount,
-      },
-    });
+    if (isFullRefund) {
+      await this.prisma.payment.update({
+        where: { id },
+        data: {
+          status: PaymentStatus.REFUNDED,
+          memo: `Refunded: ${refundAmount}${dto.reason ? ` - ${dto.reason}` : ''}`,
+        },
+      });
+    }
 
     // Reverse allocations
     await this.reverseAllocations(id, refundAmount);
@@ -308,7 +309,10 @@ export class PaymentsService {
 
     await this.prisma.payment.update({
       where: { id },
-      data: { status: PaymentStatus.VOID },
+      data: {
+        status: PaymentStatus.FAILED,
+        memo: 'Voided',
+      },
     });
 
     this.logger.log({
@@ -346,7 +350,7 @@ export class PaymentsService {
         tenant: {
           leaseId,
         },
-        status: { in: [PaymentStatus.COMPLETED, PaymentStatus.PARTIALLY_REFUNDED] },
+        status: PaymentStatus.COMPLETED,
       },
       include: {
         tenant: true,
@@ -359,8 +363,17 @@ export class PaymentsService {
       orderBy: { paymentDate: 'desc' },
     });
 
+    // Count refunded payments separately
+    const refundedPayments = await this.prisma.payment.findMany({
+      where: {
+        tenant: { leaseId },
+        status: PaymentStatus.REFUNDED,
+      },
+      select: { amount: true },
+    });
+
     const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-    const totalRefunded = payments.reduce((sum, p) => sum + (Number(p.refundedAmount) || 0), 0);
+    const totalRefunded = refundedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
     return {
       leaseId,
