@@ -49,6 +49,7 @@ export class CreateUnitDto {
 
   @ApiPropertyOptional({ description: 'Square footage' })
   @IsInt()
+  @Min(0)
   @IsOptional()
   squareFeet?: number;
 
@@ -97,6 +98,7 @@ export class UpdateUnitDto {
 
   @ApiPropertyOptional({ description: 'Square footage' })
   @IsInt()
+  @Min(0)
   @IsOptional()
   squareFeet?: number;
 
