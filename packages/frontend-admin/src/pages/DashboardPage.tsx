@@ -84,7 +84,9 @@ export default function DashboardPage() {
 
   // Work order trend data (last 14 days)
   const workOrderTrend = useMemo(() => {
-    if (!workOrders) return [];
+    if (!workOrders) {
+      return [];
+    }
 
     const data = [];
     const now = new Date();
@@ -105,7 +107,9 @@ export default function DashboardPage() {
       }).length;
 
       const completed = workOrders.filter((wo: any) => {
-        if (!wo.updatedAt || wo.status !== 'COMPLETED') return false;
+        if (!wo.updatedAt || wo.status !== 'COMPLETED') {
+          return false;
+        }
         const woDate = new Date(wo.updatedAt).toISOString().split('T')[0];
         return woDate === dateStr;
       }).length;
@@ -122,7 +126,9 @@ export default function DashboardPage() {
 
   // Work order status distribution
   const statusDistribution = useMemo(() => {
-    if (!workOrders) return [];
+    if (!workOrders) {
+      return [];
+    }
 
     const counts = {
       COMPLETED: 0,
@@ -132,10 +138,15 @@ export default function DashboardPage() {
     };
 
     workOrders.forEach((wo: any) => {
-      if (wo.status === 'COMPLETED') counts.COMPLETED++;
-      else if (wo.status === 'IN_PROGRESS') counts.IN_PROGRESS++;
-      else if (wo.status === 'SUBMITTED') counts.SUBMITTED++;
-      else counts.OTHER++;
+      if (wo.status === 'COMPLETED') {
+        counts.COMPLETED++;
+      } else if (wo.status === 'IN_PROGRESS') {
+        counts.IN_PROGRESS++;
+      } else if (wo.status === 'SUBMITTED') {
+        counts.SUBMITTED++;
+      } else {
+        counts.OTHER++;
+      }
     });
 
     return [
@@ -148,7 +159,9 @@ export default function DashboardPage() {
 
   // Property performance data
   const propertyPerformance = useMemo(() => {
-    if (!properties || !leases || !workOrders) return [];
+    if (!properties || !leases || !workOrders) {
+      return [];
+    }
 
     return properties.slice(0, 5).map((property: any) => {
       const units = property.units || [];
@@ -163,7 +176,7 @@ export default function DashboardPage() {
       ).length;
 
       return {
-        name: property.name.length > 15 ? property.name.substring(0, 15) + '...' : property.name,
+        name: property.name.length > 15 ? `${property.name.substring(0, 15)}...` : property.name,
         fullName: property.name,
         occupancy,
         openWorkOrders: openWOs,
@@ -181,7 +194,9 @@ export default function DashboardPage() {
 
   // Revenue collection this month
   const currentMonthCollection = useMemo(() => {
-    if (!payments) return 0;
+    if (!payments) {
+      return 0;
+    }
     const now = new Date();
     return payments
       .filter((p: any) => {

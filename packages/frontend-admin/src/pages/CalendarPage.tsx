@@ -153,7 +153,9 @@ export default function CalendarPage() {
 
   // Filter events
   const filteredEvents = useMemo(() => {
-    if (typeFilter === 'all') return events;
+    if (typeFilter === 'all') {
+      return events;
+    }
     return events.filter((e) => e.type === typeFilter);
   }, [events, typeFilter]);
 
@@ -416,7 +418,7 @@ export default function CalendarPage() {
                             title={event.title}
                           >
                             {event.title.length > 15
-                              ? event.title.substring(0, 15) + '...'
+                              ? `${event.title.substring(0, 15)}...`
                               : event.title}
                           </div>
                         ))}

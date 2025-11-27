@@ -1,22 +1,22 @@
 import { validate } from 'class-validator';
-import { UpdatePropertyDto, PropertyType } from './property.dto';
+import { UpdatePropertyDto, PropertyType, PropertyStatus } from './property.dto';
 
 /**
  * Unit tests for UpdatePropertyDto validation
- * See: docs/tasks/PROPERTY_EDIT_MODAL_TASKS.md (TASK-020)
  */
 
 const makeValidDto = (): UpdatePropertyDto => {
   const dto = new UpdatePropertyDto();
   dto.name = 'Sunset Villas';
-  dto.addressLine1 = '123 Main St';
-  dto.addressLine2 = null; // Optional
+  dto.address1 = '123 Main St';
+  dto.address2 = null; // Optional
   dto.city = 'Austin';
   dto.state = 'TX';
-  dto.postalCode = '78701';
+  dto.zipCode = '78701';
   dto.country = 'US';
-  dto.propertyType = PropertyType.MULTIFAMILY;
-  dto.active = true;
+  dto.type = PropertyType.MULTIFAMILY;
+  dto.status = PropertyStatus.ACTIVE;
+  dto.totalUnits = 10;
   return dto;
 };
 
@@ -37,13 +37,14 @@ describe('UpdatePropertyDto', () => {
     // Check that specific required fields are flagged
     const errorProperties = errors.map((e) => e.property);
     expect(errorProperties).toContain('name');
-    expect(errorProperties).toContain('addressLine1');
+    expect(errorProperties).toContain('address1');
     expect(errorProperties).toContain('city');
     expect(errorProperties).toContain('state');
-    expect(errorProperties).toContain('postalCode');
+    expect(errorProperties).toContain('zipCode');
     expect(errorProperties).toContain('country');
-    expect(errorProperties).toContain('propertyType');
-    expect(errorProperties).toContain('active');
+    expect(errorProperties).toContain('type');
+    expect(errorProperties).toContain('status');
+    expect(errorProperties).toContain('totalUnits');
   });
 
   describe('name validation', () => {
@@ -70,76 +71,76 @@ describe('UpdatePropertyDto', () => {
   });
 
   describe('address validation', () => {
-    it('should reject empty addressLine1', async () => {
+    it('should reject empty address1', async () => {
       const dto = makeValidDto();
-      dto.addressLine1 = '';
+      dto.address1 = '';
       const errors = await validate(dto);
-      expect(errors.some((e) => e.property === 'addressLine1')).toBe(true);
+      expect(errors.some((e) => e.property === 'address1')).toBe(true);
     });
 
-    it('should accept null addressLine2 (optional)', async () => {
+    it('should accept null address2 (optional)', async () => {
       const dto = makeValidDto();
-      dto.addressLine2 = null;
+      dto.address2 = null;
       const errors = await validate(dto);
-      expect(errors.filter((e) => e.property === 'addressLine2')).toHaveLength(0);
+      expect(errors.filter((e) => e.property === 'address2')).toHaveLength(0);
     });
 
-    it('should accept undefined addressLine2 (optional)', async () => {
+    it('should accept undefined address2 (optional)', async () => {
       const dto = makeValidDto();
-      dto.addressLine2 = undefined;
+      dto.address2 = undefined;
       const errors = await validate(dto);
-      expect(errors.filter((e) => e.property === 'addressLine2')).toHaveLength(0);
+      expect(errors.filter((e) => e.property === 'address2')).toHaveLength(0);
     });
 
-    it('should reject addressLine2 exceeding 200 characters', async () => {
+    it('should reject address2 exceeding 200 characters', async () => {
       const dto = makeValidDto();
-      dto.addressLine2 = 'a'.repeat(201);
+      dto.address2 = 'a'.repeat(201);
       const errors = await validate(dto);
-      expect(errors.some((e) => e.property === 'addressLine2')).toBe(true);
+      expect(errors.some((e) => e.property === 'address2')).toBe(true);
     });
   });
 
-  describe('postalCode validation', () => {
+  describe('zipCode validation', () => {
     it('should accept valid US 5-digit postal code', async () => {
       const dto = makeValidDto();
-      dto.postalCode = '78701';
+      dto.zipCode = '78701';
       const errors = await validate(dto);
-      expect(errors.filter((e) => e.property === 'postalCode')).toHaveLength(0);
+      expect(errors.filter((e) => e.property === 'zipCode')).toHaveLength(0);
     });
 
     it('should accept valid US 9-digit postal code', async () => {
       const dto = makeValidDto();
-      dto.postalCode = '78701-1234';
+      dto.zipCode = '78701-1234';
       const errors = await validate(dto);
-      expect(errors.filter((e) => e.property === 'postalCode')).toHaveLength(0);
+      expect(errors.filter((e) => e.property === 'zipCode')).toHaveLength(0);
     });
 
     it('should accept Canadian postal code format', async () => {
       const dto = makeValidDto();
-      dto.postalCode = 'M5H 2N2'; // Toronto format
+      dto.zipCode = 'M5H 2N2'; // Toronto format
       const errors = await validate(dto);
-      expect(errors.filter((e) => e.property === 'postalCode')).toHaveLength(0);
+      expect(errors.filter((e) => e.property === 'zipCode')).toHaveLength(0);
     });
 
     it('should reject invalid postal code with special characters', async () => {
       const dto = makeValidDto();
-      dto.postalCode = '!!!';
+      dto.zipCode = '!!!';
       const errors = await validate(dto);
-      expect(errors.some((e) => e.property === 'postalCode')).toBe(true);
+      expect(errors.some((e) => e.property === 'zipCode')).toBe(true);
     });
 
     it('should reject postal code too short (less than 3 chars)', async () => {
       const dto = makeValidDto();
-      dto.postalCode = '12';
+      dto.zipCode = '12';
       const errors = await validate(dto);
-      expect(errors.some((e) => e.property === 'postalCode')).toBe(true);
+      expect(errors.some((e) => e.property === 'zipCode')).toBe(true);
     });
 
     it('should reject postal code too long (more than 16 chars)', async () => {
       const dto = makeValidDto();
-      dto.postalCode = '12345678901234567';
+      dto.zipCode = '12345678901234567';
       const errors = await validate(dto);
-      expect(errors.some((e) => e.property === 'postalCode')).toBe(true);
+      expect(errors.some((e) => e.property === 'zipCode')).toBe(true);
     });
   });
 
@@ -189,7 +190,7 @@ describe('UpdatePropertyDto', () => {
     });
   });
 
-  describe('propertyType validation', () => {
+  describe('type validation', () => {
     it('should accept valid PropertyType enum values', async () => {
       const validTypes = [
         PropertyType.SINGLE_FAMILY,
@@ -202,50 +203,47 @@ describe('UpdatePropertyDto', () => {
 
       for (const type of validTypes) {
         const dto = makeValidDto();
-        dto.propertyType = type;
+        dto.type = type;
         const errors = await validate(dto);
-        expect(errors.filter((e) => e.property === 'propertyType')).toHaveLength(0);
+        expect(errors.filter((e) => e.property === 'type')).toHaveLength(0);
       }
     });
 
-    it('should reject invalid propertyType', async () => {
+    it('should reject invalid type', async () => {
       const dto = makeValidDto();
-      (dto as any).propertyType = 'INVALID_TYPE';
+      (dto as any).type = 'INVALID_TYPE';
       const errors = await validate(dto);
-      expect(errors.some((e) => e.property === 'propertyType')).toBe(true);
+      expect(errors.some((e) => e.property === 'type')).toBe(true);
     });
   });
 
-  // NOTE: 'notes' field removed - not in Prisma schema
-  // If notes field is added to schema.prisma, add validation tests here
-
-  describe('active validation', () => {
-    it('should accept true for active', async () => {
+  describe('status validation', () => {
+    it('should accept ACTIVE status', async () => {
       const dto = makeValidDto();
-      dto.active = true;
+      dto.status = PropertyStatus.ACTIVE;
       const errors = await validate(dto);
-      expect(errors.filter((e) => e.property === 'active')).toHaveLength(0);
+      expect(errors.filter((e) => e.property === 'status')).toHaveLength(0);
     });
 
-    it('should accept false for active', async () => {
+    it('should accept INACTIVE status', async () => {
       const dto = makeValidDto();
-      dto.active = false;
+      dto.status = PropertyStatus.INACTIVE;
       const errors = await validate(dto);
-      expect(errors.filter((e) => e.property === 'active')).toHaveLength(0);
+      expect(errors.filter((e) => e.property === 'status')).toHaveLength(0);
     });
 
-    it('should reject non-boolean active', async () => {
+    it('should reject invalid status', async () => {
       const dto = makeValidDto();
-      (dto as any).active = 'yes';
+      (dto as any).status = 'INVALID';
       const errors = await validate(dto);
-      expect(errors.some((e) => e.property === 'active')).toBe(true);
+      expect(errors.some((e) => e.property === 'status')).toBe(true);
     });
   });
 
   describe('comprehensive validation', () => {
     it('should accept a fully populated valid dto', async () => {
       const dto = makeValidDto();
-      dto.addressLine2 = 'Suite 100';
+      dto.address2 = 'Suite 100';
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
@@ -254,8 +252,8 @@ describe('UpdatePropertyDto', () => {
     it('should collect multiple validation errors at once', async () => {
       const dto = new UpdatePropertyDto();
       dto.name = ''; // Invalid (empty)
-      dto.postalCode = '!!!'; // Invalid (special chars)
-      dto.active = 'yes' as any; // Invalid (not boolean)
+      dto.zipCode = '!!!'; // Invalid (special chars)
+      (dto as any).status = 'INVALID'; // Invalid
 
       const errors = await validate(dto);
 
@@ -264,8 +262,8 @@ describe('UpdatePropertyDto', () => {
 
       const errorProperties = new Set(errors.map((e) => e.property));
       expect(errorProperties.has('name')).toBe(true);
-      expect(errorProperties.has('postalCode')).toBe(true);
-      expect(errorProperties.has('active')).toBe(true);
+      expect(errorProperties.has('zipCode')).toBe(true);
+      expect(errorProperties.has('status')).toBe(true);
     });
   });
 });

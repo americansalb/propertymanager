@@ -7,7 +7,7 @@ export class ReportsService {
   // @ts-expect-error - Reserved for future use
   constructor(private prisma: PrismaService) {}
 
-  async getOccupancyReport(organizationId: string) {
+  async getOccupancyReport(_organizationId: string) {
     // Placeholder for occupancy report
     return {
       totalUnits: 0,

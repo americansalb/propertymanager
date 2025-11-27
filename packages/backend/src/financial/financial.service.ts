@@ -12,7 +12,7 @@ export class FinancialService {
     });
   }
 
-  async getDashboardSummary(organizationId: string) {
+  async getDashboardSummary(_organizationId: string) {
     // Placeholder for financial summary
     return {
       totalRevenue: 0,

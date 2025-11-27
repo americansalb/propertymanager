@@ -246,7 +246,7 @@ export default function ExportPage() {
       case 'custom':
         return {
           from: customDateFrom ? new Date(customDateFrom) : null,
-          to: customDateTo ? new Date(customDateTo + 'T23:59:59') : null,
+          to: customDateTo ? new Date(`${customDateTo}T23:59:59`) : null,
         };
       default:
         return { from: null, to: null };
@@ -391,8 +391,12 @@ export default function ExportPage() {
     if (from || to) {
       data = data.filter((item) => {
         const itemDate = new Date(item.createdAt || item.startDate);
-        if (from && itemDate < from) return false;
-        if (to && itemDate > to) return false;
+        if (from && itemDate < from) {
+          return false;
+        }
+        if (to && itemDate > to) {
+          return false;
+        }
         return true;
       });
     }
@@ -404,7 +408,9 @@ export default function ExportPage() {
   // Get selected fields
   const selectedFields = useMemo(() => {
     const config = exportConfigs.find((c) => c.type === selectedType);
-    if (!config) return [];
+    if (!config) {
+      return [];
+    }
     return config.fields.filter((f) => fieldSelections[f.key]);
   }, [selectedType, fieldSelections]);
 
@@ -422,7 +428,9 @@ export default function ExportPage() {
     (selected: boolean) => {
       console.log('[ExportPage] Toggle all fields:', selected);
       const config = exportConfigs.find((c) => c.type === selectedType);
-      if (!config) return;
+      if (!config) {
+        return;
+      }
 
       const selections: Record<string, boolean> = {};
       config.fields.forEach((field) => {

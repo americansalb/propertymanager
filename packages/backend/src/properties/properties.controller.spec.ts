@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PropertiesController } from './properties.controller';
 import { PropertiesService } from './properties.service';
-import { UpdatePropertyDto, PropertyType } from './dto/property.dto';
+import { UpdatePropertyDto, PropertyType, PropertyStatus } from './dto/property.dto';
 import { EventsService } from '../events/events.service';
 
 describe('PropertiesController', () => {
@@ -67,14 +67,15 @@ describe('PropertiesController', () => {
   describe('update', () => {
     const updateDto: UpdatePropertyDto = {
       name: 'Updated Villas',
-      addressLine1: '456 Oak Ave',
-      addressLine2: null,
+      address1: '456 Oak Ave',
+      address2: null,
       city: 'Austin',
       state: 'TX',
-      postalCode: '78702',
+      zipCode: '78702',
       country: 'US',
-      propertyType: PropertyType.MULTIFAMILY,
-      active: true,
+      type: PropertyType.MULTIFAMILY,
+      status: PropertyStatus.ACTIVE,
+      totalUnits: 24,
     };
 
     const mockRequest = {

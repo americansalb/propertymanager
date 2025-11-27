@@ -323,7 +323,9 @@ export default function HelpPanel() {
   const completedSteps = quickStartSteps.filter((s) => s.completed).length;
   const progressPercent = (completedSteps / quickStartSteps.length) * 100;
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   console.log('[HelpPanel] Rendering, activeTab:', activeTab);
 

@@ -287,7 +287,9 @@ const generateNotifications = (
 
   // Sort: unread first, then by date
   notifications.sort((a, b) => {
-    if (a.read !== b.read) return a.read ? 1 : -1;
+    if (a.read !== b.read) {
+      return a.read ? 1 : -1;
+    }
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 

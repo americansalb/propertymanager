@@ -74,19 +74,26 @@ const categoryConfig: Record<
 };
 
 const getFileIcon = (type: string) => {
-  if (type.includes('image')) return FileImage;
-  if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv'))
+  if (type.includes('image')) {
+    return FileImage;
+  }
+  if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) {
     return FileSpreadsheet;
-  if (type.includes('zip') || type.includes('archive') || type.includes('rar')) return FileArchive;
+  }
+  if (type.includes('zip') || type.includes('archive') || type.includes('rar')) {
+    return FileArchive;
+  }
   return FileText;
 };
 
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
 // Generate mock documents from real data

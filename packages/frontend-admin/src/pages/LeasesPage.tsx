@@ -21,12 +21,16 @@ export default function LeasesPage() {
 
   // Filter leases based on status
   const filteredLeases = useMemo(() => {
-    if (!leases) return [];
+    if (!leases) {
+      return [];
+    }
 
     const now = new Date();
 
     return leases.filter((lease: any) => {
-      if (statusFilter === 'ALL') return true;
+      if (statusFilter === 'ALL') {
+        return true;
+      }
 
       if (statusFilter === 'ACTIVE') {
         return lease.status === 'ACTIVE';
@@ -48,7 +52,9 @@ export default function LeasesPage() {
 
   // Calculate rent roll stats for active leases
   const rentRollStats = useMemo(() => {
-    if (!leases) return { activeCount: 0, totalRent: 0, averageRent: 0 };
+    if (!leases) {
+      return { activeCount: 0, totalRent: 0, averageRent: 0 };
+    }
 
     const activeLeases = leases.filter((lease: any) => lease.status === 'ACTIVE');
     const totalRent = activeLeases.reduce(

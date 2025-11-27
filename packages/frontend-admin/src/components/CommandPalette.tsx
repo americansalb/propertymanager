@@ -458,7 +458,9 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
 
   // Handle keyboard navigation
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       console.log('[CommandPalette] Key pressed:', e.key);
@@ -513,7 +515,9 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
     { key: 'tenants', label: 'Tenants' },
   ];
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]">
