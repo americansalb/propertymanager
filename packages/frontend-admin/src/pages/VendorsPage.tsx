@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,13 +11,28 @@ import {
   AlertTriangle,
   TrendingUp,
   ExternalLink,
+  Edit,
 } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import VendorModal from '../components/vendors/VendorModal';
 
 export default function VendorsPage() {
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<any>(null);
+
+  const handleAddVendor = () => {
+    setSelectedVendor(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditVendor = (vendor: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedVendor(vendor);
+    setIsModalOpen(true);
+  };
 
   const { data: vendors, isLoading: isLoadingVendors } = useQuery({
     queryKey: ['vendors'],
@@ -158,7 +173,7 @@ export default function VendorsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Vendor Portal</h1>
           <p className="text-gray-500 mt-1">Manage vendors and track work order performance</p>
         </div>
-        <Button>
+        <Button onClick={handleAddVendor}>
           <Users className="w-4 h-4 mr-2" />
           Add Vendor
         </Button>
@@ -325,18 +340,29 @@ export default function VendorsPage() {
                       )}
                     </div>
 
-                    {/* View Work Orders Button */}
-                    {stats.totalCount > 0 && (
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full"
-                        onClick={(e) => handleViewWorkOrders(vendor.id, e)}
+                        className="flex-1"
+                        onClick={(e) => handleEditVendor(vendor, e)}
                       >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View {stats.totalCount} Work Order{stats.totalCount > 1 ? 's' : ''}
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
                       </Button>
-                    )}
+                      {stats.totalCount > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => handleViewWorkOrders(vendor.id, e)}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          {stats.totalCount} WO{stats.totalCount > 1 ? 's' : ''}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -350,7 +376,7 @@ export default function VendorsPage() {
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No vendors yet</h3>
               <p className="text-gray-500 mb-6">Add vendors to manage your service providers</p>
-              <Button>
+              <Button onClick={handleAddVendor}>
                 <Users className="w-4 h-4 mr-2" />
                 Add Your First Vendor
               </Button>
@@ -358,6 +384,13 @@ export default function VendorsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Vendor Modal */}
+      <VendorModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        vendor={selectedVendor}
+      />
     </div>
   );
 }
