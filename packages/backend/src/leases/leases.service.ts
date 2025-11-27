@@ -151,7 +151,7 @@ export class LeasesService {
           moveInDate: dto.moveInDate ? new Date(dto.moveInDate) : null,
           monthlyRent: dto.monthlyRent,
           securityDeposit: dto.securityDeposit,
-          terms: dto.terms || {},
+          terms: (dto.terms || {}) as any,
           documentUrl: dto.documentUrl,
         },
       });
@@ -241,7 +241,7 @@ export class LeasesService {
         moveInDate: dto.moveInDate ? new Date(dto.moveInDate) : undefined,
         monthlyRent: dto.monthlyRent,
         securityDeposit: dto.securityDeposit,
-        terms: dto.terms,
+        terms: dto.terms as any,
         documentUrl: dto.documentUrl,
       },
       include: {
