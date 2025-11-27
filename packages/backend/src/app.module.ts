@@ -24,6 +24,8 @@ import { ReportsModule } from './reports/reports.module';
 import { EventsModule } from './events/events.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ScheduledTasksModule } from './scheduled/scheduled-tasks.module';
+import { TenantAuthModule } from './tenant-auth/tenant-auth.module';
+import { TenantPortalModule } from './tenant-portal/tenant-portal.module';
 
 @Module({
   controllers: [AppController],
@@ -61,6 +63,8 @@ import { ScheduledTasksModule } from './scheduled/scheduled-tasks.module';
     EventsModule,
     NotificationsModule,
     ScheduledTasksModule,
+    TenantAuthModule,
+    TenantPortalModule,
   ],
   providers: [
     {

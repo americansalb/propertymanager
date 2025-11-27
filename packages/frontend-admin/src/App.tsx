@@ -11,6 +11,7 @@ import LeaseDetailPage from './pages/LeaseDetailPage';
 import FinancialPage from './pages/FinancialPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
 import VendorsPage from './pages/VendorsPage';
+import VendorDetailPage from './pages/VendorDetailPage';
 import ActivityPage from './pages/ActivityPage';
 import CalendarPage from './pages/CalendarPage';
 import ReportsPage from './pages/ReportsPage';
@@ -46,6 +47,7 @@ function App() {
                 <Route path="/financial" element={<FinancialPage />} />
                 <Route path="/work-orders" element={<WorkOrdersPage />} />
                 <Route path="/vendors" element={<VendorsPage />} />
+                <Route path="/vendors/:id" element={<VendorDetailPage />} />
                 <Route path="/activity" element={<ActivityPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
