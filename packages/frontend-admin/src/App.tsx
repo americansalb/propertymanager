@@ -5,6 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardLayout from './components/layouts/DashboardLayout';
 import DashboardPage from './pages/DashboardPage';
 import PropertiesPage from './pages/PropertiesPage';
+import PropertyDetailPage from './pages/PropertyDetailPage';
 import LeasesPage from './pages/LeasesPage';
 import FinancialPage from './pages/FinancialPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
@@ -38,6 +39,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/properties" element={<PropertiesPage />} />
+                <Route path="/properties/:id" element={<PropertyDetailPage />} />
                 <Route path="/leases" element={<LeasesPage />} />
                 <Route path="/financial" element={<FinancialPage />} />
                 <Route path="/work-orders" element={<WorkOrdersPage />} />

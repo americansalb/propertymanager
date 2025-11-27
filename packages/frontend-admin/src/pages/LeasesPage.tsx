@@ -5,11 +5,13 @@ import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { formatCurrency, formatDate } from '../lib/utils';
+import CreateLeaseWizard from '../components/leases/CreateLeaseWizard';
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'UPCOMING' | 'ENDED';
 
 export default function LeasesPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const { data: leases, isLoading } = useQuery({
     queryKey: ['leases'],
@@ -85,7 +87,7 @@ export default function LeasesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Leases</h1>
           <p className="text-gray-500 mt-1">Manage tenant leases and agreements</p>
         </div>
-        <Button>
+        <Button onClick={() => setWizardOpen(true)}>
           <FileText className="w-4 h-4 mr-2" />
           Create Lease
         </Button>
@@ -250,7 +252,7 @@ export default function LeasesPage() {
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No leases yet</h3>
               <p className="text-gray-500 mb-6">Create your first lease to get started</p>
-              <Button>
+              <Button onClick={() => setWizardOpen(true)}>
                 <FileText className="w-4 h-4 mr-2" />
                 Create Your First Lease
               </Button>
@@ -258,6 +260,8 @@ export default function LeasesPage() {
           </CardContent>
         </Card>
       )}
+
+      <CreateLeaseWizard open={wizardOpen} onOpenChange={setWizardOpen} />
     </div>
   );
 }

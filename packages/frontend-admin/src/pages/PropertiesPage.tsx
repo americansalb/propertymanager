@@ -125,6 +125,11 @@ export default function PropertiesPage() {
   };
 
   const handlePropertyClick = (property: any) => {
+    navigate(`/properties/${property.id}`);
+  };
+
+  const handleEditProperty = (property: any, e: React.MouseEvent) => {
+    e.stopPropagation();
     setSelectedProperty(property);
     setEditModalOpen(true);
   };
@@ -189,7 +194,12 @@ export default function PropertiesPage() {
                     >
                       {property.status}
                     </span>
-                    <Edit className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" />
+                    <button
+                      onClick={(e) => handleEditProperty(property, e)}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <Edit className="w-4 h-4 text-gray-400 hover:text-primary transition-colors" />
+                    </button>
                   </div>
                 </CardTitle>
               </CardHeader>
