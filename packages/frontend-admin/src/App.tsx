@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import PropertiesPage from './pages/PropertiesPage';
 import PropertyDetailPage from './pages/PropertyDetailPage';
 import LeasesPage from './pages/LeasesPage';
+import LeaseDetailPage from './pages/LeaseDetailPage';
 import FinancialPage from './pages/FinancialPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
 import VendorsPage from './pages/VendorsPage';
@@ -41,6 +42,7 @@ function App() {
                 <Route path="/properties" element={<PropertiesPage />} />
                 <Route path="/properties/:id" element={<PropertyDetailPage />} />
                 <Route path="/leases" element={<LeasesPage />} />
+                <Route path="/leases/:id" element={<LeaseDetailPage />} />
                 <Route path="/financial" element={<FinancialPage />} />
                 <Route path="/work-orders" element={<WorkOrdersPage />} />
                 <Route path="/vendors" element={<VendorsPage />} />

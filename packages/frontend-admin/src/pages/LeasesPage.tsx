@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, DollarSign, TrendingUp } from 'lucide-react';
+import { FileText, DollarSign, TrendingUp, Eye, ChevronRight } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -10,6 +11,7 @@ import CreateLeaseWizard from '../components/leases/CreateLeaseWizard';
 type StatusFilter = 'ALL' | 'ACTIVE' | 'UPCOMING' | 'ENDED';
 
 export default function LeasesPage() {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -191,12 +193,17 @@ export default function LeasesPage() {
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Start Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">End Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
+                    <th className="text-right py-3 px-4 font-medium text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredLeases.length > 0 ? (
                     filteredLeases.map((lease: any) => (
-                      <tr key={lease.id} className="border-b hover:bg-gray-50">
+                      <tr
+                        key={lease.id}
+                        className="border-b hover:bg-gray-50 cursor-pointer"
+                        onClick={() => navigate(`/leases/${lease.id}`)}
+                      >
                         <td className="py-3 px-4 text-sm">{lease.unit?.property?.name || 'N/A'}</td>
                         <td className="py-3 px-4 text-sm font-medium">
                           Unit {lease.unit?.unitNumber}
@@ -225,17 +232,35 @@ export default function LeasesPage() {
                                   ? 'bg-red-100 text-red-700'
                                   : lease.status === 'DRAFT'
                                     ? 'bg-gray-100 text-gray-700'
-                                    : 'bg-yellow-100 text-yellow-700'
+                                    : lease.status === 'TERMINATED'
+                                      ? 'bg-red-100 text-red-700'
+                                      : lease.status === 'CANCELLED'
+                                        ? 'bg-orange-100 text-orange-700'
+                                        : 'bg-yellow-100 text-yellow-700'
                             }`}
                           >
                             {lease.status}
                           </span>
                         </td>
+                        <td className="py-3 px-4 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/leases/${lease.id}`);
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-gray-500">
+                      <td colSpan={8} className="py-8 text-center text-gray-500">
                         No leases found for this filter
                       </td>
                     </tr>
