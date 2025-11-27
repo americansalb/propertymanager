@@ -7,15 +7,15 @@
 
 ## 📊 Task Overview
 
-| Category | Tasks | Estimated Hours |
-|----------|-------|-----------------|
-| **Type Safety & Code Quality** | 3 tasks | 8h |
-| **Logging Infrastructure** | 4 tasks | 8h |
-| **Error Handling** | 3 tasks | 6h |
-| **Testing Framework** | 5 tasks | 10h |
-| **Monitoring & Analytics** | 3 tasks | 4h |
-| **Documentation** | 2 tasks | 4h |
-| **Total** | **20 tasks** | **40h** |
+| Category                       | Tasks        | Estimated Hours |
+| ------------------------------ | ------------ | --------------- |
+| **Type Safety & Code Quality** | 3 tasks      | 8h              |
+| **Logging Infrastructure**     | 4 tasks      | 8h              |
+| **Error Handling**             | 3 tasks      | 6h              |
+| **Testing Framework**          | 5 tasks      | 10h             |
+| **Monitoring & Analytics**     | 3 tasks      | 4h              |
+| **Documentation**              | 2 tasks      | 4h              |
+| **Total**                      | **20 tasks** | **40h**         |
 
 ---
 
@@ -24,6 +24,7 @@
 ### **A. Type Safety & Code Quality (8h)**
 
 #### **TASK-001: Enable Strict TypeScript**
+
 **Priority:** P0 (Critical)
 **Estimated:** 2h
 
@@ -31,12 +32,14 @@
 Enable strict TypeScript mode across all packages and fix compilation errors.
 
 **Acceptance Criteria:**
+
 - [ ] `tsconfig.json` has `"strict": true` enabled in all packages
 - [ ] All packages compile without errors (`pnpm type-check` passes)
 - [ ] ESLint rule `@typescript-eslint/no-explicit-any` set to `error`
 - [ ] CI fails if type-check fails
 
 **Implementation:**
+
 ```json
 // packages/backend/tsconfig.json
 {
@@ -54,6 +57,7 @@ Enable strict TypeScript mode across all packages and fix compilation errors.
 ```
 
 **Files to modify:**
+
 - `packages/backend/tsconfig.json`
 - `packages/admin/tsconfig.json`
 - `packages/tenant/tsconfig.json`
@@ -62,6 +66,7 @@ Enable strict TypeScript mode across all packages and fix compilation errors.
 ---
 
 #### **TASK-002: Fix Existing `any` Types in Critical Modules**
+
 **Priority:** P0 (Critical)
 **Estimated:** 4h
 
@@ -69,6 +74,7 @@ Enable strict TypeScript mode across all packages and fix compilation errors.
 Replace `any` types in auth, properties, leases, and payments modules with proper DTOs.
 
 **Acceptance Criteria:**
+
 - [ ] All service methods in auth module have typed parameters
 - [ ] All service methods in properties module have typed parameters
 - [ ] All service methods in leases module have typed parameters
@@ -77,6 +83,7 @@ Replace `any` types in auth, properties, leases, and payments modules with prope
 - [ ] No `any` types in these modules (except with explicit `// eslint-disable` + justification)
 
 **Example:**
+
 ```typescript
 // ❌ BEFORE
 async create(data: any, organizationId: string) {
@@ -91,6 +98,7 @@ async create(dto: CreatePropertyDto, organizationId: string): Promise<Property> 
 ```
 
 **Files to modify:**
+
 - `packages/backend/src/modules/auth/*.service.ts`
 - `packages/backend/src/modules/properties/*.service.ts`
 - `packages/backend/src/modules/leases/*.service.ts`
@@ -100,6 +108,7 @@ async create(dto: CreatePropertyDto, organizationId: string): Promise<Property> 
 ---
 
 #### **TASK-003: Set Up Pre-Commit Hooks**
+
 **Priority:** P0 (Critical)
 **Estimated:** 2h
 
@@ -107,6 +116,7 @@ async create(dto: CreatePropertyDto, organizationId: string): Promise<Property> 
 Configure Husky + lint-staged to run linting, type-checking, and tests before commit.
 
 **Acceptance Criteria:**
+
 - [ ] Husky installed and configured
 - [ ] Pre-commit hook runs ESLint on staged files
 - [ ] Pre-commit hook runs Prettier on staged files
@@ -115,6 +125,7 @@ Configure Husky + lint-staged to run linting, type-checking, and tests before co
 - [ ] Cannot commit if any check fails
 
 **Implementation:**
+
 ```bash
 # Install
 pnpm add -D husky lint-staged
@@ -127,13 +138,8 @@ pnpm exec husky install
 // package.json
 {
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md}": ["prettier --write"]
   }
 }
 ```
@@ -149,6 +155,7 @@ pnpm test --since HEAD~1
 ```
 
 **Files to create/modify:**
+
 - `.husky/pre-commit`
 - `package.json` (add lint-staged config)
 
@@ -157,6 +164,7 @@ pnpm test --since HEAD~1
 ### **B. Logging Infrastructure (8h)**
 
 #### **TASK-004: Install and Configure Winston Logger**
+
 **Priority:** P0 (Critical)
 **Estimated:** 3h
 
@@ -164,6 +172,7 @@ pnpm test --since HEAD~1
 Set up Winston logger with structured logging, correlation IDs, and file rotation.
 
 **Acceptance Criteria:**
+
 - [ ] Winston + winston-daily-rotate-file installed
 - [ ] `AppLogger` service created with structured logging
 - [ ] Logs output to console (colored, readable) in development
@@ -173,6 +182,7 @@ Set up Winston logger with structured logging, correlation IDs, and file rotatio
 - [ ] Correlation ID included in all log entries
 
 **Implementation:**
+
 ```typescript
 // packages/backend/src/common/logger/logger.service.ts
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
@@ -197,7 +207,7 @@ export class AppLogger implements NestLoggerService {
         winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         winston.format.errors({ stack: true }),
         winston.format.splat(),
-        winston.format.json()
+        winston.format.json(),
       ),
       defaultMeta: { service: 'propertymaster-api' },
       transports: [
@@ -207,7 +217,7 @@ export class AppLogger implements NestLoggerService {
             winston.format.printf(({ level, message, timestamp, context, ...meta }) => {
               const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
               return `${timestamp} [${context || 'App'}] ${level}: ${message} ${metaStr}`;
-            })
+            }),
           ),
         }),
         new winston.transports.DailyRotateFile({
@@ -246,10 +256,12 @@ export class AppLogger implements NestLoggerService {
 ```
 
 **Files to create:**
+
 - `packages/backend/src/common/logger/logger.service.ts`
 - `packages/backend/src/common/logger/logger.module.ts`
 
 **Dependencies:**
+
 ```bash
 pnpm add winston winston-daily-rotate-file
 pnpm add -D @types/winston
@@ -258,6 +270,7 @@ pnpm add -D @types/winston
 ---
 
 #### **TASK-005: Add Correlation ID Middleware**
+
 **Priority:** P0 (Critical)
 **Estimated:** 2h
 
@@ -265,6 +278,7 @@ pnpm add -D @types/winston
 Create middleware to attach correlation ID to every request for tracing across logs.
 
 **Acceptance Criteria:**
+
 - [ ] Correlation ID middleware created
 - [ ] Uses `x-correlation-id` header if present, otherwise generates UUID
 - [ ] Attaches correlation ID to request object
@@ -272,6 +286,7 @@ Create middleware to attach correlation ID to every request for tracing across l
 - [ ] All logs include correlation ID from request context
 
 **Implementation:**
+
 ```typescript
 // packages/backend/src/common/middleware/correlation-id.middleware.ts
 import { Injectable, NestMiddleware } from '@nestjs/common';
@@ -290,14 +305,17 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 ```
 
 **Files to create:**
+
 - `packages/backend/src/common/middleware/correlation-id.middleware.ts`
 
 **Files to modify:**
+
 - `packages/backend/src/app.module.ts` (register middleware globally)
 
 ---
 
 #### **TASK-006: Add Logging to Auth & Properties Modules**
+
 **Priority:** P1 (High)
 **Estimated:** 2h
 
@@ -305,6 +323,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 Add structured logging to auth and properties services as examples for other modules.
 
 **Acceptance Criteria:**
+
 - [ ] Auth service logs: user registration, login, logout, token refresh
 - [ ] Properties service logs: create, update, delete, findAll
 - [ ] All logs include organizationId and userId where available
@@ -312,6 +331,7 @@ Add structured logging to auth and properties services as examples for other mod
 - [ ] No sensitive data (passwords, tokens) logged
 
 **Example:**
+
 ```typescript
 // packages/backend/src/modules/auth/auth.service.ts
 import { AppLogger } from '@/common/logger/logger.service';
@@ -323,19 +343,19 @@ export class AuthService {
   async register(dto: RegisterDto): Promise<AuthResponse> {
     this.logger.log('User registration started', {
       email: dto.email,
-      organizationName: dto.organizationName
+      organizationName: dto.organizationName,
     });
 
     try {
       // ... registration logic
       this.logger.log('User registered successfully', {
         userId: user.id,
-        organizationId: org.id
+        organizationId: org.id,
       });
       return response;
     } catch (error) {
       this.logger.error('Registration failed', error.stack, {
-        email: dto.email
+        email: dto.email,
       });
       throw error;
     }
@@ -344,12 +364,14 @@ export class AuthService {
 ```
 
 **Files to modify:**
+
 - `packages/backend/src/modules/auth/auth.service.ts`
 - `packages/backend/src/modules/properties/properties.service.ts`
 
 ---
 
 #### **TASK-007: Frontend Logging Utility**
+
 **Priority:** P1 (High)
 **Estimated:** 1h
 
@@ -357,6 +379,7 @@ export class AuthService {
 Create lightweight logging utility for frontend with optional Sentry integration.
 
 **Acceptance Criteria:**
+
 - [ ] `logger.ts` utility created for frontend
 - [ ] Supports log levels: error, warn, info, debug
 - [ ] In development: logs to console
@@ -364,6 +387,7 @@ Create lightweight logging utility for frontend with optional Sentry integration
 - [ ] Structured log format with timestamp, level, message, context
 
 **Implementation:**
+
 ```typescript
 // packages/admin/src/lib/logger.ts
 export enum LogLevel {
@@ -419,6 +443,7 @@ export const logger = new Logger();
 ```
 
 **Files to create:**
+
 - `packages/admin/src/lib/logger.ts`
 - `packages/tenant/src/lib/logger.ts`
 
@@ -427,6 +452,7 @@ export const logger = new Logger();
 ### **C. Error Handling (6h)**
 
 #### **TASK-008: Create Global Exception Filter**
+
 **Priority:** P0 (Critical)
 **Estimated:** 3h
 
@@ -434,6 +460,7 @@ export const logger = new Logger();
 Create NestJS global exception filter to handle all errors consistently.
 
 **Acceptance Criteria:**
+
 - [ ] Global exception filter created
 - [ ] Maps all exceptions to proper HTTP status codes
 - [ ] Logs errors with correlation ID, user context
@@ -443,15 +470,10 @@ Create NestJS global exception filter to handle all errors consistently.
 - [ ] Registered globally in app module
 
 **Implementation:**
+
 ```typescript
 // packages/backend/src/common/filters/http-exception.filter.ts
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AppLogger } from '@/common/logger/logger.service';
 
@@ -465,14 +487,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const message =
-      exception instanceof HttpException
-        ? exception.message
-        : 'Internal server error';
+      exception instanceof HttpException ? exception.message : 'Internal server error';
 
     const errorResponse = {
       statusCode: status,
@@ -495,7 +513,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           organizationId: request['user']?.organizationId,
           correlationId: request['correlationId'],
           body: request.body,
-        }
+        },
       );
     } else if (status >= 400) {
       this.logger.warn(`${request.method} ${request.url} - ${message}`, {
@@ -510,14 +528,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
 ```
 
 **Files to create:**
+
 - `packages/backend/src/common/filters/http-exception.filter.ts`
 
 **Files to modify:**
+
 - `packages/backend/src/main.ts` (register global filter)
 
 ---
 
 #### **TASK-009: Create Custom Business Exceptions**
+
 **Priority:** P1 (High)
 **Estimated:** 2h
 
@@ -525,6 +546,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 Create domain-specific exceptions for common business rule violations.
 
 **Acceptance Criteria:**
+
 - [ ] Custom exceptions created:
   - `PropertyHasUnitsException`
   - `LeaseOverlapException`
@@ -534,6 +556,7 @@ Create domain-specific exceptions for common business rule violations.
 - [ ] Include relevant context (IDs, amounts, etc.)
 
 **Implementation:**
+
 ```typescript
 // packages/backend/src/common/exceptions/business.exceptions.ts
 import { HttpException, HttpStatus } from '@nestjs/common';
@@ -548,7 +571,7 @@ export class PropertyHasUnitsException extends HttpException {
         propertyId,
         unitCount,
       },
-      HttpStatus.BAD_REQUEST
+      HttpStatus.BAD_REQUEST,
     );
   }
 }
@@ -563,7 +586,7 @@ export class LeaseOverlapException extends HttpException {
         unitId,
         existingLeaseId,
       },
-      HttpStatus.CONFLICT
+      HttpStatus.CONFLICT,
     );
   }
 }
@@ -579,18 +602,20 @@ export class InsufficientFundsException extends HttpException {
         required,
         available,
       },
-      HttpStatus.BAD_REQUEST
+      HttpStatus.BAD_REQUEST,
     );
   }
 }
 ```
 
 **Files to create:**
+
 - `packages/backend/src/common/exceptions/business.exceptions.ts`
 
 ---
 
 #### **TASK-010: Frontend Error Boundary**
+
 **Priority:** P1 (High)
 **Estimated:** 1h
 
@@ -598,6 +623,7 @@ export class InsufficientFundsException extends HttpException {
 Create React error boundary to catch unhandled errors and show fallback UI.
 
 **Acceptance Criteria:**
+
 - [ ] Error boundary component created
 - [ ] Catches errors in child components
 - [ ] Logs errors to Sentry (if configured)
@@ -606,6 +632,7 @@ Create React error boundary to catch unhandled errors and show fallback UI.
 - [ ] Wraps app root
 
 **Implementation:**
+
 ```typescript
 // packages/admin/src/components/ErrorBoundary.tsx
 import React, { Component, ErrorInfo, ReactNode } from 'react';
@@ -665,9 +692,11 @@ export class ErrorBoundary extends Component<Props, State> {
 ```
 
 **Files to create:**
+
 - `packages/admin/src/components/ErrorBoundary.tsx`
 
 **Files to modify:**
+
 - `packages/admin/src/main.tsx` (wrap app with ErrorBoundary)
 
 ---
@@ -675,6 +704,7 @@ export class ErrorBoundary extends Component<Props, State> {
 ### **D. Testing Framework (10h)**
 
 #### **TASK-011: Configure Jest for Backend**
+
 **Priority:** P0 (Critical)
 **Estimated:** 2h
 
@@ -682,6 +712,7 @@ export class ErrorBoundary extends Component<Props, State> {
 Set up Jest for backend unit and integration testing with proper configuration.
 
 **Acceptance Criteria:**
+
 - [ ] Jest installed and configured
 - [ ] `pnpm test` runs all tests
 - [ ] `pnpm test:watch` runs in watch mode
@@ -690,6 +721,7 @@ Set up Jest for backend unit and integration testing with proper configuration.
 - [ ] Test utilities created (mock Prisma, mock logger)
 
 **Implementation:**
+
 ```json
 // packages/backend/jest.config.js
 module.exports = {
@@ -741,10 +773,12 @@ export const mockPrismaService = {
 ```
 
 **Files to create:**
+
 - `packages/backend/jest.config.js`
 - `packages/backend/src/test/test-utils.ts`
 
 **Dependencies:**
+
 ```bash
 pnpm add -D @nestjs/testing jest ts-jest @types/jest
 ```
@@ -752,6 +786,7 @@ pnpm add -D @nestjs/testing jest ts-jest @types/jest
 ---
 
 #### **TASK-012: Write Sample Unit Tests**
+
 **Priority:** P0 (Critical)
 **Estimated:** 3h
 
@@ -759,6 +794,7 @@ pnpm add -D @nestjs/testing jest ts-jest @types/jest
 Write unit tests for PropertiesService and AuthService as examples.
 
 **Acceptance Criteria:**
+
 - [ ] PropertiesService has tests for:
   - `create()` - success case
   - `create()` - error case
@@ -774,12 +810,14 @@ Write unit tests for PropertiesService and AuthService as examples.
 - [ ] Coverage >70% for these modules
 
 **Files to create:**
+
 - `packages/backend/src/modules/properties/properties.service.spec.ts`
 - `packages/backend/src/modules/auth/auth.service.spec.ts`
 
 ---
 
 #### **TASK-013: Configure Vitest for Frontend**
+
 **Priority:** P0 (Critical)
 **Estimated:** 2h
 
@@ -787,6 +825,7 @@ Write unit tests for PropertiesService and AuthService as examples.
 Set up Vitest for frontend testing with React Testing Library.
 
 **Acceptance Criteria:**
+
 - [ ] Vitest installed and configured
 - [ ] `pnpm test` runs all tests
 - [ ] `pnpm test:ui` opens Vitest UI
@@ -795,6 +834,7 @@ Set up Vitest for frontend testing with React Testing Library.
 - [ ] Testing Library configured for React components
 
 **Implementation:**
+
 ```typescript
 // packages/admin/vitest.config.ts
 import { defineConfig } from 'vitest/config';
@@ -837,10 +877,12 @@ afterEach(() => {
 ```
 
 **Files to create:**
+
 - `packages/admin/vitest.config.ts`
 - `packages/admin/src/test/setup.ts`
 
 **Dependencies:**
+
 ```bash
 pnpm add -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
 ```
@@ -848,6 +890,7 @@ pnpm add -D vitest @testing-library/react @testing-library/jest-dom @testing-lib
 ---
 
 #### **TASK-014: Write Sample Frontend Tests**
+
 **Priority:** P0 (Critical)
 **Estimated:** 2h
 
@@ -855,12 +898,14 @@ pnpm add -D vitest @testing-library/react @testing-library/jest-dom @testing-lib
 Write tests for key frontend components and hooks.
 
 **Acceptance Criteria:**
+
 - [ ] Login page component test (renders form, submits credentials)
 - [ ] Property card component test (displays property data)
 - [ ] `useAuth` hook test (login, logout, token refresh)
 - [ ] All tests pass
 
 **Files to create:**
+
 - `packages/admin/src/pages/Login.test.tsx`
 - `packages/admin/src/components/PropertyCard.test.tsx`
 - `packages/admin/src/hooks/useAuth.test.ts`
@@ -868,6 +913,7 @@ Write tests for key frontend components and hooks.
 ---
 
 #### **TASK-015: Set Up Playwright for E2E Tests**
+
 **Priority:** P1 (High)
 **Estimated:** 1h
 
@@ -875,6 +921,7 @@ Write tests for key frontend components and hooks.
 Configure Playwright and write one critical E2E test (login flow).
 
 **Acceptance Criteria:**
+
 - [ ] Playwright installed
 - [ ] `playwright.config.ts` configured
 - [ ] One E2E test: "User can login and reach dashboard"
@@ -882,6 +929,7 @@ Configure Playwright and write one critical E2E test (login flow).
 - [ ] `pnpm test:e2e` runs E2E tests
 
 **Implementation:**
+
 ```typescript
 // packages/e2e/tests/auth.spec.ts
 import { test, expect } from '@playwright/test';
@@ -899,10 +947,12 @@ test('user can login and reach dashboard', async ({ page }) => {
 ```
 
 **Files to create:**
+
 - `packages/e2e/playwright.config.ts`
 - `packages/e2e/tests/auth.spec.ts`
 
 **Dependencies:**
+
 ```bash
 pnpm add -D @playwright/test
 pnpm exec playwright install
@@ -913,6 +963,7 @@ pnpm exec playwright install
 ### **E. Monitoring & Analytics (4h)**
 
 #### **TASK-016: Set Up Sentry**
+
 **Priority:** P1 (High)
 **Estimated:** 2h
 
@@ -920,6 +971,7 @@ pnpm exec playwright install
 Configure Sentry for error tracking in backend and frontend.
 
 **Acceptance Criteria:**
+
 - [ ] Sentry account created (free tier)
 - [ ] Backend Sentry SDK installed and configured
 - [ ] Frontend Sentry SDK installed and configured
@@ -928,6 +980,7 @@ Configure Sentry for error tracking in backend and frontend.
 - [ ] Sentry only enabled in production (not dev)
 
 **Implementation:**
+
 ```typescript
 // packages/backend/src/main.ts
 import * as Sentry from '@sentry/node';
@@ -955,11 +1008,13 @@ if (import.meta.env.PROD) {
 ```
 
 **Dependencies:**
+
 ```bash
 pnpm add @sentry/node @sentry/react
 ```
 
 **Files to modify:**
+
 - `packages/backend/src/main.ts`
 - `packages/admin/src/main.tsx`
 - `.env.example` (add SENTRY_DSN)
@@ -967,6 +1022,7 @@ pnpm add @sentry/node @sentry/react
 ---
 
 #### **TASK-017: Create Event Tracking Infrastructure**
+
 **Priority:** P1 (High)
 **Estimated:** 2h
 
@@ -974,6 +1030,7 @@ pnpm add @sentry/node @sentry/react
 Build simple event tracking system for analytics (custom events table + service).
 
 **Acceptance Criteria:**
+
 - [ ] `Event` model added to Prisma schema
 - [ ] `EventsService` created to track events
 - [ ] Frontend `trackEvent` utility created
@@ -987,6 +1044,7 @@ Build simple event tracking system for analytics (custom events table + service)
   - Button clicks (key actions)
 
 **Implementation:**
+
 ```prisma
 // packages/database/prisma/schema.prisma
 model Event {
@@ -1049,11 +1107,13 @@ export function trackEvent(name: string, properties?: Record<string, any>) {
 ```
 
 **Files to create:**
+
 - `packages/backend/src/modules/events/events.service.ts`
 - `packages/backend/src/modules/events/events.module.ts`
 - `packages/admin/src/lib/analytics.ts`
 
 **Files to modify:**
+
 - `packages/database/prisma/schema.prisma` (add Event model)
 
 ---
@@ -1061,6 +1121,7 @@ export function trackEvent(name: string, properties?: Record<string, any>) {
 ### **F. Documentation (4h)**
 
 #### **TASK-018: Create Developer Setup Guide**
+
 **Priority:** P0 (Critical)
 **Estimated:** 2h
 
@@ -1068,6 +1129,7 @@ export function trackEvent(name: string, properties?: Record<string, any>) {
 Write comprehensive developer setup guide for onboarding new developers.
 
 **Acceptance Criteria:**
+
 - [ ] `docs/DEVELOPER_SETUP.md` created
 - [ ] Includes prerequisites, installation steps, common commands
 - [ ] Includes troubleshooting section
@@ -1075,11 +1137,13 @@ Write comprehensive developer setup guide for onboarding new developers.
 - [ ] Tested by following it from scratch
 
 **Files to create:**
+
 - `docs/DEVELOPER_SETUP.md`
 
 ---
 
 #### **TASK-019: Create First Feature Spec**
+
 **Priority:** P1 (High)
 **Estimated:** 2h
 
@@ -1087,6 +1151,7 @@ Write comprehensive developer setup guide for onboarding new developers.
 Write feature spec for "Property Edit Modal" using the template.
 
 **Acceptance Criteria:**
+
 - [ ] `docs/features/property-edit-modal.md` created
 - [ ] Follows feature spec template
 - [ ] Includes:
@@ -1099,6 +1164,7 @@ Write feature spec for "Property Edit Modal" using the template.
 - [ ] Reviewed and approved
 
 **Files to create:**
+
 - `docs/features/property-edit-modal.md`
 
 ---
@@ -1108,6 +1174,7 @@ Write feature spec for "Property Edit Modal" using the template.
 ### **G. CI/CD Pipeline**
 
 #### **TASK-020: GitHub Actions Workflow**
+
 **Priority:** P2 (Medium)
 **Estimated:** 3h
 
@@ -1115,6 +1182,7 @@ Write feature spec for "Property Edit Modal" using the template.
 Create GitHub Actions workflow for CI/CD with all quality checks.
 
 **Acceptance Criteria:**
+
 - [ ] `.github/workflows/ci.yml` created
 - [ ] Runs on PR and push to main
 - [ ] Jobs: lint, type-check, test, build
@@ -1123,6 +1191,7 @@ Create GitHub Actions workflow for CI/CD with all quality checks.
 - [ ] Fails PR if any check fails
 
 **Files to create:**
+
 - `.github/workflows/ci.yml`
 
 ---
@@ -1151,29 +1220,34 @@ Use this checklist to track progress:
 
 ```markdown
 ### Day 1 (8h)
+
 - [ ] TASK-001: Enable Strict TypeScript (2h)
 - [ ] TASK-002: Fix Existing `any` Types (4h)
 - [ ] TASK-003: Set Up Pre-Commit Hooks (2h)
 
 ### Day 2 (8h)
+
 - [ ] TASK-004: Install and Configure Winston Logger (3h)
 - [ ] TASK-005: Add Correlation ID Middleware (2h)
 - [ ] TASK-006: Add Logging to Auth & Properties Modules (2h)
 - [ ] TASK-007: Frontend Logging Utility (1h)
 
 ### Day 3 (8h)
+
 - [ ] TASK-008: Create Global Exception Filter (3h)
 - [ ] TASK-009: Create Custom Business Exceptions (2h)
 - [ ] TASK-010: Frontend Error Boundary (1h)
 - [ ] TASK-016: Set Up Sentry (2h)
 
 ### Day 4 (8h)
+
 - [ ] TASK-011: Configure Jest for Backend (2h)
 - [ ] TASK-012: Write Sample Unit Tests (3h)
 - [ ] TASK-013: Configure Vitest for Frontend (2h)
 - [ ] TASK-015: Set Up Playwright for E2E Tests (1h)
 
 ### Day 5 (8h)
+
 - [ ] TASK-014: Write Sample Frontend Tests (2h)
 - [ ] TASK-017: Create Event Tracking Infrastructure (2h)
 - [ ] TASK-018: Create Developer Setup Guide (2h)
@@ -1192,6 +1266,7 @@ After Phase 0 is complete, you'll be ready to start **Phase 1: Seamless Landlord
 - ✅ Developer independence (anyone can follow the process)
 
 **Phase 1 will focus on:**
+
 1. Property edit modal (using feature spec from TASK-019)
 2. Basic Stripe integration (backend payment creation)
 3. Intelligent onboarding wizard (3-minute property setup)

@@ -38,7 +38,9 @@ export default function PropertiesPage() {
 
   // Calculate ops stats per property
   const propertyOpsStats = useMemo(() => {
-    if (!workOrders) return {};
+    if (!workOrders) {
+      return {};
+    }
 
     const stats: Record<
       string,
@@ -75,7 +77,9 @@ export default function PropertiesPage() {
 
   // Calculate lease stats per property
   const propertyLeaseStats = useMemo(() => {
-    if (!leases) return {};
+    if (!leases) {
+      return {};
+    }
 
     const stats: Record<string, { activeCount: number; totalRent: number }> = {};
 
@@ -102,15 +106,21 @@ export default function PropertiesPage() {
 
   // Format age text for most recent work order
   const formatAge = (dateString: string | null): string => {
-    if (!dateString) return 'No work orders yet';
+    if (!dateString) {
+      return 'No work orders yet';
+    }
 
     const now = new Date();
     const date = new Date(dateString);
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Last: today';
-    if (diffDays === 1) return 'Last: yesterday';
+    if (diffDays === 0) {
+      return 'Last: today';
+    }
+    if (diffDays === 1) {
+      return 'Last: yesterday';
+    }
     return `Last: ${diffDays}d ago`;
   };
 

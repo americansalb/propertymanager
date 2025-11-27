@@ -14,7 +14,10 @@
     "start:prod": "pnpm db:migrate:deploy && node packages/backend/dist/main.js",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint -- --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "cd packages/database && PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate",
     "db:push": "cd packages/database && npx prisma db push --accept-data-loss",
@@ -45,10 +48,15 @@
   "packageManager": "pnpm@8.11.0",
   "lint-staged": {
     "packages/backend/src/**/*.ts": [
-      "prettier --write",
-      "bash -c 'cd packages/backend && pnpm exec tsc --noEmit'"
+      "eslint --fix",
+      "prettier --write"
     ],
     "packages/frontend-**/src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "packages/shared/src/**/*.ts": [
+      "eslint --fix",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [

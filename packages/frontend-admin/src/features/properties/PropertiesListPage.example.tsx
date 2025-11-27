@@ -15,8 +15,8 @@ export function PropertiesListPage() {
   // Fetch properties list
   const { data: properties, isLoading, error } = useProperties();
 
-  // Update mutation (used by modal)
-  const updateMutation = useUpdateProperty();
+  // Update mutation (available for direct use if needed)
+  const _updateMutation = useUpdateProperty();
 
   if (isLoading) {
     return <div>Loading properties...</div>;
@@ -89,7 +89,9 @@ export function PropertiesListPage() {
         <PropertyEditModal
           open={!!editingProperty}
           onOpenChange={(open) => {
-            if (!open) setEditingProperty(null);
+            if (!open) {
+              setEditingProperty(null);
+            }
           }}
           property={editingProperty}
           source="list"
@@ -113,7 +115,7 @@ export function PropertiesListPage() {
  */
 export function PropertiesListPageWithDirectMutation() {
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
-  const { data: properties } = useProperties();
+  const { data: _properties } = useProperties();
   const updateMutation = useUpdateProperty();
 
   return (
@@ -124,7 +126,9 @@ export function PropertiesListPageWithDirectMutation() {
         <PropertyEditModal
           open={!!editingProperty}
           onOpenChange={(open) => {
-            if (!open) setEditingProperty(null);
+            if (!open) {
+              setEditingProperty(null);
+            }
           }}
           property={editingProperty}
           source="list"

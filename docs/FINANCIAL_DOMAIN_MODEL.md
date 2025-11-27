@@ -364,9 +364,7 @@ Result:
 **Steps:**
 
 1. **Apply deposit to damages (internal):**
-
    - If you've already created a damages `Charge`, you can:
-
      - Debit Security Deposit Liability
      - Credit Accounts Receivable or directly Damages Income.
 
@@ -432,18 +430,17 @@ You can also break out:
 ### 7.1 MVP (Phase 1–2)
 
 - Entities implemented:
-
   - `Charge`, `Payment`, `PaymentAllocation`
   - Minimal `Account` table with predefined accounts
   - `JournalTransaction` + `JournalLine`
-- Flows supported:
 
+- Flows supported:
   - Monthly rent charges
   - One-time fees (late fee, utility)
   - Payments via Stripe (card/ACH)
   - Security deposit collection and basic return
-- Tenant portal:
 
+- Tenant portal:
   - Show **current balance**, **payment history**, **upcoming charges**
 
 ### 7.2 v1.0 Enhancements (Phase 4/6)
@@ -451,10 +448,10 @@ You can also break out:
 - Full bank integration (Plaid)
 - `BankTransaction` + `ReconciliationSession`
 - Better reporting:
-
   - P&L per property
   - Cash flow
   - Rent roll
+
 - Fine-grained tax categories & fee types
 
 ### 7.3 Stretch
@@ -469,28 +466,22 @@ You can also break out:
 ## 8. Implementation Notes & Invariants
 
 1. **Every Charge must map to an Account**
-
    - Rent → Rent Income
    - Late Fee → Late Fee Income
    - Deposit → Security Deposit Liability
 
 2. **Every Payment must hit a Bank or Clearing Account**
-
    - Stripe payouts → `Stripe Clearing` then to `Bank – Operating` via transfer entries if needed.
 
 3. **AR Balance Consistency**
-
    - `Total AR` should be recomputable either:
-
      - From `Charges - Allocations`, or
      - From `JournalLines` filtered by AR accounts.
 
 4. **Multi-Tenancy**
-
    - Ensure **all** financial entities include `organizationId`, and queries are always scoped by it.
 
 5. **Trust vs Operating Bank Accounts**
-
    - Do not allow charges that are true business expenses to be paid from trust accounts.
    - All deposit-related flows must go through trust bank + deposit liability.
 
@@ -499,24 +490,19 @@ You can also break out:
 ## 9. Open Questions (to resolve before implementation)
 
 1. **Grain of AR:**
-
    - Per-tenant AR account vs a shared AR account with tenantId on lines?
    - Recommendation: use **one AR account per organization**, but tag `tenantId` and `leaseId` on `JournalLine` for reporting.
 
 2. **Adjustments:**
-
    - Represent as negative `Charge` vs separate `Adjustment` entity?
    - Recommendation: MVP uses negative `Charge` with an `ADJUSTMENT` type and appropriate account mappings.
 
 3. **Tax Handling:**
-
    - Do we need explicit tax lines now, or can we treat amounts as tax-inclusive?
    - MVP: treat as **tax-inclusive**; no separate tax account unless required by early customers.
 
 4. **Permissions:**
-
    - Which roles can:
-
      - Post manual journal entries?
      - Override allocations?
      - Void charges/payments?
@@ -528,24 +514,20 @@ Document these decisions in a follow-up spec or SECURITY/ROLE matrix.
 ## 10. Next Steps
 
 1. Map this conceptual model to the existing Prisma schema:
-
    - Identify existing tables for charges, payments, etc.
    - Add missing entities: `JournalTransaction`, `JournalLine`, `PaymentAllocation`, `Account` if not present.
 
 2. Create API contracts:
-
    - `POST /charges`
    - `POST /payments/webhook/stripe`
    - `POST /payments/:id/allocate`
    - `GET /tenants/:id/balance`
 
 3. Write unit tests for core invariants:
-
    - Journal entries always balance.
    - Charges' `remainingBalance` never negative.
    - Trust accounting flows follow correct double-entry.
 
 4. Update roadmap:
-
    - Link Phase 1/2 financial tasks to this model.
    - Mark which parts are MVP vs v1.0.

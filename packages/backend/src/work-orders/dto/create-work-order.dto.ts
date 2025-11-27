@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum WorkOrderType {
@@ -42,7 +50,11 @@ export class CreateWorkOrderDto {
   @IsEnum(WorkOrderType)
   type!: WorkOrderType;
 
-  @ApiPropertyOptional({ enum: WorkOrderPriority, description: 'Priority level', default: WorkOrderPriority.MEDIUM })
+  @ApiPropertyOptional({
+    enum: WorkOrderPriority,
+    description: 'Priority level',
+    default: WorkOrderPriority.MEDIUM,
+  })
   @IsEnum(WorkOrderPriority)
   @IsOptional()
   priority?: WorkOrderPriority;

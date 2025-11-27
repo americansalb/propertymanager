@@ -16,12 +16,12 @@ This document breaks down the Property Edit Modal feature into concrete, assigna
 
 ## Task Summary
 
-| Category | Tasks | Estimated Hours |
-|----------|-------|-----------------|
-| **Backend** | 5 tasks | 14-17h |
-| **Frontend** | 5 tasks | 13-17h |
-| **E2E** | 1 task | 3-4h |
-| **Total** | **11 tasks** | **30-38h** |
+| Category     | Tasks        | Estimated Hours |
+| ------------ | ------------ | --------------- |
+| **Backend**  | 5 tasks      | 14-17h          |
+| **Frontend** | 5 tasks      | 13-17h          |
+| **E2E**      | 1 task       | 3-4h            |
+| **Total**    | **11 tasks** | **30-38h**      |
 
 ---
 
@@ -41,9 +41,18 @@ Define `UpdatePropertyDto` implementing the fields and validation rules from the
 #### Implementation Steps
 
 1. **Create DTO file:**
+
    ```typescript
    // packages/backend/src/modules/properties/dto/update-property.dto.ts
-   import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean, MaxLength, Matches } from 'class-validator';
+   import {
+     IsString,
+     IsNotEmpty,
+     IsOptional,
+     IsEnum,
+     IsBoolean,
+     MaxLength,
+     Matches,
+   } from 'class-validator';
    import { PropertyType } from '@prisma/client';
 
    export class UpdatePropertyDto {
@@ -96,6 +105,7 @@ Define `UpdatePropertyDto` implementing the fields and validation rules from the
    ```
 
 2. **Export from barrel file:**
+
    ```typescript
    // packages/backend/src/modules/properties/dto/index.ts
    export * from './create-property.dto';
@@ -181,6 +191,7 @@ Implement the controller and service logic to update properties with organizatio
 #### Implementation Steps
 
 1. **Add controller method:**
+
    ```typescript
    // packages/backend/src/modules/properties/properties.controller.ts
    import { Put, Param, Body } from '@nestjs/common';
@@ -202,6 +213,7 @@ Implement the controller and service logic to update properties with organizatio
    ```
 
 2. **Implement service method:**
+
    ```typescript
    // packages/backend/src/modules/properties/properties.service.ts
    import { NotFoundException, ForbiddenException } from '@nestjs/common';
@@ -299,6 +311,7 @@ Add structured logging for successful and failed property updates per Phase 0 lo
 #### Implementation Steps
 
 1. **Update service to log changes:**
+
    ```typescript
    // Already partially implemented in TASK-021, enhance here:
 
@@ -349,6 +362,7 @@ Add structured logging for successful and failed property updates per Phase 0 lo
 2. **Log format examples:**
 
    **Success:**
+
    ```json
    {
      "level": "info",
@@ -367,6 +381,7 @@ Add structured logging for successful and failed property updates per Phase 0 lo
    ```
 
    **Failure:**
+
    ```json
    {
      "level": "error",
@@ -420,7 +435,7 @@ describe('PropertiesService - Logging', () => {
         propertyId: 'prop-123',
         organizationId: 'org-456',
         changes: expect.any(Object),
-      })
+      }),
     );
   });
 
@@ -436,7 +451,7 @@ describe('PropertiesService - Logging', () => {
       expect.objectContaining({
         propertyId: 'prop-123',
         error: expect.objectContaining({ message: 'DB Error' }),
-      })
+      }),
     );
   });
 });
@@ -458,6 +473,7 @@ Add comprehensive unit tests for `PropertiesService.update` covering happy path 
 #### Implementation Steps
 
 1. **Create test file:**
+
    ```typescript
    // packages/backend/src/modules/properties/properties.service.spec.ts
    import { Test, TestingModule } from '@nestjs/testing';
@@ -551,9 +567,9 @@ Add comprehensive unit tests for `PropertiesService.update` covering happy path 
        it('should throw NotFoundException when property does not exist', async () => {
          jest.spyOn(prisma.property, 'findUnique').mockResolvedValue(null);
 
-         await expect(
-           service.update('prop-999', {} as any, 'org-456', 'user-789')
-         ).rejects.toThrow(NotFoundException);
+         await expect(service.update('prop-999', {} as any, 'org-456', 'user-789')).rejects.toThrow(
+           NotFoundException,
+         );
 
          expect(logger.warn).toHaveBeenCalled();
        });
@@ -562,13 +578,13 @@ Add comprehensive unit tests for `PropertiesService.update` covering happy path 
          jest.spyOn(prisma.property, 'findUnique').mockResolvedValue(mockProperty);
 
          await expect(
-           service.update('prop-123', {} as any, 'org-999', 'user-789') // Different org
+           service.update('prop-123', {} as any, 'org-999', 'user-789'), // Different org
          ).rejects.toThrow(ForbiddenException);
 
          expect(logger.error).toHaveBeenCalledWith(
            'Property belongs to different organization',
            undefined,
-           expect.any(Object)
+           expect.any(Object),
          );
        });
 
@@ -619,7 +635,7 @@ Add comprehensive unit tests for `PropertiesService.update` covering happy path 
                name: { before: 'Old Name', after: 'New Name' },
                city: { before: 'Austin', after: 'Dallas' },
              }),
-           })
+           }),
          );
        });
      });
@@ -655,6 +671,7 @@ Add API-level integration tests covering the full request/response cycle with a 
 #### Implementation Steps
 
 1. **Create integration test file:**
+
    ```typescript
    // packages/backend/test/properties.e2e-spec.ts
    import { Test, TestingModule } from '@nestjs/testing';
@@ -894,6 +911,7 @@ Implement the modal component with all fields and layout from the feature spec. 
 #### Implementation Steps
 
 1. **Create component file:**
+
    ```tsx
    // packages/admin/src/features/properties/components/PropertyEditModal.tsx
    import { useState } from 'react';
@@ -1106,6 +1124,7 @@ Implement the modal component with all fields and layout from the feature spec. 
    ```
 
 2. **Create types file:**
+
    ```typescript
    // packages/admin/src/types/property.ts
    export interface Property {
@@ -1163,11 +1182,13 @@ Add validation rules matching backend DTO using Zod schema and React Hook Form (
 #### Implementation Steps
 
 1. **Install dependencies (if not already installed):**
+
    ```bash
    pnpm add react-hook-form @hookform/resolvers zod
    ```
 
 2. **Create validation schema:**
+
    ```typescript
    // packages/admin/src/features/properties/schemas/property-edit.schema.ts
    import { z } from 'zod';
@@ -1189,13 +1210,19 @@ Add validation rules matching backend DTO using Zod schema and React Hook Form (
    ```
 
 3. **Update component to use React Hook Form:**
+
    ```tsx
    // packages/admin/src/features/properties/components/PropertyEditModal.tsx
    import { useForm } from 'react-hook-form';
    import { zodResolver } from '@hookform/resolvers/zod';
    import { propertyEditSchema, PropertyEditFormData } from '../schemas/property-edit.schema';
 
-   export function PropertyEditModal({ property, isOpen, onClose, onUpdated }: PropertyEditModalProps) {
+   export function PropertyEditModal({
+     property,
+     isOpen,
+     onClose,
+     onUpdated,
+   }: PropertyEditModalProps) {
      const {
        register,
        handleSubmit,
@@ -1231,9 +1258,7 @@ Add validation rules matching backend DTO using Zod schema and React Hook Form (
              <div>
                <Label htmlFor="name">Property Name *</Label>
                <Input id="name" {...register('name')} />
-               {errors.name && (
-                 <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
-               )}
+               {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>}
              </div>
 
              {/* Other fields similar pattern... */}
@@ -1273,6 +1298,7 @@ Connect the modal to the backend API using React Query (or existing data fetchin
 #### Implementation Steps
 
 1. **Create API service:**
+
    ```typescript
    // packages/admin/src/services/api/properties.ts
    import { apiClient } from './client';
@@ -1288,6 +1314,7 @@ Connect the modal to the backend API using React Query (or existing data fetchin
    ```
 
 2. **Create React Query hook:**
+
    ```typescript
    // packages/admin/src/features/properties/hooks/useUpdateProperty.ts
    import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -1313,7 +1340,7 @@ Connect the modal to the backend API using React Query (or existing data fetchin
 
          // Optimistically update cache
          queryClient.setQueryData<Property[]>(['properties'], (old) =>
-           old?.map((p) => (p.id === id ? { ...p, ...data } : p))
+           old?.map((p) => (p.id === id ? { ...p, ...data } : p)),
          );
 
          return { previousProperties };
@@ -1341,8 +1368,12 @@ Connect the modal to the backend API using React Query (or existing data fetchin
            queryClient.setQueryData(['properties'], context.previousProperties);
          }
 
-         const errorType = error.response?.status === 400 ? 'validation' :
-                          error.response?.status >= 500 ? 'server' : 'network';
+         const errorType =
+           error.response?.status === 400
+             ? 'validation'
+             : error.response?.status >= 500
+               ? 'server'
+               : 'network';
 
          toast({
            title: 'Error updating property',
@@ -1360,12 +1391,18 @@ Connect the modal to the backend API using React Query (or existing data fetchin
    ```
 
 3. **Update modal component:**
+
    ```tsx
    // packages/admin/src/features/properties/components/PropertyEditModal.tsx
    import { useUpdateProperty } from '../hooks/useUpdateProperty';
    import { trackEvent } from '@/lib/analytics';
 
-   export function PropertyEditModal({ property, isOpen, onClose, onUpdated }: PropertyEditModalProps) {
+   export function PropertyEditModal({
+     property,
+     isOpen,
+     onClose,
+     onUpdated,
+   }: PropertyEditModalProps) {
      const updateProperty = useUpdateProperty();
 
      const onSubmit = async (data: PropertyEditFormData) => {
@@ -1687,7 +1724,7 @@ test.describe('Property Edit Flow', () => {
     // 9. Refresh page and verify persistence
     await page.reload();
     await expect(page.locator('[data-testid="property-row"]').first()).toContainText(
-      'Updated Property Name'
+      'Updated Property Name',
     );
   });
 
@@ -1698,7 +1735,11 @@ test.describe('Property Edit Flow', () => {
     await page.click('button[type="submit"]');
 
     await page.click('a[href="/properties"]');
-    await page.locator('[data-testid="property-row"]').first().locator('button[aria-label="Edit"]').click();
+    await page
+      .locator('[data-testid="property-row"]')
+      .first()
+      .locator('button[aria-label="Edit"]')
+      .click();
 
     const postalCodeInput = page.getByLabel(/postal code/i);
     await postalCodeInput.fill('INVALID');

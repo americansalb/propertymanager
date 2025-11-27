@@ -14,11 +14,13 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 1. ✅ Timeline Realism
 
 ### **BEFORE:**
+
 - Phases 0-8: 11 weeks, 440 hours
 - All features treated as "must-have"
 - No buffer for unknowns
 
 ### **AFTER:**
+
 - **MVP Timeline:** 16-18 weeks (not 11)
 - **1.5x buffer** applied to all estimates
 - Each phase split into:
@@ -28,17 +30,17 @@ Based on excellent feedback, the following revisions have been made to align the
 
 ### **Revised Estimates:**
 
-| Phase | Original | Revised (MVP) | Revised (Full) |
-|-------|----------|---------------|----------------|
-| Phase 0 | 1 week (40h) | 1 week (40h) | 1 week (40h) |
-| Phase 1 | 2 weeks (80h) | 3 weeks (120h) | 4 weeks (160h) |
-| Phase 2 | 1 week (40h) | 2 weeks (80h) | 2 weeks (80h) |
-| Phase 3 | 1 week (40h) | 2 weeks (80h) | 2 weeks (80h) |
-| Phase 4 | 2 weeks (80h) | 3 weeks (120h) | 4 weeks (160h) |
-| Phase 5 | 1 week (40h) | 2 weeks (80h) | 2 weeks (80h) |
-| Phase 6 | 1 week (40h) | 1 week (40h) | 2 weeks (80h) |
-| Phase 7 | 1 week (40h) | 1 week (40h) | 2 weeks (80h) |
-| Phase 8 | 1 week (40h) | 2 weeks (80h) | 2 weeks (80h) |
+| Phase     | Original            | Revised (MVP)       | Revised (Full)      |
+| --------- | ------------------- | ------------------- | ------------------- |
+| Phase 0   | 1 week (40h)        | 1 week (40h)        | 1 week (40h)        |
+| Phase 1   | 2 weeks (80h)       | 3 weeks (120h)      | 4 weeks (160h)      |
+| Phase 2   | 1 week (40h)        | 2 weeks (80h)       | 2 weeks (80h)       |
+| Phase 3   | 1 week (40h)        | 2 weeks (80h)       | 2 weeks (80h)       |
+| Phase 4   | 2 weeks (80h)       | 3 weeks (120h)      | 4 weeks (160h)      |
+| Phase 5   | 1 week (40h)        | 2 weeks (80h)       | 2 weeks (80h)       |
+| Phase 6   | 1 week (40h)        | 1 week (40h)        | 2 weeks (80h)       |
+| Phase 7   | 1 week (40h)        | 1 week (40h)        | 2 weeks (80h)       |
+| Phase 8   | 1 week (40h)        | 2 weeks (80h)       | 2 weeks (80h)       |
 | **Total** | **11 weeks (440h)** | **17 weeks (680h)** | **21 weeks (840h)** |
 
 **Action Item:** Mark features in each phase as MVP/v1.0/Stretch in Phase 1 implementation plan.
@@ -48,11 +50,13 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 2. ✅ Payments Pulled Earlier
 
 ### **BEFORE:**
+
 - Phase 1: No payment work
 - Phase 2: Tenant portal (but no payment UI wired)
 - Phase 6: Payment processing
 
 ### **AFTER:**
+
 - **Phase 1 (Weeks 2-4):**
   - ✅ Stripe backend integration (create payment intents, handle webhooks)
   - ✅ Basic payment creation for landlords (manual rent payment)
@@ -76,10 +80,12 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 3. ✅ Analytics & Event Tracking in Phase 0
 
 ### **BEFORE:**
+
 - No explicit analytics infrastructure
 - Success metrics defined but no way to measure them
 
 ### **AFTER:**
+
 - **Phase 0 includes:**
   - ✅ Event tracking infrastructure (custom `Event` table)
   - ✅ `EventsService` in backend
@@ -91,6 +97,7 @@ Based on excellent feedback, the following revisions have been made to align the
   - ✅ Basic analytics dashboard (Metabase or Grafana on events table)
 
 **Files Added:**
+
 - `TASK-017: Create Event Tracking Infrastructure` in Phase 0 task list
 
 ---
@@ -98,10 +105,12 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 4. ✅ Testing Coverage Progression
 
 ### **BEFORE:**
+
 - Phase 0: Target 80% coverage immediately
 - Unrealistic for greenfield/legacy codebase
 
 ### **AFTER:**
+
 - **Phase 0:**
   - ✅ Set up testing infrastructure
   - ✅ Target 30-40% coverage on modified modules
@@ -118,6 +127,7 @@ Based on excellent feedback, the following revisions have been made to align the
   - ✅ Load testing
 
 **Updated `jest.config.js` threshold:**
+
 ```json
 {
   "coverageThresholds": {
@@ -136,9 +146,11 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 5. ✅ Monitoring Earlier (Not Just Phase 8)
 
 ### **BEFORE:**
+
 - Phase 8: Monitoring & observability (too late for beta launch)
 
 ### **AFTER:**
+
 - **Phase 0 (Week 1):**
   - ✅ Sentry error tracking (backend + frontend)
   - ✅ Basic uptime monitoring (UptimeRobot free tier)
@@ -165,9 +177,11 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 6. ✅ Financial Domain Model Documentation
 
 ### **BEFORE:**
+
 - Financial module mentioned but no clear model
 
 ### **AFTER:**
+
 - **Added: `docs/FINANCIAL_DOMAIN_MODEL.md`**
 
 **Summary:**
@@ -210,9 +224,11 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 7. ✅ AI/Automation Split into 4A and 4B
 
 ### **BEFORE:**
+
 - Phase 4: All AI features lumped together (high risk)
 
 ### **AFTER:**
+
 - **Phase 4A (Week 10-11): Rule-Based Automation** (Lower Risk)
   - ✅ Market rent comparison (Zillow/Rentometer API)
   - ✅ Rule-based rent increase suggestions (CPI + market data)
@@ -232,6 +248,7 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 8. ✅ Security & Compliance Specifics
 
 ### **ADDED:**
+
 - PII handling & encryption (at rest + in transit)
 - Log hygiene (no passwords, tokens, SSNs in logs)
 - Fair housing compliance (Phase 9 screening features)
@@ -239,8 +256,10 @@ Based on excellent feedback, the following revisions have been made to align the
 - Legal review checkpoint before public launch
 
 **Added to Phase 0:**
+
 ```markdown
 ### Security Checklist
+
 - [ ] PII encrypted at rest (database encryption)
 - [ ] PII encrypted in transit (HTTPS only)
 - [ ] Logs scrubbed of sensitive data (passwords, tokens, SSNs)
@@ -250,8 +269,10 @@ Based on excellent feedback, the following revisions have been made to align the
 ```
 
 **Added to Phase 9:**
+
 ```markdown
 ### Legal & Compliance Review
+
 - [ ] Fair housing compliance verified (no discriminatory language/logic)
 - [ ] FCRA compliance for tenant screening
 - [ ] Terms of service + privacy policy reviewed by lawyer
@@ -263,10 +284,13 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 9. ✅ Zero `any` Types - Enforcement Plan
 
 ### **BEFORE:**
+
 - "No `any` types allowed" (aspirational)
 
 ### **AFTER:**
+
 - **Phase 0: ESLint rule added**
+
   ```json
   {
     "rules": {
@@ -298,10 +322,12 @@ Based on excellent feedback, the following revisions have been made to align the
 ## 10. ✅ Phase 0 Made Concrete
 
 ### **BEFORE:**
+
 - Vague "infrastructure week"
 - No clear tasks or daily breakdown
 
 ### **AFTER:**
+
 - **Created: `docs/PHASE_0_TASKS.md`**
   - 20 tasks with clear acceptance criteria
   - Estimated hours per task
@@ -309,6 +335,7 @@ Based on excellent feedback, the following revisions have been made to align the
   - Definition of Done checklist
 
 **Day-by-Day Plan:**
+
 ```
 Day 1: Type safety (strict TS, fix `any` types, pre-commit hooks)
 Day 2: Logging (Winston, correlation IDs, structured logs)
@@ -322,6 +349,7 @@ Day 5: Analytics + docs (event tracking, developer guide, feature spec)
 ## 11. ✅ Feature Spec Template - Concrete Example
 
 ### **ADDED:**
+
 - `docs/features/property-edit-modal.md` (example feature spec)
 - Follows template from `PHASE_IMPLEMENTATION_PLAN.md`
 - Includes:
@@ -341,6 +369,7 @@ Day 5: Analytics + docs (event tracking, developer guide, feature spec)
 ## Summary of New/Modified Documents
 
 ### **Created:**
+
 1. ✅ `docs/PHASE_0_TASKS.md` - 20 concrete tasks with daily breakdown
 2. ✅ `docs/ROADMAP_REVISIONS.md` - This document
 3. 🔄 `docs/FINANCIAL_DOMAIN_MODEL.md` - TODO
@@ -348,6 +377,7 @@ Day 5: Analytics + docs (event tracking, developer guide, feature spec)
 5. 🔄 `docs/features/property-edit-modal.md` - TODO (TASK-019)
 
 ### **Modified:**
+
 1. ✅ `ROADMAP.md` - Timeline, phase splits (MVP/v1.0/stretch)
 2. ✅ `PHASE_IMPLEMENTATION_PLAN.md` - Testing thresholds, analytics section
 
@@ -356,17 +386,20 @@ Day 5: Analytics + docs (event tracking, developer guide, feature spec)
 ## Next Actions
 
 ### **Immediate (Today):**
+
 1. ✅ Review `docs/PHASE_0_TASKS.md`
 2. ✅ Set up development environment (if not already done)
 3. ✅ Start TASK-001 (Enable Strict TypeScript)
 
 ### **This Week (Phase 0):**
+
 1. Complete all P0 and P1 tasks in `PHASE_0_TASKS.md`
 2. Create `FINANCIAL_DOMAIN_MODEL.md`
 3. Create `TECH_DEBT.md` (list remaining `any` types)
 4. Write first feature spec (TASK-019)
 
 ### **Next Week (Phase 1 Start):**
+
 1. Implement property edit modal (using feature spec from TASK-019)
 2. Start Stripe backend integration
 3. Begin intelligent onboarding wizard
@@ -375,24 +408,25 @@ Day 5: Analytics + docs (event tracking, developer guide, feature spec)
 
 ## Feedback Incorporated
 
-| Feedback Item | Status | Notes |
-|--------------|--------|-------|
-| Timeline too optimistic | ✅ Addressed | 11 weeks → 17 weeks MVP, 21 weeks full |
-| Payments need to be earlier | ✅ Addressed | Moved to Phase 1-2 |
-| Analytics missing | ✅ Addressed | Added TASK-017 in Phase 0 |
-| Testing coverage unrealistic | ✅ Addressed | 30-40% Phase 0 → 80% Phase 8 |
-| Monitoring too late | ✅ Addressed | Sentry + basic monitoring in Phase 0 |
-| Financial model unclear | ✅ Addressed | Will create domain model doc |
-| AI too risky | ✅ Addressed | Split into 4A (rules) + 4B (ML) |
-| Security gaps | ✅ Addressed | Added PII, compliance checklists |
-| `any` types not enforceable | ✅ Addressed | ESLint rule + tech debt tracking |
-| Phase 0 too vague | ✅ Addressed | Created 20-task breakdown |
+| Feedback Item                | Status       | Notes                                  |
+| ---------------------------- | ------------ | -------------------------------------- |
+| Timeline too optimistic      | ✅ Addressed | 11 weeks → 17 weeks MVP, 21 weeks full |
+| Payments need to be earlier  | ✅ Addressed | Moved to Phase 1-2                     |
+| Analytics missing            | ✅ Addressed | Added TASK-017 in Phase 0              |
+| Testing coverage unrealistic | ✅ Addressed | 30-40% Phase 0 → 80% Phase 8           |
+| Monitoring too late          | ✅ Addressed | Sentry + basic monitoring in Phase 0   |
+| Financial model unclear      | ✅ Addressed | Will create domain model doc           |
+| AI too risky                 | ✅ Addressed | Split into 4A (rules) + 4B (ML)        |
+| Security gaps                | ✅ Addressed | Added PII, compliance checklists       |
+| `any` types not enforceable  | ✅ Addressed | ESLint rule + tech debt tracking       |
+| Phase 0 too vague            | ✅ Addressed | Created 20-task breakdown              |
 
 ---
 
 ## Conclusion
 
 The roadmap is now:
+
 - ✅ **Realistic** (17-week MVP vs. 11-week wishful thinking)
 - ✅ **Measurable** (analytics in Phase 0 tracks success metrics)
 - ✅ **Testable** (coverage progression from 30% → 80%)

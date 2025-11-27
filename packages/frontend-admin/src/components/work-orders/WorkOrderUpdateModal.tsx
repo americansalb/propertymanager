@@ -12,7 +12,11 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { useUpdateWorkOrder, UpdateWorkOrderDto, WorkOrder } from '../../hooks/useWorkOrders';
+import {
+  useUpdateWorkOrder,
+  type UpdateWorkOrderDto,
+  type WorkOrder,
+} from '../../hooks/useWorkOrders';
 import api from '../../services/api';
 
 interface WorkOrderUpdateModalProps {
@@ -83,18 +87,28 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
   const validateField = (field: string, value: any): string => {
     switch (field) {
       case 'title':
-        if (!value?.trim()) return 'Title is required';
-        if (value.trim().length < 5) return 'Title must be at least 5 characters';
+        if (!value?.trim()) {
+          return 'Title is required';
+        }
+        if (value.trim().length < 5) {
+          return 'Title must be at least 5 characters';
+        }
         return '';
       case 'description':
-        if (!value?.trim()) return 'Description is required';
-        if (value.trim().length < 10) return 'Description must be at least 10 characters';
+        if (!value?.trim()) {
+          return 'Description is required';
+        }
+        if (value.trim().length < 10) {
+          return 'Description must be at least 10 characters';
+        }
         return '';
       case 'estimatedCost':
       case 'actualCost':
         if (value !== undefined && value !== null && value !== '') {
           const cost = Number(value);
-          if (isNaN(cost) || cost < 0) return 'Must be a positive number';
+          if (isNaN(cost) || cost < 0) {
+            return 'Must be a positive number';
+          }
         }
         return '';
       default:
@@ -152,7 +166,9 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
     const errors: Record<string, string> = {};
     ['title', 'description'].forEach((field) => {
       const error = validateField(field, formData[field as keyof typeof formData]);
-      if (error) errors[field] = error;
+      if (error) {
+        errors[field] = error;
+      }
     });
 
     if (Object.keys(errors).length > 0) {
@@ -165,25 +181,45 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
       const payload: Partial<UpdateWorkOrderDto> = {};
 
       // Only include fields that have changed or are required
-      if (formData.title?.trim()) payload.title = formData.title.trim();
-      if (formData.description?.trim()) payload.description = formData.description.trim();
-      if (formData.type) payload.type = formData.type;
-      if (formData.priority) payload.priority = formData.priority;
-      if (formData.status) payload.status = formData.status;
+      if (formData.title?.trim()) {
+        payload.title = formData.title.trim();
+      }
+      if (formData.description?.trim()) {
+        payload.description = formData.description.trim();
+      }
+      if (formData.type) {
+        payload.type = formData.type;
+      }
+      if (formData.priority) {
+        payload.priority = formData.priority;
+      }
+      if (formData.status) {
+        payload.status = formData.status;
+      }
 
       // Optional text fields
-      if (formData.location?.trim()) payload.location = formData.location.trim();
-      if (formData.tenantReportedBy?.trim())
+      if (formData.location?.trim()) {
+        payload.location = formData.location.trim();
+      }
+      if (formData.tenantReportedBy?.trim()) {
         payload.tenantReportedBy = formData.tenantReportedBy.trim();
-      if (formData.tenantPhone?.trim()) payload.tenantPhone = formData.tenantPhone.trim();
-      if (formData.completionNotes?.trim())
+      }
+      if (formData.tenantPhone?.trim()) {
+        payload.tenantPhone = formData.tenantPhone.trim();
+      }
+      if (formData.completionNotes?.trim()) {
         payload.completionNotes = formData.completionNotes.trim();
+      }
 
       // Vendor assignment
-      if (formData.vendorId) payload.vendorId = formData.vendorId;
+      if (formData.vendorId) {
+        payload.vendorId = formData.vendorId;
+      }
 
       // Scheduled date
-      if (formData.scheduledDate) payload.scheduledDate = formData.scheduledDate;
+      if (formData.scheduledDate) {
+        payload.scheduledDate = formData.scheduledDate;
+      }
 
       // Permission to enter
       payload.permissionToEnter = formData.permissionToEnter || false;
@@ -361,7 +397,9 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
                 value={formData.title}
                 onChange={(e) => {
                   setFormData({ ...formData, title: e.target.value });
-                  if (touched.title) handleBlur('title');
+                  if (touched.title) {
+                    handleBlur('title');
+                  }
                 }}
                 onBlur={() => handleBlur('title')}
                 placeholder="Work order title"
@@ -379,7 +417,9 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
                 value={formData.description}
                 onChange={(e) => {
                   setFormData({ ...formData, description: e.target.value });
-                  if (touched.description) handleBlur('description');
+                  if (touched.description) {
+                    handleBlur('description');
+                  }
                 }}
                 onBlur={() => handleBlur('description')}
                 placeholder="Work order description"
@@ -509,7 +549,9 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
                       ...formData,
                       estimatedCost: e.target.value ? parseFloat(e.target.value) : undefined,
                     });
-                    if (touched.estimatedCost) handleBlur('estimatedCost');
+                    if (touched.estimatedCost) {
+                      handleBlur('estimatedCost');
+                    }
                   }}
                   onBlur={() => handleBlur('estimatedCost')}
                   placeholder="0.00"
@@ -532,7 +574,9 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
                       ...formData,
                       actualCost: e.target.value ? parseFloat(e.target.value) : undefined,
                     });
-                    if (touched.actualCost) handleBlur('actualCost');
+                    if (touched.actualCost) {
+                      handleBlur('actualCost');
+                    }
                   }}
                   onBlur={() => handleBlur('actualCost')}
                   placeholder="0.00"

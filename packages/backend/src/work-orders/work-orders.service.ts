@@ -3,8 +3,8 @@ import { Logger } from 'winston';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
-import { CreateWorkOrderDto } from './dto/create-work-order.dto';
-import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { type CreateWorkOrderDto } from './dto/create-work-order.dto';
+import { type UpdateWorkOrderDto } from './dto/update-work-order.dto';
 
 @Injectable()
 export class WorkOrdersService {
@@ -102,7 +102,9 @@ export class WorkOrdersService {
       });
 
       if (!unit) {
-        throw new BadRequestException('Unit not found or does not belong to the specified property');
+        throw new BadRequestException(
+          'Unit not found or does not belong to the specified property',
+        );
       }
     }
 
@@ -130,7 +132,9 @@ export class WorkOrdersService {
 
     // Normalize numeric fields (convert null/undefined/NaN to null)
     const estimatedCost =
-      dto.estimatedCost == null || isNaN(Number(dto.estimatedCost)) ? null : Number(dto.estimatedCost);
+      dto.estimatedCost == null || isNaN(Number(dto.estimatedCost))
+        ? null
+        : Number(dto.estimatedCost);
 
     const workOrder = await this.prisma.workOrder.create({
       data: {
@@ -235,7 +239,9 @@ export class WorkOrdersService {
 
     // Normalize numeric fields
     const estimatedCost =
-      dto.estimatedCost == null || isNaN(Number(dto.estimatedCost)) ? undefined : Number(dto.estimatedCost);
+      dto.estimatedCost == null || isNaN(Number(dto.estimatedCost))
+        ? undefined
+        : Number(dto.estimatedCost);
     const actualCost =
       dto.actualCost == null || isNaN(Number(dto.actualCost)) ? undefined : Number(dto.actualCost);
 

@@ -36,7 +36,11 @@ export class CreatePropertyDto {
   @IsEnum(PropertyType)
   type!: PropertyType;
 
-  @ApiPropertyOptional({ enum: PropertyStatus, description: 'Property status', default: PropertyStatus.ACTIVE })
+  @ApiPropertyOptional({
+    enum: PropertyStatus,
+    description: 'Property status',
+    default: PropertyStatus.ACTIVE,
+  })
   @IsEnum(PropertyStatus)
   @IsOptional()
   status?: PropertyStatus;
@@ -134,7 +138,7 @@ export class UpdatePropertyDto {
   @ApiProperty({
     example: '78701',
     description: 'Postal code (3-16 chars, letters/numbers/hyphen/space)',
-    maxLength: 16
+    maxLength: 16,
   })
   @IsString()
   @IsNotEmpty()
@@ -150,11 +154,19 @@ export class UpdatePropertyDto {
   @MaxLength(2)
   country!: string;
 
-  @ApiProperty({ enum: PropertyType, example: PropertyType.MULTIFAMILY, description: 'Type of property' })
+  @ApiProperty({
+    enum: PropertyType,
+    example: PropertyType.MULTIFAMILY,
+    description: 'Type of property',
+  })
   @IsEnum(PropertyType)
   type!: PropertyType;
 
-  @ApiProperty({ enum: PropertyStatus, example: PropertyStatus.ACTIVE, description: 'Property status' })
+  @ApiProperty({
+    enum: PropertyStatus,
+    example: PropertyStatus.ACTIVE,
+    description: 'Property status',
+  })
   @IsEnum(PropertyStatus)
   status!: PropertyStatus;
 

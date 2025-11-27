@@ -29,6 +29,7 @@ railway up
 ```
 
 **Configuration:**
+
 - Railway automatically reads `railway.json`
 - Set environment variables in Railway dashboard
 - Database URLs are auto-injected
@@ -54,6 +55,7 @@ render blueprint launch
 ```
 
 **Configuration:**
+
 - Render reads `render.yaml` for full stack
 - Includes PostgreSQL, Redis, and web service
 - Auto-SSL certificates
@@ -68,6 +70,7 @@ render blueprint launch
 **Perfect for**: Best frontend performance, global CDN
 
 **Deploy Frontend:**
+
 ```bash
 cd packages/frontend-admin
 vercel
@@ -75,6 +78,7 @@ vercel
 ```
 
 **Deploy Tenant Portal:**
+
 ```bash
 cd packages/frontend-tenant
 vercel
@@ -82,6 +86,7 @@ vercel
 ```
 
 **Deploy Backend:**
+
 ```bash
 # Use Railway as shown in Option 1
 railway up
@@ -98,11 +103,13 @@ railway up
 **Perfect for**: Large-scale production, full control, compliance requirements
 
 **Prerequisites:**
+
 - AWS Account
 - Terraform installed
 - AWS CLI configured
 
 **Deploy:**
+
 ```bash
 cd terraform
 
@@ -119,6 +126,7 @@ terraform apply
 ```
 
 **Includes:**
+
 - VPC with public/private subnets
 - RDS PostgreSQL (Multi-AZ)
 - ElastiCache Redis
@@ -188,6 +196,7 @@ pnpm prisma migrate deploy
 ```
 
 **Seed demo data (optional):**
+
 ```bash
 railway run "cd packages/database && pnpm seed"
 ```
@@ -197,23 +206,27 @@ railway run "cd packages/database && pnpm seed"
 ## Custom Domain Setup
 
 ### Railway:
+
 1. Go to Settings → Domains
 2. Add custom domain
 3. Update DNS CNAME record
 
 ### Render:
+
 1. Go to Settings → Custom Domains
 2. Add domain
 3. Update DNS records
 4. Auto-SSL enabled
 
 ### Vercel:
+
 1. Go to Settings → Domains
 2. Add domain
 3. Follow DNS instructions
 4. SSL automatic
 
 ### AWS:
+
 1. Create ACM certificate
 2. Validate domain
 3. Update Terraform variable
@@ -224,15 +237,18 @@ railway run "cd packages/database && pnpm seed"
 ## Monitoring & Logs
 
 ### Railway:
+
 - Built-in logs: `railway logs`
 - Metrics dashboard in web UI
 
 ### Render:
+
 - Logs in dashboard
 - Metrics & auto-restart
 - Health checks configured
 
 ### AWS:
+
 - CloudWatch Logs
 - CloudWatch Metrics
 - X-Ray tracing (optional)
@@ -245,17 +261,20 @@ railway run "cd packages/database && pnpm seed"
 ### Database Backups:
 
 **Railway/Render:**
+
 - Automatic daily backups
 - 7-day retention
 - Point-in-time recovery
 
 **AWS RDS:**
+
 - Automated daily backups
 - Configurable retention (7-35 days)
 - Manual snapshots
 - Cross-region replication (optional)
 
 **Manual Backup:**
+
 ```bash
 pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
 ```
@@ -265,11 +284,13 @@ pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
 ## Scaling
 
 ### Vertical Scaling (More Resources):
+
 - **Railway**: Upgrade plan in dashboard
 - **Render**: Upgrade instance type
 - **AWS**: Modify `instance_class` in Terraform
 
 ### Horizontal Scaling (More Instances):
+
 - **Railway**: Pro plan, adjust replicas
 - **Render**: Enable auto-scaling
 - **AWS**: Modify ECS task count
@@ -281,12 +302,14 @@ pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
 **GitHub Actions (included in `.github/workflows/ci.yml`):**
 
 Automatically:
+
 - ✅ Runs tests
 - ✅ Checks linting
 - ✅ Builds application
 - ✅ Can deploy on merge to main
 
 **Add deployment step:**
+
 ```yaml
 - name: Deploy to Railway
   run: railway up
@@ -318,19 +341,23 @@ Before going to production:
 ### Common Issues:
 
 **Database connection failed:**
+
 - Check `DATABASE_URL` format
 - Verify database is running
 - Check firewall rules
 
 **Prisma errors:**
+
 - Regenerate client: `pnpm db:generate`
 - Run migrations: `pnpm db:migrate`
 
 **Port conflicts:**
+
 - Update `API_PORT` environment variable
 - Check if port is already in use
 
 **CORS errors:**
+
 - Update `ALLOWED_ORIGINS`
 - Check frontend URL configuration
 
@@ -339,20 +366,24 @@ Before going to production:
 ## Cost Optimization
 
 ### Development:
+
 - Use Railway/Render Starter plans
 - Single database instance
 - Shared Redis
 
 ### Production (Small):
+
 - Render with managed databases
 - ~$30-50/month
 
 ### Production (Medium):
+
 - AWS with ECS Fargate
 - Multi-AZ RDS
 - ~$150-300/month
 
 ### Production (Enterprise):
+
 - AWS with reserved instances
 - Multi-region setup
 - CDN (CloudFront)
@@ -361,6 +392,7 @@ Before going to production:
 ---
 
 **Recommended Path:**
+
 1. **Start**: Railway (development)
 2. **Grow**: Render (small production)
 3. **Scale**: AWS (enterprise)

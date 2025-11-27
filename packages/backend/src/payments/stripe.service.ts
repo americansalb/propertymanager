@@ -240,13 +240,17 @@ export class StripeService {
     let remainingAmount = amount;
 
     for (const chargeId of chargeIdList) {
-      if (remainingAmount <= 0) break;
+      if (remainingAmount <= 0) {
+        break;
+      }
 
       const charge = await this.prisma.charge.findUnique({
         where: { id: chargeId },
       });
 
-      if (!charge) continue;
+      if (!charge) {
+        continue;
+      }
 
       const chargeBalance = Number(charge.amount) - Number(charge.amountPaid);
       const allocationAmount = Math.min(remainingAmount, chargeBalance);

@@ -15,10 +15,7 @@ export class UnitsController {
   @Get()
   @ApiOperation({ summary: 'Get all units for organization or filter by property' })
   @ApiQuery({ name: 'propertyId', required: false, description: 'Filter by property ID' })
-  async findAll(
-    @Query('propertyId') propertyId: string,
-    @OrganizationId() organizationId: string
-  ) {
+  async findAll(@Query('propertyId') propertyId: string, @OrganizationId() organizationId: string) {
     const units = propertyId
       ? await this.unitsService.findByProperty(propertyId)
       : await this.unitsService.findAll(organizationId);
@@ -44,7 +41,7 @@ export class UnitsController {
   async update(
     @Param('id') id: string,
     @Body() data: UpdateUnitDto,
-    @OrganizationId() organizationId: string
+    @OrganizationId() organizationId: string,
   ) {
     const unit = await this.unitsService.update(id, data, organizationId);
     return { success: true, data: unit };

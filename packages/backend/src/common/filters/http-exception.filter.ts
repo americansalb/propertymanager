@@ -1,5 +1,12 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { Response } from 'express';
+import {
+  type ExceptionFilter,
+  Catch,
+  type ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
+import { type Response } from 'express';
 
 // Local type definitions
 interface HttpExceptionResponse {
@@ -29,9 +36,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object') {
         const typedResponse = exceptionResponse as HttpExceptionResponse;
-        message = typedResponse.message ?
-          (Array.isArray(typedResponse.message) ? typedResponse.message[0] : typedResponse.message) :
-          message;
+        message = typedResponse.message
+          ? Array.isArray(typedResponse.message)
+            ? typedResponse.message[0]
+            : typedResponse.message
+          : message;
         code = typedResponse.code || code;
       }
     } else if (exception instanceof Error) {

@@ -37,7 +37,9 @@ export default function VendorsPage() {
 
   // Calculate vendor performance stats
   const vendorStats = useMemo(() => {
-    if (!vendors || !workOrders) return {};
+    if (!vendors || !workOrders) {
+      return {};
+    }
 
     const stats: Record<
       string,

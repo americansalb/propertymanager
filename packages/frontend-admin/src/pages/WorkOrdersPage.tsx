@@ -125,10 +125,18 @@ export default function WorkOrdersPage() {
     const propertyId = newPropertyId !== undefined ? newPropertyId : propertyIdFilter;
     const vendorId = newVendorId !== undefined ? newVendorId : vendorIdFilter;
 
-    if (status !== 'ALL') params.set('status', status);
-    if (priority !== 'ALL') params.set('priority', priority);
-    if (propertyId) params.set('propertyId', propertyId);
-    if (vendorId) params.set('vendorId', vendorId);
+    if (status !== 'ALL') {
+      params.set('status', status);
+    }
+    if (priority !== 'ALL') {
+      params.set('priority', priority);
+    }
+    if (propertyId) {
+      params.set('propertyId', propertyId);
+    }
+    if (vendorId) {
+      params.set('vendorId', vendorId);
+    }
 
     setSearchParams(params);
   };
@@ -144,15 +152,23 @@ export default function WorkOrdersPage() {
 
   // Get age badge text
   const getAgeBadgeText = (age: number): string => {
-    if (age === 0) return 'Opened today';
-    if (age === 1) return 'Opened 1 day ago';
+    if (age === 0) {
+      return 'Opened today';
+    }
+    if (age === 1) {
+      return 'Opened 1 day ago';
+    }
     return `Opened ${age} days ago`;
   };
 
   // Get age badge styling
   const getAgeBadgeClass = (age: number): string => {
-    if (age <= 2) return 'bg-gray-100 text-gray-700';
-    if (age > 7) return 'bg-red-100 text-red-700';
+    if (age <= 2) {
+      return 'bg-gray-100 text-gray-700';
+    }
+    if (age > 7) {
+      return 'bg-red-100 text-red-700';
+    }
     return 'bg-amber-100 text-amber-700';
   };
 
@@ -198,7 +214,7 @@ export default function WorkOrdersPage() {
       case 'CUSTOM':
         return {
           from: dateFrom ? new Date(dateFrom) : null,
-          to: dateTo ? new Date(dateTo + 'T23:59:59') : null,
+          to: dateTo ? new Date(`${dateTo}T23:59:59`) : null,
         };
       default:
         return { from: null, to: null };
@@ -262,7 +278,9 @@ export default function WorkOrdersPage() {
 
   // Check if work order is overdue
   const isOverdue = (order: any) => {
-    if (!order.scheduledDate || order.status === 'COMPLETED') return false;
+    if (!order.scheduledDate || order.status === 'COMPLETED') {
+      return false;
+    }
     return new Date(order.scheduledDate) < new Date();
   };
 

@@ -46,10 +46,18 @@ export const propertyEvents = {
     trackEvent('PROPERTY_EDIT_OPENED', { propertyId, source }, { category: 'property_management' }),
 
   editSaved: (propertyId: string, fieldsChangedCount: number, source: string) =>
-    trackEvent('PROPERTY_EDIT_SAVED', { propertyId, fieldsChangedCount, source }, { category: 'property_management' }),
+    trackEvent(
+      'PROPERTY_EDIT_SAVED',
+      { propertyId, fieldsChangedCount, source },
+      { category: 'property_management' },
+    ),
 
   editFailed: (propertyId: string, errorCode: string | undefined, source: string) =>
-    trackEvent('PROPERTY_EDIT_SAVE_FAILED', { propertyId, errorCode, source }, { category: 'property_management' }),
+    trackEvent(
+      'PROPERTY_EDIT_SAVE_FAILED',
+      { propertyId, errorCode, source },
+      { category: 'property_management' },
+    ),
 
   viewed: (propertyId: string, source: string) =>
     trackEvent('PROPERTY_VIEWED', { propertyId, source }, { category: 'property_management' }),

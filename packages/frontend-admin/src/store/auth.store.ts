@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AuthUser } from '@propertymaster/shared';
+import { type AuthUser } from '@propertymaster/shared';
 
 interface AuthState {
   user: AuthUser | null;
@@ -44,6 +44,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-    }
-  )
+    },
+  ),
 );

@@ -12,7 +12,7 @@ The **PropertyMaster App Marketplace** is a **Phase 3 feature** (Month 24+) that
 
 - ✅ Confirmed via codebase search: no marketplace routes, components, DB models, or services
 - ⚠️ One helper exists: `packages/backend/src/payments/stripe.service.ts:346` - `calculatePlatformFee()` with comment "for marketplace model"
-- **Interpretation**: This is payment infrastructure that *could* support a future marketplace, NOT a marketplace feature itself
+- **Interpretation**: This is payment infrastructure that _could_ support a future marketplace, NOT a marketplace feature itself
 
 **Strategic Decision**: Do NOT build marketplace UI or backend in Phase 1.
 
@@ -29,6 +29,7 @@ The **PropertyMaster App Marketplace** is a **Phase 3 feature** (Month 24+) that
 **UVP**: "We do the two things that cause 90% of your headaches—money and maintenance—10x better than your current system"
 
 **Explicit Omissions** (from strategy doc):
+
 > "We will deliberately postpone the full leasing suite (CRM, screening) and all AI/BI features. The goal is a narrow, deep, and perfect execution of the core."
 
 **Marketplace Status**: ❌ NOT INCLUDED
@@ -40,11 +41,13 @@ The **PropertyMaster App Marketplace** is a **Phase 3 feature** (Month 24+) that
 **Focus**: Win entire mid-market segment and build the "moat"
 
 **Key Deliverables**:
+
 - ✅ Launch Open API v1.0
 - ✅ Build first 10 key integrations (utilities, smart access, BI tools)
 - ✅ ResX Module v2.0 (amenities, packages, community)
 
 **Marketplace Status**: 🔧 **API FOUNDATION ONLY**
+
 - API must exist before marketplace can function
 - Early integrations validate the API design
 - No public marketplace UI yet
@@ -56,15 +59,18 @@ The **PropertyMaster App Marketplace** is a **Phase 3 feature** (Month 24+) that
 **Focus**: Dual-pronged attack on Enterprise + Small Landlord segments
 
 **Marketplace Launch** (from strategy doc):
+
 > "Launch App Marketplace: Scale the open ecosystem by launching the full, public App Marketplace, encouraging hundreds of third-party developers to build on the platform."
 
 **Strategic Benefits**:
+
 1. **Network Effect**: Platform value increases with each new integration
 2. **Moat**: Becomes the "hub" for entire tech stack
 3. **Revenue Stream**: High-margin App Store revenue from partners
 4. **Development Offload**: Third-party partners handle niche features
 
 **Marketplace Features** (Phase 3):
+
 - Full App Marketplace UI inside landlord experience
 - "Services" or "Marketplace" nav item
 - Discovery: Browse, search, filter integrations
@@ -80,6 +86,7 @@ The **PropertyMaster App Marketplace** is a **Phase 3 feature** (Month 24+) that
 ### Phase 3 Vision: Marketplace as First-Class Feature
 
 **Navigation Structure**:
+
 ```
 PropertyMaster Command Center
 ├── Dashboard
@@ -115,6 +122,7 @@ PropertyMaster Command Center
    - Advanced compliance/audit tools
 
 **Example Dashboard Integration**:
+
 ```
 ┌─────────────────────────────────────┐
 │ Landlord Dashboard                  │
@@ -144,6 +152,7 @@ PropertyMaster Command Center
 ### Why Marketplace Requires Phase 2 API First
 
 **Marketplace Architecture**:
+
 ```
 Third-Party App
      ↓
@@ -155,6 +164,7 @@ PropertyMaster Core
 ```
 
 **Dependencies**:
+
 1. **Open API v1.0** - Must exist for apps to integrate
 2. **OAuth 2.0 / API Keys** - Apps need secure auth
 3. **Webhooks** - Apps need event notifications
@@ -163,6 +173,7 @@ PropertyMaster Core
 6. **App Approval Process** - Vet apps for security/quality
 
 **Payment Infrastructure** (Already Exists):
+
 - ✅ `calculatePlatformFee()` helper in Stripe service
 - Revenue model: 15-30% of app subscription fees
 - Payment flow: User pays → Platform collects → Revenue share to app developer
@@ -174,10 +185,12 @@ PropertyMaster Core
 ### FinTech-First Strategy
 
 **Current State** (Phase 1):
+
 - Revenue: SaaS subscription fees (per-unit-per-month)
 - Payments: Embedded rent collection (take rate on transactions)
 
 **Phase 3 State** (With Marketplace):
+
 - Revenue: SaaS + **App Store fees** + Embedded FinTech
 - Payments: Rent + vendor payments + insurance + lending
 - **Marketplace Economics**:
@@ -186,9 +199,11 @@ PropertyMaster Core
   - Preferred partner placement fees
 
 **Strategic Endgame** (from strategy doc):
+
 > "If the platform successfully processes billions of dollars in rent and can generate high-margin revenue from embedded insurance, lending, and payments, the revenue from FinTech can eventually eclipse the revenue from SaaS. This allows for the ultimate disruptive pricing model: the core PMS can be offered at a dramatically lower cost—or, for certain segments, even for free."
 
 **Marketplace enables "free" PMS**:
+
 - Core software → Free (or very low cost)
 - Monetization → High-margin App Store + FinTech services
 - Strategy → Starve incumbents (Yardi, AppFolio) of revenue
@@ -208,12 +223,14 @@ PropertyMaster Core
 ### User Segment Needs (Phase 1):
 
 **What Mid-Market PMs Need NOW**:
+
 - ✅ Flawless financial core (GL, AP, AR, trust accounting)
 - ✅ Seamless maintenance workflow (work orders, vendor mgmt)
 - ✅ Consumer-grade UX (mobile-first, beautiful design)
 - ✅ Transparent pricing (no hidden fees)
 
 **What Mid-Market PMs DON'T Need YET**:
+
 - ❌ App marketplace (they need the core to work first)
 - ❌ Third-party integrations (they're switching FROM a bad all-in-one)
 - ❌ AI/BI features (nice-to-have, not need-to-have)
@@ -223,18 +240,21 @@ PropertyMaster Core
 ## Action Items
 
 ### Phase 1 (Current):
+
 - ✅ **NO marketplace UI or backend work**
 - ✅ Document strategy (this file)
 - ✅ Focus on Money + Maintenance vertical slices
 - ✅ Keep `calculatePlatformFee()` helper as infrastructure for future
 
 ### Phase 2 (Months 12-24):
+
 - 🔧 Build Open API v1.0
 - 🔧 Launch Developer Portal
 - 🔧 Sign first 10 integration partners
 - 🔧 Design marketplace UI (no public launch yet)
 
 ### Phase 3 (Months 24+):
+
 - 🚀 Launch public App Marketplace
 - 🚀 Add "Marketplace" to landlord navigation
 - 🚀 Enable revenue sharing with app developers
@@ -245,6 +265,7 @@ PropertyMaster Core
 ## Conclusion
 
 **The Marketplace is a critical strategic weapon**, but it's a **Phase 3 weapon**. Building it prematurely would:
+
 - Dilute Phase 1 focus on Money + Maintenance
 - Confuse mid-market beachhead customers
 - Waste engineering resources before API foundation exists

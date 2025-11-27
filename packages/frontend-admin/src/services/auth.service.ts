@@ -1,5 +1,10 @@
 import api from './api';
-import { LoginRequest, RegisterRequest, LoginResponse, ApiResponse } from '@propertymaster/shared';
+import {
+  type LoginRequest,
+  type RegisterRequest,
+  type LoginResponse,
+  type ApiResponse,
+} from '@propertymaster/shared';
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {

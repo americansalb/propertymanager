@@ -5,7 +5,7 @@ import { Request } from 'express';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { OrganizationId } from '../common/decorators/organization.decorator';
-import { ApiResponse } from '../auth/auth.controller';
+import { type ApiResponse } from '../auth/auth.controller';
 
 @ApiTags('events')
 @Controller('events')

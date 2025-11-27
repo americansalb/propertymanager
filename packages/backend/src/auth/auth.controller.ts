@@ -1,9 +1,14 @@
 import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse as SwaggerResponse } from '@nestjs/swagger';
-import { Request as ExpressRequest } from 'express';
+import { type Request as ExpressRequest } from 'express';
 
-import { AuthService, LoginResponse, RegisterRequest, UserWithOrganization } from './auth.service';
+import {
+  AuthService,
+  type LoginResponse,
+  RegisterRequest,
+  type UserWithOrganization,
+} from './auth.service';
 
 // Local type definitions
 export interface ApiResponse<T = unknown> {
@@ -62,7 +67,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token' })
   @SwaggerResponse({ status: 200, description: 'Token refreshed successfully' })
   @SwaggerResponse({ status: 401, description: 'Invalid refresh token' })
-  async refresh(@Body() refreshDto: RefreshTokenRequest): Promise<ApiResponse<{ accessToken: string }>> {
+  async refresh(
+    @Body() refreshDto: RefreshTokenRequest,
+  ): Promise<ApiResponse<{ accessToken: string }>> {
     const result = await this.authService.refreshToken(refreshDto.refreshToken);
 
     return {

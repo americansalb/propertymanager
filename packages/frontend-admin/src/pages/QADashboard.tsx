@@ -158,14 +158,14 @@ export function QADashboard() {
         name: `QA Test Property ${new Date().toLocaleTimeString()}`,
         type: 'MULTIFAMILY',
         status: 'ACTIVE',
-        address1: '123 QA Test Street',  // Fixed: was addressLine1
-        address2: null,  // Match modal: null for empty, not undefined
+        address1: '123 QA Test Street', // Fixed: was addressLine1
+        address2: null, // Match modal: null for empty, not undefined
         city: 'Test City',
         state: 'CA',
         zipCode: '90210',
         country: 'US',
         totalUnits: 10,
-        yearBuilt: 2020,  // Include optional fields to test full payload
+        yearBuilt: 2020, // Include optional fields to test full payload
         squareFeet: 5000,
       };
 
@@ -373,11 +373,15 @@ export function QADashboard() {
     const failed = ran.filter((t) => t.status === 'error');
     const running = tests.some((t) => t.status === 'loading');
 
-    if (running) return { icon: '⏳', text: 'Running tests...', color: 'text-yellow-600' };
-    if (ran.length === 0)
+    if (running) {
+      return { icon: '⏳', text: 'Running tests...', color: 'text-yellow-600' };
+    }
+    if (ran.length === 0) {
       return { icon: '⚪', text: 'No tests run yet', color: 'text-gray-500' };
-    if (failed.length === 0)
+    }
+    if (failed.length === 0) {
       return { icon: '✅', text: `All ${ran.length} tests passed`, color: 'text-green-600' };
+    }
     return {
       icon: '❌',
       text: `${failed.length} test${failed.length > 1 ? 's' : ''} failed`,
@@ -516,9 +520,7 @@ export function QADashboard() {
           title="Update Property"
           description="Tests PUT endpoint with safe test data"
           endpoint={
-            selectedProperty
-              ? `PUT /properties/${selectedProperty.id}`
-              : 'PUT /properties/:id'
+            selectedProperty ? `PUT /properties/${selectedProperty.id}` : 'PUT /properties/:id'
           }
           result={propertyUpdate}
           onRun={testPropertyUpdate}
@@ -576,9 +578,7 @@ export function QADashboard() {
           title="Update Work Order"
           description="Updates the test work order to IN_PROGRESS status"
           endpoint={
-            createdWorkOrder
-              ? `PUT /work-orders/${createdWorkOrder.id}`
-              : 'PUT /work-orders/:id'
+            createdWorkOrder ? `PUT /work-orders/${createdWorkOrder.id}` : 'PUT /work-orders/:id'
           }
           result={workOrderUpdate}
           onRun={testUpdateWorkOrder}
@@ -699,9 +699,7 @@ function TestSection({
             {endpoint}
           </code>
           {note && (
-            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#f59e0b' }}>
-              {note}
-            </p>
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#f59e0b' }}>{note}</p>
           )}
         </div>
         <button

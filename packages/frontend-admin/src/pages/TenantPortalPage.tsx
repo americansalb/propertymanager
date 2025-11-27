@@ -126,7 +126,9 @@ export default function TenantPortalPage() {
 
   // Generate payment history
   const paymentHistory: PaymentHistory[] = useMemo(() => {
-    if (!tenantLease) return [];
+    if (!tenantLease) {
+      return [];
+    }
 
     const payments: PaymentHistory[] = [];
     const rentAmount = tenantLease.rentAmount || 1500;
@@ -165,7 +167,9 @@ export default function TenantPortalPage() {
 
   // Map work orders to maintenance requests
   const maintenanceRequests: MaintenanceRequest[] = useMemo(() => {
-    if (!workOrders) return [];
+    if (!workOrders) {
+      return [];
+    }
 
     const requests = workOrders.slice(0, 5).map((wo: any) => ({
       id: wo.id,
@@ -190,7 +194,9 @@ export default function TenantPortalPage() {
 
   // Lease stats
   const leaseStats = useMemo(() => {
-    if (!tenantLease) return null;
+    if (!tenantLease) {
+      return null;
+    }
 
     const startDate = new Date(tenantLease.startDate);
     const endDate = new Date(tenantLease.endDate);

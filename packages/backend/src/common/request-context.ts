@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import { type Request } from 'express';
 
 /**
  * Request context metadata extracted from Express request

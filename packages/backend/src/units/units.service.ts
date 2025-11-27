@@ -20,10 +20,7 @@ export class UnitsService {
           },
         },
       },
-      orderBy: [
-        { property: { name: 'asc' } },
-        { unitNumber: 'asc' },
-      ],
+      orderBy: [{ property: { name: 'asc' } }, { unitNumber: 'asc' }],
     });
   }
 

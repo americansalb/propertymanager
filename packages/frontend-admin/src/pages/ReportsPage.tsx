@@ -124,7 +124,9 @@ export default function ReportsPage() {
 
   // Work Order Status Distribution
   const workOrderStatusData = useMemo(() => {
-    if (!workOrders) return [];
+    if (!workOrders) {
+      return [];
+    }
 
     const statusCounts: Record<string, number> = {};
     workOrders.forEach((wo: any) => {
@@ -139,7 +141,9 @@ export default function ReportsPage() {
 
   // Work Order Priority Distribution
   const workOrderPriorityData = useMemo(() => {
-    if (!workOrders) return [];
+    if (!workOrders) {
+      return [];
+    }
 
     const priorityCounts: Record<string, number> = {};
     workOrders.forEach((wo: any) => {
@@ -154,7 +158,9 @@ export default function ReportsPage() {
 
   // Monthly Work Order Trend
   const monthlyWorkOrderTrend = useMemo(() => {
-    if (!workOrders) return [];
+    if (!workOrders) {
+      return [];
+    }
 
     const { start, end } = getDateRange();
     const months = eachMonthOfInterval({ start, end });
@@ -169,7 +175,9 @@ export default function ReportsPage() {
       }).length;
 
       const completed = workOrders.filter((wo: any) => {
-        if (wo.status !== 'COMPLETED') return false;
+        if (wo.status !== 'COMPLETED') {
+          return false;
+        }
         const updatedAt = new Date(wo.updatedAt);
         return updatedAt >= monthStart && updatedAt <= monthEnd;
       }).length;
@@ -184,7 +192,9 @@ export default function ReportsPage() {
 
   // Property Performance Data
   const propertyPerformanceData = useMemo(() => {
-    if (!properties || !workOrders || !leases) return [];
+    if (!properties || !workOrders || !leases) {
+      return [];
+    }
 
     return properties.slice(0, 10).map((property: any) => {
       const propertyWorkOrders = workOrders.filter((wo: any) => wo.propertyId === property.id);
@@ -194,9 +204,9 @@ export default function ReportsPage() {
       const revenue = propertyLeases.reduce((sum: number, l: any) => sum + (l.monthlyRent || 0), 0);
 
       return {
-        name: property.name?.length > 15 ? property.name.substring(0, 15) + '...' : property.name,
+        name: property.name?.length > 15 ? `${property.name.substring(0, 15)}...` : property.name,
         workOrders: propertyWorkOrders.length,
-        revenue: revenue,
+        revenue,
         leases: propertyLeases.length,
       };
     });
@@ -204,7 +214,9 @@ export default function ReportsPage() {
 
   // Vendor Performance Data
   const vendorPerformanceData = useMemo(() => {
-    if (!vendors || !workOrders) return [];
+    if (!vendors || !workOrders) {
+      return [];
+    }
 
     return vendors.slice(0, 8).map((vendor: any) => {
       const vendorWorkOrders = workOrders.filter((wo: any) => wo.vendorId === vendor.id);
@@ -214,7 +226,7 @@ export default function ReportsPage() {
       return {
         name:
           vendor.companyName?.length > 12
-            ? vendor.companyName.substring(0, 12) + '...'
+            ? `${vendor.companyName.substring(0, 12)}...`
             : vendor.companyName,
         assigned: total,
         completed,
@@ -225,7 +237,9 @@ export default function ReportsPage() {
 
   // Revenue by Month
   const revenueByMonth = useMemo(() => {
-    if (!leases) return [];
+    if (!leases) {
+      return [];
+    }
 
     const { start, end } = getDateRange();
     const months = eachMonthOfInterval({ start, end });

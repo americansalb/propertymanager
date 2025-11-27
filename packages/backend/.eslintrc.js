@@ -1,26 +1,33 @@
+// Backend ESLint Configuration - NestJS specific rules
 module.exports = {
-  parser: '@typescript-eslint/parser',
+  extends: ['../../.eslintrc.js'],
   parserOptions: {
     project: 'tsconfig.json',
     tsconfigRootDir: __dirname,
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint/eslint-plugin'],
-  extends: [
-    'plugin:@typescript-eslint/recommended',
-  ],
-  root: true,
   env: {
     node: true,
     jest: true,
   },
-  ignorePatterns: ['.eslintrc.js', 'dist', 'node_modules', '**/*.spec.ts', '**/*.integration.spec.ts'],
+  ignorePatterns: [
+    '.eslintrc.js',
+    'dist',
+    'node_modules',
+    '**/*.spec.ts',
+    '**/*.integration.spec.ts',
+  ],
   rules: {
+    // NestJS-specific overrides
     '@typescript-eslint/interface-name-prefix': 'off',
-    '@typescript-eslint/explicit-function-return-type': 'off',
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
-    '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    '@typescript-eslint/ban-ts-comment': 'off',
+    // Allow explicit any in decorators and dependency injection (temporarily warn during migration)
+    '@typescript-eslint/no-explicit-any': 'warn',
+    // Allow empty constructors for DI
+    '@typescript-eslint/no-empty-function': [
+      'error',
+      {
+        allow: ['constructors'],
+      },
+    ],
   },
 };

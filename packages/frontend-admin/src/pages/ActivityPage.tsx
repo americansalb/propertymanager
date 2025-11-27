@@ -176,10 +176,18 @@ const generateActivitiesFromData = (
 
 // Get icon for activity type
 const getActivityIcon = (type: ActivityType, action: ActivityAction) => {
-  if (action === 'completed') return CheckCircle;
-  if (action === 'overdue' || action === 'expiring') return AlertCircle;
-  if (action === 'assigned') return UserCheck;
-  if (action === 'status_change') return Play;
+  if (action === 'completed') {
+    return CheckCircle;
+  }
+  if (action === 'overdue' || action === 'expiring') {
+    return AlertCircle;
+  }
+  if (action === 'assigned') {
+    return UserCheck;
+  }
+  if (action === 'status_change') {
+    return Play;
+  }
 
   switch (type) {
     case 'work_order':
@@ -336,8 +344,12 @@ export default function ActivityPage() {
   // Filter activities
   const filteredActivities = useMemo(() => {
     return activities.filter((activity) => {
-      if (typeFilter !== 'all' && activity.type !== typeFilter) return false;
-      if (showUnreadOnly && activity.read) return false;
+      if (typeFilter !== 'all' && activity.type !== typeFilter) {
+        return false;
+      }
+      if (showUnreadOnly && activity.read) {
+        return false;
+      }
       return true;
     });
   }, [activities, typeFilter, showUnreadOnly]);

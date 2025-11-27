@@ -91,7 +91,8 @@ export default function RegisterPage() {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters with uppercase, lowercase, number, and special character
+                Must be at least 8 characters with uppercase, lowercase, number, and special
+                character
               </p>
             </div>
 

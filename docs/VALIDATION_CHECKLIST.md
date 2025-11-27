@@ -6,17 +6,18 @@ Copy this template for each feature and check off items as you go.
 
 ---
 
-## Feature: _________________________
+## Feature: \***\*\*\*\*\*\*\***\_\***\*\*\*\*\*\*\***
 
-**Developer:** _________________________
-**Date Started:** _________________________
-**Target Merge:** _________________________
+**Developer:** \***\*\*\*\*\*\*\***\_\***\*\*\*\*\*\*\***
+**Date Started:** \***\*\*\*\*\*\*\***\_\***\*\*\*\*\*\*\***
+**Target Merge:** \***\*\*\*\*\*\*\***\_\***\*\*\*\*\*\*\***
 
 ---
 
 ## Phase 1: Code Complete
 
 ### Backend
+
 - [ ] DTO created with all required fields
 - [ ] DTO tests written (validation rules)
 - [ ] Service method implemented (create/update/delete)
@@ -29,6 +30,7 @@ Copy this template for each feature and check off items as you go.
 - [ ] TypeScript strict mode passes (`tsc --noEmit`)
 
 ### Frontend
+
 - [ ] Component created (modal/page)
 - [ ] Form validation added (Zod schema)
 - [ ] API client function added
@@ -42,27 +44,30 @@ Copy this template for each feature and check off items as you go.
 ## Phase 2: Automated Tests
 
 ### Backend Tests
+
 ```bash
 cd packages/backend && pnpm test
 ```
 
 - [ ] All tests pass
-- [ ] New DTO tests: ___/___  passing
-- [ ] New service tests: ___/___ passing
-- [ ] New controller tests: ___/___ passing
+- [ ] New DTO tests: **_/_** passing
+- [ ] New service tests: **_/_** passing
+- [ ] New controller tests: **_/_** passing
 - [ ] Coverage >70% on new code
 
 ### Frontend Tests
+
 ```bash
 cd packages/frontend-admin && pnpm test
 ```
 
 - [ ] Component tests written
-- [ ] Component tests passing: ___/___
+- [ ] Component tests passing: **_/_**
 - [ ] E2E test written (Playwright)
 - [ ] E2E test verified (or marked skip with reason)
 
 ### Integration Tests (if DB available)
+
 ```bash
 pnpm test:integration
 ```
@@ -107,6 +112,7 @@ pnpm test:integration
 ### Backend Verification
 
 **Check logs:**
+
 ```bash
 tail -f packages/backend/logs/app-info-*.log
 ```
@@ -117,6 +123,7 @@ tail -f packages/backend/logs/app-info-*.log
 - [ ] Change diff logged (for updates)
 
 **Check analytics:**
+
 ```sql
 SELECT * FROM "Event"
 WHERE name LIKE '%_OPENED' OR name LIKE '%_SAVED'
@@ -133,6 +140,7 @@ ORDER BY "createdAt" DESC LIMIT 10;
 ## Phase 4: Code Review Checklist
 
 ### Code Quality
+
 - [ ] No `any` types in new code (check with grep)
 - [ ] No `console.log` (use Winston)
 - [ ] No hardcoded secrets/URLs
@@ -141,6 +149,7 @@ ORDER BY "createdAt" DESC LIMIT 10;
 - [ ] Files < 300 lines
 
 ### Security
+
 - [ ] Multi-tenant: organizationId check enforced
 - [ ] Auth: JWT guard on sensitive endpoints
 - [ ] Validation: all user input validated
@@ -148,6 +157,7 @@ ORDER BY "createdAt" DESC LIMIT 10;
 - [ ] XSS: not using dangerouslySetInnerHTML
 
 ### Performance
+
 - [ ] Queries use indexes (check Prisma schema)
 - [ ] No N+1 queries (use `include` or `select`)
 - [ ] React Query cache configured (staleTime)
@@ -167,6 +177,7 @@ ORDER BY "createdAt" DESC LIMIT 10;
 ## Phase 6: Merge Readiness
 
 ### Pre-Merge Checks
+
 ```bash
 # Backend
 cd packages/backend
@@ -188,6 +199,7 @@ pnpm lint                    # ✅ Must pass
 - [ ] Branch up to date with main
 
 ### Deployment Checklist
+
 - [ ] Database migration written (if schema change)
 - [ ] Migration tested locally
 - [ ] Rollback plan documented
@@ -211,11 +223,11 @@ pnpm lint                    # ✅ Must pass
 
 **Developer:** I have verified all checkboxes and this feature is ready to merge.
 
-**Signature:** _________________________ **Date:** _________
+**Signature:** \***\*\*\*\*\*\*\***\_\***\*\*\*\*\*\*\*** **Date:** \***\*\_\*\***
 
 **Reviewer:** Code review complete, tests verified.
 
-**Signature:** _________________________ **Date:** _________
+**Signature:** \***\*\*\*\*\*\*\***\_\***\*\*\*\*\*\*\*** **Date:** \***\*\_\*\***
 
 ---
 
@@ -224,25 +236,30 @@ pnpm lint                    # ✅ Must pass
 ✅ **Status:** COMPLETE
 
 ### Tests
+
 - Backend: 57/57 passing ✅
 - Frontend: 7 E2E written (pending env) ⏸️
 
 ### Smoke Test
+
 - ✅ Edit modal opens from list
 - ✅ Save updates property
 - ✅ Validation shows errors
 - ✅ Cancel doesn't save
 
 ### Logs
+
 - ✅ `property.updated` logged
 - ✅ Correlation ID present
 - ✅ Change diff captured
 
 ### Analytics
+
 - ✅ `PROPERTY_EDIT_OPENED` tracked
 - ✅ `PROPERTY_EDIT_SAVED` tracked
 
 ### Blockers
+
 - Integration test blocked by Prisma engine (documented)
 - E2E test needs running app (written, ready for CI)
 

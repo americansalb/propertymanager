@@ -1,6 +1,6 @@
-import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Injectable, type NestMiddleware } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Request, Response, NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'express';
 
 const HEADER_NAME = 'x-correlation-id';
 

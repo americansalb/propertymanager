@@ -27,7 +27,9 @@ export function WorkOrderDetailDrawer({
   onEdit,
   onPropertyClick,
 }: WorkOrderDetailDrawerProps) {
-  if (!open || !workOrder) return null;
+  if (!open || !workOrder) {
+    return null;
+  }
 
   const statusColors: Record<string, string> = {
     COMPLETED: 'bg-green-100 text-green-700',

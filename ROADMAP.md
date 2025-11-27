@@ -1,767 +1,3294 @@
-# 🚀 PROPERTYMASTER: WORLD-CLASS TRANSFORMATION ROADMAP
+# PROPERTYMASTER: 108-PHASE COMPREHENSIVE ROADMAP
 
-**Version:** 1.0
-**Last Updated:** November 22, 2025
-**Status:** Ready for Implementation
-
----
-
-## **📖 DOCUMENTATION INDEX**
-
-This roadmap consists of two complementary documents:
-
-1. **[ROADMAP.md](./ROADMAP.md)** ← You are here
-   - Executive summary
-   - Vision and goals
-   - Feature roadmap by phase
-   - Success metrics
-   - Timeline and milestones
-
-2. **[PHASE_IMPLEMENTATION_PLAN.md](./PHASE_IMPLEMENTATION_PLAN.md)**
-   - Development standards and code quality rules
-   - Logging infrastructure setup
-   - Testing strategy (unit, integration, E2E)
-   - Error handling patterns
-   - Documentation templates
-   - Quality gates and CI/CD
-   - Security checklist
-   - Developer workflow
-
-**Read both documents before starting any implementation.**
+**Version:** 2.0
+**Created:** November 27, 2025
+**Status:** DEFINITIVE - NO ASSUMPTIONS ALLOWED
 
 ---
 
-## **🎯 VISION**
+## ROADMAP STRUCTURE
 
-Transform PropertyMaster from a solid foundation (7.2/10) into the **world-class default property management platform** that:
-
-- ✨ **Delights users** - Intuitive, beautiful, zero learning curve
-- 🤖 **Runs itself** - 80% reduction in manual work through automation
-- 💪 **Never breaks** - Bug-free through meticulous testing and monitoring
-- 📈 **Drives results** - Landlords earn 15% more, spend 20% less on maintenance
-- 🏆 **Dominates market** - Becomes the obvious choice vs. Buildium, AppFolio
-
----
-
-## **📊 CURRENT STATE ANALYSIS**
-
-### **What We Have (Branch: `claude/finish-multi-user-login-01JXcHmLtQFTXmaWg7hbXmHj`)**
-
-✅ **Strengths:**
-- Modern tech stack (NestJS, React, PostgreSQL, Prisma)
-- Multi-tenant architecture with proper data isolation
-- JWT authentication with refresh tokens working
-- Multi-user login and role-based access control
-- Comprehensive database schema (24+ entities)
-- Beautiful admin portal UI (shadcn/ui)
-- Basic CRUD operations for properties, units, leases, tenants
-
-⚠️ **Gaps:**
-- No edit/delete operations in frontend
-- Weak test password in seed data
-- Many `any` types (loose typing)
-- No email sending (invitations log to console)
-- Financial module incomplete (schema ready, no UI/API)
-- Payment processing not wired to frontend
-- Tenant and contractor portals mostly empty
-- No testing (0% coverage)
-- Minimal error handling
-- No logging infrastructure
-- No monitoring or observability
-
-**Overall Quality:** 7.2/10
-**Launch Readiness:** 65% (MVP for property managers only)
+| Section                   | Phases  | Description                                       | MVP Status |
+| ------------------------- | ------- | ------------------------------------------------- | ---------- |
+| **FOUNDATION**            | 1-12    | Infrastructure, tooling, quality gates            | **MVP**    |
+| **AUTH & SECURITY**       | 13-20   | Authentication, authorization, security hardening | **MVP**    |
+| **PROPERTIES**            | 21-30   | Property CRUD, validation, organization scoping   | **MVP**    |
+| **UNITS**                 | 31-38   | Unit management, status tracking, occupancy       | **MVP**    |
+| **LEASES**                | 39-50   | Lease lifecycle, rent tracking, renewals          | **MVP**    |
+| **FINANCIAL CORE**        | 51-62   | Chart of accounts, transactions, ledgers          | **MVP**    |
+| **PAYMENTS**              | 63-72   | Payment processing, Stripe, auto-pay              | **MVP**    |
+| **WORK ORDERS**           | 73-82   | Maintenance requests, assignment, completion      | Post-MVP   |
+| **VENDORS**               | 83-88   | Vendor management, compliance, performance        | Post-MVP   |
+| **TENANT PORTAL**         | 89-96   | Tenant-facing features, self-service              | Post-MVP   |
+| **REPORTING**             | 97-102  | Analytics, dashboards, exports                    | Post-MVP   |
+| **AI & AUTOMATION**       | 103-106 | Predictive features, document AI                  | Post-MVP   |
+| **MOBILE & INTEGRATIONS** | 107-108 | PWA, third-party integrations                     | Post-MVP   |
 
 ---
 
-## **🎯 SUCCESS METRICS**
+## MVP DEFINITION
 
-### **User Experience**
-| Metric | Baseline | Target | Timeline |
-|--------|----------|--------|----------|
-| Time to first property added | 15 min | <3 min | Phase 1 |
-| Mobile task completion rate | 20% | >90% | Phase 5 |
-| Net Promoter Score (NPS) | N/A | >70 | Phase 8 |
-| 12-month user retention | N/A | >95% | Phase 9 |
+**MVP = Phases 1-72**
 
-### **Efficiency Gains**
-| Metric | Baseline | Target | Timeline |
-|--------|----------|--------|----------|
-| Manual data entry | 100% | <20% | Phase 4 |
-| Rent collection time | 10 hrs/mo | <1 hr/mo | Phase 2 |
-| Maintenance resolution time | 5 days | <48 hrs | Phase 3 |
-| Auto-pay adoption rate | 0% | >60% | Phase 2 |
+The MVP delivers a **fully functional property management system** where a landlord can:
 
-### **Financial Impact (per landlord)**
-| Metric | Baseline | Target | Timeline |
-|--------|----------|--------|----------|
-| Revenue increase | - | +15% | Phase 4 |
-| Operating cost decrease | - | -20% | Phase 4 |
-| Vacancy rate decrease | - | -25% | Phase 6 |
+1. Create and manage properties and units
+2. Create and track leases with tenants
+3. Record and collect rent payments via Stripe
+4. View financial ledgers and basic reports
+5. All with proper authentication, authorization, and audit logging
 
-### **Technical Excellence**
-| Metric | Baseline | Target | Timeline |
-|--------|----------|--------|----------|
-| Uptime | N/A | 99.9% | Phase 8 |
-| Page load time | 2-3s | <1s | Phase 7 |
-| Test coverage | 0% | >80% | Phase 0 |
-| Bug escape rate | N/A | <1% | Phase 8 |
+**MVP Completion = Production-Ready for Beta Launch**
 
 ---
 
-## **🗓️ PHASE ROADMAP**
-
-### **PHASE 0: FOUNDATION (Week 1)** 🔴 CRITICAL
-**Status:** Not Started
-**Goal:** Establish rock-solid development infrastructure
-
-#### **Deliverables**
-- [ ] **Logging Infrastructure**
-  - Winston logger with structured logging
-  - Daily log rotation (14-day retention for info, 30-day for errors)
-  - Correlation IDs for request tracing
-  - Log all user actions, API calls, database operations
-
-- [ ] **Testing Framework**
-  - Jest for backend unit tests
-  - Vitest for frontend unit tests
-  - Playwright for E2E tests
-  - Supertest for API integration tests
-  - Target: 80% backend coverage, 70% frontend coverage
-
-- [ ] **Error Handling**
-  - Global exception filter with proper HTTP status codes
-  - Custom business exceptions
-  - Frontend error boundary
-  - Sentry integration for production error tracking
-
-- [ ] **Code Quality**
-  - Strict TypeScript mode enabled
-  - ESLint + Prettier configured
-  - Husky pre-commit hooks (lint, type-check, test)
-  - CI/CD pipeline (GitHub Actions)
-
-- [ ] **Documentation**
-  - Feature specification template
-  - Developer setup guide
-  - Module README template
-  - API documentation (Swagger/OpenAPI)
-
-- [ ] **Security**
-  - Change test password to professional value
-  - Security checklist created
-  - OWASP top 10 verification
-  - Rate limiting per user (not just IP)
-  - CSRF protection added
-
-#### **Success Criteria**
-- ✅ All tests pass in CI/CD
-- ✅ Zero `any` types in new code
-- ✅ Logs structured and searchable
-- ✅ Documentation templates ready
-- ✅ Security audit complete
+# SECTION 1: FOUNDATION (Phases 1-12) [MVP]
 
 ---
 
-### **PHASE 1: SEAMLESS LANDLORD EXPERIENCE (Weeks 2-3)** 🎨
-**Status:** Not Started
-**Goal:** Make admin portal feel magical
+## PHASE 1: Development Environment Verification
 
-#### **Features**
+**Objective:** Ensure all developers can run the project locally with zero issues.
 
-**1.1 Complete CRUD Operations**
-- [ ] Edit modals for properties, units, leases, tenants, vendors
-- [ ] Delete confirmations with cascade warnings
-- [ ] Form validation (client + server)
-- [ ] Optimistic UI updates
+**Deliverables:**
 
-**1.2 Intelligent Onboarding**
-- [ ] Interactive setup wizard (no overwhelming forms)
-- [ ] Auto-detect property details from address (Zillow API)
-- [ ] CSV/Excel import with smart field mapping
-- [ ] Plaid bank account connection (1-click)
-- [ ] Auto-generate units from unit count
+1. Verify `pnpm install` completes without errors
+2. Verify `docker-compose up -d` starts PostgreSQL + Redis + MailHog
+3. Verify `pnpm db:push` applies schema without errors
+4. Verify `pnpm db:seed` populates test data
+5. Verify `pnpm dev` starts all services (backend:3001, admin:3000, tenant:3002)
+6. Verify health check endpoint returns 200: `GET http://localhost:3001/api/v1/health`
 
-**1.3 Dashboard That Helps**
-- [ ] Real-time KPIs (not hardcoded)
-  - Occupancy rate with trend graph
-  - Cash flow this month vs. forecast
-  - Upcoming lease expirations (60 days)
-  - Maintenance issues requiring attention
-  - Late payment aging (30/60/90 days)
-- [ ] Action items widget with one-click actions
-- [ ] Visual property map (Google Maps with pins)
+**Acceptance Criteria:**
 
-**1.4 Effortless Property Management**
-- [ ] Bulk operations (select multiple → edit)
-- [ ] Visual unit status board (Kanban: Vacant | Leased | Occupied | Notice)
-- [ ] Property performance scorecard (P&L, NOI, cap rate per property)
+- [ ] Fresh clone + install takes < 5 minutes
+- [ ] All 3 services start and respond
+- [ ] Database has seed data visible in Prisma Studio (`pnpm db:studio`)
+- [ ] No TypeScript compilation errors
+- [ ] No runtime errors in console
 
-**1.5 Lease Management**
-- [ ] Lease creation wizard with templates
-- [ ] E-signature integration (DocuSign/HelloSign)
-- [ ] Auto-calculate prorated rent
-- [ ] Renewal automation (60-day email → tenant accepts → new lease generated)
-- [ ] Compliance checklist (required documents tracked)
-
-**1.6 Financial Intelligence**
-- [ ] Bank reconciliation (Plaid auto-import → AI match suggestions)
-- [ ] Automated rent collection (auto-charge, auto-late-fees, auto-reminders)
-- [ ] Trust accounting (separate security deposit ledger)
-- [ ] Financial reports (P&L, rent roll, variance analysis)
-
-#### **Success Criteria**
-- ✅ Property creation <3 minutes (from 15 min)
-- ✅ 100% CRUD operations functional
-- ✅ NPS >50 from beta users
-- ✅ Zero critical bugs
-
-**Estimated Effort:** 80 hours
+**Dependencies:** None
+**Estimated Effort:** 2 hours
 
 ---
 
-### **PHASE 2: TENANT EXPERIENCE (Week 4)** 💙
-**Status:** Not Started
-**Goal:** Delight tenants, reduce landlord workload
+## PHASE 2: TypeScript Strict Mode Enforcement
 
-#### **Features**
+**Objective:** Eliminate all implicit `any` types and enable strict type checking.
 
-**2.1 Tenant Portal**
-- [ ] Beautiful dashboard ("Welcome home, Sarah!")
-- [ ] Account balance, payment history
-- [ ] One-click rent payment (ACH free, card +2.9%)
-- [ ] Auto-pay enrollment
-- [ ] Download payment receipts
+**Deliverables:**
 
-**2.2 Maintenance Requests**
-- [ ] Category selector with icons
-- [ ] Photo/video upload (drag-and-drop or camera)
-- [ ] Real-time status tracking
-- [ ] Rate completed work (5-star + feedback)
+1. Enable `"strict": true` in `packages/backend/tsconfig.json`
+2. Enable `"strict": true` in `packages/frontend-admin/tsconfig.json`
+3. Enable `"strict": true` in `packages/frontend-tenant/tsconfig.json`
+4. Enable `"strict": true` in `packages/shared/tsconfig.json`
+5. Fix all TypeScript errors resulting from strict mode
+6. Add ESLint rule `"@typescript-eslint/no-explicit-any": "error"`
 
-**2.3 Lease & Documents**
-- [ ] Web-based lease viewer (no download required)
-- [ ] Download insurance, pet agreements, addendums
-- [ ] Request lease changes (roommate, pet request)
+**Acceptance Criteria:**
 
-**2.4 Communication**
-- [ ] Multi-channel (email, SMS, push)
-- [ ] Tenant notification preferences
-- [ ] Automated reminders (rent due, lease expiration)
-- [ ] Read receipts for important notices
+- [ ] `pnpm type-check` passes with zero errors across all packages
+- [ ] No `any` types in codebase (except with explicit `// @ts-expect-error` + justification)
+- [ ] All function parameters have explicit types
+- [ ] All function return types are declared
 
-#### **Success Criteria**
-- ✅ Tenant portal login success rate >95%
-- ✅ Auto-pay adoption >30% within 30 days
-- ✅ Maintenance request submission <2 minutes
-- ✅ Tenant satisfaction score >4.5/5
-
-**Estimated Effort:** 40 hours
+**Dependencies:** Phase 1
+**Estimated Effort:** 6 hours
 
 ---
 
-### **PHASE 3: MAINTENANCE EXCELLENCE (Week 5)** 🔧
-**Status:** Not Started
-**Goal:** Turn chaos into a well-oiled machine
+## PHASE 3: ESLint and Prettier Configuration
 
-#### **Features**
+**Objective:** Enforce consistent code style across entire codebase.
 
-**3.1 Intelligent Work Orders**
-- [ ] Auto-assignment to preferred vendor
-- [ ] Emergency SMS blast (first to respond wins)
-- [ ] Timeline view (submitted → assigned → in progress → completed)
-- [ ] Automatic status updates from vendor check-ins
+**Deliverables:**
 
-**3.2 Preventive Maintenance**
-- [ ] Schedule recurring tasks (HVAC every 90 days)
-- [ ] Auto-create work orders
-- [ ] Flag missed schedules
+1. Create root `.eslintrc.js` with shared rules
+2. Create root `.prettierrc` with formatting rules
+3. Add package-specific ESLint configs that extend root
+4. Configure ESLint for NestJS (backend)
+5. Configure ESLint for React (frontend-admin, frontend-tenant)
+6. Add `pnpm lint` script that runs ESLint on all packages
+7. Add `pnpm format` script that runs Prettier on all packages
+8. Add `pnpm lint:fix` script that auto-fixes issues
 
-**3.3 Vendor Portal**
-- [ ] Push notifications of new assignments
-- [ ] Accept/decline with ETA
-- [ ] Upload completion photos
-- [ ] Submit invoice directly
+**Acceptance Criteria:**
 
-**3.4 Vendor Management**
-- [ ] Vendor scorecard (response time, cost, ratings)
-- [ ] Compliance tracking (insurance expiring soon)
-- [ ] Performance comparison
+- [ ] `pnpm lint` reports zero errors
+- [ ] `pnpm format --check` passes (all files formatted)
+- [ ] ESLint catches unused variables, unused imports
+- [ ] ESLint enforces consistent import order
+- [ ] Prettier enforces: 2-space indent, single quotes, trailing commas, 100 char line width
 
-#### **Success Criteria**
-- ✅ Average work order resolution <48 hours
-- ✅ Vendor response time <4 hours
-- ✅ Preventive maintenance compliance >90%
-- ✅ Tenant satisfaction with maintenance >4/5
-
-**Estimated Effort:** 40 hours
+**Dependencies:** Phase 2
+**Estimated Effort:** 3 hours
 
 ---
 
-### **PHASE 4: AI & AUTOMATION (Weeks 6-7)** 🤖
-**Status:** Not Started
-**Goal:** Features no competitor has
+## PHASE 4: Pre-Commit Hooks with Husky
 
-#### **Features**
+**Objective:** Prevent bad code from being committed.
 
-**4.1 Predictive Intelligence**
-- [ ] Maintenance prediction ("HVAC likely to fail, replace now?")
-- [ ] Seasonal predictions (pipe bursts, AC failures)
-- [ ] Tenant risk scoring (payment patterns)
-- [ ] Renewal likelihood prediction
+**Deliverables:**
 
-**4.2 Revenue Optimization**
-- [ ] Market rent comparison (Zillow/Rentometer API)
-- [ ] Rent increase suggestions
-- [ ] Dynamic vacancy pricing
-- [ ] Lease term optimization
-- [ ] **Rent reliability score per lease** (payment history, job stability, tenure)
-- [ ] **Portfolio cashflow forecast** with confidence intervals
-- [ ] **Collection performance metrics** (on-time %, delinquency rate, avg recovery time)
-- [ ] **Risk-adjusted pricing recommendations** based on tenant reliability
+1. Install Husky: `pnpm add -D husky`
+2. Install lint-staged: `pnpm add -D lint-staged`
+3. Initialize Husky: `pnpm exec husky init`
+4. Create `.husky/pre-commit` hook
+5. Configure lint-staged in `package.json`
+6. Hook runs: ESLint, Prettier, TypeScript type-check on staged files
 
-**4.3 Document Intelligence**
-- [ ] AI lease parsing (upload PDF → extract all fields)
-- [ ] Receipt OCR (photo → expense record)
-- [ ] Invoice processing (vendor email → bill creation)
+**Pre-commit Hook Behavior:**
 
-**4.4 Smart Workflows**
-- [ ] Move-out automation (notice → inspection → disposition → list vacancy)
-- [ ] Move-in automation (application → lease → payment → welcome)
-- [ ] Compliance automation (certifications, inspections, reports)
-
-#### **Success Criteria**
-- ✅ 80% reduction in manual data entry
-- ✅ Rent optimization increases revenue 10%
-- ✅ Predictive maintenance saves 15% on repairs
-- ✅ Lease parsing accuracy >95%
-
-**Estimated Effort:** 80 hours
-
----
-
-### **PHASE 5: MOBILE-FIRST (Week 8)** 📱
-**Status:** Not Started
-**Goal:** Manage properties from anywhere
-
-#### **Features**
-
-**5.1 Progressive Web App**
-- [ ] Installable (add to home screen)
-- [ ] Works offline (service workers)
-- [ ] Push notifications
-- [ ] Camera integration
-- [ ] Geolocation (check-in to properties)
-
-**5.2 Mobile-Optimized Workflows**
-- [ ] Swipe gestures (approve/decline)
-- [ ] Long-press for bulk select
-- [ ] Voice input for notes
-- [ ] Touch-friendly forms
-
-**5.3 Property Inspections**
-- [ ] Checklist-based walkthrough
-- [ ] Photo annotations (mark issues on images)
-- [ ] Auto-generate inspection report PDF
-
-#### **Success Criteria**
-- ✅ Mobile task completion >90%
-- ✅ PWA install rate >40%
-- ✅ Offline functionality for critical tasks
-- ✅ Page load <1s on 4G
-
-**Estimated Effort:** 40 hours
-
----
-
-### **PHASE 6: INTEGRATION ECOSYSTEM (Week 9)** 🔌
-**Status:** Not Started
-**Goal:** Connect with existing tools
-
-#### **Features**
-
-**6.1 Accounting Integrations**
-- [ ] QuickBooks sync (two-way)
-- [ ] Xero integration
-- [ ] FreshBooks integration
-
-**6.2 Payment Processors**
-- [ ] Stripe (complete integration)
-- [ ] PayPal, Square, Zelle
-
-**6.3 Communication Platforms**
-- [ ] Twilio SMS
-- [ ] WhatsApp Business
-- [ ] Slack notifications
-
-**6.4 Listing Syndication**
-- [ ] Auto-post to Zillow, Apartments.com, Craigslist, Facebook
-- [ ] Track lead sources
-- [ ] Lead conversion funnel
-
-**6.5 Screening Services**
-- [ ] TransUnion/Experian integration
-- [ ] One-click screening request
-- [ ] Auto-populate application
-
-#### **Success Criteria**
-- ✅ QuickBooks sync accuracy >99%
-- ✅ Listing syndication reduces vacancy time 30%
-- ✅ Payment processing success rate >98%
-- ✅ 5+ integrations live
-
-**Estimated Effort:** 40 hours
-
----
-
-### **PHASE 7: UX POLISH (Week 10)** ✨
-**Status:** Not Started
-**Goal:** Every interaction feels premium
-
-#### **Features**
-
-**7.1 Design System**
-- [ ] Micro-interactions (smooth animations)
-- [ ] Haptic feedback (mobile)
-- [ ] Confetti on wins (lease signed, payment received)
-- [ ] Progress indicators (not just spinners)
-
-**7.2 Accessibility**
-- [ ] WCAG AA compliance
-- [ ] Keyboard navigation
-- [ ] Screen reader support
-- [ ] Color contrast compliance
-
-**7.3 Theming**
-- [ ] Dark mode (auto-switch)
-- [ ] White-label support (for property management companies)
-
-**7.4 Onboarding**
-- [ ] Product tours (interactive walkthrough)
-- [ ] Contextual tips
-- [ ] Embedded video tutorials
-
-**7.5 Performance**
-- [ ] Lazy loading
-- [ ] Image optimization (WebP)
-- [ ] Code splitting
-- [ ] CDN for assets (Cloudflare)
-- [ ] Database indexes
-
-#### **Success Criteria**
-- ✅ Page load <1 second
-- ✅ Lighthouse score >95
-- ✅ WCAG AA compliant
-- ✅ NPS >70
-
-**Estimated Effort:** 40 hours
-
----
-
-### **PHASE 8: RELIABILITY & SCALE (Week 11)** 🛡️
-**Status:** Not Started
-**Goal:** Bug-free, always available
-
-#### **Features**
-
-**8.1 Testing**
-- [ ] Unit tests (80% coverage)
-- [ ] Integration tests (all API endpoints)
-- [ ] E2E tests (critical user flows)
-- [ ] Visual regression tests
-
-**8.2 Monitoring**
-- [ ] Sentry error tracking
-- [ ] Performance monitoring (Core Web Vitals)
-- [ ] Uptime monitoring (Pingdom)
-- [ ] Structured logging (Winston → CloudWatch)
-- [ ] PagerDuty alerts
-
-**8.3 Infrastructure**
-- [ ] Auto-scaling
-- [ ] Database replication
-- [ ] Automated backups (30-day retention)
-- [ ] Disaster recovery plan (RTO 4h, RPO 1h)
-- [ ] Load testing (10,000 concurrent users)
-
-#### **Success Criteria**
-- ✅ Uptime 99.9%
-- ✅ Test coverage >80%
-- ✅ Bug escape rate <1%
-- ✅ Mean time to recovery <1 hour
-
-**Estimated Effort:** 40 hours
-
----
-
-### **PHASE 9: ADVANCED FEATURES (Weeks 12-14)** 🚀
-**Status:** Not Started
-**Goal:** Features that justify premium pricing
-
-#### **Features**
-
-**9.1 Advanced Analytics**
-- [ ] Custom dashboards (drag-and-drop widgets)
-- [ ] Cohort analysis (tenant retention)
-- [ ] Forecasting (ML-based revenue predictions)
-- [ ] What-if scenarios
-
-**9.2 Portfolio Management**
-- [ ] Multi-property comparison
-- [ ] Identify underperforming properties
-- [ ] Team collaboration (assign properties to PMs)
-- [ ] Activity feed per property
-
-**9.3 Tenant Screening**
-- [ ] Online applications (embeddable)
-- [ ] Auto-save progress, co-applicant support
-- [ ] Application scoring (income 3x rent, credit >650)
-- [ ] Fair housing compliant
-- [ ] Waitlist management
-
-**9.4 Marketing & Leasing**
-- [ ] Property website generator
-- [ ] Photo gallery, SEO optimized
-- [ ] Lead tracking (source attribution)
-- [ ] Conversion funnel analysis
-
-#### **Success Criteria**
-- ✅ Power users (>10 properties) retention >98%
-- ✅ Application-to-lease conversion >40%
-- ✅ Portfolio management reduces PM time 50%
-- ✅ Advanced analytics used by >60% of users
-
-**Estimated Effort:** 120 hours
-
----
-
-### **PHASE 10: ECOSYSTEM (Weeks 15+)** 🌐
-**Status:** Not Started
-**Goal:** Build a platform, not just software
-
-#### **Features**
-
-**10.1 Public API**
-- [ ] REST + GraphQL endpoints
-- [ ] Webhooks
-- [ ] Zapier integration
-- [ ] Developer portal (docs, sandbox)
-
-**10.2 App Marketplace**
-- [ ] Smart locks (August, Schlage)
-- [ ] Smart thermostats (Nest, Ecobee)
-- [ ] Insurance providers
-- [ ] Moving services
-
-**10.3 Community**
-- [ ] Help center (searchable articles)
-- [ ] Community forum
-- [ ] Compliance library (state-specific)
-- [ ] Template library (leases, notices)
-
-#### **Success Criteria**
-- ✅ 10+ third-party integrations
-- ✅ 100+ API consumers
-- ✅ Community forum 1,000+ active users
-- ✅ Help center deflects 70% of support tickets
-
-**Estimated Effort:** Ongoing
-
----
-
-## **📅 TIMELINE SUMMARY**
-
-| Phase | Duration | Effort | Start | End |
-|-------|----------|--------|-------|-----|
-| **Phase 0** | 1 week | 40h | Week 1 | Week 1 |
-| **Phase 1** | 2 weeks | 80h | Week 2 | Week 3 |
-| **Phase 2** | 1 week | 40h | Week 4 | Week 4 |
-| **Phase 3** | 1 week | 40h | Week 5 | Week 5 |
-| **Phase 4** | 2 weeks | 80h | Week 6 | Week 7 |
-| **Phase 5** | 1 week | 40h | Week 8 | Week 8 |
-| **Phase 6** | 1 week | 40h | Week 9 | Week 9 |
-| **Phase 7** | 1 week | 40h | Week 10 | Week 10 |
-| **Phase 8** | 1 week | 40h | Week 11 | Week 11 |
-| **Phase 9** | 3 weeks | 120h | Week 12 | Week 14 |
-| **Phase 10** | Ongoing | - | Week 15+ | - |
-
-**MVP (Phases 0-8):** 11 weeks, 440 hours
-**Full v1.0 (Phases 0-9):** 14 weeks, 560 hours
-
----
-
-## **🚢 LAUNCH STRATEGY**
-
-### **Soft Launch (After Phase 1)**
-- **Audience:** 10 beta landlords (friends, family)
-- **Goal:** Validate core workflows
-- **Feedback:** Weekly 1:1 sessions
-- **Duration:** 2 weeks
-
-### **Beta Launch (After Phase 5)**
-- **Audience:** 100 landlords (Product Hunt, Reddit r/realestateinvesting)
-- **Offer:** 50% discount for first year
-- **Goal:** Stress test, gather feature requests
-- **Feedback:** Weekly cohort calls
-- **Duration:** 4 weeks
-
-### **Public Launch (After Phase 8)**
-- **Audience:** General market
-- **Pricing:** $10/unit/month (vs. $15-25 competitors)
-- **Guarantee:** 30-day money-back
-- **Goal:** 1,000 landlords in first 90 days
-
----
-
-## **💰 PRICING MODEL**
-
-### **Tiers**
-| Tier | Units | Price/Month | Features |
-|------|-------|-------------|----------|
-| **Starter** | 1-10 | $99 | Core features, 1 user |
-| **Professional** | 11-50 | $299 | + Multi-user, integrations |
-| **Enterprise** | 51+ | Custom | + White-label, dedicated support |
-
-### **Add-ons**
-- **Extra users:** $10/user/month
-- **Premium integrations:** $20/month (QuickBooks, DocuSign)
-- **Tenant screening:** $30/application (passed to applicant)
-
----
-
-## **🎯 COMPETITIVE DIFFERENTIATION**
-
-| Feature | PropertyMaster | Buildium | AppFolio | Rent Manager |
-|---------|----------------|----------|----------|--------------|
-| **Onboarding time** | 3 min | 2 hours | 3 hours | 4 hours |
-| **AI rent optimization** | ✅ | ❌ | ❌ | ❌ |
-| **Predictive maintenance** | ✅ | ❌ | ❌ | ❌ |
-| **One-click reconciliation** | ✅ | Manual | Manual | Semi-auto |
-| **Mobile PWA** | ✅ | Native | Native | None |
-| **Free ACH payments** | ✅ | 2.5% | 2.9% | 3% |
-| **Dark mode** | ✅ | ❌ | ❌ | ❌ |
-| **Offline support** | ✅ | ❌ | ❌ | ❌ |
-| **Price (per unit/mo)** | $10 | $25 | $20 | $18 |
-
-### **Rent Predictability vs "Guaranteed Rent"**
-
-PropertyMaster will **not** advertise blanket "guaranteed rent" that we can't mathematically and legally stand behind.
-
-Instead, we compete on:
-
-- **On-time collection rate** (via auto-pay, smart reminders, late fees)
-  - Target: 95-98% on-time collection vs industry avg 75%
-- **Vacancy reduction** (pricing + workflow automation)
-  - Target: <14 days vacancy vs industry avg 30+ days
-- **Cashflow visibility** (forecasts, dashboards, risk scores)
-  - Real-time financial dashboards (Phase 1-2)
-  - AI-powered cashflow forecasting (Phase 4)
-- **Cost advantage** ($10/unit vs 8-10% of rent for guarantee schemes)
-  - On a $2,000/mo property: **$120/year vs $1,920-2,400/year**
-  - Landlords keep **94-95% more** vs guaranteed rent competitors
-
-**Why this matters:**
-- Belong/Nomad charge 8-10% of monthly rent for "guaranteed income"
-- Fine print often includes: pricing control, screening restrictions, property condition requirements
-- Our approach: Help landlords achieve 95-98% collection through automation while keeping 100% of rent
-
-**Long-term (Phase 6+):** We may add **optional rent-protection integrations** with licensed partners, clearly labeled and transparently priced (4-6% vs 8-10%).
-
-**See:** `docs/COMPETITIVE_STRATEGY.md` for full positioning and sales scripts.
-
----
-
-## **⚠️ RISKS & MITIGATION**
-
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
-| **Team burnout (aggressive timeline)** | High | Medium | Phase-by-phase approach, celebrate wins |
-| **Payment processor delays** | Medium | Low | Start Stripe integration in Phase 0 |
-| **Security breach** | Critical | Low | Security audit every phase, penetration testing |
-| **Competition launches similar features** | Medium | Medium | Focus on UX/speed, not just features |
-| **Scaling issues at launch** | High | Medium | Load testing in Phase 8, auto-scaling |
-| **Regulatory compliance (state laws)** | Medium | Medium | Legal review before launch, compliance library |
-
----
-
-## **📊 KPI DASHBOARD**
-
-Track weekly:
-
-**Product Metrics:**
-- Active users (DAU, WAU, MAU)
-- Feature adoption rates
-- Churn rate
-- NPS score
-
-**Technical Metrics:**
-- Uptime %
-- API response time (p50, p95, p99)
-- Error rate
-- Test coverage
-
-**Business Metrics:**
-- MRR (Monthly Recurring Revenue)
-- CAC (Customer Acquisition Cost)
-- LTV (Lifetime Value)
-- Unit economics (LTV/CAC ratio)
-
----
-
-## **✅ NEXT STEPS**
-
-### **Immediate Actions (This Week)**
-
-1. **Review Documents**
-   - [ ] Read this ROADMAP.md
-   - [ ] Read PHASE_IMPLEMENTATION_PLAN.md
-   - [ ] Ask clarifying questions
-
-2. **Set Up Development**
-   - [ ] Follow DEVELOPER_SETUP.md
-   - [ ] Run project locally
-   - [ ] Explore codebase
-
-3. **Start Phase 0**
-   - [ ] Install Winston logger
-   - [ ] Configure Jest/Vitest
-   - [ ] Set up GitHub Actions CI/CD
-   - [ ] Enable strict TypeScript
-   - [ ] Create first feature spec
-
-4. **Team Alignment**
-   - [ ] Kickoff meeting (review roadmap)
-   - [ ] Assign phase ownership
-   - [ ] Set up weekly sync
-   - [ ] Create project board (Jira/Linear)
-
----
-
-## **📞 GETTING HELP**
-
-**Questions?** Open GitHub Discussion or Slack #propertymaster-dev
-
-**Documentation:**
-- [Developer Setup](./docs/DEVELOPER_SETUP.md)
-- [Architecture Overview](./docs/ARCHITECTURE.md)
-- [API Documentation](http://localhost:3001/api/docs)
-
-**Useful Commands:**
 ```bash
-# Start development
-pnpm dev
-
-# Run tests
-pnpm test
-
-# Build for production
-pnpm build
-
-# Database operations
-pnpm db:studio     # Open Prisma Studio
-pnpm db:reset      # Reset and reseed database
+#!/bin/sh
+pnpm lint-staged
 ```
 
+**lint-staged Configuration:**
+
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md,yml,yaml}": ["prettier --write"]
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Cannot commit files with ESLint errors
+- [ ] Cannot commit files with Prettier violations
+- [ ] Staged files are auto-fixed where possible
+- [ ] Commit fails with clear error message if issues remain
+- [ ] Hook runs in < 10 seconds for typical commits
+
+**Dependencies:** Phase 3
+**Estimated Effort:** 2 hours
+
 ---
 
-**Let's build something amazing.** 🚀
+## PHASE 5: Winston Logger Setup (Backend)
+
+**Objective:** Implement structured logging for all backend operations.
+
+**Deliverables:**
+
+1. Install Winston: `pnpm add winston winston-daily-rotate-file`
+2. Create `packages/backend/src/common/logger/app-logger.service.ts`
+3. Create `packages/backend/src/common/logger/logger.module.ts`
+4. Configure log transports:
+   - Console transport (colorized, human-readable in dev)
+   - File transport (JSON format, daily rotation)
+   - Error file transport (errors only, 30-day retention)
+5. Define log levels: error, warn, info, http, debug
+6. Include in all logs: timestamp, level, message, context, correlationId
+
+**Logger Interface:**
+
+```typescript
+interface LogContext {
+  correlationId?: string;
+  userId?: string;
+  organizationId?: string;
+  [key: string]: unknown;
+}
+
+log(message: string, context?: LogContext): void;
+error(message: string, trace?: string, context?: LogContext): void;
+warn(message: string, context?: LogContext): void;
+debug(message: string, context?: LogContext): void;
+```
+
+**Acceptance Criteria:**
+
+- [ ] Logger is injectable via NestJS DI
+- [ ] Logs appear in console with colors in development
+- [ ] Logs write to `logs/app-YYYY-MM-DD.log` in production
+- [ ] Error logs write to `logs/error-YYYY-MM-DD.log`
+- [ ] Log files rotate daily and delete after retention period
+- [ ] No `console.log` statements in production code
+
+**Dependencies:** Phase 1
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 6: Correlation ID Middleware
+
+**Objective:** Enable request tracing across all logs.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/common/middleware/correlation-id.middleware.ts`
+2. Generate UUID if `x-correlation-id` header not present
+3. Attach correlationId to request object: `req.correlationId`
+4. Return correlationId in response header: `x-correlation-id`
+5. Register middleware globally in `app.module.ts`
+6. Update logger to read correlationId from request context
+
+**Middleware Implementation:**
+
+```typescript
+@Injectable()
+export class CorrelationIdMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    const correlationId = (req.headers['x-correlation-id'] as string) || randomUUID();
+    req['correlationId'] = correlationId;
+    res.setHeader('x-correlation-id', correlationId);
+    next();
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Every request has a correlationId (provided or generated)
+- [ ] CorrelationId appears in all log entries for that request
+- [ ] CorrelationId returned in response header
+- [ ] Frontend can read correlationId for error reporting
+
+**Dependencies:** Phase 5
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 7: Global Exception Filter
+
+**Objective:** Handle all errors consistently with proper HTTP status codes and logging.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/common/filters/all-exceptions.filter.ts`
+2. Catch all exceptions (HttpException and unknown)
+3. Map exceptions to proper HTTP status codes
+4. Return consistent error response structure
+5. Log all errors with context (userId, correlationId, path, method)
+6. Hide stack traces in production, show in development
+7. Register filter globally in `main.ts`
+
+**Error Response Structure:**
+
+```typescript
+{
+  statusCode: number;
+  message: string;
+  error: string;
+  timestamp: string;
+  path: string;
+  method: string;
+  correlationId: string;
+  stack?: string; // Only in development
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] All exceptions return consistent JSON structure
+- [ ] HTTP 4xx errors log as warnings
+- [ ] HTTP 5xx errors log as errors with stack trace
+- [ ] Unhandled exceptions become HTTP 500
+- [ ] PrismaClientKnownRequestError maps to appropriate HTTP codes
+- [ ] ValidationPipe errors return HTTP 400 with field details
+
+**Dependencies:** Phase 6
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 8: Custom Business Exceptions
+
+**Objective:** Create domain-specific exceptions for clear error handling.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/common/exceptions/` directory
+2. Create exception classes:
+   - `EntityNotFoundException` (404)
+   - `EntityConflictException` (409)
+   - `ValidationException` (400)
+   - `UnauthorizedException` (401)
+   - `ForbiddenException` (403)
+   - `PropertyHasUnitsException` (400)
+   - `LeaseOverlapException` (409)
+   - `InsufficientBalanceException` (400)
+   - `PaymentFailedException` (402)
+   - `TenantAlreadyExistsException` (409)
+3. Each exception includes: error code, message, relevant IDs
+
+**Exception Example:**
+
+```typescript
+export class PropertyHasUnitsException extends HttpException {
+  constructor(propertyId: string, unitCount: number) {
+    super(
+      {
+        statusCode: HttpStatus.BAD_REQUEST,
+        error: 'PROPERTY_HAS_UNITS',
+        message: `Cannot delete property because it has ${unitCount} active units`,
+        propertyId,
+        unitCount,
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] All business rules have specific exception classes
+- [ ] Each exception has unique error code
+- [ ] Frontend can parse error codes for user-friendly messages
+- [ ] Exceptions are used consistently in services
+
+**Dependencies:** Phase 7
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 9: Jest Backend Testing Setup
+
+**Objective:** Configure testing framework for backend unit and integration tests.
+
+**Deliverables:**
+
+1. Install Jest: `pnpm add -D jest ts-jest @types/jest @nestjs/testing`
+2. Create `packages/backend/jest.config.js`
+3. Create `packages/backend/src/test/test-utils.ts`
+4. Create mock factories: mockPrismaService, mockLogger
+5. Add scripts: `pnpm test`, `pnpm test:watch`, `pnpm test:cov`
+6. Configure coverage thresholds (initially 20%)
+7. Configure test file pattern: `*.spec.ts`
+
+**Jest Configuration:**
+
+```javascript
+module.exports = {
+  moduleFileExtensions: ['js', 'json', 'ts'],
+  rootDir: 'src',
+  testRegex: '.*\\.spec\\.ts$',
+  transform: { '^.+\\.(t|j)s$': 'ts-jest' },
+  collectCoverageFrom: ['**/*.(t|j)s', '!**/*.spec.ts', '!**/test/**'],
+  coverageDirectory: '../coverage',
+  testEnvironment: 'node',
+  moduleNameMapper: { '^@/(.*)$': '<rootDir>/$1' },
+  coverageThreshold: { global: { branches: 20, functions: 20, lines: 20, statements: 20 } },
+};
+```
+
+**Acceptance Criteria:**
+
+- [ ] `pnpm test` runs and completes
+- [ ] `pnpm test:cov` generates HTML coverage report
+- [ ] Mock utilities are reusable across tests
+- [ ] Tests run in isolation (no database required)
+- [ ] Test timeout set to 10 seconds
+
+**Dependencies:** Phase 2
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 10: Vitest Frontend Testing Setup
+
+**Objective:** Configure testing framework for frontend component and hook tests.
+
+**Deliverables:**
+
+1. Install Vitest: `pnpm add -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom`
+2. Create `packages/frontend-admin/vitest.config.ts`
+3. Create `packages/frontend-admin/src/test/setup.ts`
+4. Create test utilities: renderWithProviders, mockRouter, mockApi
+5. Add scripts: `pnpm test`, `pnpm test:ui`, `pnpm test:cov`
+6. Configure coverage thresholds (initially 20%)
+
+**Vitest Configuration:**
+
+```typescript
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    coverage: {
+      reporter: ['text', 'html'],
+      threshold: { lines: 20, functions: 20, branches: 20, statements: 20 },
+    },
+  },
+  resolve: { alias: { '@': path.resolve(__dirname, './src') } },
+});
+```
+
+**Acceptance Criteria:**
+
+- [ ] `pnpm test` runs React component tests
+- [ ] Testing Library renders components with providers
+- [ ] Mock API responses work correctly
+- [ ] Snapshot testing configured
+- [ ] Coverage report generated
+
+**Dependencies:** Phase 2
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 11: Sample Backend Tests
+
+**Objective:** Write reference tests that demonstrate testing patterns.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/modules/auth/auth.service.spec.ts`
+   - Test: `register()` creates user and organization
+   - Test: `register()` hashes password before storing
+   - Test: `register()` throws if email exists
+   - Test: `login()` returns tokens for valid credentials
+   - Test: `login()` throws for invalid password
+   - Test: `refreshToken()` returns new access token
+2. Create `packages/backend/src/modules/properties/properties.service.spec.ts`
+   - Test: `create()` creates property with organizationId
+   - Test: `findAll()` returns only organization's properties
+   - Test: `findOne()` throws if property not in organization
+   - Test: `update()` updates property fields
+   - Test: `remove()` throws if property has units
+3. Document testing patterns in `docs/TESTING_PATTERNS.md`
+
+**Acceptance Criteria:**
+
+- [ ] All tests pass
+- [ ] Tests use mocks, no actual database
+- [ ] Tests cover success and error cases
+- [ ] Test file follows naming convention: `*.service.spec.ts`
+- [ ] Each test has descriptive name
+
+**Dependencies:** Phase 9
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 12: Sample Frontend Tests
+
+**Objective:** Write reference tests for React components and hooks.
+
+**Deliverables:**
+
+1. Create `packages/frontend-admin/src/pages/LoginPage.spec.tsx`
+   - Test: Renders email and password inputs
+   - Test: Submit button disabled when fields empty
+   - Test: Shows error for invalid credentials
+   - Test: Redirects to dashboard on success
+2. Create `packages/frontend-admin/src/components/PropertyCard.spec.tsx`
+   - Test: Displays property name and address
+   - Test: Shows unit count
+   - Test: Click navigates to property detail
+3. Create `packages/frontend-admin/src/hooks/useAuth.spec.ts`
+   - Test: `login()` stores tokens
+   - Test: `logout()` clears tokens
+   - Test: `isAuthenticated` reflects token state
+
+**Acceptance Criteria:**
+
+- [ ] All tests pass
+- [ ] Tests use MSW for API mocking
+- [ ] Tests verify user interactions
+- [ ] Tests verify component rendering
+- [ ] Tests cover loading and error states
+
+**Dependencies:** Phase 10
+**Estimated Effort:** 6 hours
+
+---
+
+# SECTION 2: AUTH & SECURITY (Phases 13-20) [MVP]
+
+---
+
+## PHASE 13: Password Hashing Verification
+
+**Objective:** Ensure passwords are securely hashed using bcrypt.
+
+**Deliverables:**
+
+1. Verify bcrypt is used in AuthService.register()
+2. Verify bcrypt cost factor is at least 12
+3. Verify passwords are never logged
+4. Verify passwords are never returned in API responses
+5. Add password strength validation (min 8 chars, 1 uppercase, 1 number, 1 special)
+6. Write tests verifying password security
+
+**Password Validation Rules:**
+
+```typescript
+@IsStrongPassword({
+  minLength: 8,
+  minLowercase: 1,
+  minUppercase: 1,
+  minNumbers: 1,
+  minSymbols: 1,
+})
+password: string;
+```
+
+**Acceptance Criteria:**
+
+- [ ] Passwords hashed with bcrypt cost 12+
+- [ ] Password never appears in logs
+- [ ] Password never returned in user objects
+- [ ] Weak passwords rejected with clear error
+- [ ] Password validation messages are helpful
+
+**Dependencies:** Phase 2
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 14: JWT Token Configuration
+
+**Objective:** Secure JWT implementation with proper configuration.
+
+**Deliverables:**
+
+1. Verify JWT secret is loaded from environment variable
+2. Set access token expiry to 15 minutes
+3. Set refresh token expiry to 7 days
+4. Include in access token: userId, email, role, organizationId
+5. Store refresh tokens in database (RefreshToken table)
+6. Implement refresh token rotation (invalidate old token on use)
+7. Add token blacklist for logout
+
+**JWT Payload Structure:**
+
+```typescript
+interface JwtPayload {
+  sub: string; // userId
+  email: string;
+  role: UserRole;
+  organizationId: string;
+  iat: number;
+  exp: number;
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Access tokens expire in 15 minutes
+- [ ] Refresh tokens expire in 7 days
+- [ ] Refresh token rotation prevents reuse
+- [ ] Logout invalidates refresh token
+- [ ] Invalid tokens return 401
+
+**Dependencies:** Phase 13
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 15: Role-Based Access Control (RBAC)
+
+**Objective:** Implement fine-grained permissions based on user roles.
+
+**Deliverables:**
+
+1. Define roles: SUPER_ADMIN, ORGANIZATION_ADMIN, PROPERTY_MANAGER, ACCOUNTANT, LEASING_AGENT, MAINTENANCE_TECH, TENANT, VENDOR
+2. Create `packages/backend/src/common/decorators/roles.decorator.ts`
+3. Create `packages/backend/src/common/guards/roles.guard.ts`
+4. Define permissions per role:
+   - ORGANIZATION_ADMIN: all organization resources
+   - PROPERTY_MANAGER: properties, units, leases, work orders
+   - ACCOUNTANT: financial data, read-only operations
+   - LEASING_AGENT: leases, tenants, applications
+   - MAINTENANCE_TECH: work orders assigned to them
+   - TENANT: their own lease, payments, work orders
+   - VENDOR: work orders assigned to them
+5. Apply RolesGuard to all controllers
+6. Write tests for each role's permissions
+
+**Role Decorator Usage:**
+
+```typescript
+@Roles(UserRole.ORGANIZATION_ADMIN, UserRole.PROPERTY_MANAGER)
+@Get('properties')
+findAll() { ... }
+```
+
+**Acceptance Criteria:**
+
+- [ ] Each endpoint has explicit role requirements
+- [ ] Unauthorized access returns 403 Forbidden
+- [ ] Role hierarchy respected (ADMIN > MANAGER > AGENT)
+- [ ] Tests cover all role combinations
+- [ ] Error message does not reveal role requirements
+
+**Dependencies:** Phase 14
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 16: Organization Data Isolation
+
+**Objective:** Ensure users can only access their organization's data.
+
+**Deliverables:**
+
+1. Create `OrganizationGuard` that extracts organizationId from JWT
+2. Add `@CurrentOrganization()` decorator for controllers
+3. Verify ALL queries filter by organizationId
+4. Verify ALL creates include organizationId
+5. Verify cross-organization access returns 404 (not 403)
+6. Add database indexes on organizationId columns
+7. Write integration tests for data isolation
+
+**Controller Pattern:**
+
+```typescript
+@Get('properties')
+findAll(@CurrentOrganization() orgId: string) {
+  return this.propertiesService.findAll(orgId);
+}
+```
+
+**Service Pattern:**
+
+```typescript
+findAll(organizationId: string) {
+  return this.prisma.property.findMany({
+    where: { organizationId },
+  });
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] User A cannot see User B's data (different orgs)
+- [ ] All service methods require organizationId
+- [ ] No service method accesses data without org filter
+- [ ] Cross-org access attempt returns 404
+- [ ] Database indexes exist on organizationId
+
+**Dependencies:** Phase 15
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 17: Rate Limiting
+
+**Objective:** Protect API from abuse and brute force attacks.
+
+**Deliverables:**
+
+1. Install throttler: `pnpm add @nestjs/throttler`
+2. Configure global rate limit: 100 requests per 60 seconds per IP
+3. Configure auth endpoints: 5 requests per 60 seconds per IP
+4. Configure payment endpoints: 10 requests per 60 seconds per IP
+5. Return HTTP 429 when limit exceeded
+6. Include `Retry-After` header in 429 response
+7. Skip rate limiting for health check endpoint
+
+**Throttler Configuration:**
+
+```typescript
+ThrottlerModule.forRoot([
+  { name: 'short', ttl: 1000, limit: 3 },
+  { name: 'medium', ttl: 10000, limit: 20 },
+  { name: 'long', ttl: 60000, limit: 100 },
+]);
+```
+
+**Acceptance Criteria:**
+
+- [ ] Global rate limit enforced
+- [ ] Auth endpoints have stricter limits
+- [ ] Rate limit applies per IP address
+- [ ] 429 response includes retry time
+- [ ] Health check exempt from limits
+
+**Dependencies:** Phase 7
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 18: CORS Configuration
+
+**Objective:** Configure Cross-Origin Resource Sharing for frontend access.
+
+**Deliverables:**
+
+1. Define allowed origins in environment variable
+2. Configure CORS in `main.ts`
+3. Allow credentials for cookie-based auth
+4. Specify allowed methods: GET, POST, PUT, PATCH, DELETE
+5. Specify allowed headers: Content-Type, Authorization, x-correlation-id
+6. Set max age for preflight cache: 86400 seconds
+
+**CORS Configuration:**
+
+```typescript
+app.enableCors({
+  origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
+  maxAge: 86400,
+});
+```
+
+**Acceptance Criteria:**
+
+- [ ] Frontend can access API without CORS errors
+- [ ] Only specified origins allowed
+- [ ] Credentials (cookies) included in requests
+- [ ] Preflight requests cached
+- [ ] Invalid origins rejected
+
+**Dependencies:** Phase 1
+**Estimated Effort:** 1 hour
+
+---
+
+## PHASE 19: Input Validation
+
+**Objective:** Validate all API inputs to prevent injection and data corruption.
+
+**Deliverables:**
+
+1. Install class-validator: `pnpm add class-validator class-transformer`
+2. Enable ValidationPipe globally in `main.ts`
+3. Create DTOs for all API endpoints
+4. Add validation decorators to all DTO properties
+5. Configure pipe options: whitelist, forbidNonWhitelisted, transform
+6. Return detailed validation errors
+
+**ValidationPipe Configuration:**
+
+```typescript
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+    exceptionFactory: (errors) => new BadRequestException(formatErrors(errors)),
+  }),
+);
+```
+
+**Acceptance Criteria:**
+
+- [ ] All endpoints have DTOs
+- [ ] Unknown properties stripped from requests
+- [ ] Invalid data returns 400 with field-level errors
+- [ ] Date strings transformed to Date objects
+- [ ] Number strings transformed to numbers
+
+**Dependencies:** Phase 2
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 20: Security Headers
+
+**Objective:** Add HTTP security headers to prevent common attacks.
+
+**Deliverables:**
+
+1. Install helmet: `pnpm add helmet`
+2. Configure Helmet middleware in `main.ts`
+3. Set headers:
+   - `X-Content-Type-Options: nosniff`
+   - `X-Frame-Options: DENY`
+   - `X-XSS-Protection: 1; mode=block`
+   - `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+   - `Content-Security-Policy: default-src 'self'`
+4. Disable `X-Powered-By` header
+5. Configure CSP for frontend (allow Stripe, fonts, etc.)
+
+**Acceptance Criteria:**
+
+- [ ] Security headers present in all responses
+- [ ] No server version information exposed
+- [ ] Clickjacking prevented (X-Frame-Options)
+- [ ] XSS mitigated (CSP + X-XSS-Protection)
+- [ ] HTTPS enforced in production (HSTS)
+
+**Dependencies:** Phase 18
+**Estimated Effort:** 2 hours
+
+---
+
+# SECTION 3: PROPERTIES (Phases 21-30) [MVP]
+
+---
+
+## PHASE 21: Property Model Verification
+
+**Objective:** Ensure Property database model meets all requirements.
+
+**Deliverables:**
+
+1. Verify Property model in Prisma schema has fields:
+   - id (cuid)
+   - organizationId (required, foreign key)
+   - name (required, string)
+   - type (enum: MULTIFAMILY, SINGLE_FAMILY, COMMERCIAL, MIXED_USE, STUDENT_HOUSING, SENIOR_LIVING)
+   - address (required, string)
+   - city (required, string)
+   - state (required, string, 2 chars)
+   - zipCode (required, string, 5 or 9 chars)
+   - country (default: USA)
+   - yearBuilt (optional, int)
+   - totalUnits (int, default 0)
+   - createdAt, updatedAt timestamps
+2. Add database indexes on: organizationId, type, city, state
+3. Run migration if schema changed
+
+**Acceptance Criteria:**
+
+- [ ] All fields exist with correct types
+- [ ] Foreign key to Organization enforced
+- [ ] Indexes exist for common queries
+- [ ] Migration applied successfully
+
+**Dependencies:** Phase 1
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 22: Property DTOs
+
+**Objective:** Create Data Transfer Objects for Property API.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/modules/properties/dto/create-property.dto.ts`
+2. Create `packages/backend/src/modules/properties/dto/update-property.dto.ts`
+3. Create `packages/backend/src/modules/properties/dto/property-response.dto.ts`
+4. Create `packages/backend/src/modules/properties/dto/property-query.dto.ts`
+5. Add validation decorators to all fields
+6. Add Swagger decorators for API documentation
+
+**CreatePropertyDto:**
+
+```typescript
+export class CreatePropertyDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  @ApiProperty({ example: 'Sunset Apartments' })
+  name: string;
+
+  @IsEnum(PropertyType)
+  @ApiProperty({ enum: PropertyType })
+  type: PropertyType;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  address: string;
+
+  @IsString()
+  @Length(2, 50)
+  city: string;
+
+  @IsString()
+  @Length(2, 2)
+  state: string;
+
+  @Matches(/^\d{5}(-\d{4})?$/)
+  zipCode: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1800)
+  @Max(2100)
+  yearBuilt?: number;
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] CreatePropertyDto validates all required fields
+- [ ] UpdatePropertyDto makes all fields optional
+- [ ] PropertyResponseDto includes computed fields
+- [ ] PropertyQueryDto supports filtering and pagination
+- [ ] Swagger documentation generated
+
+**Dependencies:** Phase 21
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 23: Properties Service Implementation
+
+**Objective:** Implement business logic for Property CRUD operations.
+
+**Deliverables:**
+
+1. Implement `create(dto: CreatePropertyDto, organizationId: string): Promise<Property>`
+2. Implement `findAll(organizationId: string, query: PropertyQueryDto): Promise<PaginatedResponse<Property>>`
+3. Implement `findOne(id: string, organizationId: string): Promise<Property>`
+4. Implement `update(id: string, dto: UpdatePropertyDto, organizationId: string): Promise<Property>`
+5. Implement `remove(id: string, organizationId: string): Promise<void>`
+6. Add logging to all methods
+7. Throw appropriate exceptions for errors
+
+**Service Method Signatures:**
+
+```typescript
+@Injectable()
+export class PropertiesService {
+  constructor(
+    private prisma: PrismaService,
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext(PropertiesService.name);
+  }
+
+  async create(dto: CreatePropertyDto, organizationId: string): Promise<Property> {
+    this.logger.log('Creating property', { organizationId, dto });
+    // Implementation
+  }
+
+  async findAll(
+    organizationId: string,
+    query: PropertyQueryDto,
+  ): Promise<PaginatedResponse<Property>> {
+    // Include pagination, sorting, filtering
+  }
+
+  async findOne(id: string, organizationId: string): Promise<Property> {
+    const property = await this.prisma.property.findFirst({
+      where: { id, organizationId },
+      include: { units: true },
+    });
+    if (!property) {
+      throw new EntityNotFoundException('Property', id);
+    }
+    return property;
+  }
+
+  async remove(id: string, organizationId: string): Promise<void> {
+    const property = await this.findOne(id, organizationId);
+    if (property.units.length > 0) {
+      throw new PropertyHasUnitsException(id, property.units.length);
+    }
+    await this.prisma.property.delete({ where: { id } });
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] All CRUD operations work correctly
+- [ ] Organization isolation enforced in all queries
+- [ ] Pagination returns total count and page info
+- [ ] Cannot delete property with units
+- [ ] All operations logged
+
+**Dependencies:** Phase 22, Phase 8
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 24: Properties Controller Implementation
+
+**Objective:** Expose Property CRUD via REST API.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/modules/properties/properties.controller.ts`
+2. Implement endpoints:
+   - `POST /api/v1/properties` - Create property
+   - `GET /api/v1/properties` - List properties (paginated)
+   - `GET /api/v1/properties/:id` - Get single property
+   - `PUT /api/v1/properties/:id` - Update property
+   - `DELETE /api/v1/properties/:id` - Delete property
+3. Apply guards: JwtAuthGuard, RolesGuard, OrganizationGuard
+4. Add Swagger decorators for API documentation
+5. Return consistent response structure
+
+**Controller Implementation:**
+
+```typescript
+@ApiTags('properties')
+@Controller('api/v1/properties')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class PropertiesController {
+  constructor(private propertiesService: PropertiesService) {}
+
+  @Post()
+  @Roles(UserRole.ORGANIZATION_ADMIN, UserRole.PROPERTY_MANAGER)
+  @ApiOperation({ summary: 'Create a new property' })
+  @ApiResponse({ status: 201, type: PropertyResponseDto })
+  create(@Body() dto: CreatePropertyDto, @CurrentOrganization() orgId: string) {
+    return this.propertiesService.create(dto, orgId);
+  }
+
+  @Get()
+  @Roles(UserRole.ORGANIZATION_ADMIN, UserRole.PROPERTY_MANAGER, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'List all properties' })
+  @ApiResponse({ status: 200, type: PaginatedPropertyResponseDto })
+  findAll(@Query() query: PropertyQueryDto, @CurrentOrganization() orgId: string) {
+    return this.propertiesService.findAll(orgId, query);
+  }
+
+  // ... other endpoints
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] All endpoints return correct HTTP status codes
+- [ ] Validation errors return 400 with details
+- [ ] Not found returns 404
+- [ ] Forbidden returns 403
+- [ ] Swagger UI shows all endpoints
+
+**Dependencies:** Phase 23, Phase 16
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 25: Properties Service Unit Tests
+
+**Objective:** Achieve 80% test coverage for PropertiesService.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/modules/properties/properties.service.spec.ts`
+2. Write tests:
+   - `create()`: success, validation error, duplicate handling
+   - `findAll()`: empty list, with results, pagination, filtering
+   - `findOne()`: success, not found, wrong organization
+   - `update()`: success, not found, validation error
+   - `remove()`: success, not found, has units error
+3. Use mock PrismaService
+4. Verify logging calls
+
+**Test Structure:**
+
+```typescript
+describe('PropertiesService', () => {
+  let service: PropertiesService;
+  let prisma: MockPrismaService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        PropertiesService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: AppLogger, useValue: mockLogger },
+      ],
+    }).compile();
+    service = module.get(PropertiesService);
+    prisma = module.get(PrismaService);
+  });
+
+  describe('create', () => {
+    it('should create property with organizationId', async () => {
+      const dto: CreatePropertyDto = { name: 'Test', type: 'MULTIFAMILY', ... };
+      prisma.property.create.mockResolvedValue({ id: '1', ...dto });
+
+      const result = await service.create(dto, 'org-1');
+
+      expect(prisma.property.create).toHaveBeenCalledWith({
+        data: { ...dto, organizationId: 'org-1' },
+      });
+      expect(result.id).toBe('1');
+    });
+  });
+
+  // ... more tests
+});
+```
+
+**Acceptance Criteria:**
+
+- [ ] All service methods have tests
+- [ ] Coverage > 80% for properties.service.ts
+- [ ] Tests cover success and error paths
+- [ ] Tests run in < 5 seconds
+- [ ] No actual database calls
+
+**Dependencies:** Phase 23, Phase 11
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 26: Properties API Integration Tests
+
+**Objective:** Test Property API endpoints with actual HTTP requests.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/modules/properties/properties.e2e-spec.ts`
+2. Set up test database (in-memory or test container)
+3. Write tests:
+   - POST creates property and returns 201
+   - GET returns paginated list
+   - GET /:id returns single property
+   - PUT updates property
+   - DELETE removes property
+   - Unauthorized request returns 401
+   - Wrong organization returns 404
+4. Clean up test data after each test
+
+**Integration Test Structure:**
+
+```typescript
+describe('Properties API (e2e)', () => {
+  let app: INestApplication;
+  let authToken: string;
+
+  beforeAll(async () => {
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    app = moduleFixture.createNestApplication();
+    await app.init();
+    // Login to get auth token
+    authToken = await login(app);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('POST /api/v1/properties', () => {
+    it('should create property', () => {
+      return request(app.getHttpServer())
+        .post('/api/v1/properties')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Test Property', type: 'MULTIFAMILY', ... })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.id).toBeDefined();
+          expect(res.body.name).toBe('Test Property');
+        });
+    });
+  });
+});
+```
+
+**Acceptance Criteria:**
+
+- [ ] Tests run against real HTTP endpoints
+- [ ] Database state reset between tests
+- [ ] All HTTP status codes verified
+- [ ] Response body structure verified
+- [ ] Tests run in < 30 seconds
+
+**Dependencies:** Phase 24
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 27: Frontend Property List Page
+
+**Objective:** Display list of properties with filtering and pagination.
+
+**Deliverables:**
+
+1. Verify `packages/frontend-admin/src/pages/PropertiesPage.tsx` exists
+2. Implement features:
+   - Display property cards in grid layout
+   - Show: name, address, type, unit count, occupancy rate
+   - Filter by: type, city, state
+   - Search by: name, address
+   - Pagination with page size selector
+   - Loading skeleton while fetching
+   - Empty state when no properties
+3. Use TanStack Query for data fetching
+4. Navigate to property detail on card click
+
+**Component Structure:**
+
+```typescript
+export function PropertiesPage() {
+  const [filters, setFilters] = useState<PropertyFilters>({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['properties', filters, page, pageSize],
+    queryFn: () => propertiesApi.getAll({ ...filters, page, pageSize }),
+  });
+
+  if (isLoading) return <PropertyListSkeleton />;
+  if (error) return <ErrorState error={error} />;
+  if (!data?.items.length) return <EmptyState />;
+
+  return (
+    <div>
+      <PropertyFilters filters={filters} onChange={setFilters} />
+      <PropertyGrid properties={data.items} />
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={data.total}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
+    </div>
+  );
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Properties load and display correctly
+- [ ] Filters work (type, city, state)
+- [ ] Search works (name, address)
+- [ ] Pagination shows correct total
+- [ ] Loading state shown during fetch
+- [ ] Error state shown on failure
+
+**Dependencies:** Phase 24
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 28: Frontend Create Property Modal
+
+**Objective:** Allow users to create new properties via modal form.
+
+**Deliverables:**
+
+1. Create `packages/frontend-admin/src/components/properties/CreatePropertyModal.tsx`
+2. Implement form fields:
+   - Name (required, text)
+   - Type (required, select dropdown)
+   - Address (required, text)
+   - City (required, text)
+   - State (required, select dropdown with US states)
+   - Zip Code (required, text with format validation)
+   - Year Built (optional, number)
+3. Client-side validation matching server DTOs
+4. Submit button disabled while submitting
+5. Show success toast and close modal on success
+6. Show error toast on failure
+7. Use react-hook-form for form management
+
+**Modal Component:**
+
+```typescript
+export function CreatePropertyModal({ open, onClose }: Props) {
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CreatePropertyInput>({
+    resolver: zodResolver(createPropertySchema),
+  });
+
+  const createProperty = useMutation({
+    mutationFn: propertiesApi.create,
+    onSuccess: () => {
+      toast.success('Property created successfully');
+      queryClient.invalidateQueries(['properties']);
+      onClose();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent>
+        <form onSubmit={handleSubmit(data => createProperty.mutate(data))}>
+          <Input label="Name" {...register('name')} error={errors.name?.message} />
+          <Select label="Type" {...register('type')} options={PROPERTY_TYPES} />
+          {/* ... other fields */}
+          <Button type="submit" loading={isSubmitting}>Create Property</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Modal opens from Properties page
+- [ ] All fields render correctly
+- [ ] Validation errors display inline
+- [ ] Form submits successfully
+- [ ] Property list refreshes after create
+- [ ] Modal closes on success
+
+**Dependencies:** Phase 27
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 29: Frontend Edit Property Modal
+
+**Objective:** Allow users to edit existing properties via modal form.
+
+**Deliverables:**
+
+1. Create `packages/frontend-admin/src/components/properties/EditPropertyModal.tsx`
+2. Pre-populate form with existing property data
+3. Same fields and validation as Create modal
+4. Show "Save Changes" button
+5. Detect if form is dirty (has changes)
+6. Warn user if closing with unsaved changes
+7. Use optimistic updates for better UX
+
+**Edit Modal Specifics:**
+
+```typescript
+export function EditPropertyModal({ property, open, onClose }: Props) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(updatePropertySchema),
+    defaultValues: property,
+  });
+
+  const updateProperty = useMutation({
+    mutationFn: (data) => propertiesApi.update(property.id, data),
+    onMutate: async (newData) => {
+      // Optimistic update
+      await queryClient.cancelQueries(['properties']);
+      const previous = queryClient.getQueryData(['properties']);
+      queryClient.setQueryData(['properties'], (old) =>
+        old.map((p) => (p.id === property.id ? { ...p, ...newData } : p)),
+      );
+      return { previous };
+    },
+    onError: (err, newData, context) => {
+      queryClient.setQueryData(['properties'], context.previous);
+      toast.error('Failed to update property');
+    },
+    onSuccess: () => {
+      toast.success('Property updated');
+      onClose();
+    },
+  });
+
+  const handleClose = () => {
+    if (isDirty && !confirm('Discard unsaved changes?')) return;
+    onClose();
+  };
+
+  // ... render form
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Form pre-populates with property data
+- [ ] Only changed fields submitted
+- [ ] Optimistic update shows immediately
+- [ ] Rollback on error
+- [ ] Unsaved changes warning works
+- [ ] Property list updates after save
+
+**Dependencies:** Phase 28
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 30: Frontend Delete Property Confirmation
+
+**Objective:** Allow users to delete properties with confirmation.
+
+**Deliverables:**
+
+1. Create `packages/frontend-admin/src/components/properties/DeletePropertyDialog.tsx`
+2. Show confirmation dialog before delete
+3. Display property name in confirmation message
+4. Show warning if property has units (disable delete)
+5. Delete button shows loading state
+6. Remove property from list on success
+7. Handle error if delete fails
+
+**Delete Dialog:**
+
+```typescript
+export function DeletePropertyDialog({ property, open, onClose }: Props) {
+  const hasUnits = property.unitCount > 0;
+
+  const deleteProperty = useMutation({
+    mutationFn: () => propertiesApi.delete(property.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['properties']);
+      toast.success('Property deleted');
+      onClose();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  return (
+    <AlertDialog open={open} onOpenChange={onClose}>
+      <AlertDialogContent>
+        <AlertDialogTitle>Delete Property</AlertDialogTitle>
+        <AlertDialogDescription>
+          {hasUnits ? (
+            <span className="text-red-600">
+              Cannot delete "{property.name}" because it has {property.unitCount} units.
+              Remove all units first.
+            </span>
+          ) : (
+            <>Are you sure you want to delete "{property.name}"? This action cannot be undone.</>
+          )}
+        </AlertDialogDescription>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => deleteProperty.mutate()}
+            disabled={hasUnits || deleteProperty.isPending}
+            className="bg-red-600"
+          >
+            {deleteProperty.isPending ? 'Deleting...' : 'Delete'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Confirmation dialog appears before delete
+- [ ] Property name shown in dialog
+- [ ] Cannot delete property with units
+- [ ] Loading state during deletion
+- [ ] Success removes from list
+- [ ] Error shown if delete fails
+
+**Dependencies:** Phase 29
+**Estimated Effort:** 2 hours
+
+---
+
+# SECTION 4: UNITS (Phases 31-38) [MVP]
+
+---
+
+## PHASE 31: Unit Model Verification
+
+**Objective:** Ensure Unit database model meets all requirements.
+
+**Deliverables:**
+
+1. Verify Unit model has fields:
+   - id (cuid)
+   - propertyId (required, foreign key)
+   - organizationId (required, foreign key)
+   - unitNumber (required, string)
+   - type (enum: STUDIO, ONE_BED, TWO_BED, THREE_BED, FOUR_PLUS_BED)
+   - bedrooms (int)
+   - bathrooms (decimal)
+   - squareFeet (int, optional)
+   - marketRent (decimal, required)
+   - status (enum: VACANT, OCCUPIED, NOTICE, MAINTENANCE)
+   - floor (int, optional)
+   - features (string array)
+   - createdAt, updatedAt
+2. Add indexes: propertyId, organizationId, status
+3. Add unique constraint: (propertyId, unitNumber)
+
+**Acceptance Criteria:**
+
+- [ ] All fields exist with correct types
+- [ ] Foreign keys enforced
+- [ ] Unit number unique within property
+- [ ] Indexes exist for queries
+
+**Dependencies:** Phase 21
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 32: Unit DTOs
+
+**Objective:** Create DTOs for Unit API.
+
+**Deliverables:**
+
+1. Create `create-unit.dto.ts`
+2. Create `update-unit.dto.ts`
+3. Create `unit-response.dto.ts`
+4. Create `unit-query.dto.ts`
+5. Add validation for all fields
+6. marketRent must be positive number
+7. squareFeet must be positive if provided
+
+**Acceptance Criteria:**
+
+- [ ] All DTOs created with validation
+- [ ] Swagger documentation generated
+- [ ] Type/status enums validated
+
+**Dependencies:** Phase 31
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 33: Units Service Implementation
+
+**Objective:** Implement business logic for Unit CRUD.
+
+**Deliverables:**
+
+1. Implement `create(dto, propertyId, organizationId)`
+2. Implement `findAll(propertyId, organizationId, query)`
+3. Implement `findOne(id, organizationId)`
+4. Implement `update(id, dto, organizationId)`
+5. Implement `remove(id, organizationId)`
+6. Implement `updateStatus(id, status, organizationId)`
+7. Verify property exists before creating unit
+8. Cannot delete unit with active lease
+
+**Business Rules:**
+
+- Unit number must be unique within property
+- Cannot change propertyId after creation
+- Status changes logged for audit
+- Deleting unit requires no active lease
+
+**Acceptance Criteria:**
+
+- [ ] All CRUD operations work
+- [ ] Property existence verified
+- [ ] Unique unit number enforced
+- [ ] Status changes logged
+- [ ] Cannot delete with active lease
+
+**Dependencies:** Phase 32, Phase 23
+**Estimated Effort:** 5 hours
+
+---
+
+## PHASE 34: Units Controller Implementation
+
+**Objective:** Expose Unit CRUD via REST API.
+
+**Deliverables:**
+
+1. Create `units.controller.ts`
+2. Implement endpoints:
+   - `POST /api/v1/properties/:propertyId/units`
+   - `GET /api/v1/properties/:propertyId/units`
+   - `GET /api/v1/units/:id`
+   - `PUT /api/v1/units/:id`
+   - `DELETE /api/v1/units/:id`
+   - `PATCH /api/v1/units/:id/status`
+3. Apply guards
+4. Swagger documentation
+
+**Acceptance Criteria:**
+
+- [ ] All endpoints work correctly
+- [ ] Nested route for property units
+- [ ] Status can be updated separately
+- [ ] Guards applied
+
+**Dependencies:** Phase 33
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 35: Units Service Tests
+
+**Objective:** Test coverage for UnitsService.
+
+**Deliverables:**
+
+1. Create `units.service.spec.ts`
+2. Test all CRUD operations
+3. Test business rules:
+   - Unique unit number
+   - Property must exist
+   - Cannot delete with lease
+4. Coverage > 80%
+
+**Acceptance Criteria:**
+
+- [ ] All methods tested
+- [ ] Business rules verified
+- [ ] Edge cases covered
+
+**Dependencies:** Phase 33
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 36: Frontend Unit List (Within Property)
+
+**Objective:** Display units for a property.
+
+**Deliverables:**
+
+1. Create `UnitsTable.tsx` component
+2. Display in Property Detail page
+3. Show: unit number, type, bedrooms, bathrooms, sqft, rent, status
+4. Status badges with colors (green=occupied, yellow=notice, red=vacant)
+5. Filter by status
+6. Sort by unit number, rent, status
+
+**Acceptance Criteria:**
+
+- [ ] Units display in table format
+- [ ] Status badges colored correctly
+- [ ] Filter and sort work
+- [ ] Empty state shown
+
+**Dependencies:** Phase 34, Phase 27
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 37: Frontend Create/Edit Unit Modal
+
+**Objective:** CRUD modals for units.
+
+**Deliverables:**
+
+1. Create `CreateUnitModal.tsx`
+2. Create `EditUnitModal.tsx`
+3. Form fields match DTO
+4. Validation matches server
+5. Optimistic updates
+
+**Acceptance Criteria:**
+
+- [ ] Create adds unit to list
+- [ ] Edit updates unit in place
+- [ ] Validation errors shown
+- [ ] Success toast displayed
+
+**Dependencies:** Phase 36
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 38: Frontend Unit Status Update
+
+**Objective:** Quick status update for units.
+
+**Deliverables:**
+
+1. Add status dropdown to unit row
+2. Status changes immediately via PATCH
+3. Confirmation for certain transitions (e.g., OCCUPIED → VACANT)
+4. Disable invalid transitions
+
+**Status Transition Rules:**
+
+- VACANT → OCCUPIED (requires active lease)
+- OCCUPIED → NOTICE (tenant gave notice)
+- NOTICE → VACANT (tenant moved out)
+- Any → MAINTENANCE (repair needed)
+- MAINTENANCE → previous status
+
+**Acceptance Criteria:**
+
+- [ ] Dropdown updates status
+- [ ] Invalid transitions disabled
+- [ ] Confirmation for destructive changes
+- [ ] UI updates immediately
+
+**Dependencies:** Phase 37
+**Estimated Effort:** 3 hours
+
+---
+
+# SECTION 5: LEASES (Phases 39-50) [MVP]
+
+---
+
+## PHASE 39: Lease Model Verification
+
+**Objective:** Ensure Lease model is complete.
+
+**Deliverables:**
+
+1. Verify Lease model has:
+   - id, organizationId, propertyId, unitId
+   - status (DRAFT, PENDING, ACTIVE, EXPIRED, TERMINATED, CANCELLED)
+   - startDate, endDate (required)
+   - monthlyRent (decimal, required)
+   - securityDeposit (decimal)
+   - lateFeePct (decimal, default 5)
+   - lateFeeGraceDays (int, default 5)
+   - paymentDueDay (int, 1-28, default 1)
+   - terms (text, lease terms)
+   - createdAt, updatedAt
+2. Relation to Tenants (many tenants per lease)
+3. Indexes on: unitId, status, organizationId
+
+**Acceptance Criteria:**
+
+- [ ] All fields exist
+- [ ] Relations correct
+- [ ] Indexes created
+
+**Dependencies:** Phase 31
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 40: Tenant Model Verification
+
+**Objective:** Ensure Tenant model is complete.
+
+**Deliverables:**
+
+1. Verify Tenant model has:
+   - id, organizationId, leaseId
+   - userId (optional, for portal access)
+   - firstName, lastName
+   - email (required, unique within org)
+   - phone (optional)
+   - isPrimary (boolean, one per lease)
+   - moveInDate, moveOutDate
+   - emergencyContact (JSON)
+   - createdAt, updatedAt
+2. Tenant linked to User for portal login
+3. Index on: leaseId, organizationId, email
+
+**Acceptance Criteria:**
+
+- [ ] All fields exist
+- [ ] One primary tenant per lease enforced
+- [ ] Email unique within organization
+
+**Dependencies:** Phase 39
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 41: Lease DTOs
+
+**Objective:** Create DTOs for Lease API.
+
+**Deliverables:**
+
+1. Create `create-lease.dto.ts`
+   - unitId (required)
+   - startDate, endDate (required, endDate > startDate)
+   - monthlyRent (required, > 0)
+   - securityDeposit (>= 0)
+   - tenants array (at least one, one isPrimary)
+2. Create `update-lease.dto.ts`
+3. Create `lease-response.dto.ts`
+4. Create `lease-query.dto.ts`
+
+**Validation Rules:**
+
+- End date must be after start date
+- At least one tenant required
+- Exactly one primary tenant
+- Monthly rent > 0
+- Security deposit >= 0
+- Payment due day 1-28
+
+**Acceptance Criteria:**
+
+- [ ] All DTOs with validation
+- [ ] Date validations work
+- [ ] Tenant array validated
+
+**Dependencies:** Phase 39, Phase 40
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 42: Leases Service Implementation
+
+**Objective:** Business logic for lease management.
+
+**Deliverables:**
+
+1. `create(dto, organizationId)`:
+   - Verify unit exists and is vacant
+   - Create lease with DRAFT status
+   - Create tenant records
+   - Update unit status to OCCUPIED when activated
+2. `findAll(organizationId, query)`:
+   - Include tenants, unit, property
+   - Filter by status, propertyId
+3. `findOne(id, organizationId)`
+4. `update(id, dto, organizationId)`:
+   - Cannot change unitId
+   - Cannot modify TERMINATED/CANCELLED leases
+5. `activate(id, organizationId)`:
+   - Change DRAFT/PENDING → ACTIVE
+   - Update unit status
+6. `terminate(id, organizationId, reason)`:
+   - Change ACTIVE → TERMINATED
+   - Update unit status to NOTICE
+7. `renew(id, dto, organizationId)`:
+   - Create new lease from existing
+   - Link to same unit
+   - Old lease status → EXPIRED
+
+**Business Rules:**
+
+- Cannot create lease for occupied unit
+- Lease dates cannot overlap for same unit
+- Termination requires reason
+- Only DRAFT/PENDING leases editable
+
+**Acceptance Criteria:**
+
+- [ ] All operations work
+- [ ] Unit status updates
+- [ ] Overlap prevented
+- [ ] Status transitions enforced
+
+**Dependencies:** Phase 41, Phase 33
+**Estimated Effort:** 8 hours
+
+---
+
+## PHASE 43: Leases Controller Implementation
+
+**Objective:** REST API for leases.
+
+**Deliverables:**
+
+1. Endpoints:
+   - `POST /api/v1/leases`
+   - `GET /api/v1/leases`
+   - `GET /api/v1/leases/:id`
+   - `PUT /api/v1/leases/:id`
+   - `DELETE /api/v1/leases/:id` (only DRAFT)
+   - `POST /api/v1/leases/:id/activate`
+   - `POST /api/v1/leases/:id/terminate`
+   - `POST /api/v1/leases/:id/renew`
+2. Query params: status, propertyId, unitId, tenantEmail
+
+**Acceptance Criteria:**
+
+- [ ] All endpoints documented
+- [ ] Status transitions via POST
+- [ ] Query filters work
+
+**Dependencies:** Phase 42
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 44: Lease Service Tests
+
+**Objective:** Test coverage for LeasesService.
+
+**Deliverables:**
+
+1. Test all CRUD operations
+2. Test status transitions
+3. Test overlap prevention
+4. Test tenant management
+5. Coverage > 80%
+
+**Acceptance Criteria:**
+
+- [ ] All methods tested
+- [ ] Business rules verified
+- [ ] Edge cases covered
+
+**Dependencies:** Phase 42
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 45: Frontend Leases List Page
+
+**Objective:** Display and manage leases.
+
+**Deliverables:**
+
+1. Create/update `LeasesPage.tsx`
+2. Table columns: property, unit, tenant, dates, rent, status
+3. Filters: status, property, date range
+4. Status badges with colors
+5. Quick actions: view, activate, terminate
+
+**Acceptance Criteria:**
+
+- [ ] Leases display correctly
+- [ ] Filters work
+- [ ] Status badges colored
+- [ ] Quick actions work
+
+**Dependencies:** Phase 43
+**Estimated Effort:** 5 hours
+
+---
+
+## PHASE 46: Frontend Create Lease Wizard
+
+**Objective:** Multi-step wizard for lease creation.
+
+**Deliverables:**
+
+1. Create `CreateLeaseWizard.tsx`
+2. Step 1: Select property and unit
+3. Step 2: Enter lease terms (dates, rent, deposit)
+4. Step 3: Add tenants
+5. Step 4: Review and create
+6. Validation at each step
+7. Back/Next navigation
+8. Save as draft option
+
+**Wizard Steps:**
+
+```typescript
+const steps = [
+  { id: 'unit', title: 'Select Unit', component: UnitSelectionStep },
+  { id: 'terms', title: 'Lease Terms', component: LeaseTermsStep },
+  { id: 'tenants', title: 'Add Tenants', component: TenantsStep },
+  { id: 'review', title: 'Review', component: ReviewStep },
+];
+```
+
+**Acceptance Criteria:**
+
+- [ ] Wizard navigates correctly
+- [ ] Validation at each step
+- [ ] Can go back without losing data
+- [ ] Creates lease on final submit
+
+**Dependencies:** Phase 45
+**Estimated Effort:** 8 hours
+
+---
+
+## PHASE 47: Frontend Edit Lease Modal
+
+**Objective:** Edit existing leases.
+
+**Deliverables:**
+
+1. Create `EditLeaseModal.tsx`
+2. Cannot change unit
+3. Can modify: dates, rent, deposit, tenants
+4. Disabled for TERMINATED/CANCELLED
+5. Changes require confirmation
+
+**Acceptance Criteria:**
+
+- [ ] Edit form pre-populated
+- [ ] Unit not editable
+- [ ] Disabled for final statuses
+
+**Dependencies:** Phase 46
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 48: Frontend Lease Status Actions
+
+**Objective:** UI for lease status transitions.
+
+**Deliverables:**
+
+1. "Activate" button for DRAFT/PENDING leases
+2. "Terminate" button with reason modal for ACTIVE leases
+3. "Renew" button opens renewal wizard
+4. Status change confirmation dialogs
+5. Audit log of status changes
+
+**Status Actions UI:**
+
+```typescript
+function LeaseActions({ lease }: { lease: Lease }) {
+  if (lease.status === 'DRAFT') {
+    return <Button onClick={activate}>Activate Lease</Button>;
+  }
+  if (lease.status === 'ACTIVE') {
+    return (
+      <>
+        <Button onClick={openTerminate} variant="destructive">Terminate</Button>
+        <Button onClick={openRenew}>Renew Lease</Button>
+      </>
+    );
+  }
+  return null;
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Correct actions shown per status
+- [ ] Terminate requires reason
+- [ ] Renew pre-fills from current lease
+- [ ] Status updates immediately
+
+**Dependencies:** Phase 47
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 49: Frontend Tenant Management
+
+**Objective:** Manage tenants within lease.
+
+**Deliverables:**
+
+1. Tenant list within lease detail
+2. Add tenant to existing lease
+3. Remove tenant (if not primary)
+4. Edit tenant details
+5. Set primary tenant
+
+**Acceptance Criteria:**
+
+- [ ] Tenant list displays
+- [ ] Can add/remove tenants
+- [ ] Primary tenant enforced
+- [ ] Contact info editable
+
+**Dependencies:** Phase 48
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 50: Lease Expiration Tracking
+
+**Objective:** Track and alert on expiring leases.
+
+**Deliverables:**
+
+1. Dashboard widget: "Leases Expiring Soon" (30/60/90 days)
+2. Backend query for expiring leases
+3. Lease list filter: "Expiring in X days"
+4. Scheduled job to check expirations (daily)
+5. Auto-update expired leases to EXPIRED status
+
+**Acceptance Criteria:**
+
+- [ ] Widget shows expiring count
+- [ ] Filter returns correct leases
+- [ ] Expired leases auto-update
+- [ ] No manual intervention needed
+
+**Dependencies:** Phase 49
+**Estimated Effort:** 4 hours
+
+---
+
+# SECTION 6: FINANCIAL CORE (Phases 51-62) [MVP]
+
+---
+
+## PHASE 51: Chart of Accounts Model
+
+**Objective:** Standard accounting chart of accounts.
+
+**Deliverables:**
+
+1. ChartOfAccounts model:
+   - id, code (unique per org), name
+   - type (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)
+   - subtype (specific categories)
+   - isSystemAccount (cannot delete)
+   - parentId (for hierarchy)
+   - organizationId
+2. Seed standard accounts:
+   - 1000-1999: Assets (Cash, AR, Security Deposits Held)
+   - 2000-2999: Liabilities (AP, Security Deposits Owed)
+   - 3000-3999: Equity
+   - 4000-4999: Revenue (Rent, Late Fees, Other Income)
+   - 5000-5999: Expenses (Repairs, Utilities, Insurance)
+
+**Acceptance Criteria:**
+
+- [ ] Standard accounts seeded
+- [ ] Account codes unique per org
+- [ ] Hierarchy supported
+- [ ] System accounts protected
+
+**Dependencies:** Phase 1
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 52: Transaction Model
+
+**Objective:** Core transaction tracking.
+
+**Deliverables:**
+
+1. Transaction model:
+   - id, organizationId, propertyId (optional), unitId (optional)
+   - leaseId (optional), tenantId (optional)
+   - type (CHARGE, PAYMENT, REFUND, ADJUSTMENT, TRANSFER)
+   - accountId (chart of accounts reference)
+   - amount (decimal, positive for debits, negative for credits)
+   - date (transaction date)
+   - description
+   - reference (check number, receipt, etc.)
+   - status (PENDING, POSTED, VOIDED)
+   - createdAt, createdBy
+
+**Acceptance Criteria:**
+
+- [ ] All transaction types supported
+- [ ] Proper references maintained
+- [ ] Status tracking works
+
+**Dependencies:** Phase 51
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 53: Charge Model
+
+**Objective:** Track charges (what tenants owe).
+
+**Deliverables:**
+
+1. Charge model:
+   - id, organizationId, leaseId, tenantId
+   - type (RENT, LATE_FEE, PET_FEE, PARKING, UTILITY, OTHER)
+   - amount, description
+   - dueDate, paidDate
+   - status (PENDING, PARTIAL, PAID, WAIVED, VOID)
+   - transactionId (link to Transaction)
+2. Auto-generate rent charges monthly
+3. Auto-generate late fees after grace period
+
+**Business Rules:**
+
+- Rent charges generated on paymentDueDay
+- Late fee added after lateFeeGraceDays
+- Charges linked to transactions
+
+**Acceptance Criteria:**
+
+- [ ] Charge types defined
+- [ ] Auto-generation works
+- [ ] Late fees calculated correctly
+
+**Dependencies:** Phase 52
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 54: Payment Model
+
+**Objective:** Track payments received.
+
+**Deliverables:**
+
+1. Payment model:
+   - id, organizationId, tenantId, leaseId
+   - amount, date
+   - method (ACH, CREDIT_CARD, CHECK, CASH, WIRE)
+   - status (PENDING, COMPLETED, FAILED, REFUNDED)
+   - stripePaymentIntentId (for Stripe payments)
+   - checkNumber (for checks)
+   - transactionId
+2. PaymentAllocation model (many-to-many with Charge):
+   - paymentId, chargeId, amount
+
+**Business Rules:**
+
+- Payment can cover multiple charges
+- Overpayment creates credit
+- Partial payment updates charge status
+
+**Acceptance Criteria:**
+
+- [ ] Payment methods supported
+- [ ] Allocations track charge coverage
+- [ ] Stripe integration fields ready
+
+**Dependencies:** Phase 53
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 55: Financial Service - Charges
+
+**Objective:** Service for charge management.
+
+**Deliverables:**
+
+1. `createCharge(dto, organizationId)`
+2. `getCharges(leaseId/tenantId, organizationId, query)`
+3. `getOutstandingBalance(leaseId/tenantId, organizationId)`
+4. `waiveCharge(chargeId, organizationId, reason)`
+5. `generateRentCharges(organizationId)` - monthly cron
+6. `generateLateFees(organizationId)` - daily cron
+
+**Acceptance Criteria:**
+
+- [ ] Charge creation works
+- [ ] Balance calculation correct
+- [ ] Waive with audit trail
+- [ ] Auto-generation reliable
+
+**Dependencies:** Phase 53
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 56: Financial Service - Payments
+
+**Objective:** Service for payment management.
+
+**Deliverables:**
+
+1. `recordPayment(dto, organizationId)`
+2. `allocatePayment(paymentId, allocations[], organizationId)`
+3. `autoAllocatePayment(paymentId, organizationId)` - oldest first
+4. `refundPayment(paymentId, amount, reason, organizationId)`
+5. `getPayments(leaseId/tenantId, organizationId, query)`
+6. `getPaymentHistory(tenantId, organizationId)`
+
+**Allocation Logic:**
+
+```typescript
+// Auto-allocate payment to oldest charges first
+async autoAllocate(paymentId: string, orgId: string) {
+  const payment = await this.findPayment(paymentId, orgId);
+  const charges = await this.getOutstandingCharges(payment.leaseId, orgId);
+
+  let remaining = payment.amount;
+  const allocations = [];
+
+  for (const charge of charges) {
+    if (remaining <= 0) break;
+    const allocAmount = Math.min(remaining, charge.outstandingAmount);
+    allocations.push({ chargeId: charge.id, amount: allocAmount });
+    remaining -= allocAmount;
+  }
+
+  await this.createAllocations(paymentId, allocations);
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Manual and auto allocation work
+- [ ] Refund creates proper entries
+- [ ] History shows all transactions
+
+**Dependencies:** Phase 55
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 57: Financial Controller
+
+**Objective:** REST API for financial operations.
+
+**Deliverables:**
+
+1. Charge endpoints:
+   - `GET /api/v1/financial/charges`
+   - `POST /api/v1/financial/charges`
+   - `POST /api/v1/financial/charges/:id/waive`
+2. Payment endpoints:
+   - `GET /api/v1/financial/payments`
+   - `POST /api/v1/financial/payments`
+   - `POST /api/v1/financial/payments/:id/allocate`
+   - `POST /api/v1/financial/payments/:id/refund`
+3. Ledger endpoint:
+   - `GET /api/v1/financial/ledger/:leaseId`
+4. Balance endpoint:
+   - `GET /api/v1/financial/balance/:leaseId`
+
+**Acceptance Criteria:**
+
+- [ ] All endpoints documented
+- [ ] Role-based access (ACCOUNTANT+)
+- [ ] Proper error handling
+
+**Dependencies:** Phase 56
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 58: Financial Service Tests
+
+**Objective:** Test coverage for financial services.
+
+**Deliverables:**
+
+1. Test charge creation and calculation
+2. Test payment recording and allocation
+3. Test balance calculations
+4. Test late fee generation
+5. Test edge cases (partial payments, overpayments)
+
+**Test Cases:**
+
+- Create charge → balance increases
+- Record payment → balance decreases
+- Partial payment → correct remaining
+- Overpayment → credit balance
+- Late fee → added after grace days
+- Waive charge → balance decreases, audit log created
+
+**Acceptance Criteria:**
+
+- [ ] All financial math verified
+- [ ] Edge cases handled
+- [ ] Coverage > 90%
+
+**Dependencies:** Phase 57
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 59: Frontend Charges Page
+
+**Objective:** View and manage charges.
+
+**Deliverables:**
+
+1. Create `ChargesPage.tsx` or add to Financial section
+2. Table: lease, tenant, type, amount, due date, status
+3. Filters: status, type, date range, property
+4. Create manual charge button
+5. Waive charge action
+
+**Acceptance Criteria:**
+
+- [ ] Charges display correctly
+- [ ] Filters work
+- [ ] Manual charge creates
+- [ ] Waive with confirmation
+
+**Dependencies:** Phase 57
+**Estimated Effort:** 5 hours
+
+---
+
+## PHASE 60: Frontend Payments Page
+
+**Objective:** View and record payments.
+
+**Deliverables:**
+
+1. Create `PaymentsPage.tsx`
+2. Table: date, tenant, amount, method, status
+3. Record manual payment modal
+4. Payment detail with allocations
+5. Refund action
+
+**Acceptance Criteria:**
+
+- [ ] Payments display correctly
+- [ ] Record payment works
+- [ ] Allocations visible
+- [ ] Refund with confirmation
+
+**Dependencies:** Phase 59
+**Estimated Effort:** 5 hours
+
+---
+
+## PHASE 61: Frontend Tenant Ledger
+
+**Objective:** Complete payment history for tenant/lease.
+
+**Deliverables:**
+
+1. Create `TenantLedger.tsx` component
+2. Chronological list: charges and payments
+3. Running balance column
+4. Drill into charge/payment details
+5. Export to PDF/CSV
+
+**Ledger Display:**
+
+```
+Date       | Description      | Charge  | Payment | Balance
+-----------+------------------+---------+---------+---------
+2025-01-01 | January Rent     | $1,500  |         | $1,500
+2025-01-03 | ACH Payment      |         | $1,500  | $0
+2025-01-06 | Late Fee         | $75     |         | $75
+2025-02-01 | February Rent    | $1,500  |         | $1,575
+```
+
+**Acceptance Criteria:**
+
+- [ ] All transactions shown
+- [ ] Running balance correct
+- [ ] Export works
+
+**Dependencies:** Phase 60
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 62: Dashboard Financial Widgets
+
+**Objective:** Financial overview on dashboard.
+
+**Deliverables:**
+
+1. "Total Outstanding" widget with trend
+2. "Payments This Month" widget
+3. "Overdue Accounts" count and list
+4. "Collection Rate" percentage
+5. Quick link to full financial pages
+
+**Widget Data:**
+
+```typescript
+interface FinancialSummary {
+  totalOutstanding: number;
+  totalCollectedMonth: number;
+  overdueCount: number;
+  overdueAmount: number;
+  collectionRate: number; // (collected / billed) * 100
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Widgets show real data
+- [ ] Numbers update in real-time
+- [ ] Click through to details
+
+**Dependencies:** Phase 61
+**Estimated Effort:** 4 hours
+
+---
+
+# SECTION 7: PAYMENTS (Phases 63-72) [MVP]
+
+---
+
+## PHASE 63: Stripe Account Setup
+
+**Objective:** Configure Stripe for payment processing.
+
+**Deliverables:**
+
+1. Document Stripe account creation process
+2. Configure environment variables:
+   - STRIPE_SECRET_KEY
+   - STRIPE_PUBLISHABLE_KEY
+   - STRIPE_WEBHOOK_SECRET
+3. Install Stripe SDK: `pnpm add stripe`
+4. Create StripeModule with configuration
+5. Verify connection with test API call
+
+**Environment Variables:**
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_API_VERSION=2023-10-16
+```
+
+**Acceptance Criteria:**
+
+- [ ] Stripe SDK installed
+- [ ] Environment variables documented
+- [ ] Test connection successful
+
+**Dependencies:** Phase 1
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 64: Stripe Service Implementation
+
+**Objective:** Core Stripe operations.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/modules/payments/stripe.service.ts`
+2. `createCustomer(tenant)` - Stripe customer for tenant
+3. `createPaymentIntent(amount, customerId, metadata)`
+4. `createSetupIntent(customerId)` - for saving cards
+5. `attachPaymentMethod(customerId, paymentMethodId)`
+6. `chargeCard(customerId, amount, paymentMethodId)`
+7. `refund(paymentIntentId, amount)`
+
+**Service Implementation:**
+
+```typescript
+@Injectable()
+export class StripeService {
+  private stripe: Stripe;
+
+  constructor(private configService: ConfigService) {
+    this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY'), {
+      apiVersion: '2023-10-16',
+    });
+  }
+
+  async createPaymentIntent(amount: number, customerId: string, metadata: object) {
+    return this.stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: 'usd',
+      customer: customerId,
+      metadata,
+      automatic_payment_methods: { enabled: true },
+    });
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Customer creation works
+- [ ] Payment intent creation works
+- [ ] Refund works
+- [ ] Proper error handling
+
+**Dependencies:** Phase 63
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 65: Stripe Webhook Handler
+
+**Objective:** Process Stripe webhook events.
+
+**Deliverables:**
+
+1. Create webhook endpoint: `POST /api/v1/webhooks/stripe`
+2. Verify webhook signature
+3. Handle events:
+   - `payment_intent.succeeded` → record payment
+   - `payment_intent.payment_failed` → mark failed
+   - `charge.refunded` → record refund
+   - `customer.subscription.deleted` → handle cancellation
+4. Idempotent processing (handle retries)
+5. Log all webhook events
+
+**Webhook Handler:**
+
+```typescript
+@Post('webhooks/stripe')
+async handleWebhook(
+  @Headers('stripe-signature') signature: string,
+  @Req() req: RawBodyRequest<Request>,
+) {
+  const event = this.stripeService.verifyWebhook(req.rawBody, signature);
+
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      await this.paymentsService.handlePaymentSuccess(event.data.object);
+      break;
+    case 'payment_intent.payment_failed':
+      await this.paymentsService.handlePaymentFailure(event.data.object);
+      break;
+  }
+
+  return { received: true };
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Signature verification works
+- [ ] Events processed correctly
+- [ ] Idempotent (duplicate events ignored)
+- [ ] Failures logged
+
+**Dependencies:** Phase 64
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 66: Payment Intent API
+
+**Objective:** API for creating payment intents.
+
+**Deliverables:**
+
+1. `POST /api/v1/payments/intent` - Create payment intent
+2. `GET /api/v1/payments/intent/:id` - Get intent status
+3. Request body: leaseId, amount, saveCard (boolean)
+4. Response: clientSecret, intentId
+5. Verify user owns the lease
+
+**Endpoint:**
+
+```typescript
+@Post('payments/intent')
+@Roles(UserRole.TENANT, UserRole.ORGANIZATION_ADMIN)
+async createIntent(
+  @Body() dto: CreatePaymentIntentDto,
+  @CurrentUser() user: User,
+) {
+  // Verify user can pay this lease
+  await this.verifyLeaseAccess(dto.leaseId, user);
+
+  // Get or create Stripe customer
+  const customer = await this.getOrCreateStripeCustomer(user);
+
+  // Create payment intent
+  const intent = await this.stripeService.createPaymentIntent(
+    dto.amount,
+    customer.stripeCustomerId,
+    { leaseId: dto.leaseId, userId: user.id },
+  );
+
+  return { clientSecret: intent.client_secret, intentId: intent.id };
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Intent created successfully
+- [ ] Client secret returned
+- [ ] Access verified
+- [ ] Metadata attached
+
+**Dependencies:** Phase 65
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 67: Frontend Payment Form (Stripe Elements)
+
+**Objective:** Secure payment form using Stripe Elements.
+
+**Deliverables:**
+
+1. Install Stripe React: `pnpm add @stripe/react-stripe-js @stripe/stripe-js`
+2. Create `PaymentForm.tsx` component
+3. Use Stripe PaymentElement
+4. Handle payment submission
+5. Show success/failure states
+6. Support saving card for future
+
+**Payment Form:**
+
+```typescript
+export function PaymentForm({ leaseId, amount, onSuccess }: Props) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState<string>();
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: `${window.location.origin}/payments/complete` },
+      redirect: 'if_required',
+    });
+
+    if (error) {
+      setError(error.message);
+    } else if (paymentIntent.status === 'succeeded') {
+      onSuccess(paymentIntent);
+    }
+    setProcessing(false);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement />
+      <Button type="submit" disabled={!stripe || processing}>
+        Pay ${amount.toFixed(2)}
+      </Button>
+      {error && <p className="text-red-500">{error}</p>}
+    </form>
+  );
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Stripe Elements renders
+- [ ] Payment completes successfully
+- [ ] Error messages shown
+- [ ] Processing state shown
+
+**Dependencies:** Phase 66
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 68: Payment Success Flow
+
+**Objective:** Complete flow after successful payment.
+
+**Deliverables:**
+
+1. Create payment record in database
+2. Auto-allocate to outstanding charges
+3. Update charge statuses
+4. Send receipt email (or log for now)
+5. Show success page with confirmation number
+6. Invalidate/refresh relevant queries
+
+**Success Flow:**
+
+1. Webhook receives `payment_intent.succeeded`
+2. Extract leaseId from metadata
+3. Create Payment record with status COMPLETED
+4. Call autoAllocatePayment()
+5. Queue receipt email
+6. Frontend polls intent status and shows success
+
+**Acceptance Criteria:**
+
+- [ ] Payment record created
+- [ ] Charges allocated
+- [ ] Success UI shown
+- [ ] Receipt confirmation
+
+**Dependencies:** Phase 67
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 69: Saved Payment Methods
+
+**Objective:** Allow tenants to save cards for future use.
+
+**Deliverables:**
+
+1. Store Stripe customer ID on User/Tenant
+2. `GET /api/v1/payments/methods` - List saved cards
+3. `DELETE /api/v1/payments/methods/:id` - Remove card
+4. Show saved cards in payment form
+5. Option to pay with saved card or new card
+
+**Saved Cards UI:**
+
+```typescript
+export function SavedPaymentMethods({ onSelect }: Props) {
+  const { data: methods } = useQuery(['payment-methods'], getPaymentMethods);
+
+  return (
+    <div>
+      {methods?.map(method => (
+        <div key={method.id} className="flex items-center gap-2">
+          <CreditCardIcon />
+          <span>•••• {method.card.last4}</span>
+          <span>{method.card.exp_month}/{method.card.exp_year}</span>
+          <Button size="sm" onClick={() => onSelect(method.id)}>Use</Button>
+          <Button size="sm" variant="ghost" onClick={() => removeMethod(method.id)}>
+            <TrashIcon />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Cards saved during payment
+- [ ] Saved cards listed
+- [ ] Can pay with saved card
+- [ ] Can delete saved card
+
+**Dependencies:** Phase 68
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 70: Auto-Pay Enrollment
+
+**Objective:** Allow tenants to enroll in automatic rent payments.
+
+**Deliverables:**
+
+1. Add to Lease: autoPayEnabled, autoPayDay, autoPayMethodId
+2. `POST /api/v1/leases/:id/autopay` - Enable auto-pay
+3. `DELETE /api/v1/leases/:id/autopay` - Disable auto-pay
+4. Scheduled job: process auto-payments daily
+5. Email notification before charging
+6. Handle failed auto-payments
+
+**Auto-Pay Job:**
+
+```typescript
+@Cron('0 8 * * *') // Run at 8 AM daily
+async processAutoPayments() {
+  const today = new Date().getDate();
+  const leases = await this.prisma.lease.findMany({
+    where: {
+      autoPayEnabled: true,
+      autoPayDay: today,
+      status: 'ACTIVE',
+    },
+    include: { tenant: true, charges: { where: { status: 'PENDING' } } },
+  });
+
+  for (const lease of leases) {
+    const amount = this.calculateOutstanding(lease.charges);
+    if (amount > 0) {
+      await this.processPayment(lease, amount);
+    }
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Tenant can enable auto-pay
+- [ ] Auto-pay runs on schedule
+- [ ] Notification before charge
+- [ ] Failures handled gracefully
+
+**Dependencies:** Phase 69
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 71: Payment History UI
+
+**Objective:** Complete payment history for tenants and admins.
+
+**Deliverables:**
+
+1. Tenant portal: "My Payments" page
+2. Admin: Payment history in lease detail
+3. Display: date, amount, method, status, charges covered
+4. Filter by date range, status
+5. Download receipt for any payment
+
+**Acceptance Criteria:**
+
+- [ ] Full history visible
+- [ ] Filters work
+- [ ] Receipt download works
+
+**Dependencies:** Phase 70
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 72: Payment Notifications
+
+**Objective:** Email notifications for payment events.
+
+**Deliverables:**
+
+1. Payment received confirmation
+2. Payment failed notification
+3. Auto-pay upcoming notification (3 days before)
+4. Auto-pay processed confirmation
+5. Rent due reminder (configurable days before)
+
+**Email Templates:**
+
+- `payment-received.hbs`
+- `payment-failed.hbs`
+- `autopay-reminder.hbs`
+- `rent-due-reminder.hbs`
+
+**Acceptance Criteria:**
+
+- [ ] Emails sent for all events
+- [ ] Templates render correctly
+- [ ] Unsubscribe option included
+
+**Dependencies:** Phase 71
+**Estimated Effort:** 4 hours
+
+---
+
+# ═══════════════════════════════════════════════════════════════
+
+# MVP COMPLETE AT PHASE 72
+
+# Total MVP Phases: 72
+
+# ═══════════════════════════════════════════════════════════════
+
+---
+
+# SECTION 8: WORK ORDERS (Phases 73-82) [POST-MVP]
+
+---
+
+## PHASE 73: Work Order Model Verification
+
+**Objective:** Verify WorkOrder model completeness.
+
+**Deliverables:**
+
+1. Verify fields: id, organizationId, propertyId, unitId, tenantId
+2. title, description, category, priority
+3. status (SUBMITTED, ASSIGNED, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED)
+4. assignedVendorId, estimatedCost, actualCost
+5. scheduledDate, completedDate
+6. photos (array of URLs)
+7. Indexes on: status, priority, propertyId
+
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 74: Work Order Service
+
+**Objective:** Business logic for work orders.
+
+**Deliverables:**
+
+1. CRUD operations
+2. Status transitions with validation
+3. Vendor assignment
+4. Photo upload handling
+5. Cost tracking
+6. Status history logging
+
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 75: Work Order Controller
+
+**Objective:** REST API for work orders.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 76: Work Order Tests
+
+**Objective:** Test coverage > 80%.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 77: Frontend Work Orders List
+
+**Objective:** Display and filter work orders.
+
+**Estimated Effort:** 5 hours
+
+---
+
+## PHASE 78: Frontend Create Work Order
+
+**Objective:** Form for new work orders with photo upload.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 79: Frontend Work Order Detail
+
+**Objective:** Full detail view with status timeline.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 80: Work Order Assignment
+
+**Objective:** Assign work orders to vendors.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 81: Work Order Status Updates
+
+**Objective:** Status transition UI and notifications.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 82: Work Order Completion
+
+**Objective:** Complete work orders with costs and photos.
+
+**Estimated Effort:** 4 hours
+
+---
+
+# SECTION 9: VENDORS (Phases 83-88) [POST-MVP]
+
+---
+
+## PHASE 83: Vendor Model Verification
+
+**Deliverables:** Verify vendor fields, compliance tracking, specialty categories.
+
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 84: Vendor Service & Controller
+
+**Deliverables:** CRUD operations, compliance alerts, performance metrics.
+
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 85: Frontend Vendor List
+
+**Deliverables:** Vendor directory with filters, compliance badges.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 86: Frontend Vendor Detail
+
+**Deliverables:** Full profile, work history, performance stats.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 87: Vendor Compliance Tracking
+
+**Deliverables:** Insurance/license expiration alerts, document uploads.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 88: Vendor Performance Dashboard
+
+**Deliverables:** Response times, completion rates, ratings.
+
+**Estimated Effort:** 4 hours
+
+---
+
+# SECTION 10: TENANT PORTAL (Phases 89-96) [POST-MVP]
+
+---
+
+## PHASE 89: Tenant Portal Authentication
+
+**Deliverables:** Tenant login, password reset, portal access.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 90: Tenant Dashboard
+
+**Deliverables:** Balance, upcoming payments, recent activity.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 91: Tenant Payment Page
+
+**Deliverables:** Make payment, view history, enroll auto-pay.
+
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 92: Tenant Maintenance Requests
+
+**Deliverables:** Submit request with photos, track status.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 93: Tenant Lease View
+
+**Deliverables:** View lease terms, download documents.
+
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 94: Tenant Profile
+
+**Deliverables:** Update contact info, emergency contacts.
+
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 95: Tenant Communication
+
+**Deliverables:** Message landlord, view announcements.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 96: Tenant Mobile Optimization
+
+**Deliverables:** Responsive design, touch-friendly UI.
+
+**Estimated Effort:** 4 hours
+
+---
+
+# SECTION 11: REPORTING (Phases 97-102) [POST-MVP]
+
+---
+
+## PHASE 97: Rent Roll Report
+
+**Deliverables:** All leases with rents, expiration dates, tenant info.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 98: Occupancy Report
+
+**Deliverables:** Vacancy rates, trends, property comparison.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 99: Financial Reports
+
+**Deliverables:** P&L by property, expense breakdown, revenue trends.
+
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 100: Aged Receivables Report
+
+**Deliverables:** Outstanding balances by 30/60/90+ days.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 101: Export to Excel/PDF
+
+**Deliverables:** Download reports in multiple formats.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 102: Scheduled Reports
+
+**Deliverables:** Email reports on schedule (daily/weekly/monthly).
+
+**Estimated Effort:** 4 hours
+
+---
+
+# SECTION 12: AI & AUTOMATION (Phases 103-106) [POST-MVP]
+
+---
+
+## PHASE 103: Late Fee Automation
+
+**Deliverables:** Auto-generate late fees after grace period.
+
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 104: Rent Reminders
+
+**Deliverables:** Automated email/SMS reminders before due date.
+
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 105: Lease Expiration Alerts
+
+**Deliverables:** Notify landlord of expiring leases.
+
+**Estimated Effort:** 3 hours
+
+---
+
+## PHASE 106: Document OCR (Lease Parsing)
+
+**Deliverables:** Upload lease PDF, extract key terms automatically.
+
+**Estimated Effort:** 8 hours
+
+---
+
+# SECTION 13: MOBILE & INTEGRATIONS (Phases 107-108) [POST-MVP]
+
+---
+
+## PHASE 107: Progressive Web App
+
+**Deliverables:** Installable PWA, offline support, push notifications.
+
+**Estimated Effort:** 8 hours
+
+---
+
+## PHASE 108: QuickBooks Integration
+
+**Deliverables:** Sync transactions to QuickBooks Online.
+
+**Estimated Effort:** 10 hours
+
+---
+
+# SUMMARY
+
+## Phase Distribution
+
+| Section               | Phases  | Status   |
+| --------------------- | ------- | -------- |
+| Foundation            | 1-12    | **MVP**  |
+| Auth & Security       | 13-20   | **MVP**  |
+| Properties            | 21-30   | **MVP**  |
+| Units                 | 31-38   | **MVP**  |
+| Leases                | 39-50   | **MVP**  |
+| Financial Core        | 51-62   | **MVP**  |
+| Payments              | 63-72   | **MVP**  |
+| Work Orders           | 73-82   | Post-MVP |
+| Vendors               | 83-88   | Post-MVP |
+| Tenant Portal         | 89-96   | Post-MVP |
+| Reporting             | 97-102  | Post-MVP |
+| AI & Automation       | 103-106 | Post-MVP |
+| Mobile & Integrations | 107-108 | Post-MVP |
+
+## Total Phases: 108
+
+## MVP Phases: 1-72 (72 phases)
+
+## Post-MVP Phases: 73-108 (36 phases)
+
+---
+
+## Execution Guidelines
+
+1. **Complete phases sequentially within each section**
+2. **Do not skip phases - each builds on the previous**
+3. **Mark phase complete only when ALL deliverables done**
+4. **Write tests BEFORE marking phase complete**
+5. **Document any deviations in commit messages**
+6. **No assumptions - if unclear, add to phase requirements**
+
+---
+
+## Changelog
+
+| Date       | Version | Changes                                              |
+| ---------- | ------- | ---------------------------------------------------- |
+| 2025-11-27 | 2.0     | Complete rewrite with 108 phases, clear MVP boundary |
+
+---
+
+**This roadmap is DEFINITIVE. Follow it exactly.**

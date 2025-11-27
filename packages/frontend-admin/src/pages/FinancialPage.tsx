@@ -73,9 +73,13 @@ interface DashboardData {
 function TrendBadge({ value, label }: { value: number; label: string }) {
   const isPositive = value >= 0;
   return (
-    <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+    <div
+      className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}
+    >
       {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-      <span>{Math.abs(value)}% {label}</span>
+      <span>
+        {Math.abs(value)}% {label}
+      </span>
     </div>
   );
 }
@@ -99,13 +103,17 @@ function StatCard({
 }) {
   return (
     <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 bg-gradient-to-br from-white to-slate-50/50 overflow-hidden relative group">
-      <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${colorClass}`}>
+      <div
+        className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${colorClass}`}
+      >
         <Icon className="w-24 h-24 -mr-4 -mt-4" />
       </div>
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-4 relative z-10">
-            <div className={`p-3 rounded-2xl inline-flex ${bgClass} ${colorClass} ring-1 ring-inset ring-black/5`}>
+            <div
+              className={`p-3 rounded-2xl inline-flex ${bgClass} ${colorClass} ring-1 ring-inset ring-black/5`}
+            >
               <Icon className="w-6 h-6" />
             </div>
             <div>
@@ -123,14 +131,20 @@ function StatCard({
   );
 }
 
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-slate-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-slate-800">
         <p className="font-semibold mb-1 text-slate-300">{label}</p>
-        <p className="font-medium text-white text-sm">
-          {formatCurrency(payload[0].value)}
-        </p>
+        <p className="font-medium text-white text-sm">{formatCurrency(payload[0].value)}</p>
       </div>
     );
   }
@@ -139,8 +153,12 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 function OccupancyBar({ rate }: { rate: number }) {
   let color = 'bg-emerald-500';
-  if (rate < 90) color = 'bg-amber-500';
-  if (rate < 70) color = 'bg-rose-500';
+  if (rate < 90) {
+    color = 'bg-amber-500';
+  }
+  if (rate < 70) {
+    color = 'bg-rose-500';
+  }
 
   return (
     <div className="w-full max-w-[100px] h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -241,7 +259,9 @@ export default function FinancialPage() {
   }, [leases, payments]);
 
   const propertyPerformance = useMemo(() => {
-    if (!properties || !leases || !payments) return [];
+    if (!properties || !leases || !payments) {
+      return [];
+    }
 
     return properties.map((property) => {
       const units = property.units || [];
@@ -288,10 +308,25 @@ export default function FinancialPage() {
   }, [properties, leases, payments]);
 
   const revenueTrendData = useMemo(() => {
-    if (!payments) return [];
+    if (!payments) {
+      return [];
+    }
 
     const now = new Date();
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const data = [];
 
     for (let i = 5; i >= 0; i--) {
@@ -308,10 +343,7 @@ export default function FinancialPage() {
         );
       });
 
-      const revenue = monthPayments.reduce(
-        (sum, payment) => sum + Number(payment.amount || 0),
-        0,
-      );
+      const revenue = monthPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
       data.push({
         month: monthNames[monthIndex],
@@ -332,7 +364,9 @@ export default function FinancialPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Financial Dashboard</h1>
-          <p className="text-slate-500 mt-1">Real-time financial performance and rent collection metrics.</p>
+          <p className="text-slate-500 mt-1">
+            Real-time financial performance and rent collection metrics.
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="text-slate-600">
@@ -367,7 +401,9 @@ export default function FinancialPage() {
           value={formatCurrency(portfolioSummary.outstandingBalance)}
           subtext="Expected - Collected"
           icon={AlertCircle}
-          colorClass={portfolioSummary.outstandingBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}
+          colorClass={
+            portfolioSummary.outstandingBalance > 0 ? 'text-rose-600' : 'text-emerald-600'
+          }
           bgClass={portfolioSummary.outstandingBalance > 0 ? 'bg-rose-50' : 'bg-emerald-50'}
         />
         <StatCard
@@ -415,7 +451,10 @@ export default function FinancialPage() {
                       tick={{ fill: '#64748b', fontSize: 12 }}
                       tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                     />
-                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                    />
                     <Area
                       type="monotone"
                       dataKey="revenue"
@@ -439,7 +478,9 @@ export default function FinancialPage() {
         {/* Mini Chart of Accounts / Distribution */}
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-slate-900">Account Distribution</CardTitle>
+            <CardTitle className="text-lg font-semibold text-slate-900">
+              Account Distribution
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartOfAccountsSection />
@@ -455,7 +496,11 @@ export default function FinancialPage() {
               <Building2 className="w-5 h-5 text-blue-600" />
               Property Performance
             </CardTitle>
-            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
               View All Properties
             </Button>
           </div>
@@ -466,11 +511,21 @@ export default function FinancialPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/30">
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Property</th>
-                    <th className="text-center py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Occupancy</th>
-                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Monthly Rent</th>
-                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Payment</th>
-                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Property
+                    </th>
+                    <th className="text-center py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Occupancy
+                    </th>
+                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Monthly Rent
+                    </th>
+                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Last Payment
+                    </th>
+                    <th className="text-right py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -495,9 +550,13 @@ export default function FinancialPage() {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex flex-col items-center gap-1">
-                          <span className="text-sm font-medium text-slate-700">{property.occupancyRate}%</span>
+                          <span className="text-sm font-medium text-slate-700">
+                            {property.occupancyRate}%
+                          </span>
                           <OccupancyBar rate={property.occupancyRate} />
-                          <span className="text-xs text-slate-400">{property.occupiedUnits}/{property.totalUnits} units</span>
+                          <span className="text-xs text-slate-400">
+                            {property.occupiedUnits}/{property.totalUnits} units
+                          </span>
                         </div>
                       </td>
                       <td className="text-right py-4 px-6">
@@ -532,7 +591,9 @@ export default function FinancialPage() {
             <div className="text-center py-12">
               <Building2 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
               <p className="text-slate-500 font-medium">No properties found</p>
-              <p className="text-sm text-slate-400 mt-1">Add properties to see performance metrics</p>
+              <p className="text-sm text-slate-400 mt-1">
+                Add properties to see performance metrics
+              </p>
             </div>
           )}
         </CardContent>
@@ -579,7 +640,7 @@ function ChartOfAccountsSection() {
   }
 
   // Group by type and calculate mock totals for visualization
-  const typeDistribution = ['REVENUE', 'EXPENSE', 'ASSET', 'LIABILITY'].map(type => {
+  const typeDistribution = ['REVENUE', 'EXPENSE', 'ASSET', 'LIABILITY'].map((type) => {
     const count = chartOfAccounts.filter((a) => a.type === type).length;
     return { type, count };
   });
@@ -589,11 +650,20 @@ function ChartOfAccountsSection() {
       {typeDistribution.map(({ type, count }) => (
         <div key={type} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${type === 'REVENUE' ? 'bg-emerald-500' :
-                type === 'EXPENSE' ? 'bg-rose-500' :
-                  type === 'ASSET' ? 'bg-blue-500' : 'bg-slate-500'
-              }`} />
-            <span className="text-sm font-medium text-slate-700 capitalize">{type.toLowerCase()}s</span>
+            <div
+              className={`w-2 h-2 rounded-full ${
+                type === 'REVENUE'
+                  ? 'bg-emerald-500'
+                  : type === 'EXPENSE'
+                    ? 'bg-rose-500'
+                    : type === 'ASSET'
+                      ? 'bg-blue-500'
+                      : 'bg-slate-500'
+              }`}
+            />
+            <span className="text-sm font-medium text-slate-700 capitalize">
+              {type.toLowerCase()}s
+            </span>
           </div>
           <span className="text-xs font-semibold text-slate-500">{count} accounts</span>
         </div>
