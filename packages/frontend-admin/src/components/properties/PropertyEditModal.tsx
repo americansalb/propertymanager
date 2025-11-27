@@ -15,10 +15,8 @@ import api from '../../services/api';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -181,13 +179,13 @@ export default function PropertyEditModal({
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?` +
-          new URLSearchParams({
-            q: query,
-            format: 'json',
-            addressdetails: '1',
-            countrycodes: 'us',
-            limit: '5',
-          }),
+        new URLSearchParams({
+          q: query,
+          format: 'json',
+          addressdetails: '1',
+          countrycodes: 'us',
+          limit: '5',
+        }),
         {
           headers: {
             'User-Agent': 'PropertyManager/1.0', // Nominatim requires a User-Agent
@@ -243,6 +241,7 @@ export default function PropertyEditModal({
 
     // Clear errors
     setErrors((prev) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { address1, city, state, zipCode, ...rest } = prev;
       return rest;
     });
@@ -433,9 +432,8 @@ export default function PropertyEditModal({
                       value={formData.name || ''}
                       onChange={(e) => handleChange('name', e.target.value)}
                       placeholder="e.g. Sunset Apartments"
-                      className={`w-full text-lg py-6 font-medium border rounded-lg px-4 ${
-                        errors.name ? 'border-red-500' : 'border-slate-200 focus:border-indigo-500'
-                      } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
+                      className={`w-full text-lg py-6 font-medium border rounded-lg px-4 ${errors.name ? 'border-red-500' : 'border-slate-200 focus:border-indigo-500'
+                        } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
                     />
                     {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                   </div>
@@ -458,11 +456,10 @@ export default function PropertyEditModal({
                           if (addressSuggestions.length > 0) setShowSuggestions(true);
                         }}
                         placeholder="Start typing address..."
-                        className={`w-full h-11 rounded-lg border px-3 text-sm ${
-                          errors.address1
+                        className={`w-full h-11 rounded-lg border px-3 text-sm ${errors.address1
                             ? 'border-red-500'
                             : 'border-slate-200 focus:border-indigo-500'
-                        } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
+                          } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
                       />
 
                       {/* Loading indicator */}
@@ -561,11 +558,10 @@ export default function PropertyEditModal({
                           key={type.value}
                           type="button"
                           onClick={() => handleChange('type', type.value)}
-                          className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 gap-2 h-24 ${
-                            isSelected
+                          className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 gap-2 h-24 ${isSelected
                               ? type.className + ' ring-1 ring-indigo-200 shadow-sm'
                               : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-500'
-                          }`}
+                            }`}
                         >
                           <Icon className={`w-6 h-6 ${isSelected ? '' : 'text-slate-400'}`} />
                           <span
@@ -590,11 +586,10 @@ export default function PropertyEditModal({
                           key={status.value}
                           type="button"
                           onClick={() => handleChange('status', status.value)}
-                          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${
-                            isSelected
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${isSelected
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-200'
                               : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
-                          }`}
+                            }`}
                         >
                           <span className="capitalize">
                             {status.label.replace('_', ' ').toLowerCase()}
