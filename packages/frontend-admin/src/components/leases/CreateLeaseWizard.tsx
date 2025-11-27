@@ -388,7 +388,7 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                         <div>
                           <span className="font-medium">Unit {unit.unitNumber}</span>
                           <span className="text-gray-500 ml-2">
-                            {unit.bedrooms} bed / {unit.bathrooms} bath
+                            {Number(unit.bedrooms)} bed / {Number(unit.bathrooms)} bath
                           </span>
                         </div>
                         <span className="font-medium text-green-600">
@@ -624,7 +624,7 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                 </p>
                 <p>
                   <span className="font-medium">Unit:</span> {selectedUnit?.unitNumber} (
-                  {selectedUnit?.bedrooms} bed / {selectedUnit?.bathrooms} bath)
+                  {Number(selectedUnit?.bedrooms || 0)} bed / {Number(selectedUnit?.bathrooms || 0)} bath)
                 </p>
               </div>
             </div>

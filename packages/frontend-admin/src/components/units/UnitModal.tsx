@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Home, Loader2, X } from 'lucide-react';
+import { Home, Loader2, X, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -231,6 +231,23 @@ export default function UnitModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Validation Summary */}
+          {Object.keys(errors).length > 0 && !errors.submit && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-red-800">Please fix the following errors:</p>
+                  <ul className="mt-1 text-sm text-red-600 list-disc list-inside">
+                    {Object.entries(errors).map(([field, message]) => (
+                      <li key={field}>{message}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             {/* Unit Number */}
             <div>
@@ -269,7 +286,10 @@ export default function UnitModal({
                 type="number"
                 min="0"
                 value={formData.bedrooms}
-                onChange={(e) => handleChange('bedrooms', parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 0;
+                  handleChange('bedrooms', Math.max(0, val));
+                }}
                 className={errors.bedrooms ? 'border-red-500' : ''}
               />
               {errors.bedrooms && <p className="text-sm text-red-600 mt-1">{errors.bedrooms}</p>}
@@ -283,7 +303,10 @@ export default function UnitModal({
                 min="0"
                 step="0.5"
                 value={formData.bathrooms}
-                onChange={(e) => handleChange('bathrooms', parseFloat(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  handleChange('bathrooms', Math.max(0, val));
+                }}
                 className={errors.bathrooms ? 'border-red-500' : ''}
               />
               {errors.bathrooms && <p className="text-sm text-red-600 mt-1">{errors.bathrooms}</p>}
@@ -296,7 +319,12 @@ export default function UnitModal({
                 type="number"
                 min="0"
                 value={formData.squareFeet}
-                onChange={(e) => handleChange('squareFeet', e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '' || parseInt(val) >= 0) {
+                    handleChange('squareFeet', val);
+                  }
+                }}
                 placeholder="Optional"
                 className={errors.squareFeet ? 'border-red-500' : ''}
               />
@@ -315,7 +343,12 @@ export default function UnitModal({
                   min="0"
                   step="0.01"
                   value={formData.marketRent}
-                  onChange={(e) => handleChange('marketRent', e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || parseFloat(val) >= 0) {
+                      handleChange('marketRent', val);
+                    }
+                  }}
                   className={`pl-7 ${errors.marketRent ? 'border-red-500' : ''}`}
                   placeholder="0.00"
                 />
