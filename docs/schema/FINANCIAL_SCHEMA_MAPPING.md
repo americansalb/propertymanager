@@ -19,6 +19,7 @@ Map the conceptual financial domain model to concrete Prisma schema additions. T
 Add new tables without modifying existing schema. This allows gradual migration.
 
 **Tables to Add:**
+
 1. `Account` - Chart of accounts
 2. `JournalTransaction` - Ledger transaction headers
 3. `JournalLine` - Debit/credit rows
@@ -30,6 +31,7 @@ Add new tables without modifying existing schema. This allows gradual migration.
 ### Phase 2: Seed Default Accounts
 
 Create predefined accounts for each organization:
+
 - Rent Income
 - Late Fee Income
 - Security Deposit Liability
@@ -40,6 +42,7 @@ Create predefined accounts for each organization:
 ### Phase 3: Wire Business Logic
 
 Update services to create journal entries when:
+
 - Creating charges (DR AR → CR Income)
 - Recording payments (DR Bank → CR AR)
 - Allocating payments to charges
@@ -48,6 +51,7 @@ Update services to create journal entries when:
 ### Phase 4: Reporting (Later Phases)
 
 Build reports using `JournalLine` filtered by:
+
 - `propertyId` - Property-level P&L
 - `accountId` - Account-level ledgers
 - `tenantId` - Tenant-level statements
@@ -410,10 +414,22 @@ const defaultAccounts = [
   // ASSETS
   { name: 'Bank – Operating', code: '1000', type: 'ASSET', subtype: 'BANK', isSystem: true },
   { name: 'Bank – Trust', code: '1010', type: 'ASSET', subtype: 'BANK', isSystem: true },
-  { name: 'Accounts Receivable – Tenant', code: '1200', type: 'ASSET', subtype: 'AR', isSystem: true },
+  {
+    name: 'Accounts Receivable – Tenant',
+    code: '1200',
+    type: 'ASSET',
+    subtype: 'AR',
+    isSystem: true,
+  },
 
   // LIABILITIES
-  { name: 'Security Deposit Liability', code: '2100', type: 'LIABILITY', subtype: 'DEPOSIT', isSystem: true },
+  {
+    name: 'Security Deposit Liability',
+    code: '2100',
+    type: 'LIABILITY',
+    subtype: 'DEPOSIT',
+    isSystem: true,
+  },
   { name: 'Accounts Payable', code: '2200', type: 'LIABILITY', subtype: 'AP', isSystem: true },
 
   // INCOME
@@ -425,15 +441,33 @@ const defaultAccounts = [
   { name: 'Other Income', code: '4900', type: 'INCOME', subtype: 'OTHER', isSystem: true },
 
   // EXPENSES
-  { name: 'Maintenance Expense', code: '5000', type: 'EXPENSE', subtype: 'MAINTENANCE', isSystem: true },
+  {
+    name: 'Maintenance Expense',
+    code: '5000',
+    type: 'EXPENSE',
+    subtype: 'MAINTENANCE',
+    isSystem: true,
+  },
   { name: 'Repairs Expense', code: '5100', type: 'EXPENSE', subtype: 'REPAIRS', isSystem: true },
-  { name: 'Utilities Expense', code: '5200', type: 'EXPENSE', subtype: 'UTILITIES', isSystem: true },
-  { name: 'Insurance Expense', code: '5300', type: 'EXPENSE', subtype: 'INSURANCE', isSystem: true },
+  {
+    name: 'Utilities Expense',
+    code: '5200',
+    type: 'EXPENSE',
+    subtype: 'UTILITIES',
+    isSystem: true,
+  },
+  {
+    name: 'Insurance Expense',
+    code: '5300',
+    type: 'EXPENSE',
+    subtype: 'INSURANCE',
+    isSystem: true,
+  },
   { name: 'Property Tax Expense', code: '5400', type: 'EXPENSE', subtype: 'TAX', isSystem: true },
   { name: 'Management Fee Expense', code: '5500', type: 'EXPENSE', subtype: 'FEE', isSystem: true },
 
   // EQUITY
-  { name: 'Owner\'s Equity', code: '3000', type: 'EQUITY', subtype: null, isSystem: true },
+  { name: "Owner's Equity", code: '3000', type: 'EQUITY', subtype: null, isSystem: true },
 ];
 ```
 
@@ -587,8 +621,8 @@ CREATE INDEX "PaymentAllocation_chargeId_idx" ON "PaymentAllocation"("chargeId")
 ```typescript
 // Example: Validate journal entry balances
 async function createJournalEntry(dto: CreateJournalEntryDto) {
-  const debits = dto.lines.filter(l => l.direction === 'DEBIT');
-  const credits = dto.lines.filter(l => l.direction === 'CREDIT');
+  const debits = dto.lines.filter((l) => l.direction === 'DEBIT');
+  const credits = dto.lines.filter((l) => l.direction === 'CREDIT');
 
   const totalDebits = debits.reduce((sum, l) => sum + l.amount, 0);
   const totalCredits = credits.reduce((sum, l) => sum + l.amount, 0);
@@ -636,11 +670,11 @@ describe('Default Accounts Seeding', () => {
   it('should create default accounts for new organization', async () => {
     const org = await createTestOrganization();
     const accounts = await prisma.account.findMany({
-      where: { organizationId: org.id }
+      where: { organizationId: org.id },
     });
 
     expect(accounts).toHaveLength(17); // Based on seed data above
-    expect(accounts.find(a => a.name === 'Rent Income')).toBeDefined();
+    expect(accounts.find((a) => a.name === 'Rent Income')).toBeDefined();
   });
 });
 ```
@@ -654,7 +688,7 @@ describe('Journal Entry Invariants', () => {
       lines: [
         { accountId: 'acc1', amount: 1000, direction: 'DEBIT' },
         { accountId: 'acc2', amount: 900, direction: 'CREDIT' }, // Unbalanced!
-      ]
+      ],
     };
 
     await expect(createJournalEntry(entry)).rejects.toThrow(UnbalancedJournalEntryException);

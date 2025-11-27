@@ -1,7 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject, LoggerService } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  LoggerService,
+} from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreatePropertyDto, UpdatePropertyDto } from './dto/property.dto';
+import { type CreatePropertyDto, type UpdatePropertyDto } from './dto/property.dto';
 
 @Injectable()
 export class PropertiesService {

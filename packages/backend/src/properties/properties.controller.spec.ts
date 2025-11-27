@@ -136,12 +136,7 @@ describe('PropertiesController', () => {
       const updatedProperty = { ...mockProperty, name: 'Updated Villas' };
       propertiesService.update.mockResolvedValue(updatedProperty as any);
 
-      const result = await controller.update(
-        'prop-123',
-        updateDto,
-        'org-456',
-        requestWithoutUser,
-      );
+      const result = await controller.update('prop-123', updateDto, 'org-456', requestWithoutUser);
 
       expect(propertiesService.update).toHaveBeenCalledWith(
         'prop-123',

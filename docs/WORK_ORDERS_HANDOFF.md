@@ -11,6 +11,7 @@
 ### ✅ Backend (COMPLETE - Deployed to Render)
 
 **Files Modified/Created**:
+
 - `packages/backend/src/work-orders/dto/create-work-order.dto.ts` - DTO with validation
 - `packages/backend/src/work-orders/dto/update-work-order.dto.ts` - Update DTO
 - `packages/backend/src/work-orders/work-orders.service.ts` - Full CRUD with event tracking
@@ -20,6 +21,7 @@
 - `packages/frontend-admin/src/hooks/useWorkOrders.ts` - React Query hooks
 
 **API Endpoints (LIVE)**:
+
 ```
 GET    /api/v1/work-orders          - List all (org-scoped)
 GET    /api/v1/work-orders/:id      - Get single work order
@@ -28,11 +30,13 @@ PUT    /api/v1/work-orders/:id      - Update
 ```
 
 **Event Tracking (WORKING)**:
+
 - `WORK_ORDER_CREATED` - Fired on create
 - `WORK_ORDER_STATUS_CHANGED` - Fired when status changes
 - `WORK_ORDER_UPDATED` - Fired on other updates
 
 **Key Implementation Details**:
+
 - Org scoping enforced via property.organizationId
 - Property/unit validation in create()
 - Auto-sets completedDate when status → COMPLETED
@@ -50,6 +54,7 @@ PUT    /api/v1/work-orders/:id      - Update
 **What to Add**:
 
 **A. Create Modal** (Follow PropertyEditModal pattern):
+
 - Component: `packages/frontend-admin/src/components/work-orders/WorkOrderCreateModal.tsx`
 - Form fields:
   - Title (required, text input)
@@ -64,6 +69,7 @@ PUT    /api/v1/work-orders/:id      - Update
 - Trigger: "Create Work Order" button in WorkOrdersPage header
 
 **B. Update Modal** (Status changes + basic editing):
+
 - Component: `packages/frontend-admin/src/components/work-orders/WorkOrderUpdateModal.tsx`
 - Form fields:
   - Status (dropdown: DRAFT, SUBMITTED, ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED)
@@ -77,12 +83,14 @@ PUT    /api/v1/work-orders/:id      - Update
 - Trigger: Click work order card in list
 
 **C. WorkOrdersPage Enhancements**:
+
 - Make work order cards clickable (onClick opens UpdateModal)
 - Add hover state with edit icon (same pattern as PropertiesPage)
 - Wire up "Create Work Order" button to open CreateModal
 - Use existing `useWorkOrders()` hook (already imported)
 
 **UI/UX Pattern to Follow**:
+
 ```tsx
 // Same pattern as PropertiesPage:
 const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
@@ -101,7 +109,7 @@ const handleWorkOrderClick = (workOrder: WorkOrder) => {
 >
   {/* Existing card content */}
   <Edit className="w-4 h-4 text-gray-400 group-hover:text-primary" />
-</Card>
+</Card>;
 ```
 
 ---
@@ -113,6 +121,7 @@ const handleWorkOrderClick = (workOrder: WorkOrder) => {
 **Add 3 New Tests** (after existing 4 tests):
 
 **Test 5: Load Work Orders**
+
 ```tsx
 {
   name: 'Load Work Orders',
@@ -134,6 +143,7 @@ const handleWorkOrderClick = (workOrder: WorkOrder) => {
 ```
 
 **Test 6: Create Test Work Order**
+
 ```tsx
 {
   name: 'Create Test Work Order',
@@ -172,6 +182,7 @@ const handleWorkOrderClick = (workOrder: WorkOrder) => {
 ```
 
 **Test 7: Update Work Order Status**
+
 ```tsx
 {
   name: 'Update Work Order Status',
@@ -211,6 +222,7 @@ const handleWorkOrderClick = (workOrder: WorkOrder) => {
 ```
 
 **Integration**:
+
 - Add to existing `tests` array in QADashboard.tsx
 - They will auto-show in the UI with existing test runner
 - All 7 tests should pass when clicked
@@ -220,6 +232,7 @@ const handleWorkOrderClick = (workOrder: WorkOrder) => {
 ## Architectural Patterns (MUST FOLLOW)
 
 ### 1. Modal Pattern
+
 - Use existing `Dialog` component from `components/ui/dialog.tsx`
 - Follow `PropertyEditModal.tsx` structure exactly:
   - State management with `useState` for form data
@@ -230,6 +243,7 @@ const handleWorkOrderClick = (workOrder: WorkOrder) => {
   - Success: close modal + invalidate cache
 
 ### 2. React Query Pattern
+
 ```tsx
 // List query
 const { data: workOrders, isLoading } = useWorkOrders();
@@ -252,11 +266,13 @@ updateMutation.mutate({ id, data: formData });
 ```
 
 ### 3. Org Scoping
+
 - Backend already enforces org scoping via `@OrganizationId()` decorator
 - Frontend doesn't need to pass organizationId - it's extracted from JWT
 - Work orders automatically filtered to user's org
 
 ### 4. Event Tracking
+
 - Already implemented in backend service
 - No frontend changes needed
 - Events appear in Event table automatically
@@ -268,6 +284,7 @@ updateMutation.mutate({ id, data: formData });
 After frontend UI is complete, user must be able to:
 
 **Via UI (Founder-Clickable)**:
+
 1. ✅ Log in as landlord@aalb.org
 2. ✅ Click "Work Orders" in sidebar
 3. ✅ See list of work orders (empty or populated)
@@ -280,6 +297,7 @@ After frontend UI is complete, user must be able to:
 10. ✅ See status update immediately
 
 **Via QA Dashboard**:
+
 1. ✅ Go to /qa
 2. ✅ See 7 tests (4 existing + 3 new work order tests)
 3. ✅ Click "Run All Tests"
@@ -287,6 +305,7 @@ After frontend UI is complete, user must be able to:
 5. ✅ Each test shows HTTP status code + response time
 
 **Backend (Already Working)**:
+
 - Check Event table for WORK_ORDER_CREATED events
 - Check Event table for WORK_ORDER_STATUS_CHANGED events
 - Verify Winston logs in Render console
@@ -296,6 +315,7 @@ After frontend UI is complete, user must be able to:
 ## What NOT to Change
 
 **DO NOT TOUCH** (these work perfectly):
+
 - ✅ Backend service logic (work-orders.service.ts)
 - ✅ Backend controller (work-orders.controller.ts)
 - ✅ DTOs (create/update)
@@ -304,6 +324,7 @@ After frontend UI is complete, user must be able to:
 - ✅ Existing QA Dashboard structure/logic
 
 **DO NOT ADD** (out of scope for Phase 1):
+
 - ❌ Vendor assignment UI (vendor dropdown in create modal is OK, but no vendor management flow)
 - ❌ Work order attachments/photos
 - ❌ Work order comments/notes (beyond completion notes)
@@ -319,18 +340,20 @@ Keep it simple: **Create, List, Update Status** - that's it.
 ## Files That Need to be Created
 
 **Required**:
+
 1. `packages/frontend-admin/src/components/work-orders/WorkOrderCreateModal.tsx`
 2. `packages/frontend-admin/src/components/work-orders/WorkOrderUpdateModal.tsx`
 
-**Optional** (nice to have):
-3. `packages/frontend-admin/src/components/work-orders/StatusBadge.tsx` - Reusable status badge component
+**Optional** (nice to have): 3. `packages/frontend-admin/src/components/work-orders/StatusBadge.tsx` - Reusable status badge component
 
 ---
 
 ## Common Pitfalls to Avoid
 
 ### 1. ❌ Don't Overcomplicate the Create Modal
+
 **Wrong**:
+
 ```tsx
 // Adding too many fields
 <Input label="Assigned To" /> // Not needed in Phase 1
@@ -339,6 +362,7 @@ Keep it simple: **Create, List, Update Status** - that's it.
 ```
 
 **Right**:
+
 ```tsx
 // Minimum viable fields
 <Input label="Title" required />
@@ -349,13 +373,16 @@ Keep it simple: **Create, List, Update Status** - that's it.
 ```
 
 ### 2. ❌ Don't Forget to Load Properties
+
 **Wrong**:
+
 ```tsx
 // Hardcoding property options
 <option value="prop-1">Property 1</option>
 ```
 
 **Right**:
+
 ```tsx
 // Load from API
 const { data: properties } = useQuery({
@@ -367,14 +394,18 @@ const { data: properties } = useQuery({
 });
 
 <select>
-  {properties?.map(p => (
-    <option key={p.id} value={p.id}>{p.name}</option>
+  {properties?.map((p) => (
+    <option key={p.id} value={p.id}>
+      {p.name}
+    </option>
   ))}
-</select>
+</select>;
 ```
 
 ### 3. ❌ Don't Break Existing WorkOrdersPage
+
 **Wrong**:
+
 ```tsx
 // Replacing the entire file
 export default function WorkOrdersPage() {
@@ -383,6 +414,7 @@ export default function WorkOrdersPage() {
 ```
 
 **Right**:
+
 ```tsx
 // Adding to existing file
 import { useState } from 'react';
@@ -394,10 +426,7 @@ export default function WorkOrdersPage() {
   // ... existing code
 
   // Add modal at the end before closing </div>
-  <WorkOrderCreateModal
-    open={createModalOpen}
-    onOpenChange={setCreateModalOpen}
-  />
+  <WorkOrderCreateModal open={createModalOpen} onOpenChange={setCreateModalOpen} />;
 }
 ```
 
@@ -406,6 +435,7 @@ export default function WorkOrdersPage() {
 ## Verification Steps (Before Calling it Done)
 
 ### Manual Testing:
+
 1. ✅ Create a work order via UI
 2. ✅ Verify it appears in list
 3. ✅ Click work order card
@@ -417,6 +447,7 @@ export default function WorkOrdersPage() {
 9. ✅ Run "Update Work Order Status" test → ✅
 
 ### Database Verification:
+
 ```sql
 -- Check work orders were created
 SELECT * FROM "WorkOrder" ORDER BY "createdAt" DESC LIMIT 5;
@@ -426,6 +457,7 @@ SELECT * FROM "Event" WHERE name IN ('WORK_ORDER_CREATED', 'WORK_ORDER_STATUS_CH
 ```
 
 ### Render Logs Verification:
+
 ```
 Search for:
 - "work_order.created"
@@ -439,18 +471,21 @@ Search for:
 ## Phase 1 Alignment
 
 **This work orders feature is:**
+
 - ✅ Part of "Maintenance" (half of "Money + Maintenance" Phase 1 focus)
 - ✅ Mid-market PM friendly (100-2,000 units need maintenance tracking)
 - ✅ Founder-clickable (no code editing, no DevTools)
 - ✅ Production-grade (DTOs, validation, event tracking, org scoping)
 
 **This work orders feature is NOT:**
+
 - ❌ A full CMMS (Computerized Maintenance Management System)
 - ❌ A vendor marketplace (that's Phase 3)
 - ❌ An AI-powered predictive maintenance tool (that's Phase 3)
 - ❌ A mobile field app (future enhancement)
 
 **Scope boundaries:**
+
 - IN SCOPE: Create, list, update status
 - OUT OF SCOPE: Everything else
 
@@ -500,6 +535,7 @@ Verified:
 4. **Delete**: Should users be able to delete work orders, or just CANCEL status?
 
 **Recommendations** (if user doesn't have strong opinions):
+
 - Auto-select first property (like PropertyEditModal auto-selects first property for update test)
 - Unit optional
 - Any status allowed (simpler, user can self-correct)
@@ -512,6 +548,7 @@ Verified:
 If something is unclear or seems wrong:
 
 **Check Commit History**:
+
 ```bash
 git log --oneline -20
 git show 11f153b  # Work orders backend commit
@@ -519,11 +556,13 @@ git show 14c3de6  # PropertyEditModal commit
 ```
 
 **Check Existing Patterns**:
+
 - Look at `PropertyEditModal.tsx` for modal structure
 - Look at `PropertiesPage.tsx` for click-to-edit pattern
 - Look at `QADashboard.tsx` for test structure
 
 **Verify Backend is Working**:
+
 ```bash
 curl https://propertymanager-1.onrender.com/api/v1/work-orders \
   -H "Authorization: Bearer YOUR_JWT"

@@ -12,7 +12,7 @@ import {
   deleteProperty,
   type Property,
   type UpdatePropertyDto,
-  ApiError,
+  type ApiError,
 } from './api';
 
 /**
@@ -22,8 +22,7 @@ import {
 export const propertyKeys = {
   all: ['properties'] as const,
   lists: () => [...propertyKeys.all, 'list'] as const,
-  list: (filters?: Record<string, unknown>) =>
-    [...propertyKeys.lists(), filters] as const,
+  list: (filters?: Record<string, unknown>) => [...propertyKeys.lists(), filters] as const,
   details: () => [...propertyKeys.all, 'detail'] as const,
   detail: (id: string) => [...propertyKeys.details(), id] as const,
 };
@@ -60,17 +59,13 @@ export function useUpdateProperty() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdatePropertyDto }) =>
-      updateProperty(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdatePropertyDto }) => updateProperty(id, data),
     onSuccess: (updatedProperty) => {
       // Invalidate and refetch properties list
       queryClient.invalidateQueries({ queryKey: propertyKeys.lists() });
 
       // Update the cached property detail
-      queryClient.setQueryData(
-        propertyKeys.detail(updatedProperty.id),
-        updatedProperty,
-      );
+      queryClient.setQueryData(propertyKeys.detail(updatedProperty.id), updatedProperty);
 
       toast({
         title: 'Property updated',
@@ -141,9 +136,7 @@ export function useOptimisticPropertyUpdate() {
       await queryClient.cancelQueries({ queryKey: propertyKeys.detail(id) });
 
       // Snapshot previous value
-      const previousProperty = queryClient.getQueryData<Property>(
-        propertyKeys.detail(id),
-      );
+      const previousProperty = queryClient.getQueryData<Property>(propertyKeys.detail(id));
 
       // Optimistically update
       if (previousProperty) {
@@ -155,11 +148,7 @@ export function useOptimisticPropertyUpdate() {
 
       return { previousProperty };
     },
-    onError: (
-      _error: unknown,
-      _variables: unknown,
-      context?: { previousProperty?: Property },
-    ) => {
+    onError: (_error: unknown, _variables: unknown, context?: { previousProperty?: Property }) => {
       // Rollback on error
       if (context?.previousProperty) {
         queryClient.setQueryData(

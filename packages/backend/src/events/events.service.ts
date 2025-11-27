@@ -1,8 +1,8 @@
 import { Injectable, Inject, LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { Request } from 'express';
+import { type Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateEventDto } from './dto/create-event.dto';
+import { type CreateEventDto } from './dto/create-event.dto';
 
 @Injectable()
 export class EventsService {
@@ -15,12 +15,7 @@ export class EventsService {
   /**
    * Track an event with full request context
    */
-  async track(
-    dto: CreateEventDto,
-    organizationId: string,
-    userId?: string,
-    req?: Request,
-  ) {
+  async track(dto: CreateEventDto, organizationId: string, userId?: string, req?: Request) {
     try {
       const event = await this.prisma.event.create({
         data: {
@@ -129,8 +124,12 @@ export class EventsService {
 
     if (startDate || endDate) {
       where.createdAt = {};
-      if (startDate) where.createdAt.gte = startDate;
-      if (endDate) where.createdAt.lte = endDate;
+      if (startDate) {
+        where.createdAt.gte = startDate;
+      }
+      if (endDate) {
+        where.createdAt.lte = endDate;
+      }
     }
 
     // Aggregate by the specified field

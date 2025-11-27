@@ -108,9 +108,9 @@ describe('PropertiesService - Logging', () => {
     it('should log warning when property not found', async () => {
       jest.spyOn(prisma.property, 'findUnique').mockResolvedValue(null);
 
-      await expect(
-        service.update('prop-999', {} as any, 'org-456', 'user-789'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update('prop-999', {} as any, 'org-456', 'user-789')).rejects.toThrow(
+        NotFoundException,
+      );
 
       expect(logger.warn).toHaveBeenCalledWith(
         {
@@ -125,9 +125,9 @@ describe('PropertiesService - Logging', () => {
     it('should log warning when organization does not match', async () => {
       jest.spyOn(prisma.property, 'findUnique').mockResolvedValue(mockProperty as any);
 
-      await expect(
-        service.update('prop-123', {} as any, 'org-999', 'user-789'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.update('prop-123', {} as any, 'org-999', 'user-789')).rejects.toThrow(
+        ForbiddenException,
+      );
 
       expect(logger.warn).toHaveBeenCalledWith(
         {

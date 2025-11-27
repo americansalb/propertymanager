@@ -116,9 +116,7 @@ test.describe('Property Edit Modal', () => {
     await saveButton.click();
 
     // Error should persist
-    await expect(
-      page.getByText(/postal code must be 3-16 chars/i),
-    ).toBeVisible();
+    await expect(page.getByText(/postal code must be 3-16 chars/i)).toBeVisible();
   });
 
   test('should cancel editing without saving', async ({ page }) => {

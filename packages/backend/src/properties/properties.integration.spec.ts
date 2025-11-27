@@ -124,9 +124,7 @@ describe('PropertiesController (Integration)', () => {
         },
       });
       expect(events).toHaveLength(1);
-      expect(events[0].properties).toEqual(
-        expect.objectContaining({ propertyId: testPropertyId }),
-      );
+      expect(events[0].properties).toEqual(expect.objectContaining({ propertyId: testPropertyId }));
     });
 
     it('should return 404 when property does not exist', async () => {

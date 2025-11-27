@@ -7,7 +7,8 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'PropertyMaster - Tenant Portal',
-  description: 'Your home, simplified. Pay rent, request maintenance, and manage your lease online.',
+  description:
+    'Your home, simplified. Pay rent, request maintenance, and manage your lease online.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

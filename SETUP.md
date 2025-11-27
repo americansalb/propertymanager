@@ -30,6 +30,7 @@ cp .env.example .env
 ```
 
 **Important:** Update the following values in `.env`:
+
 - `JWT_SECRET`: Generate a secure random string
 - `STRIPE_SECRET_KEY`: Add your Stripe test key (or leave blank for now)
 
@@ -42,6 +43,7 @@ pnpm docker:up
 ```
 
 This will start:
+
 - PostgreSQL on `localhost:5432`
 - Redis on `localhost:6379`
 - Mailhog (email testing) on `localhost:8025`
@@ -69,6 +71,7 @@ pnpm dev
 ```
 
 This will start:
+
 - **Backend API**: http://localhost:3001
 - **API Documentation**: http://localhost:3001/api/docs (Swagger UI)
 - **Frontend Admin** (when ready): http://localhost:3000

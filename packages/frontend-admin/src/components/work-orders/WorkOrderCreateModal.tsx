@@ -20,16 +20,11 @@ import {
   Refrigerator,
   MessageSquare,
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from '../ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { useCreateWorkOrder, CreateWorkOrderDto } from '../../hooks/useWorkOrders';
+import { useCreateWorkOrder, type CreateWorkOrderDto } from '../../hooks/useWorkOrders';
 import api from '../../services/api';
 
 interface WorkOrderCreateModalProps {
@@ -88,7 +83,9 @@ export function WorkOrderCreateModal({
 
   // Smart priority suggestion based on title keywords
   useEffect(() => {
-    if (!formData.title) return;
+    if (!formData.title) {
+      return;
+    }
 
     const emergencyKeywords = [
       'gas leak',
@@ -116,20 +113,32 @@ export function WorkOrderCreateModal({
   const validateField = (field: string, value: any): string => {
     switch (field) {
       case 'title':
-        if (!value?.trim()) return 'Title is required';
-        if (value.trim().length < 5) return 'Please describe the issue (at least 5 characters)';
+        if (!value?.trim()) {
+          return 'Title is required';
+        }
+        if (value.trim().length < 5) {
+          return 'Please describe the issue (at least 5 characters)';
+        }
         return '';
       case 'description':
-        if (!value?.trim()) return 'Description is required';
-        if (value.trim().length < 10) return 'Please provide more details (at least 10 characters)';
+        if (!value?.trim()) {
+          return 'Description is required';
+        }
+        if (value.trim().length < 10) {
+          return 'Please provide more details (at least 10 characters)';
+        }
         return '';
       case 'propertyId':
-        if (!value) return 'Please select a property';
+        if (!value) {
+          return 'Please select a property';
+        }
         return '';
       case 'estimatedCost':
         if (value !== undefined && value !== null && value !== '') {
           const cost = Number(value);
-          if (isNaN(cost) || cost < 0) return 'Must be a positive number';
+          if (isNaN(cost) || cost < 0) {
+            return 'Must be a positive number';
+          }
         }
         return '';
       default:
@@ -156,7 +165,9 @@ export function WorkOrderCreateModal({
 
     ['title', 'description', 'propertyId', 'estimatedCost'].forEach((field) => {
       const error = validateField(field, formData[field as keyof typeof formData]);
-      if (error) errors[field] = error;
+      if (error) {
+        errors[field] = error;
+      }
     });
 
     setFieldErrors(errors);
@@ -181,10 +192,15 @@ export function WorkOrderCreateModal({
         permissionToEnter: formData.permissionToEnter || false,
       };
 
-      if (formData.location?.trim()) payload.location = formData.location.trim();
-      if (formData.tenantReportedBy?.trim())
+      if (formData.location?.trim()) {
+        payload.location = formData.location.trim();
+      }
+      if (formData.tenantReportedBy?.trim()) {
         payload.tenantReportedBy = formData.tenantReportedBy.trim();
-      if (formData.tenantPhone?.trim()) payload.tenantPhone = formData.tenantPhone.trim();
+      }
+      if (formData.tenantPhone?.trim()) {
+        payload.tenantPhone = formData.tenantPhone.trim();
+      }
 
       if (
         formData.estimatedCost !== undefined &&
@@ -438,14 +454,17 @@ export function WorkOrderCreateModal({
                       value={formData.title}
                       onChange={(e) => {
                         setFormData({ ...formData, title: e.target.value });
-                        if (touched.title) handleBlur('title');
+                        if (touched.title) {
+                          handleBlur('title');
+                        }
                       }}
                       onBlur={() => handleBlur('title')}
                       placeholder="e.g. Leaking faucet in Unit 201"
-                      className={`w-full text-lg py-6 font-medium border rounded-lg px-4 ${fieldErrors.title
+                      className={`w-full text-lg py-6 font-medium border rounded-lg px-4 ${
+                        fieldErrors.title
                           ? 'border-red-500'
                           : 'border-slate-200 focus:border-indigo-500'
-                        } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
+                      } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors placeholder:text-gray-400`}
                       autoFocus
                     />
                     {fieldErrors.title && (
@@ -460,15 +479,18 @@ export function WorkOrderCreateModal({
                       value={formData.description}
                       onChange={(e) => {
                         setFormData({ ...formData, description: e.target.value });
-                        if (touched.description) handleBlur('description');
+                        if (touched.description) {
+                          handleBlur('description');
+                        }
                       }}
                       onBlur={() => handleBlur('description')}
                       placeholder="Describe the issue..."
                       rows={6}
-                      className={`w-full resize-none text-base rounded-lg border px-4 py-3 ${fieldErrors.description
+                      className={`w-full resize-none text-base rounded-lg border px-4 py-3 ${
+                        fieldErrors.description
                           ? 'border-red-500'
                           : 'border-slate-200 focus:border-indigo-500'
-                        } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-gray-400`}
+                      } focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-gray-400`}
                     />
                     {fieldErrors.description && (
                       <p className="text-xs text-red-600 mt-2">{fieldErrors.description}</p>
@@ -491,10 +513,11 @@ export function WorkOrderCreateModal({
                             setFormData({ ...formData, priority: option.value });
                             setTouched((prev) => ({ ...prev, priority: true }));
                           }}
-                          className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 gap-3 ${isSelected
-                              ? option.className + ' shadow-sm ring-1 ring-offset-1'
+                          className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 gap-3 ${
+                            isSelected
+                              ? `${option.className} shadow-sm ring-1 ring-offset-1`
                               : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-500'
-                            }`}
+                          }`}
                         >
                           <Icon className={`w-6 h-6 ${isSelected ? '' : 'text-slate-400'}`} />
                           <span
@@ -525,11 +548,14 @@ export function WorkOrderCreateModal({
                         value={formData.propertyId || ''}
                         onChange={(e) => {
                           setFormData({ ...formData, propertyId: e.target.value });
-                          if (touched.propertyId) handleBlur('propertyId');
+                          if (touched.propertyId) {
+                            handleBlur('propertyId');
+                          }
                         }}
                         onBlur={() => handleBlur('propertyId')}
-                        className={`w-full h-11 rounded-lg border ${fieldErrors.propertyId ? 'border-red-500' : 'border-slate-200'
-                          } bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none`}
+                        className={`w-full h-11 rounded-lg border ${
+                          fieldErrors.propertyId ? 'border-red-500' : 'border-slate-200'
+                        } bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none`}
                       >
                         <option value="">Select property...</option>
                         {properties?.map((property: any) => (
@@ -586,7 +612,9 @@ export function WorkOrderCreateModal({
                                 ? parseFloat(e.target.value)
                                 : undefined,
                             });
-                            if (touched.estimatedCost) handleBlur('estimatedCost');
+                            if (touched.estimatedCost) {
+                              handleBlur('estimatedCost');
+                            }
                           }}
                           onBlur={() => handleBlur('estimatedCost')}
                           placeholder="0.00"

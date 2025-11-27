@@ -64,6 +64,7 @@ We focus on:
 ### The Math
 
 On a $2,000/month property:
+
 - **Belong's guarantee:** ~$160-200/month (8-10% of rent) = **$1,920-2,400/year**
 - **PropertyMaster:** $10/month = **$120/year**
 - **Savings:** **$1,800-2,280/year per property**
@@ -95,6 +96,7 @@ Positioning:
 **Message:** "We show you your actual on-time collection rate and help you improve it."
 
 **Proof points:**
+
 - Real-time payment tracking
 - Delinquency alerts
 - Historical performance metrics
@@ -105,6 +107,7 @@ Positioning:
 **Message:** "We're software, not a middleman taking a cut of your rent."
 
 **Proof points:**
+
 - Fixed $10/unit pricing
 - No percentage fees
 - No hidden costs
@@ -115,6 +118,7 @@ Positioning:
 **Message:** "No marketing tricks. No 'guarantee' headline with a page of exceptions. Just tools that work and metrics you can verify."
 
 **Proof points:**
+
 - Transparent pricing
 - Open metrics (on-time %, vacancy days)
 - No fine print conditions
@@ -124,17 +128,17 @@ Positioning:
 
 ## 6. Competitive Comparison Matrix
 
-| Feature | PropertyMaster | Belong/Nomad | Buildium/AppFolio |
-|---------|---------------|--------------|-------------------|
-| **Rent Guarantee** | ❌ (roadmap: partner option Phase 6) | ✅ (8-10% fee) | ❌ |
-| **Auto-pay** | ✅ (Phase 2) | ✅ | ✅ |
-| **Cost per $2k/mo unit** | $10/mo ($120/yr) | ~$160-200/mo ($1,920-2,400/yr) | $15-25/mo ($180-300/yr) |
-| **Setup time** | <5 min | Days (underwriting) | 30+ min |
-| **Real-time financials** | ✅ (Phase 1-2) | Limited | ✅ |
-| **AI pricing** | ✅ (Phase 4A) | ❌ | Limited |
-| **Maintenance automation** | ✅ (Phase 3) | ✅ | ✅ |
-| **You control pricing** | ✅ | ❌ (often restricted) | ✅ |
-| **You own tenant relationship** | ✅ | ❌ (they intermediate) | ✅ |
+| Feature                         | PropertyMaster                       | Belong/Nomad                   | Buildium/AppFolio       |
+| ------------------------------- | ------------------------------------ | ------------------------------ | ----------------------- |
+| **Rent Guarantee**              | ❌ (roadmap: partner option Phase 6) | ✅ (8-10% fee)                 | ❌                      |
+| **Auto-pay**                    | ✅ (Phase 2)                         | ✅                             | ✅                      |
+| **Cost per $2k/mo unit**        | $10/mo ($120/yr)                     | ~$160-200/mo ($1,920-2,400/yr) | $15-25/mo ($180-300/yr) |
+| **Setup time**                  | <5 min                               | Days (underwriting)            | 30+ min                 |
+| **Real-time financials**        | ✅ (Phase 1-2)                       | Limited                        | ✅                      |
+| **AI pricing**                  | ✅ (Phase 4A)                        | ❌                             | Limited                 |
+| **Maintenance automation**      | ✅ (Phase 3)                         | ✅                             | ✅                      |
+| **You control pricing**         | ✅                                   | ❌ (often restricted)          | ✅                      |
+| **You own tenant relationship** | ✅                                   | ❌ (they intermediate)         | ✅                      |
 
 ---
 
@@ -149,6 +153,7 @@ Positioning:
 > Most 'guaranteed rent' programs cost 8-10% of your monthly rent - that's $160-200/month on a $2,000 property, or about $2,000/year. They also often require you to accept their pricing, screening, and property standards.
 >
 > Instead, PropertyMaster focuses on making non-payment rare through automation:
+>
 > - Auto-pay gets 95-98% on-time collection
 > - Smart screening reduces tenant risk upfront
 > - Automated late fees and reminders handle the remaining 2-5%
@@ -178,6 +183,7 @@ Positioning:
 ### Our Strategy
 
 We're **not trying to convert the guaranteed-rent customer**. We're targeting the 80% of small landlords who:
+
 - Want better tools
 - Don't want to give up 8-10% of revenue
 - Are willing to use software to reduce risk instead of paying to transfer it
@@ -187,16 +193,19 @@ We're **not trying to convert the guaranteed-rent customer**. We're targeting th
 ## 9. Success Metrics (How We Prove Our Position)
 
 ### Phase 1-2 Metrics
+
 - Average on-time payment rate: **>95%**
 - Average days to collect late rent: **<7 days**
 - Reduction in manual collection time: **>90%**
 
 ### Phase 3-4 Metrics
+
 - Average vacancy duration: **<14 days** (industry avg: 30+ days)
 - Rent optimization lift: **+5-15%** over market comps
 - Tenant retention rate: **>70%** annual renewal
 
 ### Phase 5-8 Metrics
+
 - Portfolio NPS: **>70**
 - Platform uptime: **99.9%**
 - Revenue per property: **+15%** vs manual management

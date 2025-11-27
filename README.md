@@ -31,6 +31,7 @@ propertymanager/
 ## Tech Stack
 
 ### Backend
+
 - **Runtime**: Node.js 20+ with TypeScript
 - **Framework**: NestJS (modular, enterprise-grade)
 - **Database**: PostgreSQL (ACID-compliant)
@@ -40,6 +41,7 @@ propertymanager/
 - **Payments**: Stripe Connect
 
 ### Frontend
+
 - **Admin Dashboard**: React 18 + TypeScript + TailwindCSS
 - **Tenant Portal**: Next.js 14 (App Router)
 - **Mobile**: React Native + Expo
@@ -47,6 +49,7 @@ propertymanager/
 - **State**: Zustand
 
 ### Infrastructure
+
 - **Containerization**: Docker + Docker Compose
 - **CI/CD**: GitHub Actions
 - **Testing**: Jest + Supertest + React Testing Library
@@ -101,12 +104,14 @@ pnpm format
 ## Phase 1 MVP Focus
 
 ### Core Financial Engine
+
 - Multi-entity General Ledger (accrual-based)
 - Automated AP/AR with bank reconciliation
 - Trust accounting (state-compliant)
 - Native payment processing
 
 ### Operations Hub
+
 - Work order lifecycle management
 - Vendor management & compliance tracking
 - Mobile-first maintenance app

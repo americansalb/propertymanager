@@ -6,7 +6,7 @@ import { UsersService } from './users.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { OrganizationId } from '../common/decorators/organization.decorator';
 import { JwtPayload } from '../auth/auth.service';
-import { ApiResponse } from '../auth/auth.controller';
+import { type ApiResponse } from '../auth/auth.controller';
 
 @ApiTags('users')
 @Controller('users')

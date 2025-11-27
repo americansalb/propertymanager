@@ -113,16 +113,7 @@ export const RolePermissions: Record<string, Permission[]> = {
     Permission.VIEW_WORK_ORDERS,
     Permission.CREATE_WORK_ORDERS,
   ],
-  MAINTENANCE_TECH: [
-    Permission.VIEW_WORK_ORDERS,
-    Permission.COMPLETE_WORK_ORDERS,
-  ],
-  TENANT: [
-    Permission.VIEW_WORK_ORDERS,
-    Permission.CREATE_WORK_ORDERS,
-  ],
-  VENDOR: [
-    Permission.VIEW_WORK_ORDERS,
-    Permission.COMPLETE_WORK_ORDERS,
-  ],
+  MAINTENANCE_TECH: [Permission.VIEW_WORK_ORDERS, Permission.COMPLETE_WORK_ORDERS],
+  TENANT: [Permission.VIEW_WORK_ORDERS, Permission.CREATE_WORK_ORDERS],
+  VENDOR: [Permission.VIEW_WORK_ORDERS, Permission.COMPLETE_WORK_ORDERS],
 };

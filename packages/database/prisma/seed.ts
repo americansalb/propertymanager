@@ -1,4 +1,15 @@
-import { PrismaClient, UserRole, OrganizationType, SubscriptionPlan, PropertyType, PropertyStatus, UnitType, UnitStatus, AccountType, AccountSubType } from '@prisma/client';
+import {
+  PrismaClient,
+  UserRole,
+  OrganizationType,
+  SubscriptionPlan,
+  PropertyType,
+  PropertyStatus,
+  UnitType,
+  UnitStatus,
+  AccountType,
+  AccountSubType,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -50,28 +61,112 @@ async function main() {
   const chartOfAccounts = await prisma.chartOfAccounts.createMany({
     data: [
       // Assets
-      { organizationId: organization.id, accountNumber: '1000', name: 'Operating Cash', type: AccountType.ASSET, subType: AccountSubType.CASH },
-      { organizationId: organization.id, accountNumber: '1100', name: 'Trust Account Cash', type: AccountType.ASSET, subType: AccountSubType.CASH },
-      { organizationId: organization.id, accountNumber: '1200', name: 'Accounts Receivable', type: AccountType.ASSET, subType: AccountSubType.ACCOUNTS_RECEIVABLE },
-      { organizationId: organization.id, accountNumber: '1300', name: 'Security Deposits Held', type: AccountType.ASSET, subType: AccountSubType.SECURITY_DEPOSITS_HELD },
+      {
+        organizationId: organization.id,
+        accountNumber: '1000',
+        name: 'Operating Cash',
+        type: AccountType.ASSET,
+        subType: AccountSubType.CASH,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '1100',
+        name: 'Trust Account Cash',
+        type: AccountType.ASSET,
+        subType: AccountSubType.CASH,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '1200',
+        name: 'Accounts Receivable',
+        type: AccountType.ASSET,
+        subType: AccountSubType.ACCOUNTS_RECEIVABLE,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '1300',
+        name: 'Security Deposits Held',
+        type: AccountType.ASSET,
+        subType: AccountSubType.SECURITY_DEPOSITS_HELD,
+      },
 
       // Liabilities
-      { organizationId: organization.id, accountNumber: '2000', name: 'Accounts Payable', type: AccountType.LIABILITY, subType: AccountSubType.ACCOUNTS_PAYABLE },
-      { organizationId: organization.id, accountNumber: '2100', name: 'Security Deposits Liability', type: AccountType.LIABILITY, subType: AccountSubType.SECURITY_DEPOSITS_LIABILITY },
+      {
+        organizationId: organization.id,
+        accountNumber: '2000',
+        name: 'Accounts Payable',
+        type: AccountType.LIABILITY,
+        subType: AccountSubType.ACCOUNTS_PAYABLE,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '2100',
+        name: 'Security Deposits Liability',
+        type: AccountType.LIABILITY,
+        subType: AccountSubType.SECURITY_DEPOSITS_LIABILITY,
+      },
 
       // Equity
-      { organizationId: organization.id, accountNumber: '3000', name: 'Owner Equity', type: AccountType.EQUITY, subType: AccountSubType.OWNER_EQUITY },
+      {
+        organizationId: organization.id,
+        accountNumber: '3000',
+        name: 'Owner Equity',
+        type: AccountType.EQUITY,
+        subType: AccountSubType.OWNER_EQUITY,
+      },
 
       // Revenue
-      { organizationId: organization.id, accountNumber: '4000', name: 'Rental Income', type: AccountType.REVENUE, subType: AccountSubType.RENTAL_INCOME },
-      { organizationId: organization.id, accountNumber: '4100', name: 'Late Fees', type: AccountType.REVENUE, subType: AccountSubType.LATE_FEES },
-      { organizationId: organization.id, accountNumber: '4200', name: 'Parking Income', type: AccountType.REVENUE, subType: AccountSubType.PARKING_INCOME },
+      {
+        organizationId: organization.id,
+        accountNumber: '4000',
+        name: 'Rental Income',
+        type: AccountType.REVENUE,
+        subType: AccountSubType.RENTAL_INCOME,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '4100',
+        name: 'Late Fees',
+        type: AccountType.REVENUE,
+        subType: AccountSubType.LATE_FEES,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '4200',
+        name: 'Parking Income',
+        type: AccountType.REVENUE,
+        subType: AccountSubType.PARKING_INCOME,
+      },
 
       // Expenses
-      { organizationId: organization.id, accountNumber: '5000', name: 'Maintenance & Repairs', type: AccountType.EXPENSE, subType: AccountSubType.MAINTENANCE },
-      { organizationId: organization.id, accountNumber: '5100', name: 'Utilities', type: AccountType.EXPENSE, subType: AccountSubType.UTILITIES },
-      { organizationId: organization.id, accountNumber: '5200', name: 'Insurance', type: AccountType.EXPENSE, subType: AccountSubType.INSURANCE },
-      { organizationId: organization.id, accountNumber: '5300', name: 'Property Tax', type: AccountType.EXPENSE, subType: AccountSubType.PROPERTY_TAX },
+      {
+        organizationId: organization.id,
+        accountNumber: '5000',
+        name: 'Maintenance & Repairs',
+        type: AccountType.EXPENSE,
+        subType: AccountSubType.MAINTENANCE,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '5100',
+        name: 'Utilities',
+        type: AccountType.EXPENSE,
+        subType: AccountSubType.UTILITIES,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '5200',
+        name: 'Insurance',
+        type: AccountType.EXPENSE,
+        subType: AccountSubType.INSURANCE,
+      },
+      {
+        organizationId: organization.id,
+        accountNumber: '5300',
+        name: 'Property Tax',
+        type: AccountType.EXPENSE,
+        subType: AccountSubType.PROPERTY_TAX,
+      },
     ],
   });
 

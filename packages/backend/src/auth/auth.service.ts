@@ -3,7 +3,16 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { UserRole, OrganizationType, SubscriptionPlan, Prisma, AccountType, AccountSubType, User, Organization } from '@propertymaster/database';
+import {
+  UserRole,
+  type OrganizationType,
+  SubscriptionPlan,
+  type Prisma,
+  AccountType,
+  AccountSubType,
+  type User,
+  type Organization,
+} from '@propertymaster/database';
 
 // Local type definitions (TODO: move to @propertymaster/shared when available)
 export interface JwtPayload {
@@ -232,27 +241,92 @@ export class AuthService {
   private async createDefaultChartOfAccounts(tx: Prisma.TransactionClient, organizationId: string) {
     const defaultAccounts = [
       // Assets
-      { accountNumber: '1000', name: 'Operating Cash', type: AccountType.ASSET, subType: AccountSubType.CASH },
-      { accountNumber: '1100', name: 'Trust Account Cash', type: AccountType.ASSET, subType: AccountSubType.CASH },
-      { accountNumber: '1200', name: 'Accounts Receivable', type: AccountType.ASSET, subType: AccountSubType.ACCOUNTS_RECEIVABLE },
-      { accountNumber: '1300', name: 'Security Deposits Held', type: AccountType.ASSET, subType: AccountSubType.SECURITY_DEPOSITS_HELD },
+      {
+        accountNumber: '1000',
+        name: 'Operating Cash',
+        type: AccountType.ASSET,
+        subType: AccountSubType.CASH,
+      },
+      {
+        accountNumber: '1100',
+        name: 'Trust Account Cash',
+        type: AccountType.ASSET,
+        subType: AccountSubType.CASH,
+      },
+      {
+        accountNumber: '1200',
+        name: 'Accounts Receivable',
+        type: AccountType.ASSET,
+        subType: AccountSubType.ACCOUNTS_RECEIVABLE,
+      },
+      {
+        accountNumber: '1300',
+        name: 'Security Deposits Held',
+        type: AccountType.ASSET,
+        subType: AccountSubType.SECURITY_DEPOSITS_HELD,
+      },
 
       // Liabilities
-      { accountNumber: '2000', name: 'Accounts Payable', type: AccountType.LIABILITY, subType: AccountSubType.ACCOUNTS_PAYABLE },
-      { accountNumber: '2100', name: 'Security Deposits Liability', type: AccountType.LIABILITY, subType: AccountSubType.SECURITY_DEPOSITS_LIABILITY },
+      {
+        accountNumber: '2000',
+        name: 'Accounts Payable',
+        type: AccountType.LIABILITY,
+        subType: AccountSubType.ACCOUNTS_PAYABLE,
+      },
+      {
+        accountNumber: '2100',
+        name: 'Security Deposits Liability',
+        type: AccountType.LIABILITY,
+        subType: AccountSubType.SECURITY_DEPOSITS_LIABILITY,
+      },
 
       // Equity
-      { accountNumber: '3000', name: 'Owner Equity', type: AccountType.EQUITY, subType: AccountSubType.OWNER_EQUITY },
+      {
+        accountNumber: '3000',
+        name: 'Owner Equity',
+        type: AccountType.EQUITY,
+        subType: AccountSubType.OWNER_EQUITY,
+      },
 
       // Revenue
-      { accountNumber: '4000', name: 'Rental Income', type: AccountType.REVENUE, subType: AccountSubType.RENTAL_INCOME },
-      { accountNumber: '4100', name: 'Late Fees', type: AccountType.REVENUE, subType: AccountSubType.LATE_FEES },
+      {
+        accountNumber: '4000',
+        name: 'Rental Income',
+        type: AccountType.REVENUE,
+        subType: AccountSubType.RENTAL_INCOME,
+      },
+      {
+        accountNumber: '4100',
+        name: 'Late Fees',
+        type: AccountType.REVENUE,
+        subType: AccountSubType.LATE_FEES,
+      },
 
       // Expenses
-      { accountNumber: '5000', name: 'Maintenance & Repairs', type: AccountType.EXPENSE, subType: AccountSubType.MAINTENANCE },
-      { accountNumber: '5100', name: 'Utilities', type: AccountType.EXPENSE, subType: AccountSubType.UTILITIES },
-      { accountNumber: '5200', name: 'Insurance', type: AccountType.EXPENSE, subType: AccountSubType.INSURANCE },
-      { accountNumber: '5300', name: 'Property Tax', type: AccountType.EXPENSE, subType: AccountSubType.PROPERTY_TAX },
+      {
+        accountNumber: '5000',
+        name: 'Maintenance & Repairs',
+        type: AccountType.EXPENSE,
+        subType: AccountSubType.MAINTENANCE,
+      },
+      {
+        accountNumber: '5100',
+        name: 'Utilities',
+        type: AccountType.EXPENSE,
+        subType: AccountSubType.UTILITIES,
+      },
+      {
+        accountNumber: '5200',
+        name: 'Insurance',
+        type: AccountType.EXPENSE,
+        subType: AccountSubType.INSURANCE,
+      },
+      {
+        accountNumber: '5300',
+        name: 'Property Tax',
+        type: AccountType.EXPENSE,
+        subType: AccountSubType.PROPERTY_TAX,
+      },
     ];
 
     await tx.chartOfAccounts.createMany({

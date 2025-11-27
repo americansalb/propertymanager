@@ -8,21 +8,21 @@
 
 ## ROADMAP STRUCTURE
 
-| Section | Phases | Description | MVP Status |
-|---------|--------|-------------|------------|
-| **FOUNDATION** | 1-12 | Infrastructure, tooling, quality gates | **MVP** |
-| **AUTH & SECURITY** | 13-20 | Authentication, authorization, security hardening | **MVP** |
-| **PROPERTIES** | 21-30 | Property CRUD, validation, organization scoping | **MVP** |
-| **UNITS** | 31-38 | Unit management, status tracking, occupancy | **MVP** |
-| **LEASES** | 39-50 | Lease lifecycle, rent tracking, renewals | **MVP** |
-| **FINANCIAL CORE** | 51-62 | Chart of accounts, transactions, ledgers | **MVP** |
-| **PAYMENTS** | 63-72 | Payment processing, Stripe, auto-pay | **MVP** |
-| **WORK ORDERS** | 73-82 | Maintenance requests, assignment, completion | Post-MVP |
-| **VENDORS** | 83-88 | Vendor management, compliance, performance | Post-MVP |
-| **TENANT PORTAL** | 89-96 | Tenant-facing features, self-service | Post-MVP |
-| **REPORTING** | 97-102 | Analytics, dashboards, exports | Post-MVP |
-| **AI & AUTOMATION** | 103-106 | Predictive features, document AI | Post-MVP |
-| **MOBILE & INTEGRATIONS** | 107-108 | PWA, third-party integrations | Post-MVP |
+| Section                   | Phases  | Description                                       | MVP Status |
+| ------------------------- | ------- | ------------------------------------------------- | ---------- |
+| **FOUNDATION**            | 1-12    | Infrastructure, tooling, quality gates            | **MVP**    |
+| **AUTH & SECURITY**       | 13-20   | Authentication, authorization, security hardening | **MVP**    |
+| **PROPERTIES**            | 21-30   | Property CRUD, validation, organization scoping   | **MVP**    |
+| **UNITS**                 | 31-38   | Unit management, status tracking, occupancy       | **MVP**    |
+| **LEASES**                | 39-50   | Lease lifecycle, rent tracking, renewals          | **MVP**    |
+| **FINANCIAL CORE**        | 51-62   | Chart of accounts, transactions, ledgers          | **MVP**    |
+| **PAYMENTS**              | 63-72   | Payment processing, Stripe, auto-pay              | **MVP**    |
+| **WORK ORDERS**           | 73-82   | Maintenance requests, assignment, completion      | Post-MVP   |
+| **VENDORS**               | 83-88   | Vendor management, compliance, performance        | Post-MVP   |
+| **TENANT PORTAL**         | 89-96   | Tenant-facing features, self-service              | Post-MVP   |
+| **REPORTING**             | 97-102  | Analytics, dashboards, exports                    | Post-MVP   |
+| **AI & AUTOMATION**       | 103-106 | Predictive features, document AI                  | Post-MVP   |
+| **MOBILE & INTEGRATIONS** | 107-108 | PWA, third-party integrations                     | Post-MVP   |
 
 ---
 
@@ -31,6 +31,7 @@
 **MVP = Phases 1-72**
 
 The MVP delivers a **fully functional property management system** where a landlord can:
+
 1. Create and manage properties and units
 2. Create and track leases with tenants
 3. Record and collect rent payments via Stripe
@@ -50,6 +51,7 @@ The MVP delivers a **fully functional property management system** where a landl
 **Objective:** Ensure all developers can run the project locally with zero issues.
 
 **Deliverables:**
+
 1. Verify `pnpm install` completes without errors
 2. Verify `docker-compose up -d` starts PostgreSQL + Redis + MailHog
 3. Verify `pnpm db:push` applies schema without errors
@@ -58,6 +60,7 @@ The MVP delivers a **fully functional property management system** where a landl
 6. Verify health check endpoint returns 200: `GET http://localhost:3001/api/v1/health`
 
 **Acceptance Criteria:**
+
 - [ ] Fresh clone + install takes < 5 minutes
 - [ ] All 3 services start and respond
 - [ ] Database has seed data visible in Prisma Studio (`pnpm db:studio`)
@@ -74,6 +77,7 @@ The MVP delivers a **fully functional property management system** where a landl
 **Objective:** Eliminate all implicit `any` types and enable strict type checking.
 
 **Deliverables:**
+
 1. Enable `"strict": true` in `packages/backend/tsconfig.json`
 2. Enable `"strict": true` in `packages/frontend-admin/tsconfig.json`
 3. Enable `"strict": true` in `packages/frontend-tenant/tsconfig.json`
@@ -82,6 +86,7 @@ The MVP delivers a **fully functional property management system** where a landl
 6. Add ESLint rule `"@typescript-eslint/no-explicit-any": "error"`
 
 **Acceptance Criteria:**
+
 - [ ] `pnpm type-check` passes with zero errors across all packages
 - [ ] No `any` types in codebase (except with explicit `// @ts-expect-error` + justification)
 - [ ] All function parameters have explicit types
@@ -97,6 +102,7 @@ The MVP delivers a **fully functional property management system** where a landl
 **Objective:** Enforce consistent code style across entire codebase.
 
 **Deliverables:**
+
 1. Create root `.eslintrc.js` with shared rules
 2. Create root `.prettierrc` with formatting rules
 3. Add package-specific ESLint configs that extend root
@@ -107,6 +113,7 @@ The MVP delivers a **fully functional property management system** where a landl
 8. Add `pnpm lint:fix` script that auto-fixes issues
 
 **Acceptance Criteria:**
+
 - [ ] `pnpm lint` reports zero errors
 - [ ] `pnpm format --check` passes (all files formatted)
 - [ ] ESLint catches unused variables, unused imports
@@ -123,6 +130,7 @@ The MVP delivers a **fully functional property management system** where a landl
 **Objective:** Prevent bad code from being committed.
 
 **Deliverables:**
+
 1. Install Husky: `pnpm add -D husky`
 2. Install lint-staged: `pnpm add -D lint-staged`
 3. Initialize Husky: `pnpm exec husky init`
@@ -131,12 +139,14 @@ The MVP delivers a **fully functional property management system** where a landl
 6. Hook runs: ESLint, Prettier, TypeScript type-check on staged files
 
 **Pre-commit Hook Behavior:**
+
 ```bash
 #!/bin/sh
 pnpm lint-staged
 ```
 
 **lint-staged Configuration:**
+
 ```json
 {
   "lint-staged": {
@@ -147,6 +157,7 @@ pnpm lint-staged
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Cannot commit files with ESLint errors
 - [ ] Cannot commit files with Prettier violations
 - [ ] Staged files are auto-fixed where possible
@@ -163,6 +174,7 @@ pnpm lint-staged
 **Objective:** Implement structured logging for all backend operations.
 
 **Deliverables:**
+
 1. Install Winston: `pnpm add winston winston-daily-rotate-file`
 2. Create `packages/backend/src/common/logger/app-logger.service.ts`
 3. Create `packages/backend/src/common/logger/logger.module.ts`
@@ -174,6 +186,7 @@ pnpm lint-staged
 6. Include in all logs: timestamp, level, message, context, correlationId
 
 **Logger Interface:**
+
 ```typescript
 interface LogContext {
   correlationId?: string;
@@ -189,6 +202,7 @@ debug(message: string, context?: LogContext): void;
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Logger is injectable via NestJS DI
 - [ ] Logs appear in console with colors in development
 - [ ] Logs write to `logs/app-YYYY-MM-DD.log` in production
@@ -206,6 +220,7 @@ debug(message: string, context?: LogContext): void;
 **Objective:** Enable request tracing across all logs.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/common/middleware/correlation-id.middleware.ts`
 2. Generate UUID if `x-correlation-id` header not present
 3. Attach correlationId to request object: `req.correlationId`
@@ -214,11 +229,12 @@ debug(message: string, context?: LogContext): void;
 6. Update logger to read correlationId from request context
 
 **Middleware Implementation:**
+
 ```typescript
 @Injectable()
 export class CorrelationIdMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    const correlationId = req.headers['x-correlation-id'] as string || randomUUID();
+    const correlationId = (req.headers['x-correlation-id'] as string) || randomUUID();
     req['correlationId'] = correlationId;
     res.setHeader('x-correlation-id', correlationId);
     next();
@@ -227,6 +243,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Every request has a correlationId (provided or generated)
 - [ ] CorrelationId appears in all log entries for that request
 - [ ] CorrelationId returned in response header
@@ -242,6 +259,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 **Objective:** Handle all errors consistently with proper HTTP status codes and logging.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/common/filters/all-exceptions.filter.ts`
 2. Catch all exceptions (HttpException and unknown)
 3. Map exceptions to proper HTTP status codes
@@ -251,6 +269,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 7. Register filter globally in `main.ts`
 
 **Error Response Structure:**
+
 ```typescript
 {
   statusCode: number;
@@ -265,6 +284,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All exceptions return consistent JSON structure
 - [ ] HTTP 4xx errors log as warnings
 - [ ] HTTP 5xx errors log as errors with stack trace
@@ -282,6 +302,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 **Objective:** Create domain-specific exceptions for clear error handling.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/common/exceptions/` directory
 2. Create exception classes:
    - `EntityNotFoundException` (404)
@@ -297,21 +318,26 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 3. Each exception includes: error code, message, relevant IDs
 
 **Exception Example:**
+
 ```typescript
 export class PropertyHasUnitsException extends HttpException {
   constructor(propertyId: string, unitCount: number) {
-    super({
-      statusCode: HttpStatus.BAD_REQUEST,
-      error: 'PROPERTY_HAS_UNITS',
-      message: `Cannot delete property because it has ${unitCount} active units`,
-      propertyId,
-      unitCount,
-    }, HttpStatus.BAD_REQUEST);
+    super(
+      {
+        statusCode: HttpStatus.BAD_REQUEST,
+        error: 'PROPERTY_HAS_UNITS',
+        message: `Cannot delete property because it has ${unitCount} active units`,
+        propertyId,
+        unitCount,
+      },
+      HttpStatus.BAD_REQUEST,
+    );
   }
 }
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All business rules have specific exception classes
 - [ ] Each exception has unique error code
 - [ ] Frontend can parse error codes for user-friendly messages
@@ -327,6 +353,7 @@ export class PropertyHasUnitsException extends HttpException {
 **Objective:** Configure testing framework for backend unit and integration tests.
 
 **Deliverables:**
+
 1. Install Jest: `pnpm add -D jest ts-jest @types/jest @nestjs/testing`
 2. Create `packages/backend/jest.config.js`
 3. Create `packages/backend/src/test/test-utils.ts`
@@ -336,6 +363,7 @@ export class PropertyHasUnitsException extends HttpException {
 7. Configure test file pattern: `*.spec.ts`
 
 **Jest Configuration:**
+
 ```javascript
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
@@ -351,6 +379,7 @@ module.exports = {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `pnpm test` runs and completes
 - [ ] `pnpm test:cov` generates HTML coverage report
 - [ ] Mock utilities are reusable across tests
@@ -367,6 +396,7 @@ module.exports = {
 **Objective:** Configure testing framework for frontend component and hook tests.
 
 **Deliverables:**
+
 1. Install Vitest: `pnpm add -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom`
 2. Create `packages/frontend-admin/vitest.config.ts`
 3. Create `packages/frontend-admin/src/test/setup.ts`
@@ -375,6 +405,7 @@ module.exports = {
 6. Configure coverage thresholds (initially 20%)
 
 **Vitest Configuration:**
+
 ```typescript
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
@@ -397,6 +428,7 @@ export default defineConfig({
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `pnpm test` runs React component tests
 - [ ] Testing Library renders components with providers
 - [ ] Mock API responses work correctly
@@ -413,6 +445,7 @@ export default defineConfig({
 **Objective:** Write reference tests that demonstrate testing patterns.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/modules/auth/auth.service.spec.ts`
    - Test: `register()` creates user and organization
    - Test: `register()` hashes password before storing
@@ -429,6 +462,7 @@ export default defineConfig({
 3. Document testing patterns in `docs/TESTING_PATTERNS.md`
 
 **Acceptance Criteria:**
+
 - [ ] All tests pass
 - [ ] Tests use mocks, no actual database
 - [ ] Tests cover success and error cases
@@ -445,6 +479,7 @@ export default defineConfig({
 **Objective:** Write reference tests for React components and hooks.
 
 **Deliverables:**
+
 1. Create `packages/frontend-admin/src/pages/LoginPage.spec.tsx`
    - Test: Renders email and password inputs
    - Test: Submit button disabled when fields empty
@@ -460,6 +495,7 @@ export default defineConfig({
    - Test: `isAuthenticated` reflects token state
 
 **Acceptance Criteria:**
+
 - [ ] All tests pass
 - [ ] Tests use MSW for API mocking
 - [ ] Tests verify user interactions
@@ -480,6 +516,7 @@ export default defineConfig({
 **Objective:** Ensure passwords are securely hashed using bcrypt.
 
 **Deliverables:**
+
 1. Verify bcrypt is used in AuthService.register()
 2. Verify bcrypt cost factor is at least 12
 3. Verify passwords are never logged
@@ -488,6 +525,7 @@ export default defineConfig({
 6. Write tests verifying password security
 
 **Password Validation Rules:**
+
 ```typescript
 @IsStrongPassword({
   minLength: 8,
@@ -500,6 +538,7 @@ password: string;
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Passwords hashed with bcrypt cost 12+
 - [ ] Password never appears in logs
 - [ ] Password never returned in user objects
@@ -516,6 +555,7 @@ password: string;
 **Objective:** Secure JWT implementation with proper configuration.
 
 **Deliverables:**
+
 1. Verify JWT secret is loaded from environment variable
 2. Set access token expiry to 15 minutes
 3. Set refresh token expiry to 7 days
@@ -525,9 +565,10 @@ password: string;
 7. Add token blacklist for logout
 
 **JWT Payload Structure:**
+
 ```typescript
 interface JwtPayload {
-  sub: string;        // userId
+  sub: string; // userId
   email: string;
   role: UserRole;
   organizationId: string;
@@ -537,6 +578,7 @@ interface JwtPayload {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Access tokens expire in 15 minutes
 - [ ] Refresh tokens expire in 7 days
 - [ ] Refresh token rotation prevents reuse
@@ -553,6 +595,7 @@ interface JwtPayload {
 **Objective:** Implement fine-grained permissions based on user roles.
 
 **Deliverables:**
+
 1. Define roles: SUPER_ADMIN, ORGANIZATION_ADMIN, PROPERTY_MANAGER, ACCOUNTANT, LEASING_AGENT, MAINTENANCE_TECH, TENANT, VENDOR
 2. Create `packages/backend/src/common/decorators/roles.decorator.ts`
 3. Create `packages/backend/src/common/guards/roles.guard.ts`
@@ -568,6 +611,7 @@ interface JwtPayload {
 6. Write tests for each role's permissions
 
 **Role Decorator Usage:**
+
 ```typescript
 @Roles(UserRole.ORGANIZATION_ADMIN, UserRole.PROPERTY_MANAGER)
 @Get('properties')
@@ -575,6 +619,7 @@ findAll() { ... }
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Each endpoint has explicit role requirements
 - [ ] Unauthorized access returns 403 Forbidden
 - [ ] Role hierarchy respected (ADMIN > MANAGER > AGENT)
@@ -591,6 +636,7 @@ findAll() { ... }
 **Objective:** Ensure users can only access their organization's data.
 
 **Deliverables:**
+
 1. Create `OrganizationGuard` that extracts organizationId from JWT
 2. Add `@CurrentOrganization()` decorator for controllers
 3. Verify ALL queries filter by organizationId
@@ -600,6 +646,7 @@ findAll() { ... }
 7. Write integration tests for data isolation
 
 **Controller Pattern:**
+
 ```typescript
 @Get('properties')
 findAll(@CurrentOrganization() orgId: string) {
@@ -608,6 +655,7 @@ findAll(@CurrentOrganization() orgId: string) {
 ```
 
 **Service Pattern:**
+
 ```typescript
 findAll(organizationId: string) {
   return this.prisma.property.findMany({
@@ -617,6 +665,7 @@ findAll(organizationId: string) {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] User A cannot see User B's data (different orgs)
 - [ ] All service methods require organizationId
 - [ ] No service method accesses data without org filter
@@ -633,6 +682,7 @@ findAll(organizationId: string) {
 **Objective:** Protect API from abuse and brute force attacks.
 
 **Deliverables:**
+
 1. Install throttler: `pnpm add @nestjs/throttler`
 2. Configure global rate limit: 100 requests per 60 seconds per IP
 3. Configure auth endpoints: 5 requests per 60 seconds per IP
@@ -642,6 +692,7 @@ findAll(organizationId: string) {
 7. Skip rate limiting for health check endpoint
 
 **Throttler Configuration:**
+
 ```typescript
 ThrottlerModule.forRoot([
   { name: 'short', ttl: 1000, limit: 3 },
@@ -651,6 +702,7 @@ ThrottlerModule.forRoot([
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Global rate limit enforced
 - [ ] Auth endpoints have stricter limits
 - [ ] Rate limit applies per IP address
@@ -667,6 +719,7 @@ ThrottlerModule.forRoot([
 **Objective:** Configure Cross-Origin Resource Sharing for frontend access.
 
 **Deliverables:**
+
 1. Define allowed origins in environment variable
 2. Configure CORS in `main.ts`
 3. Allow credentials for cookie-based auth
@@ -675,6 +728,7 @@ ThrottlerModule.forRoot([
 6. Set max age for preflight cache: 86400 seconds
 
 **CORS Configuration:**
+
 ```typescript
 app.enableCors({
   origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
@@ -686,6 +740,7 @@ app.enableCors({
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Frontend can access API without CORS errors
 - [ ] Only specified origins allowed
 - [ ] Credentials (cookies) included in requests
@@ -702,6 +757,7 @@ app.enableCors({
 **Objective:** Validate all API inputs to prevent injection and data corruption.
 
 **Deliverables:**
+
 1. Install class-validator: `pnpm add class-validator class-transformer`
 2. Enable ValidationPipe globally in `main.ts`
 3. Create DTOs for all API endpoints
@@ -710,17 +766,21 @@ app.enableCors({
 6. Return detailed validation errors
 
 **ValidationPipe Configuration:**
+
 ```typescript
-app.useGlobalPipes(new ValidationPipe({
-  whitelist: true,
-  forbidNonWhitelisted: true,
-  transform: true,
-  transformOptions: { enableImplicitConversion: true },
-  exceptionFactory: (errors) => new BadRequestException(formatErrors(errors)),
-}));
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+    exceptionFactory: (errors) => new BadRequestException(formatErrors(errors)),
+  }),
+);
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All endpoints have DTOs
 - [ ] Unknown properties stripped from requests
 - [ ] Invalid data returns 400 with field-level errors
@@ -737,6 +797,7 @@ app.useGlobalPipes(new ValidationPipe({
 **Objective:** Add HTTP security headers to prevent common attacks.
 
 **Deliverables:**
+
 1. Install helmet: `pnpm add helmet`
 2. Configure Helmet middleware in `main.ts`
 3. Set headers:
@@ -749,6 +810,7 @@ app.useGlobalPipes(new ValidationPipe({
 5. Configure CSP for frontend (allow Stripe, fonts, etc.)
 
 **Acceptance Criteria:**
+
 - [ ] Security headers present in all responses
 - [ ] No server version information exposed
 - [ ] Clickjacking prevented (X-Frame-Options)
@@ -769,6 +831,7 @@ app.useGlobalPipes(new ValidationPipe({
 **Objective:** Ensure Property database model meets all requirements.
 
 **Deliverables:**
+
 1. Verify Property model in Prisma schema has fields:
    - id (cuid)
    - organizationId (required, foreign key)
@@ -786,6 +849,7 @@ app.useGlobalPipes(new ValidationPipe({
 3. Run migration if schema changed
 
 **Acceptance Criteria:**
+
 - [ ] All fields exist with correct types
 - [ ] Foreign key to Organization enforced
 - [ ] Indexes exist for common queries
@@ -801,6 +865,7 @@ app.useGlobalPipes(new ValidationPipe({
 **Objective:** Create Data Transfer Objects for Property API.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/modules/properties/dto/create-property.dto.ts`
 2. Create `packages/backend/src/modules/properties/dto/update-property.dto.ts`
 3. Create `packages/backend/src/modules/properties/dto/property-response.dto.ts`
@@ -809,6 +874,7 @@ app.useGlobalPipes(new ValidationPipe({
 6. Add Swagger decorators for API documentation
 
 **CreatePropertyDto:**
+
 ```typescript
 export class CreatePropertyDto {
   @IsString()
@@ -846,6 +912,7 @@ export class CreatePropertyDto {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] CreatePropertyDto validates all required fields
 - [ ] UpdatePropertyDto makes all fields optional
 - [ ] PropertyResponseDto includes computed fields
@@ -862,6 +929,7 @@ export class CreatePropertyDto {
 **Objective:** Implement business logic for Property CRUD operations.
 
 **Deliverables:**
+
 1. Implement `create(dto: CreatePropertyDto, organizationId: string): Promise<Property>`
 2. Implement `findAll(organizationId: string, query: PropertyQueryDto): Promise<PaginatedResponse<Property>>`
 3. Implement `findOne(id: string, organizationId: string): Promise<Property>`
@@ -871,6 +939,7 @@ export class CreatePropertyDto {
 7. Throw appropriate exceptions for errors
 
 **Service Method Signatures:**
+
 ```typescript
 @Injectable()
 export class PropertiesService {
@@ -886,7 +955,10 @@ export class PropertiesService {
     // Implementation
   }
 
-  async findAll(organizationId: string, query: PropertyQueryDto): Promise<PaginatedResponse<Property>> {
+  async findAll(
+    organizationId: string,
+    query: PropertyQueryDto,
+  ): Promise<PaginatedResponse<Property>> {
     // Include pagination, sorting, filtering
   }
 
@@ -912,6 +984,7 @@ export class PropertiesService {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All CRUD operations work correctly
 - [ ] Organization isolation enforced in all queries
 - [ ] Pagination returns total count and page info
@@ -928,6 +1001,7 @@ export class PropertiesService {
 **Objective:** Expose Property CRUD via REST API.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/modules/properties/properties.controller.ts`
 2. Implement endpoints:
    - `POST /api/v1/properties` - Create property
@@ -940,6 +1014,7 @@ export class PropertiesService {
 5. Return consistent response structure
 
 **Controller Implementation:**
+
 ```typescript
 @ApiTags('properties')
 @Controller('api/v1/properties')
@@ -951,10 +1026,7 @@ export class PropertiesController {
   @Roles(UserRole.ORGANIZATION_ADMIN, UserRole.PROPERTY_MANAGER)
   @ApiOperation({ summary: 'Create a new property' })
   @ApiResponse({ status: 201, type: PropertyResponseDto })
-  create(
-    @Body() dto: CreatePropertyDto,
-    @CurrentOrganization() orgId: string,
-  ) {
+  create(@Body() dto: CreatePropertyDto, @CurrentOrganization() orgId: string) {
     return this.propertiesService.create(dto, orgId);
   }
 
@@ -962,10 +1034,7 @@ export class PropertiesController {
   @Roles(UserRole.ORGANIZATION_ADMIN, UserRole.PROPERTY_MANAGER, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'List all properties' })
   @ApiResponse({ status: 200, type: PaginatedPropertyResponseDto })
-  findAll(
-    @Query() query: PropertyQueryDto,
-    @CurrentOrganization() orgId: string,
-  ) {
+  findAll(@Query() query: PropertyQueryDto, @CurrentOrganization() orgId: string) {
     return this.propertiesService.findAll(orgId, query);
   }
 
@@ -974,6 +1043,7 @@ export class PropertiesController {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All endpoints return correct HTTP status codes
 - [ ] Validation errors return 400 with details
 - [ ] Not found returns 404
@@ -990,6 +1060,7 @@ export class PropertiesController {
 **Objective:** Achieve 80% test coverage for PropertiesService.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/modules/properties/properties.service.spec.ts`
 2. Write tests:
    - `create()`: success, validation error, duplicate handling
@@ -1001,6 +1072,7 @@ export class PropertiesController {
 4. Verify logging calls
 
 **Test Structure:**
+
 ```typescript
 describe('PropertiesService', () => {
   let service: PropertiesService;
@@ -1037,6 +1109,7 @@ describe('PropertiesService', () => {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All service methods have tests
 - [ ] Coverage > 80% for properties.service.ts
 - [ ] Tests cover success and error paths
@@ -1053,6 +1126,7 @@ describe('PropertiesService', () => {
 **Objective:** Test Property API endpoints with actual HTTP requests.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/modules/properties/properties.e2e-spec.ts`
 2. Set up test database (in-memory or test container)
 3. Write tests:
@@ -1066,6 +1140,7 @@ describe('PropertiesService', () => {
 4. Clean up test data after each test
 
 **Integration Test Structure:**
+
 ```typescript
 describe('Properties API (e2e)', () => {
   let app: INestApplication;
@@ -1102,6 +1177,7 @@ describe('Properties API (e2e)', () => {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Tests run against real HTTP endpoints
 - [ ] Database state reset between tests
 - [ ] All HTTP status codes verified
@@ -1118,6 +1194,7 @@ describe('Properties API (e2e)', () => {
 **Objective:** Display list of properties with filtering and pagination.
 
 **Deliverables:**
+
 1. Verify `packages/frontend-admin/src/pages/PropertiesPage.tsx` exists
 2. Implement features:
    - Display property cards in grid layout
@@ -1131,6 +1208,7 @@ describe('Properties API (e2e)', () => {
 4. Navigate to property detail on card click
 
 **Component Structure:**
+
 ```typescript
 export function PropertiesPage() {
   const [filters, setFilters] = useState<PropertyFilters>({});
@@ -1163,6 +1241,7 @@ export function PropertiesPage() {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Properties load and display correctly
 - [ ] Filters work (type, city, state)
 - [ ] Search works (name, address)
@@ -1180,6 +1259,7 @@ export function PropertiesPage() {
 **Objective:** Allow users to create new properties via modal form.
 
 **Deliverables:**
+
 1. Create `packages/frontend-admin/src/components/properties/CreatePropertyModal.tsx`
 2. Implement form fields:
    - Name (required, text)
@@ -1196,6 +1276,7 @@ export function PropertiesPage() {
 7. Use react-hook-form for form management
 
 **Modal Component:**
+
 ```typescript
 export function CreatePropertyModal({ open, onClose }: Props) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CreatePropertyInput>({
@@ -1230,6 +1311,7 @@ export function CreatePropertyModal({ open, onClose }: Props) {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Modal opens from Properties page
 - [ ] All fields render correctly
 - [ ] Validation errors display inline
@@ -1247,6 +1329,7 @@ export function CreatePropertyModal({ open, onClose }: Props) {
 **Objective:** Allow users to edit existing properties via modal form.
 
 **Deliverables:**
+
 1. Create `packages/frontend-admin/src/components/properties/EditPropertyModal.tsx`
 2. Pre-populate form with existing property data
 3. Same fields and validation as Create modal
@@ -1256,9 +1339,14 @@ export function CreatePropertyModal({ open, onClose }: Props) {
 7. Use optimistic updates for better UX
 
 **Edit Modal Specifics:**
+
 ```typescript
 export function EditPropertyModal({ property, open, onClose }: Props) {
-  const { register, handleSubmit, formState: { errors, isDirty, isSubmitting } } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm({
     resolver: zodResolver(updatePropertySchema),
     defaultValues: property,
   });
@@ -1270,7 +1358,7 @@ export function EditPropertyModal({ property, open, onClose }: Props) {
       await queryClient.cancelQueries(['properties']);
       const previous = queryClient.getQueryData(['properties']);
       queryClient.setQueryData(['properties'], (old) =>
-        old.map(p => p.id === property.id ? { ...p, ...newData } : p)
+        old.map((p) => (p.id === property.id ? { ...p, ...newData } : p)),
       );
       return { previous };
     },
@@ -1294,6 +1382,7 @@ export function EditPropertyModal({ property, open, onClose }: Props) {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Form pre-populates with property data
 - [ ] Only changed fields submitted
 - [ ] Optimistic update shows immediately
@@ -1311,6 +1400,7 @@ export function EditPropertyModal({ property, open, onClose }: Props) {
 **Objective:** Allow users to delete properties with confirmation.
 
 **Deliverables:**
+
 1. Create `packages/frontend-admin/src/components/properties/DeletePropertyDialog.tsx`
 2. Show confirmation dialog before delete
 3. Display property name in confirmation message
@@ -1320,6 +1410,7 @@ export function EditPropertyModal({ property, open, onClose }: Props) {
 7. Handle error if delete fails
 
 **Delete Dialog:**
+
 ```typescript
 export function DeletePropertyDialog({ property, open, onClose }: Props) {
   const hasUnits = property.unitCount > 0;
@@ -1367,6 +1458,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Confirmation dialog appears before delete
 - [ ] Property name shown in dialog
 - [ ] Cannot delete property with units
@@ -1388,6 +1480,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Ensure Unit database model meets all requirements.
 
 **Deliverables:**
+
 1. Verify Unit model has fields:
    - id (cuid)
    - propertyId (required, foreign key)
@@ -1406,6 +1499,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 3. Add unique constraint: (propertyId, unitNumber)
 
 **Acceptance Criteria:**
+
 - [ ] All fields exist with correct types
 - [ ] Foreign keys enforced
 - [ ] Unit number unique within property
@@ -1421,6 +1515,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Create DTOs for Unit API.
 
 **Deliverables:**
+
 1. Create `create-unit.dto.ts`
 2. Create `update-unit.dto.ts`
 3. Create `unit-response.dto.ts`
@@ -1430,6 +1525,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 7. squareFeet must be positive if provided
 
 **Acceptance Criteria:**
+
 - [ ] All DTOs created with validation
 - [ ] Swagger documentation generated
 - [ ] Type/status enums validated
@@ -1444,6 +1540,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Implement business logic for Unit CRUD.
 
 **Deliverables:**
+
 1. Implement `create(dto, propertyId, organizationId)`
 2. Implement `findAll(propertyId, organizationId, query)`
 3. Implement `findOne(id, organizationId)`
@@ -1454,12 +1551,14 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 8. Cannot delete unit with active lease
 
 **Business Rules:**
+
 - Unit number must be unique within property
 - Cannot change propertyId after creation
 - Status changes logged for audit
 - Deleting unit requires no active lease
 
 **Acceptance Criteria:**
+
 - [ ] All CRUD operations work
 - [ ] Property existence verified
 - [ ] Unique unit number enforced
@@ -1476,6 +1575,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Expose Unit CRUD via REST API.
 
 **Deliverables:**
+
 1. Create `units.controller.ts`
 2. Implement endpoints:
    - `POST /api/v1/properties/:propertyId/units`
@@ -1488,6 +1588,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 4. Swagger documentation
 
 **Acceptance Criteria:**
+
 - [ ] All endpoints work correctly
 - [ ] Nested route for property units
 - [ ] Status can be updated separately
@@ -1503,6 +1604,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Test coverage for UnitsService.
 
 **Deliverables:**
+
 1. Create `units.service.spec.ts`
 2. Test all CRUD operations
 3. Test business rules:
@@ -1512,6 +1614,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 4. Coverage > 80%
 
 **Acceptance Criteria:**
+
 - [ ] All methods tested
 - [ ] Business rules verified
 - [ ] Edge cases covered
@@ -1526,6 +1629,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Display units for a property.
 
 **Deliverables:**
+
 1. Create `UnitsTable.tsx` component
 2. Display in Property Detail page
 3. Show: unit number, type, bedrooms, bathrooms, sqft, rent, status
@@ -1534,6 +1638,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 6. Sort by unit number, rent, status
 
 **Acceptance Criteria:**
+
 - [ ] Units display in table format
 - [ ] Status badges colored correctly
 - [ ] Filter and sort work
@@ -1549,6 +1654,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** CRUD modals for units.
 
 **Deliverables:**
+
 1. Create `CreateUnitModal.tsx`
 2. Create `EditUnitModal.tsx`
 3. Form fields match DTO
@@ -1556,6 +1662,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 5. Optimistic updates
 
 **Acceptance Criteria:**
+
 - [ ] Create adds unit to list
 - [ ] Edit updates unit in place
 - [ ] Validation errors shown
@@ -1571,12 +1678,14 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Quick status update for units.
 
 **Deliverables:**
+
 1. Add status dropdown to unit row
 2. Status changes immediately via PATCH
 3. Confirmation for certain transitions (e.g., OCCUPIED → VACANT)
 4. Disable invalid transitions
 
 **Status Transition Rules:**
+
 - VACANT → OCCUPIED (requires active lease)
 - OCCUPIED → NOTICE (tenant gave notice)
 - NOTICE → VACANT (tenant moved out)
@@ -1584,6 +1693,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 - MAINTENANCE → previous status
 
 **Acceptance Criteria:**
+
 - [ ] Dropdown updates status
 - [ ] Invalid transitions disabled
 - [ ] Confirmation for destructive changes
@@ -1603,6 +1713,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Ensure Lease model is complete.
 
 **Deliverables:**
+
 1. Verify Lease model has:
    - id, organizationId, propertyId, unitId
    - status (DRAFT, PENDING, ACTIVE, EXPIRED, TERMINATED, CANCELLED)
@@ -1618,6 +1729,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 3. Indexes on: unitId, status, organizationId
 
 **Acceptance Criteria:**
+
 - [ ] All fields exist
 - [ ] Relations correct
 - [ ] Indexes created
@@ -1632,6 +1744,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Ensure Tenant model is complete.
 
 **Deliverables:**
+
 1. Verify Tenant model has:
    - id, organizationId, leaseId
    - userId (optional, for portal access)
@@ -1646,6 +1759,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 3. Index on: leaseId, organizationId, email
 
 **Acceptance Criteria:**
+
 - [ ] All fields exist
 - [ ] One primary tenant per lease enforced
 - [ ] Email unique within organization
@@ -1660,6 +1774,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Create DTOs for Lease API.
 
 **Deliverables:**
+
 1. Create `create-lease.dto.ts`
    - unitId (required)
    - startDate, endDate (required, endDate > startDate)
@@ -1671,6 +1786,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 4. Create `lease-query.dto.ts`
 
 **Validation Rules:**
+
 - End date must be after start date
 - At least one tenant required
 - Exactly one primary tenant
@@ -1679,6 +1795,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 - Payment due day 1-28
 
 **Acceptance Criteria:**
+
 - [ ] All DTOs with validation
 - [ ] Date validations work
 - [ ] Tenant array validated
@@ -1693,6 +1810,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Business logic for lease management.
 
 **Deliverables:**
+
 1. `create(dto, organizationId)`:
    - Verify unit exists and is vacant
    - Create lease with DRAFT status
@@ -1717,12 +1835,14 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
    - Old lease status → EXPIRED
 
 **Business Rules:**
+
 - Cannot create lease for occupied unit
 - Lease dates cannot overlap for same unit
 - Termination requires reason
 - Only DRAFT/PENDING leases editable
 
 **Acceptance Criteria:**
+
 - [ ] All operations work
 - [ ] Unit status updates
 - [ ] Overlap prevented
@@ -1738,6 +1858,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** REST API for leases.
 
 **Deliverables:**
+
 1. Endpoints:
    - `POST /api/v1/leases`
    - `GET /api/v1/leases`
@@ -1750,6 +1871,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 2. Query params: status, propertyId, unitId, tenantEmail
 
 **Acceptance Criteria:**
+
 - [ ] All endpoints documented
 - [ ] Status transitions via POST
 - [ ] Query filters work
@@ -1764,6 +1886,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Test coverage for LeasesService.
 
 **Deliverables:**
+
 1. Test all CRUD operations
 2. Test status transitions
 3. Test overlap prevention
@@ -1771,6 +1894,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 5. Coverage > 80%
 
 **Acceptance Criteria:**
+
 - [ ] All methods tested
 - [ ] Business rules verified
 - [ ] Edge cases covered
@@ -1785,6 +1909,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Display and manage leases.
 
 **Deliverables:**
+
 1. Create/update `LeasesPage.tsx`
 2. Table columns: property, unit, tenant, dates, rent, status
 3. Filters: status, property, date range
@@ -1792,6 +1917,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 5. Quick actions: view, activate, terminate
 
 **Acceptance Criteria:**
+
 - [ ] Leases display correctly
 - [ ] Filters work
 - [ ] Status badges colored
@@ -1807,6 +1933,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 **Objective:** Multi-step wizard for lease creation.
 
 **Deliverables:**
+
 1. Create `CreateLeaseWizard.tsx`
 2. Step 1: Select property and unit
 3. Step 2: Enter lease terms (dates, rent, deposit)
@@ -1817,6 +1944,7 @@ export function DeletePropertyDialog({ property, open, onClose }: Props) {
 8. Save as draft option
 
 **Wizard Steps:**
+
 ```typescript
 const steps = [
   { id: 'unit', title: 'Select Unit', component: UnitSelectionStep },
@@ -1827,6 +1955,7 @@ const steps = [
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Wizard navigates correctly
 - [ ] Validation at each step
 - [ ] Can go back without losing data
@@ -1842,6 +1971,7 @@ const steps = [
 **Objective:** Edit existing leases.
 
 **Deliverables:**
+
 1. Create `EditLeaseModal.tsx`
 2. Cannot change unit
 3. Can modify: dates, rent, deposit, tenants
@@ -1849,6 +1979,7 @@ const steps = [
 5. Changes require confirmation
 
 **Acceptance Criteria:**
+
 - [ ] Edit form pre-populated
 - [ ] Unit not editable
 - [ ] Disabled for final statuses
@@ -1863,6 +1994,7 @@ const steps = [
 **Objective:** UI for lease status transitions.
 
 **Deliverables:**
+
 1. "Activate" button for DRAFT/PENDING leases
 2. "Terminate" button with reason modal for ACTIVE leases
 3. "Renew" button opens renewal wizard
@@ -1870,6 +2002,7 @@ const steps = [
 5. Audit log of status changes
 
 **Status Actions UI:**
+
 ```typescript
 function LeaseActions({ lease }: { lease: Lease }) {
   if (lease.status === 'DRAFT') {
@@ -1888,6 +2021,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Correct actions shown per status
 - [ ] Terminate requires reason
 - [ ] Renew pre-fills from current lease
@@ -1903,6 +2037,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 **Objective:** Manage tenants within lease.
 
 **Deliverables:**
+
 1. Tenant list within lease detail
 2. Add tenant to existing lease
 3. Remove tenant (if not primary)
@@ -1910,6 +2045,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 5. Set primary tenant
 
 **Acceptance Criteria:**
+
 - [ ] Tenant list displays
 - [ ] Can add/remove tenants
 - [ ] Primary tenant enforced
@@ -1925,6 +2061,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 **Objective:** Track and alert on expiring leases.
 
 **Deliverables:**
+
 1. Dashboard widget: "Leases Expiring Soon" (30/60/90 days)
 2. Backend query for expiring leases
 3. Lease list filter: "Expiring in X days"
@@ -1932,6 +2069,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 5. Auto-update expired leases to EXPIRED status
 
 **Acceptance Criteria:**
+
 - [ ] Widget shows expiring count
 - [ ] Filter returns correct leases
 - [ ] Expired leases auto-update
@@ -1951,6 +2089,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 **Objective:** Standard accounting chart of accounts.
 
 **Deliverables:**
+
 1. ChartOfAccounts model:
    - id, code (unique per org), name
    - type (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)
@@ -1966,6 +2105,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
    - 5000-5999: Expenses (Repairs, Utilities, Insurance)
 
 **Acceptance Criteria:**
+
 - [ ] Standard accounts seeded
 - [ ] Account codes unique per org
 - [ ] Hierarchy supported
@@ -1981,6 +2121,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 **Objective:** Core transaction tracking.
 
 **Deliverables:**
+
 1. Transaction model:
    - id, organizationId, propertyId (optional), unitId (optional)
    - leaseId (optional), tenantId (optional)
@@ -1994,6 +2135,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
    - createdAt, createdBy
 
 **Acceptance Criteria:**
+
 - [ ] All transaction types supported
 - [ ] Proper references maintained
 - [ ] Status tracking works
@@ -2008,6 +2150,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 **Objective:** Track charges (what tenants owe).
 
 **Deliverables:**
+
 1. Charge model:
    - id, organizationId, leaseId, tenantId
    - type (RENT, LATE_FEE, PET_FEE, PARKING, UTILITY, OTHER)
@@ -2019,11 +2162,13 @@ function LeaseActions({ lease }: { lease: Lease }) {
 3. Auto-generate late fees after grace period
 
 **Business Rules:**
+
 - Rent charges generated on paymentDueDay
 - Late fee added after lateFeeGraceDays
 - Charges linked to transactions
 
 **Acceptance Criteria:**
+
 - [ ] Charge types defined
 - [ ] Auto-generation works
 - [ ] Late fees calculated correctly
@@ -2038,6 +2183,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 **Objective:** Track payments received.
 
 **Deliverables:**
+
 1. Payment model:
    - id, organizationId, tenantId, leaseId
    - amount, date
@@ -2050,11 +2196,13 @@ function LeaseActions({ lease }: { lease: Lease }) {
    - paymentId, chargeId, amount
 
 **Business Rules:**
+
 - Payment can cover multiple charges
 - Overpayment creates credit
 - Partial payment updates charge status
 
 **Acceptance Criteria:**
+
 - [ ] Payment methods supported
 - [ ] Allocations track charge coverage
 - [ ] Stripe integration fields ready
@@ -2069,6 +2217,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 **Objective:** Service for charge management.
 
 **Deliverables:**
+
 1. `createCharge(dto, organizationId)`
 2. `getCharges(leaseId/tenantId, organizationId, query)`
 3. `getOutstandingBalance(leaseId/tenantId, organizationId)`
@@ -2077,6 +2226,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 6. `generateLateFees(organizationId)` - daily cron
 
 **Acceptance Criteria:**
+
 - [ ] Charge creation works
 - [ ] Balance calculation correct
 - [ ] Waive with audit trail
@@ -2092,6 +2242,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 **Objective:** Service for payment management.
 
 **Deliverables:**
+
 1. `recordPayment(dto, organizationId)`
 2. `allocatePayment(paymentId, allocations[], organizationId)`
 3. `autoAllocatePayment(paymentId, organizationId)` - oldest first
@@ -2100,6 +2251,7 @@ function LeaseActions({ lease }: { lease: Lease }) {
 6. `getPaymentHistory(tenantId, organizationId)`
 
 **Allocation Logic:**
+
 ```typescript
 // Auto-allocate payment to oldest charges first
 async autoAllocate(paymentId: string, orgId: string) {
@@ -2121,6 +2273,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Manual and auto allocation work
 - [ ] Refund creates proper entries
 - [ ] History shows all transactions
@@ -2135,6 +2288,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 **Objective:** REST API for financial operations.
 
 **Deliverables:**
+
 1. Charge endpoints:
    - `GET /api/v1/financial/charges`
    - `POST /api/v1/financial/charges`
@@ -2150,6 +2304,7 @@ async autoAllocate(paymentId: string, orgId: string) {
    - `GET /api/v1/financial/balance/:leaseId`
 
 **Acceptance Criteria:**
+
 - [ ] All endpoints documented
 - [ ] Role-based access (ACCOUNTANT+)
 - [ ] Proper error handling
@@ -2164,6 +2319,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 **Objective:** Test coverage for financial services.
 
 **Deliverables:**
+
 1. Test charge creation and calculation
 2. Test payment recording and allocation
 3. Test balance calculations
@@ -2171,6 +2327,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 5. Test edge cases (partial payments, overpayments)
 
 **Test Cases:**
+
 - Create charge → balance increases
 - Record payment → balance decreases
 - Partial payment → correct remaining
@@ -2179,6 +2336,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 - Waive charge → balance decreases, audit log created
 
 **Acceptance Criteria:**
+
 - [ ] All financial math verified
 - [ ] Edge cases handled
 - [ ] Coverage > 90%
@@ -2193,6 +2351,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 **Objective:** View and manage charges.
 
 **Deliverables:**
+
 1. Create `ChargesPage.tsx` or add to Financial section
 2. Table: lease, tenant, type, amount, due date, status
 3. Filters: status, type, date range, property
@@ -2200,6 +2359,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 5. Waive charge action
 
 **Acceptance Criteria:**
+
 - [ ] Charges display correctly
 - [ ] Filters work
 - [ ] Manual charge creates
@@ -2215,6 +2375,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 **Objective:** View and record payments.
 
 **Deliverables:**
+
 1. Create `PaymentsPage.tsx`
 2. Table: date, tenant, amount, method, status
 3. Record manual payment modal
@@ -2222,6 +2383,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 5. Refund action
 
 **Acceptance Criteria:**
+
 - [ ] Payments display correctly
 - [ ] Record payment works
 - [ ] Allocations visible
@@ -2237,6 +2399,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 **Objective:** Complete payment history for tenant/lease.
 
 **Deliverables:**
+
 1. Create `TenantLedger.tsx` component
 2. Chronological list: charges and payments
 3. Running balance column
@@ -2244,6 +2407,7 @@ async autoAllocate(paymentId: string, orgId: string) {
 5. Export to PDF/CSV
 
 **Ledger Display:**
+
 ```
 Date       | Description      | Charge  | Payment | Balance
 -----------+------------------+---------+---------+---------
@@ -2254,6 +2418,7 @@ Date       | Description      | Charge  | Payment | Balance
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All transactions shown
 - [ ] Running balance correct
 - [ ] Export works
@@ -2268,6 +2433,7 @@ Date       | Description      | Charge  | Payment | Balance
 **Objective:** Financial overview on dashboard.
 
 **Deliverables:**
+
 1. "Total Outstanding" widget with trend
 2. "Payments This Month" widget
 3. "Overdue Accounts" count and list
@@ -2275,6 +2441,7 @@ Date       | Description      | Charge  | Payment | Balance
 5. Quick link to full financial pages
 
 **Widget Data:**
+
 ```typescript
 interface FinancialSummary {
   totalOutstanding: number;
@@ -2286,6 +2453,7 @@ interface FinancialSummary {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Widgets show real data
 - [ ] Numbers update in real-time
 - [ ] Click through to details
@@ -2304,6 +2472,7 @@ interface FinancialSummary {
 **Objective:** Configure Stripe for payment processing.
 
 **Deliverables:**
+
 1. Document Stripe account creation process
 2. Configure environment variables:
    - STRIPE_SECRET_KEY
@@ -2314,6 +2483,7 @@ interface FinancialSummary {
 5. Verify connection with test API call
 
 **Environment Variables:**
+
 ```env
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
@@ -2322,6 +2492,7 @@ STRIPE_API_VERSION=2023-10-16
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Stripe SDK installed
 - [ ] Environment variables documented
 - [ ] Test connection successful
@@ -2336,6 +2507,7 @@ STRIPE_API_VERSION=2023-10-16
 **Objective:** Core Stripe operations.
 
 **Deliverables:**
+
 1. Create `packages/backend/src/modules/payments/stripe.service.ts`
 2. `createCustomer(tenant)` - Stripe customer for tenant
 3. `createPaymentIntent(amount, customerId, metadata)`
@@ -2345,6 +2517,7 @@ STRIPE_API_VERSION=2023-10-16
 7. `refund(paymentIntentId, amount)`
 
 **Service Implementation:**
+
 ```typescript
 @Injectable()
 export class StripeService {
@@ -2369,6 +2542,7 @@ export class StripeService {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Customer creation works
 - [ ] Payment intent creation works
 - [ ] Refund works
@@ -2384,6 +2558,7 @@ export class StripeService {
 **Objective:** Process Stripe webhook events.
 
 **Deliverables:**
+
 1. Create webhook endpoint: `POST /api/v1/webhooks/stripe`
 2. Verify webhook signature
 3. Handle events:
@@ -2395,6 +2570,7 @@ export class StripeService {
 5. Log all webhook events
 
 **Webhook Handler:**
+
 ```typescript
 @Post('webhooks/stripe')
 async handleWebhook(
@@ -2417,6 +2593,7 @@ async handleWebhook(
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Signature verification works
 - [ ] Events processed correctly
 - [ ] Idempotent (duplicate events ignored)
@@ -2432,6 +2609,7 @@ async handleWebhook(
 **Objective:** API for creating payment intents.
 
 **Deliverables:**
+
 1. `POST /api/v1/payments/intent` - Create payment intent
 2. `GET /api/v1/payments/intent/:id` - Get intent status
 3. Request body: leaseId, amount, saveCard (boolean)
@@ -2439,6 +2617,7 @@ async handleWebhook(
 5. Verify user owns the lease
 
 **Endpoint:**
+
 ```typescript
 @Post('payments/intent')
 @Roles(UserRole.TENANT, UserRole.ORGANIZATION_ADMIN)
@@ -2464,6 +2643,7 @@ async createIntent(
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Intent created successfully
 - [ ] Client secret returned
 - [ ] Access verified
@@ -2479,6 +2659,7 @@ async createIntent(
 **Objective:** Secure payment form using Stripe Elements.
 
 **Deliverables:**
+
 1. Install Stripe React: `pnpm add @stripe/react-stripe-js @stripe/stripe-js`
 2. Create `PaymentForm.tsx` component
 3. Use Stripe PaymentElement
@@ -2487,6 +2668,7 @@ async createIntent(
 6. Support saving card for future
 
 **Payment Form:**
+
 ```typescript
 export function PaymentForm({ leaseId, amount, onSuccess }: Props) {
   const stripe = useStripe();
@@ -2526,6 +2708,7 @@ export function PaymentForm({ leaseId, amount, onSuccess }: Props) {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Stripe Elements renders
 - [ ] Payment completes successfully
 - [ ] Error messages shown
@@ -2541,6 +2724,7 @@ export function PaymentForm({ leaseId, amount, onSuccess }: Props) {
 **Objective:** Complete flow after successful payment.
 
 **Deliverables:**
+
 1. Create payment record in database
 2. Auto-allocate to outstanding charges
 3. Update charge statuses
@@ -2549,6 +2733,7 @@ export function PaymentForm({ leaseId, amount, onSuccess }: Props) {
 6. Invalidate/refresh relevant queries
 
 **Success Flow:**
+
 1. Webhook receives `payment_intent.succeeded`
 2. Extract leaseId from metadata
 3. Create Payment record with status COMPLETED
@@ -2557,6 +2742,7 @@ export function PaymentForm({ leaseId, amount, onSuccess }: Props) {
 6. Frontend polls intent status and shows success
 
 **Acceptance Criteria:**
+
 - [ ] Payment record created
 - [ ] Charges allocated
 - [ ] Success UI shown
@@ -2572,6 +2758,7 @@ export function PaymentForm({ leaseId, amount, onSuccess }: Props) {
 **Objective:** Allow tenants to save cards for future use.
 
 **Deliverables:**
+
 1. Store Stripe customer ID on User/Tenant
 2. `GET /api/v1/payments/methods` - List saved cards
 3. `DELETE /api/v1/payments/methods/:id` - Remove card
@@ -2579,6 +2766,7 @@ export function PaymentForm({ leaseId, amount, onSuccess }: Props) {
 5. Option to pay with saved card or new card
 
 **Saved Cards UI:**
+
 ```typescript
 export function SavedPaymentMethods({ onSelect }: Props) {
   const { data: methods } = useQuery(['payment-methods'], getPaymentMethods);
@@ -2602,6 +2790,7 @@ export function SavedPaymentMethods({ onSelect }: Props) {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Cards saved during payment
 - [ ] Saved cards listed
 - [ ] Can pay with saved card
@@ -2617,6 +2806,7 @@ export function SavedPaymentMethods({ onSelect }: Props) {
 **Objective:** Allow tenants to enroll in automatic rent payments.
 
 **Deliverables:**
+
 1. Add to Lease: autoPayEnabled, autoPayDay, autoPayMethodId
 2. `POST /api/v1/leases/:id/autopay` - Enable auto-pay
 3. `DELETE /api/v1/leases/:id/autopay` - Disable auto-pay
@@ -2625,6 +2815,7 @@ export function SavedPaymentMethods({ onSelect }: Props) {
 6. Handle failed auto-payments
 
 **Auto-Pay Job:**
+
 ```typescript
 @Cron('0 8 * * *') // Run at 8 AM daily
 async processAutoPayments() {
@@ -2648,6 +2839,7 @@ async processAutoPayments() {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Tenant can enable auto-pay
 - [ ] Auto-pay runs on schedule
 - [ ] Notification before charge
@@ -2663,6 +2855,7 @@ async processAutoPayments() {
 **Objective:** Complete payment history for tenants and admins.
 
 **Deliverables:**
+
 1. Tenant portal: "My Payments" page
 2. Admin: Payment history in lease detail
 3. Display: date, amount, method, status, charges covered
@@ -2670,6 +2863,7 @@ async processAutoPayments() {
 5. Download receipt for any payment
 
 **Acceptance Criteria:**
+
 - [ ] Full history visible
 - [ ] Filters work
 - [ ] Receipt download works
@@ -2684,6 +2878,7 @@ async processAutoPayments() {
 **Objective:** Email notifications for payment events.
 
 **Deliverables:**
+
 1. Payment received confirmation
 2. Payment failed notification
 3. Auto-pay upcoming notification (3 days before)
@@ -2691,12 +2886,14 @@ async processAutoPayments() {
 5. Rent due reminder (configurable days before)
 
 **Email Templates:**
+
 - `payment-received.hbs`
 - `payment-failed.hbs`
 - `autopay-reminder.hbs`
 - `rent-due-reminder.hbs`
 
 **Acceptance Criteria:**
+
 - [ ] Emails sent for all events
 - [ ] Templates render correctly
 - [ ] Unsubscribe option included
@@ -2707,8 +2904,11 @@ async processAutoPayments() {
 ---
 
 # ═══════════════════════════════════════════════════════════════
+
 # MVP COMPLETE AT PHASE 72
+
 # Total MVP Phases: 72
+
 # ═══════════════════════════════════════════════════════════════
 
 ---
@@ -2722,6 +2922,7 @@ async processAutoPayments() {
 **Objective:** Verify WorkOrder model completeness.
 
 **Deliverables:**
+
 1. Verify fields: id, organizationId, propertyId, unitId, tenantId
 2. title, description, category, priority
 3. status (SUBMITTED, ASSIGNED, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED)
@@ -2739,6 +2940,7 @@ async processAutoPayments() {
 **Objective:** Business logic for work orders.
 
 **Deliverables:**
+
 1. CRUD operations
 2. Status transitions with validation
 3. Vendor assignment
@@ -3046,20 +3248,20 @@ async processAutoPayments() {
 
 ## Phase Distribution
 
-| Section | Phases | Status |
-|---------|--------|--------|
-| Foundation | 1-12 | **MVP** |
-| Auth & Security | 13-20 | **MVP** |
-| Properties | 21-30 | **MVP** |
-| Units | 31-38 | **MVP** |
-| Leases | 39-50 | **MVP** |
-| Financial Core | 51-62 | **MVP** |
-| Payments | 63-72 | **MVP** |
-| Work Orders | 73-82 | Post-MVP |
-| Vendors | 83-88 | Post-MVP |
-| Tenant Portal | 89-96 | Post-MVP |
-| Reporting | 97-102 | Post-MVP |
-| AI & Automation | 103-106 | Post-MVP |
+| Section               | Phases  | Status   |
+| --------------------- | ------- | -------- |
+| Foundation            | 1-12    | **MVP**  |
+| Auth & Security       | 13-20   | **MVP**  |
+| Properties            | 21-30   | **MVP**  |
+| Units                 | 31-38   | **MVP**  |
+| Leases                | 39-50   | **MVP**  |
+| Financial Core        | 51-62   | **MVP**  |
+| Payments              | 63-72   | **MVP**  |
+| Work Orders           | 73-82   | Post-MVP |
+| Vendors               | 83-88   | Post-MVP |
+| Tenant Portal         | 89-96   | Post-MVP |
+| Reporting             | 97-102  | Post-MVP |
+| AI & Automation       | 103-106 | Post-MVP |
 | Mobile & Integrations | 107-108 | Post-MVP |
 
 ## Total Phases: 108
@@ -3083,9 +3285,9 @@ async processAutoPayments() {
 
 ## Changelog
 
-| Date | Version | Changes |
-|------|---------|---------|
-| 2025-11-27 | 2.0 | Complete rewrite with 108 phases, clear MVP boundary |
+| Date       | Version | Changes                                              |
+| ---------- | ------- | ---------------------------------------------------- |
+| 2025-11-27 | 2.0     | Complete rewrite with 108 phases, clear MVP boundary |
 
 ---
 

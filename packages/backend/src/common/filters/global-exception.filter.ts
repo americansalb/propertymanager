@@ -1,13 +1,13 @@
 import {
-  ExceptionFilter,
+  type ExceptionFilter,
   Catch,
-  ArgumentsHost,
+  type ArgumentsHost,
   HttpException,
   HttpStatus,
   Inject,
   LoggerService,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import * as Sentry from '@sentry/node';
 import { getRequestContextMeta } from '../request-context';
@@ -75,7 +75,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode: status,
         correlationId,
         ...(errors && { errors }),
-        ...(process.env.NODE_ENV !== 'production' && exception instanceof Error && { stack: exception.stack }),
+        ...(process.env.NODE_ENV !== 'production' &&
+          exception instanceof Error && { stack: exception.stack }),
       },
     };
 
@@ -133,7 +134,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
   }
 
-  private isPrismaError(exception: unknown): exception is { code: string; meta?: { target?: string[] } } {
+  private isPrismaError(
+    exception: unknown,
+  ): exception is { code: string; meta?: { target?: string[] } } {
     return (
       typeof exception === 'object' &&
       exception !== null &&

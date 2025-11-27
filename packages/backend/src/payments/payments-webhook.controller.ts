@@ -1,6 +1,6 @@
 import { Controller, Post, Headers, RawBodyRequest, Req, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiExcludeEndpoint } from '@nestjs/swagger';
-import { Request } from 'express';
+import { type Request } from 'express';
 import { StripeService } from './stripe.service';
 
 @ApiTags('payments')

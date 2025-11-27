@@ -7,7 +7,7 @@ This is a **fully vertical slice** implementation of the Property Edit Modal fea
 - ✅ Backend API (PUT /properties/:id)
 - ✅ Frontend modal component (PropertyEditModal)
 - ✅ React Query hooks for data management
-- ✅ Analytics tracking (PROPERTY_EDIT_*)
+- ✅ Analytics tracking (PROPERTY*EDIT*\*)
 - ✅ Comprehensive testing (unit + E2E)
 - ✅ Error handling + validation
 - ✅ Type safety (frontend ↔ backend)
@@ -74,10 +74,7 @@ export function PropertiesListPage() {
     <>
       {/* Your table/list */}
       {properties?.map((property) => (
-        <button
-          key={property.id}
-          onClick={() => setEditingProperty(property)}
-        >
+        <button key={property.id} onClick={() => setEditingProperty(property)}>
           Edit
         </button>
       ))}
@@ -113,11 +110,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      {/* Your app */}
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{/* Your app */}</QueryClientProvider>;
 }
 ```
 
@@ -169,6 +162,7 @@ Authorization: Bearer <token>
 ### Error Responses
 
 **404 Not Found**
+
 ```json
 {
   "success": false,
@@ -182,6 +176,7 @@ Authorization: Bearer <token>
 ```
 
 **403 Forbidden**
+
 ```json
 {
   "success": false,
@@ -195,6 +190,7 @@ Authorization: Bearer <token>
 ```
 
 **400 Bad Request**
+
 ```json
 {
   "success": false,
@@ -203,9 +199,7 @@ Authorization: Bearer <token>
     "code": "BAD_REQUEST",
     "statusCode": 400,
     "correlationId": "ghi-789",
-    "errors": [
-      "postalCode must be 3-16 chars, letters/numbers/hyphen/space only"
-    ]
+    "errors": ["postalCode must be 3-16 chars, letters/numbers/hyphen/space only"]
   }
 }
 ```
@@ -215,6 +209,7 @@ Authorization: Bearer <token>
 The modal tracks 3 events:
 
 ### 1. PROPERTY_EDIT_OPENED
+
 ```json
 {
   "name": "PROPERTY_EDIT_OPENED",
@@ -227,6 +222,7 @@ The modal tracks 3 events:
 ```
 
 ### 2. PROPERTY_EDIT_SAVED
+
 ```json
 {
   "name": "PROPERTY_EDIT_SAVED",
@@ -240,6 +236,7 @@ The modal tracks 3 events:
 ```
 
 ### 3. PROPERTY_EDIT_SAVE_FAILED
+
 ```json
 {
   "name": "PROPERTY_EDIT_SAVE_FAILED",
@@ -262,6 +259,7 @@ pnpm test
 ```
 
 **Coverage:**
+
 - ✅ 8 controller tests (update, findAll, findOne, 404, 403, auth)
 - ✅ 6 service logging tests (change tracking)
 - ✅ 28 DTO validation tests
@@ -275,6 +273,7 @@ pnpm exec playwright test properties
 ```
 
 **Scenarios:**
+
 - ✅ Update property successfully
 - ✅ Show validation errors
 - ✅ Validate postal code format
@@ -287,17 +286,17 @@ pnpm exec playwright test properties
 
 ### Field Constraints
 
-| Field | Required | Max Length | Pattern |
-|-------|----------|------------|---------|
-| name | ✅ | 120 | - |
-| addressLine1 | ✅ | 200 | - |
-| addressLine2 | ❌ | 200 | - |
-| city | ✅ | 120 | - |
-| state | ✅ | 64 | - |
-| postalCode | ✅ | 3-16 | `[A-Za-z0-9\- ]{3,16}` |
-| country | ✅ | 2 | Uppercase |
-| propertyType | ✅ | - | Enum |
-| active | ✅ | - | Boolean |
+| Field        | Required | Max Length | Pattern                |
+| ------------ | -------- | ---------- | ---------------------- |
+| name         | ✅       | 120        | -                      |
+| addressLine1 | ✅       | 200        | -                      |
+| addressLine2 | ❌       | 200        | -                      |
+| city         | ✅       | 120        | -                      |
+| state        | ✅       | 64         | -                      |
+| postalCode   | ✅       | 3-16       | `[A-Za-z0-9\- ]{3,16}` |
+| country      | ✅       | 2          | Uppercase              |
+| propertyType | ✅       | -          | Enum                   |
+| active       | ✅       | -          | Boolean                |
 
 ### Property Types
 
@@ -365,19 +364,23 @@ pnpm exec playwright test properties
 ## Troubleshooting
 
 ### "Property not found" error
+
 - Check JWT token is valid and includes organizationId
 - Verify property belongs to user's organization
 
 ### Validation errors persist after fixing
+
 - Form may need manual reset: `reset(newValues)`
 - Check backend error response format matches ApiError type
 
 ### Events not tracking
+
 - Check `/api/events` endpoint is accessible
 - Look for CORS errors in browser console
 - Analytics errors are swallowed (check console.debug)
 
 ### Integration test failing (UUID issue)
+
 - Known issue: Jest + PNPM + uuid ESM modules
 - Controller tests provide equivalent coverage
 - Integration test serves as reference implementation
@@ -393,6 +396,7 @@ pnpm exec playwright test properties
 ---
 
 **This is the golden path.** Every CRUD feature should follow this pattern:
+
 1. Backend DTO + validation
 2. Service layer with logging
 3. Controller with event tracking

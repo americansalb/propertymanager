@@ -31,10 +31,12 @@ describe('PUT /properties/:id (integration)', () => {
     app = moduleRef.createNestApplication();
 
     // Apply validation pipe (like in production)
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      transform: true
-    }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+      }),
+    );
 
     prisma = moduleRef.get(PrismaService);
 

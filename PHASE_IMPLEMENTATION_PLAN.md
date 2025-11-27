@@ -11,6 +11,7 @@ This document defines the **development standards, logging infrastructure, testi
 ### **1. Code Quality Requirements**
 
 #### **TypeScript Strictness**
+
 ```json
 // tsconfig.json - ENFORCE THESE RULES
 {
@@ -41,6 +42,7 @@ async create(data: CreatePropertyDto, organizationId: string): Promise<Property>
 ```
 
 #### **Naming Conventions**
+
 - **Variables/Functions:** `camelCase` (e.g., `calculateMonthlyRent`)
 - **Classes/Interfaces:** `PascalCase` (e.g., `PropertyService`, `CreateLeaseDto`)
 - **Constants:** `UPPER_SNAKE_CASE` (e.g., `MAX_UPLOAD_SIZE_MB`)
@@ -48,6 +50,7 @@ async create(data: CreatePropertyDto, organizationId: string): Promise<Property>
 - **Test files:** `*.spec.ts` or `*.test.ts`
 
 #### **File Structure Standard**
+
 ```
 packages/backend/src/
 ├── modules/
@@ -71,12 +74,14 @@ packages/backend/src/
 ### **2. Structured Logging with Winston**
 
 #### **Install & Configure**
+
 ```bash
 pnpm add winston winston-daily-rotate-file
 pnpm add -D @types/winston
 ```
 
 #### **Logger Service (`packages/backend/src/common/logger/logger.service.ts`)**
+
 ```typescript
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import * as winston from 'winston';
@@ -108,7 +113,7 @@ export class AppLogger implements NestLoggerService {
         winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         winston.format.errors({ stack: true }),
         winston.format.splat(),
-        winston.format.json()
+        winston.format.json(),
       ),
       defaultMeta: { service: 'propertymaster-api' },
       transports: [
@@ -119,7 +124,7 @@ export class AppLogger implements NestLoggerService {
             winston.format.printf(({ level, message, timestamp, context, ...meta }) => {
               const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
               return `${timestamp} [${context || 'App'}] ${level}: ${message} ${metaStr}`;
-            })
+            }),
           ),
         }),
         // Rotate daily log files
@@ -164,6 +169,7 @@ export class AppLogger implements NestLoggerService {
 ```
 
 #### **Usage in Services**
+
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { AppLogger } from '@/common/logger/logger.service';
@@ -176,24 +182,24 @@ export class PropertiesService {
     this.logger.log('Creating property', {
       organizationId,
       address: dto.address,
-      type: dto.type
+      type: dto.type,
     });
 
     try {
       const property = await this.prisma.property.create({
-        data: { ...dto, organizationId }
+        data: { ...dto, organizationId },
       });
 
       this.logger.log('Property created successfully', {
         propertyId: property.id,
-        organizationId
+        organizationId,
       });
 
       return property;
     } catch (error) {
       this.logger.error('Failed to create property', error.stack, {
         organizationId,
-        dto
+        dto,
       });
       throw new InternalServerErrorException('Failed to create property');
     }
@@ -210,7 +216,7 @@ export class PropertiesService {
 
     const updated = await this.prisma.property.update({
       where: { id },
-      data: dto
+      data: dto,
     });
 
     this.logger.log('Property updated successfully', { propertyId: id, organizationId });
@@ -226,7 +232,7 @@ export class PropertiesService {
     if (unitCount > 0) {
       this.logger.error('Cannot delete property with units', null, {
         propertyId: id,
-        unitCount
+        unitCount,
       });
       throw new BadRequestException(`Cannot delete property with ${unitCount} units`);
     }
@@ -240,15 +246,17 @@ export class PropertiesService {
 ### **3. Logging Best Practices**
 
 #### **Log Levels Guide**
-| Level | Use Case | Example |
-|-------|----------|---------|
-| **error** | Application errors, exceptions | Database connection failed, payment processing error |
-| **warn** | Unexpected but recoverable situations | User not found, invalid input caught by validation |
-| **info** | Important business events | User logged in, property created, payment received |
-| **http** | HTTP requests/responses | API calls, response times |
-| **debug** | Detailed diagnostic info | Variable values, function entry/exit |
+
+| Level     | Use Case                              | Example                                              |
+| --------- | ------------------------------------- | ---------------------------------------------------- |
+| **error** | Application errors, exceptions        | Database connection failed, payment processing error |
+| **warn**  | Unexpected but recoverable situations | User not found, invalid input caught by validation   |
+| **info**  | Important business events             | User logged in, property created, payment received   |
+| **http**  | HTTP requests/responses               | API calls, response times                            |
+| **debug** | Detailed diagnostic info              | Variable values, function entry/exit                 |
 
 #### **What to Log**
+
 ```typescript
 // ✅ DO LOG
 - User actions (login, create, update, delete)
@@ -270,6 +278,7 @@ export class PropertiesService {
 ```
 
 #### **Correlation IDs for Request Tracing**
+
 ```typescript
 // middleware/correlation-id.middleware.ts
 import { Injectable, NestMiddleware } from '@nestjs/common';
@@ -304,11 +313,13 @@ async create(@Body() dto: CreatePropertyDto, @Req() req: Request) {
 ### **4. Test Coverage Requirements**
 
 **Minimum Coverage:**
+
 - **Backend:** 80% coverage
 - **Frontend:** 70% coverage
 - **Critical paths:** 100% coverage (auth, payments, data integrity)
 
 #### **Test Pyramid**
+
 ```
            /\
           /  \  E2E Tests (10%)
@@ -326,6 +337,7 @@ async create(@Body() dto: CreatePropertyDto, @Req() req: Request) {
 ### **5. Unit Tests (60% of tests)**
 
 #### **Setup (`packages/backend/src/test-utils/test-setup.ts`)**
+
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -347,8 +359,12 @@ export const mockPrismaService = {
     update: jest.fn(),
     delete: jest.fn(),
   },
-  unit: { /* ... */ },
-  lease: { /* ... */ },
+  unit: {
+    /* ... */
+  },
+  lease: {
+    /* ... */
+  },
   // ... other models
 };
 
@@ -364,6 +380,7 @@ export async function createTestingModule(providers: any[]): Promise<TestingModu
 ```
 
 #### **Service Test Example (`properties.service.spec.ts`)**
+
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
 import { PropertiesService } from './properties.service';
@@ -465,7 +482,7 @@ describe('PropertiesService', () => {
       expect(logger.error).toHaveBeenCalledWith(
         'Failed to create property',
         error.stack,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
@@ -488,7 +505,7 @@ describe('PropertiesService', () => {
       jest.spyOn(prisma.property, 'findUnique').mockResolvedValue(null);
 
       await expect(service.update(mockPropertyId, {}, mockOrgId)).rejects.toThrow(
-        NotFoundException
+        NotFoundException,
       );
       expect(logger.warn).toHaveBeenCalledWith('Property not found for update', expect.any(Object));
     });
@@ -510,13 +527,11 @@ describe('PropertiesService', () => {
       jest.spyOn(prisma.property, 'findUnique').mockResolvedValue(mockProperty);
       jest.spyOn(prisma.unit, 'count').mockResolvedValue(5);
 
-      await expect(service.delete(mockPropertyId, mockOrgId)).rejects.toThrow(
-        BadRequestException
-      );
+      await expect(service.delete(mockPropertyId, mockOrgId)).rejects.toThrow(BadRequestException);
       expect(logger.error).toHaveBeenCalledWith(
         'Cannot delete property with units',
         null,
-        expect.objectContaining({ unitCount: 5 })
+        expect.objectContaining({ unitCount: 5 }),
       );
     });
   });
@@ -541,6 +556,7 @@ describe('PropertiesService', () => {
 ### **6. Integration Tests (30% of tests)**
 
 #### **API Endpoint Test (`properties.controller.e2e-spec.ts`)**
+
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -739,6 +755,7 @@ describe('PropertiesController (e2e)', () => {
 ### **7. E2E Tests (10% of tests)**
 
 #### **Critical User Flow (`auth-flow.e2e-spec.ts`)**
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -802,9 +819,13 @@ test.describe('User Authentication Flow', () => {
     await page.click('button[type="submit"]');
 
     // Simulate expired token (mock API to return 401)
-    await page.route('**/api/v1/properties', route => {
-      route.fulfill({ status: 401, body: '{"message":"Unauthorized"}' });
-    }, { times: 1 });
+    await page.route(
+      '**/api/v1/properties',
+      (route) => {
+        route.fulfill({ status: 401, body: '{"message":"Unauthorized"}' });
+      },
+      { times: 1 },
+    );
 
     // Navigate to properties (should trigger token refresh)
     await page.click('text=Properties');
@@ -818,6 +839,7 @@ test.describe('User Authentication Flow', () => {
 ### **8. Test Automation & CI/CD**
 
 #### **GitHub Actions Workflow (`.github/workflows/test.yml`)**
+
 ```yaml
 name: Test Suite
 
@@ -987,14 +1009,9 @@ jobs:
 ### **9. Comprehensive Error Handling**
 
 #### **Global Exception Filter (`common/filters/http-exception.filter.ts`)**
+
 ```typescript
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AppLogger } from '@/common/logger/logger.service';
 
@@ -1008,14 +1025,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const message =
-      exception instanceof HttpException
-        ? exception.message
-        : 'Internal server error';
+      exception instanceof HttpException ? exception.message : 'Internal server error';
 
     const errorResponse = {
       statusCode: status,
@@ -1038,7 +1051,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           organizationId: request['user']?.organizationId,
           correlationId: request['correlationId'],
           body: request.body,
-        }
+        },
       );
     } else if (status >= 400) {
       this.logger.warn(`${request.method} ${request.url} - ${message}`, {
@@ -1053,6 +1066,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 ```
 
 #### **Custom Business Exceptions**
+
 ```typescript
 // common/exceptions/business.exceptions.ts
 import { HttpException, HttpStatus } from '@nestjs/common';
@@ -1067,7 +1081,7 @@ export class PropertyHasUnitsException extends HttpException {
         propertyId,
         unitCount,
       },
-      HttpStatus.BAD_REQUEST
+      HttpStatus.BAD_REQUEST,
     );
   }
 }
@@ -1082,7 +1096,7 @@ export class LeaseOverlapException extends HttpException {
         unitId,
         existingLeaseId,
       },
-      HttpStatus.CONFLICT
+      HttpStatus.CONFLICT,
     );
   }
 }
@@ -1098,13 +1112,14 @@ export class InsufficientFundsException extends HttpException {
         required,
         available,
       },
-      HttpStatus.BAD_REQUEST
+      HttpStatus.BAD_REQUEST,
     );
   }
 }
 ```
 
 #### **Frontend Error Boundary**
+
 ```typescript
 // packages/admin/src/components/ErrorBoundary.tsx
 import React, { Component, ErrorInfo, ReactNode } from 'react';
@@ -1179,7 +1194,8 @@ export class ErrorBoundary extends Component<Props, State> {
 ### **10. Self-Documenting Code**
 
 #### **JSDoc Comments for Public APIs**
-```typescript
+
+````typescript
 /**
  * Creates a new property within an organization
  *
@@ -1203,16 +1219,19 @@ export class ErrorBoundary extends Component<Props, State> {
 async create(dto: CreatePropertyDto, organizationId: string): Promise<Property> {
   // Implementation
 }
-```
+````
 
 #### **README per Module**
-```markdown
+
+````markdown
 # Properties Module
 
 ## Overview
+
 Manages property entities including CRUD operations, validation, and business rules.
 
 ## Responsibilities
+
 - Create, read, update, delete properties
 - Enforce organization-level data isolation
 - Validate property data (address, type, etc.)
@@ -1221,9 +1240,11 @@ Manages property entities including CRUD operations, validation, and business ru
 ## API Endpoints
 
 ### `POST /api/v1/properties`
+
 Create a new property.
 
 **Request:**
+
 ```json
 {
   "name": "Sunset Gardens",
@@ -1235,8 +1256,10 @@ Create a new property.
   "units": 24
 }
 ```
+````
 
 **Response:** `201 Created`
+
 ```json
 {
   "id": "prop-123",
@@ -1247,28 +1270,34 @@ Create a new property.
 ```
 
 **Errors:**
+
 - `400` - Validation failed
 - `401` - Unauthorized
 - `409` - Property already exists at this address
 
 ## Business Rules
+
 1. Property name must be unique within organization
 2. Cannot delete property with existing units (must delete units first)
 3. Address must be valid US address (validated via Google Maps API in future)
 
 ## Database Schema
+
 See `packages/database/prisma/schema.prisma` - `Property` model
 
 ## Related Modules
+
 - **Units** - Properties contain multiple units
 - **Leases** - Leases are tied to specific units within properties
 - **WorkOrders** - Work orders can be property-wide or unit-specific
 
 ## Testing
+
 - Unit tests: `properties.service.spec.ts`
 - E2E tests: `properties.controller.e2e-spec.ts`
 - Coverage: 85%
-```
+
+````
 
 ### **11. Feature Specification Template**
 
@@ -1338,12 +1367,14 @@ Every feature must have a spec document **before implementation**.
 ### Database Changes
 ```prisma
 // No schema changes needed - using existing Property model
-```
+````
 
 ### API Endpoints
 
 #### `PATCH /api/v1/properties/:id`
+
 **Request:**
+
 ```json
 {
   "name": "Updated Name",
@@ -1352,6 +1383,7 @@ Every feature must have a spec document **before implementation**.
 ```
 
 **Response:** `200 OK`
+
 ```json
 {
   "id": "prop-123",
@@ -1362,11 +1394,13 @@ Every feature must have a spec document **before implementation**.
 ```
 
 **Errors:**
+
 - `400` - Validation failed
 - `404` - Property not found
 - `403` - Not authorized to edit this property
 
 ### Service Layer
+
 ```typescript
 // properties.service.ts
 async update(id: string, dto: UpdatePropertyDto, orgId: string): Promise<Property> {
@@ -1379,11 +1413,13 @@ async update(id: string, dto: UpdatePropertyDto, orgId: string): Promise<Propert
 ```
 
 ### Frontend Components
+
 - **PropertyEditModal.tsx** - Modal form with validation
 - **PropertyDetailPage.tsx** - Add "Edit" button
 - **useUpdateProperty hook** - React Query mutation
 
 ### State Management
+
 ```typescript
 // React Query mutation
 const updateProperty = useMutation({
@@ -1394,7 +1430,7 @@ const updateProperty = useMutation({
   },
   onError: (error) => {
     toast.error(error.message);
-  }
+  },
 });
 ```
 
@@ -1403,9 +1439,11 @@ const updateProperty = useMutation({
 ## UI/UX Design
 
 ### Wireframes
+
 [Link to Figma or inline images]
 
 ### User Flow
+
 1. User clicks "Edit" button on property card
 2. Modal opens with form pre-filled
 3. User changes fields
@@ -1419,18 +1457,21 @@ const updateProperty = useMutation({
 ## Testing Plan
 
 ### Unit Tests
+
 - [ ] Service method validates org ownership
 - [ ] Service method throws 404 if property not found
 - [ ] Service method updates only provided fields
 - [ ] Audit log entry created
 
 ### Integration Tests
+
 - [ ] API endpoint returns 200 on success
 - [ ] API endpoint returns 404 for non-existent property
 - [ ] API endpoint returns 403 for wrong organization
 - [ ] Database record is updated correctly
 
 ### E2E Tests
+
 - [ ] User can edit property name via UI
 - [ ] Changes persist after page reload
 - [ ] Cancel button discards changes
@@ -1441,6 +1482,7 @@ const updateProperty = useMutation({
 ## Logging & Monitoring
 
 ### Logs to Add
+
 ```typescript
 logger.log('Updating property', { propertyId, organizationId, changes: dto });
 logger.log('Property updated successfully', { propertyId });
@@ -1449,6 +1491,7 @@ logger.error('Failed to update property', error.stack, { propertyId, dto });
 ```
 
 ### Metrics to Track
+
 - Count of property updates per day
 - Average time to update
 - Error rate for update operations
@@ -1458,16 +1501,19 @@ logger.error('Failed to update property', error.stack, { propertyId, dto });
 ## Rollout Plan
 
 ### Phase 1: Internal Testing (Day 1-2)
+
 - Deploy to staging
 - Test with 10 internal properties
 - Fix critical bugs
 
 ### Phase 2: Beta Users (Day 3-5)
+
 - Enable for 50 beta users
 - Monitor error rates
 - Gather feedback
 
 ### Phase 3: Full Launch (Day 6)
+
 - Enable for all users
 - Monitor closely for 48 hours
 
@@ -1475,15 +1521,16 @@ logger.error('Failed to update property', error.stack, { propertyId, dto });
 
 ## Risks & Mitigation
 
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
-| Race condition if multiple users edit same property | Medium | Low | Add optimistic locking (version field) |
-| User accidentally changes critical field | High | Medium | Require confirmation for address changes |
-| Database update fails but audit log succeeds | Low | Low | Use database transaction |
+| Risk                                                | Impact | Likelihood | Mitigation                               |
+| --------------------------------------------------- | ------ | ---------- | ---------------------------------------- |
+| Race condition if multiple users edit same property | Medium | Low        | Add optimistic locking (version field)   |
+| User accidentally changes critical field            | High   | Medium     | Require confirmation for address changes |
+| Database update fails but audit log succeeds        | Low    | Low        | Use database transaction                 |
 
 ---
 
 ## Open Questions
+
 - [ ] Should we allow changing property type if units exist?
 - [ ] Should we validate address via Google Maps API?
 - [ ] Do we need approval workflow for certain field changes?
@@ -1491,12 +1538,15 @@ logger.error('Failed to update property', error.stack, { propertyId, dto });
 ---
 
 ## Dependencies
+
 - None
 
 ## Follow-up Features
+
 - Bulk edit multiple properties
 - Property change history view
 - Undo last edit
+
 ```
 
 ---
@@ -1574,52 +1624,57 @@ Before deploying **any** feature:
 ### **14. Standard Process**
 
 ```
+
 ┌─────────────────┐
-│ 1. PLAN         │  Create feature spec from template
-│ - Write spec    │  Get stakeholder approval
-│ - Get approval  │  Break into tasks
+│ 1. PLAN │ Create feature spec from template
+│ - Write spec │ Get stakeholder approval
+│ - Get approval │ Break into tasks
 └────────┬────────┘
-         │
+│
 ┌────────▼────────┐
-│ 2. DESIGN       │  Database schema changes
-│ - Schema        │  API endpoint design
-│ - API design    │  UI mockups
-│ - UI mockups    │
+│ 2. DESIGN │ Database schema changes
+│ - Schema │ API endpoint design
+│ - API design │ UI mockups
+│ - UI mockups │
 └────────┬────────┘
-         │
+│
 ┌────────▼────────┐
-│ 3. IMPLEMENT    │  Backend (service → controller → tests)
-│ - Backend       │  Frontend (components → hooks → tests)
-│ - Frontend      │  Integration
-│ - Tests         │
+│ 3. IMPLEMENT │ Backend (service → controller → tests)
+│ - Backend │ Frontend (components → hooks → tests)
+│ - Frontend │ Integration
+│ - Tests │
 └────────┬────────┘
-         │
+│
 ┌────────▼────────┐
-│ 4. REVIEW       │  Self-review checklist
-│ - Code review   │  Peer review
-│ - QA testing    │  QA manual testing
+│ 4. REVIEW │ Self-review checklist
+│ - Code review │ Peer review
+│ - QA testing │ QA manual testing
 └────────┬────────┘
-         │
+│
 ┌────────▼────────┐
-│ 5. DEPLOY       │  Staging deployment
-│ - Staging       │  Smoke tests
-│ - Production    │  Production deployment
-│ - Monitor       │  Monitor for 24 hours
+│ 5. DEPLOY │ Staging deployment
+│ - Staging │ Smoke tests
+│ - Production │ Production deployment
+│ - Monitor │ Monitor for 24 hours
 └─────────────────┘
+
 ```
 
 ### **15. Git Workflow**
 
 #### **Branch Naming**
 ```
+
 feature/PROP-123-property-edit-modal
 bugfix/PROP-456-fix-lease-overlap
 hotfix/security-patch-csrf
 refactor/improve-logging
+
 ```
 
 #### **Commit Messages**
 ```
+
 type(scope): short description
 
 Longer description if needed
@@ -1629,10 +1684,12 @@ Longer description if needed
 
 Types: feat, fix, docs, style, refactor, test, chore
 Scopes: auth, properties, leases, payments, ui, api
+
 ```
 
 **Examples:**
 ```
+
 feat(properties): add edit modal for property details
 
 - Created PropertyEditModal component
@@ -1641,9 +1698,11 @@ feat(properties): add edit modal for property details
 - Added validation for required fields
 
 Closes PROP-123
+
 ```
 
 ```
+
 fix(leases): prevent overlapping lease creation
 
 - Added validation to check for active leases before creating new one
@@ -1651,7 +1710,8 @@ fix(leases): prevent overlapping lease creation
 - Added unit tests for overlap scenarios
 
 Closes PROP-234
-```
+
+````
 
 #### **Pull Request Template**
 ```markdown
@@ -1689,7 +1749,7 @@ Closes PROP-123
 
 ## Deployment Notes
 [Any special deployment instructions]
-```
+````
 
 ---
 
@@ -1698,17 +1758,13 @@ Closes PROP-123
 ### **16. Automated Quality Checks**
 
 #### **Pre-Commit Hooks (Husky + lint-staged)**
+
 ```json
 // package.json
 {
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md}": ["prettier --write"]
   }
 }
 ```
@@ -1729,6 +1785,7 @@ pnpm test --since HEAD~1
 ```
 
 #### **Pre-Push Hooks**
+
 ```bash
 # .husky/pre-push
 #!/bin/sh
@@ -1742,7 +1799,9 @@ pnpm audit --audit-level moderate
 ```
 
 #### **CI/CD Quality Gates**
+
 All checks must pass before merge:
+
 - ✅ Linting (ESLint)
 - ✅ Formatting (Prettier)
 - ✅ Type checking (TypeScript)
@@ -1760,6 +1819,7 @@ All checks must pass before merge:
 ### **17. Production Monitoring**
 
 #### **Sentry Integration**
+
 ```typescript
 // packages/backend/src/main.ts
 import * as Sentry from '@sentry/node';
@@ -1782,6 +1842,7 @@ if (process.env.NODE_ENV === 'production') {
 ```
 
 #### **Performance Monitoring**
+
 ```typescript
 // middleware/performance.middleware.ts
 import { Injectable, NestMiddleware } from '@nestjs/common';
@@ -1824,6 +1885,7 @@ export class PerformanceMiddleware implements NestMiddleware {
 ```
 
 #### **Health Check Endpoint**
+
 ```typescript
 // health/health.controller.ts
 import { Controller, Get } from '@nestjs/common';
@@ -1868,10 +1930,11 @@ export class HealthController {
 
 Create `docs/DEVELOPER_SETUP.md`:
 
-```markdown
+````markdown
 # Developer Setup Guide
 
 ## Prerequisites
+
 - Node.js 18+
 - pnpm 8+
 - Docker Desktop
@@ -1885,34 +1948,41 @@ Create `docs/DEVELOPER_SETUP.md`:
    git clone https://github.com/yourorg/propertymaster.git
    cd propertymaster
    ```
+````
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
 
 3. **Start database**
+
    ```bash
    docker-compose up -d postgres
    ```
 
 4. **Configure environment**
+
    ```bash
    cp .env.example .env
    # Edit .env with your values
    ```
 
 5. **Run migrations**
+
    ```bash
    pnpm --filter database prisma migrate dev
    ```
 
 6. **Seed database**
+
    ```bash
    pnpm --filter database prisma db seed
    ```
 
 7. **Start dev servers**
+
    ```bash
    pnpm dev
    ```
@@ -1929,6 +1999,7 @@ Create `docs/DEVELOPER_SETUP.md`:
 ## Development Workflow
 
 See [PHASE_IMPLEMENTATION_PLAN.md](./PHASE_IMPLEMENTATION_PLAN.md) for:
+
 - Code standards
 - Testing requirements
 - Git workflow
@@ -1959,6 +2030,7 @@ pnpm build --filter backend  # Build specific package
 ## Troubleshooting
 
 **Database connection fails:**
+
 ```bash
 # Reset Docker containers
 docker-compose down -v
@@ -1967,12 +2039,14 @@ pnpm db:reset
 ```
 
 **Port already in use:**
+
 ```bash
 # Kill process on port 3000
 lsof -ti:3000 | xargs kill -9
 ```
 
 **Prisma schema out of sync:**
+
 ```bash
 pnpm --filter database prisma generate
 pnpm --filter database prisma migrate dev
@@ -1990,10 +2064,12 @@ packages/
 ```
 
 ## Learning Resources
+
 - [NestJS Docs](https://docs.nestjs.com)
 - [Prisma Docs](https://www.prisma.io/docs)
 - [React Query Docs](https://tanstack.com/query)
 - [Internal Wiki](https://wiki.yourcompany.com/propertymaster)
+
 ```
 
 ---
@@ -2057,3 +2133,4 @@ This implementation plan provides:
 4. Scale to full team
 
 This makes the project **self-sustaining** - any developer can pick up a feature spec and implement it to production quality without constant oversight.
+```

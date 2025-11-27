@@ -1,6 +1,6 @@
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
-import { WinstonModuleOptions } from 'nest-winston';
+import { type WinstonModuleOptions } from 'nest-winston';
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -25,10 +25,7 @@ export const createWinstonOptions = (): WinstonModuleOptions => {
     maxSize: '20m',
     maxFiles: '14d',
     level: 'info',
-    format: winston.format.combine(
-      winston.format.timestamp(),
-      winston.format.json(),
-    ),
+    format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
   });
 
   // Error-level rotating log (30-day retention)
@@ -40,10 +37,7 @@ export const createWinstonOptions = (): WinstonModuleOptions => {
     maxSize: '20m',
     maxFiles: '30d',
     level: 'error',
-    format: winston.format.combine(
-      winston.format.timestamp(),
-      winston.format.json(),
-    ),
+    format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
   });
 
   return {

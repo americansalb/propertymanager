@@ -3,7 +3,7 @@
  * Handles HTTP communication with backend
  */
 
-import { PropertyType } from './types';
+import { type PropertyType } from './types';
 
 export interface Property {
   id: string;
@@ -74,10 +74,7 @@ export class ApiError extends Error {
 /**
  * Base fetch wrapper with error handling
  */
-async function apiFetch<T>(
-  url: string,
-  options?: RequestInit,
-): Promise<T> {
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -89,10 +86,12 @@ async function apiFetch<T>(
   const json = (await response.json()) as ApiResponse<T>;
 
   if (!response.ok || !json.success) {
-    const errorData = !json.success ? json.error : {
-      message: 'Unknown error',
-      statusCode: response.status,
-    };
+    const errorData = !json.success
+      ? json.error
+      : {
+          message: 'Unknown error',
+          statusCode: response.status,
+        };
 
     throw new ApiError(
       errorData.message,
@@ -123,10 +122,7 @@ export async function fetchProperty(id: string): Promise<Property> {
 /**
  * Update property
  */
-export async function updateProperty(
-  id: string,
-  data: UpdatePropertyDto,
-): Promise<Property> {
+export async function updateProperty(id: string, data: UpdatePropertyDto): Promise<Property> {
   return apiFetch<Property>(`/api/properties/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),

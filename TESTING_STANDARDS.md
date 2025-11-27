@@ -15,6 +15,7 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 ### Backend ✅
 
 **1. DTO Tests**
+
 - [ ] All required fields validated
 - [ ] Optional fields handled correctly
 - [ ] Type validation works (enums, lengths, patterns)
@@ -23,6 +24,7 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 - **Example:** `src/properties/dto/property.dto.spec.ts`
 
 **2. Service Tests**
+
 - [ ] Happy path returns expected data
 - [ ] 404 when entity not found
 - [ ] 403 when wrong organization
@@ -32,6 +34,7 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 - **Example:** `src/properties/properties.service.spec.ts`
 
 **3. Controller Tests**
+
 - [ ] HTTP endpoints return correct status codes
 - [ ] Request validation works
 - [ ] Error responses match ApiResponse shape
@@ -41,6 +44,7 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 - **Example:** `src/properties/properties.controller.spec.ts`
 
 **4. Integration Test (when environment allows)**
+
 - [ ] Full HTTP request → database → response
 - [ ] Real Prisma queries execute
 - [ ] Events saved to database
@@ -55,12 +59,14 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 ### Frontend ✅
 
 **1. Type Safety**
+
 - [ ] API client types match backend DTOs
 - [ ] Zod schema matches backend validation
 - [ ] No `any` types in feature code
 - **Verify:** `pnpm exec tsc --noEmit`
 
 **2. Component Tests (React Testing Library)**
+
 - [ ] Form renders with correct fields
 - [ ] Validation errors display inline
 - [ ] Submit disabled when form invalid
@@ -69,6 +75,7 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 - **Example:** `src/features/properties/PropertyEditModal.test.tsx`
 
 **3. React Query Hooks**
+
 - [ ] useQuery fetches data correctly
 - [ ] useMutation calls API with right payload
 - [ ] Cache invalidation works
@@ -76,6 +83,7 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 - **Verify:** Used in Playwright test
 
 **4. E2E Test (Playwright)**
+
 - [ ] Happy path: open → edit → save → verify
 - [ ] Validation: required fields, format rules
 - [ ] Error handling: 404, 403, 500
@@ -90,7 +98,9 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 ## Environment-Specific Reality
 
 ### In This Sandbox (Limited)
+
 **What works:**
+
 - ✅ Backend unit tests (Jest)
 - ✅ Type checking (tsc --noEmit)
 - ✅ Linting (ESLint)
@@ -98,6 +108,7 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 - ✅ Service/controller mocking
 
 **What's blocked:**
+
 - ❌ Prisma client generation (403 on engine download)
 - ❌ Integration tests (need real DB)
 - ❌ Playwright E2E (need running app)
@@ -107,7 +118,9 @@ Every vertical slice (Properties, Units, Tenants, Leases, etc.) must meet this c
 ---
 
 ### In Real Dev/CI Environment
+
 **Required setup:**
+
 ```bash
 # 1. Database
 docker-compose up -d postgres
@@ -137,6 +150,7 @@ pnpm exec playwright test  # E2E tests
 ## Test Commands (Standard Across Repo)
 
 ### Backend
+
 ```bash
 # Unit tests only (works anywhere)
 pnpm test
@@ -152,6 +166,7 @@ pnpm lint
 ```
 
 ### Frontend
+
 ```bash
 # Component tests
 pnpm test
@@ -173,6 +188,7 @@ pnpm lint
 Before declaring a feature "done", run this 5-minute manual test:
 
 ### Property Edit Modal Example
+
 - [ ] **Open:** Navigate to /properties, click Edit on first property
 - [ ] **Edit:** Change name, address, city
 - [ ] **Save:** Click "Save changes"
@@ -191,6 +207,7 @@ Before declaring a feature "done", run this 5-minute manual test:
 ## Red Flags (When to Stop & Fix)
 
 **🚨 Stop merging if:**
+
 - Backend unit tests failing
 - TypeScript errors on `tsc --noEmit`
 - No tests written for new controller endpoints
@@ -198,6 +215,7 @@ Before declaring a feature "done", run this 5-minute manual test:
 - Manual smoke test fails
 
 **⚠️ Warning signs:**
+
 - Coverage dropping below 70%
 - Tests marked `.skip()` without issue tracking
 - Mock data doesn't match real API responses
@@ -208,6 +226,7 @@ Before declaring a feature "done", run this 5-minute manual test:
 ## Testing Anti-Patterns (Don't Do This)
 
 ### ❌ Testing Against Mocks Only
+
 ```typescript
 // BAD: Only tests that mocks return what you tell them to
 it('should return properties', () => {
@@ -219,6 +238,7 @@ it('should return properties', () => {
 **Fix:** Add integration test that hits real database.
 
 ### ❌ No Validation on Real Data
+
 ```typescript
 // BAD: Test uses any type, doesn't catch schema mismatches
 const property: any = { id: '123', name: 'Test' };
@@ -227,6 +247,7 @@ const property: any = { id: '123', name: 'Test' };
 **Fix:** Use real DTO types, let TypeScript catch mismatches.
 
 ### ❌ Silent Failures
+
 ```typescript
 // BAD: Analytics failure breaks the whole request
 await trackEvent('USER_ACTION'); // throws if API down
@@ -235,6 +256,7 @@ await trackEvent('USER_ACTION'); // throws if API down
 **Fix:** Wrap in try/catch, log but don't throw.
 
 ### ❌ Tests That Don't Fail
+
 ```typescript
 // BAD: This test will always pass
 it('should save property', async () => {
@@ -250,6 +272,7 @@ it('should save property', async () => {
 ## Coverage Targets
 
 ### Backend
+
 - **Overall:** 80% lines, 70% branches
 - **Critical paths:** 100% (auth, payment, financial)
 - **DTOs:** 100% (validation is critical)
@@ -257,6 +280,7 @@ it('should save property', async () => {
 - **Controllers:** 80% (mostly routing)
 
 ### Frontend
+
 - **Overall:** 70% lines, 60% branches
 - **Critical forms:** 90% (edit modals, payment forms)
 - **API clients:** 80%
@@ -264,6 +288,7 @@ it('should save property', async () => {
 - **UI components:** 60% (focus on behavior, not markup)
 
 **Run coverage:**
+
 ```bash
 pnpm test -- --coverage
 ```
@@ -275,6 +300,7 @@ pnpm test -- --coverage
 If you can't run integration/E2E tests due to environment constraints:
 
 **1. Write the test anyway**
+
 ```typescript
 // Mark as integration test
 describe.skip('PropertyController (Integration)', () => {
@@ -283,6 +309,7 @@ describe.skip('PropertyController (Integration)', () => {
 ```
 
 **2. Document in test file**
+
 ```typescript
 /**
  * Integration test - requires:
@@ -296,8 +323,10 @@ describe.skip('PropertyController (Integration)', () => {
 ```
 
 **3. Track in issue**
+
 ```markdown
 ## Blocked Tests
+
 - [ ] properties.integration.spec.ts - needs Prisma engine
 - [ ] edit-property.spec.ts (E2E) - needs running app
 
@@ -305,6 +334,7 @@ describe.skip('PropertyController (Integration)', () => {
 ```
 
 **4. Verify structure is correct**
+
 - Test file exists in right location
 - Test imports work (type-check passes)
 - Assertions are written (not just `it.todo()`)
@@ -317,22 +347,23 @@ This ensures tests will work when environment is ready.
 
 ### Backend (57 tests ✅)
 
-| Category | Tests | Status |
-|----------|-------|--------|
-| DTO validation | 28 | ✅ Passing |
-| Service logging | 6 | ✅ Passing |
-| Controller | 8 | ✅ Passing |
-| Exception filter | 15 | ✅ Passing |
-| Integration | 4 | ⏸️ Written (blocked by Prisma) |
+| Category         | Tests | Status                         |
+| ---------------- | ----- | ------------------------------ |
+| DTO validation   | 28    | ✅ Passing                     |
+| Service logging  | 6     | ✅ Passing                     |
+| Controller       | 8     | ✅ Passing                     |
+| Exception filter | 15    | ✅ Passing                     |
+| Integration      | 4     | ⏸️ Written (blocked by Prisma) |
 
 ### Frontend (7 tests ⏸️)
 
-| Category | Tests | Status |
-|----------|-------|--------|
-| Component | TBD | ⏳ Not written |
-| E2E (Playwright) | 7 | ⏸️ Written (needs running app) |
+| Category         | Tests | Status                         |
+| ---------------- | ----- | ------------------------------ |
+| Component        | TBD   | ⏳ Not written                 |
+| E2E (Playwright) | 7     | ⏸️ Written (needs running app) |
 
 ### Manual Smoke Test
+
 - ✅ Checked in local dev
 - ⏳ Not verified in this environment
 
@@ -345,6 +376,7 @@ This ensures tests will work when environment is ready.
 Following this contract, Units should have:
 
 **Backend:**
+
 - [ ] `UpdateUnitDto` with tests (unitNumber, bedrooms, bathrooms, marketRent)
 - [ ] `UnitsService.update()` with logging tests
 - [ ] `UnitsController.update()` with HTTP tests
@@ -352,12 +384,14 @@ Following this contract, Units should have:
 - [ ] Integration test (written, skipped if needed)
 
 **Frontend:**
+
 - [ ] `UnitEditModal` component
 - [ ] `useUpdateUnit()` React Query hook
 - [ ] Playwright test (edit-unit.spec.ts)
 - [ ] Manual smoke test checklist
 
 **Don't merge until:**
+
 - All backend unit tests pass
 - Frontend types match backend
 - Playwright test written (can be skipped if env blocked)
