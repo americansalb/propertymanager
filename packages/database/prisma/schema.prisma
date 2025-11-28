@@ -59,6 +59,8 @@ model Organization {
   vendors   Vendor[]
   bankAccounts BankAccount[]
   events    Event[]
+  leaseTemplates LeaseTemplate[]
+  owners    Owner[]
 
   @@index([slug])
 }
@@ -171,6 +173,8 @@ model Property {
   accounts    Account[]
   workOrders  WorkOrder[]
   vendors     PropertyVendor[]
+  photos      PropertyPhoto[]
+  owners      PropertyOwner[]
 
   @@index([organizationId])
   @@index([status])
@@ -1220,4 +1224,366 @@ model TenantMessage {
   @@index([direction])
   @@index([isRead])
   @@index([createdAt])
+}
+
+// ============================================================================
+// PROPERTY PHOTOS (Phase 115)
+// ============================================================================
+
+model PropertyPhoto {
+  id          String   @id @default(cuid())
+
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  unitId      String?
+
+  // Photo details
+  url         String
+  thumbnailUrl String?
+  fileName    String
+  fileSize    Int
+  mimeType    String
+
+  // Metadata
+  caption     String?
+  category    String?  // "exterior", "interior", "amenity", "floor_plan"
+  isPrimary   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  // Upload info
+  uploadedBy  String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([category])
+}
+
+// ============================================================================
+// LEASE TEMPLATES (Phase 116)
+// ============================================================================
+
+model LeaseTemplate {
+  id          String   @id @default(cuid())
+
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+
+  // Template content
+  content     String   @db.Text  // HTML or markdown template
+  variables   Json     @default("[]")  // List of merge fields
+
+  // Settings
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  leaseType   LeaseType?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+// ============================================================================
+// TENANT SCREENING (Phase 117)
+// ============================================================================
+
+enum ScreeningStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ScreeningResult {
+  APPROVED
+  CONDITIONAL
+  DENIED
+  PENDING
+}
+
+model TenantScreening {
+  id          String   @id @default(cuid())
+
+  applicationId String?
+  application   RentalApplication? @relation(fields: [applicationId], references: [id])
+
+  // Applicant info
+  firstName   String
+  lastName    String
+  email       String
+  ssn         String?  // Encrypted
+  dateOfBirth DateTime?
+
+  // Screening status
+  status      ScreeningStatus @default(PENDING)
+  result      ScreeningResult @default(PENDING)
+
+  // Screening results
+  creditScore Int?
+  creditReport Json?
+  criminalReport Json?
+  evictionReport Json?
+  incomeVerification Json?
+
+  // Scores and flags
+  overallScore Int?
+  flags       String[]  @default([])
+  notes       String?
+
+  // Provider info
+  providerName String?
+  providerReportId String?
+
+  // Multi-tenant
+  organizationId String
+
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([applicationId])
+  @@index([status])
+  @@index([result])
+}
+
+// ============================================================================
+// RENTAL APPLICATIONS (Phase 118)
+// ============================================================================
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  SCREENING
+  APPROVED
+  CONDITIONALLY_APPROVED
+  DENIED
+  WITHDRAWN
+  LEASE_SIGNED
+}
+
+model RentalApplication {
+  id          String   @id @default(cuid())
+
+  organizationId String
+
+  // Property/Unit applied for
+  propertyId  String?
+  unitId      String?
+
+  status      ApplicationStatus @default(DRAFT)
+
+  // Applicant info
+  firstName   String
+  lastName    String
+  email       String
+  phone       String
+  dateOfBirth DateTime?
+
+  // Current address
+  currentAddress String?
+  currentCity    String?
+  currentState   String?
+  currentZip     String?
+  currentLandlord String?
+  currentLandlordPhone String?
+  currentRent    Decimal? @db.Decimal(10, 2)
+  moveInReason   String?
+
+  // Employment
+  employer    String?
+  jobTitle    String?
+  employerPhone String?
+  monthlyIncome Decimal? @db.Decimal(10, 2)
+  employmentLength String?
+
+  // Additional info
+  pets        Json?    // [{type, breed, weight}]
+  vehicles    Json?    // [{make, model, year, plate}]
+  occupants   Json?    // [{name, relationship, age}]
+
+  // Emergency contact
+  emergencyContact String?
+  emergencyPhone   String?
+  emergencyRelation String?
+
+  // Consent
+  consentBackgroundCheck Boolean @default(false)
+  consentCreditCheck     Boolean @default(false)
+
+  // Documents
+  documents   String[] @default([])
+
+  // Decision
+  decisionDate DateTime?
+  decisionBy   String?
+  decisionNotes String?
+
+  // Fees
+  applicationFee Decimal? @db.Decimal(10, 2)
+  feePaymentId   String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  screenings  TenantScreening[]
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([status])
+  @@index([email])
+}
+
+// ============================================================================
+// MOVE-IN/MOVE-OUT CHECKLISTS (Phase 120)
+// ============================================================================
+
+enum InspectionType {
+  MOVE_IN
+  MOVE_OUT
+  ROUTINE
+  MAINTENANCE
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model InspectionChecklist {
+  id          String   @id @default(cuid())
+
+  leaseId     String
+  unitId      String
+
+  type        InspectionType
+  status      InspectionStatus @default(SCHEDULED)
+
+  // Schedule
+  scheduledDate DateTime?
+  completedDate DateTime?
+
+  // Inspector
+  inspectorId   String?
+  inspectorName String?
+
+  // Checklist items (JSON array of items with room, item, condition, notes, photos)
+  items       Json     @default("[]")
+
+  // Summary
+  overallCondition String?  // "Excellent", "Good", "Fair", "Poor"
+  notes       String?  @db.Text
+
+  // Photos
+  photos      String[] @default([])
+
+  // Signatures
+  inspectorSignature String?
+  tenantSignature    String?
+  signedAt           DateTime?
+
+  // Security deposit impact
+  damagesFound       Boolean @default(false)
+  estimatedRepairCost Decimal? @db.Decimal(10, 2)
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([leaseId])
+  @@index([unitId])
+  @@index([type])
+  @@index([status])
+}
+
+// ============================================================================
+// OWNER PORTAL (Phase 122)
+// ============================================================================
+
+model Owner {
+  id          String   @id @default(cuid())
+
+  // Owner info
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+
+  // Company info (for entity owners)
+  companyName String?
+  taxId       String?
+
+  // Address
+  address1    String?
+  address2    String?
+  city        String?
+  state       String?
+  zipCode     String?
+
+  // Portal access
+  portalEnabled Boolean @default(false)
+  portalPassword String?
+  lastPortalLogin DateTime?
+
+  // Payment info for distributions
+  paymentMethod String?  // "ACH", "Check", "Wire"
+  bankAccountNumber String?
+  bankRoutingNumber String?
+  bankAccountName   String?
+
+  // Multi-tenant
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  properties  PropertyOwner[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model PropertyOwner {
+  id          String   @id @default(cuid())
+
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  ownerId     String
+  owner       Owner    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Ownership details
+  ownershipPercentage Decimal @db.Decimal(5, 2) @default(100)
+  isPrimaryOwner      Boolean @default(true)
+
+  // Distribution settings
+  distributionMethod  String?  // "percentage", "fixed"
+  distributionAmount  Decimal? @db.Decimal(10, 2)
+
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@unique([propertyId, ownerId])
+  @@index([propertyId])
+  @@index([ownerId])
 }
