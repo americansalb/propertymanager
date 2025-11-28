@@ -1587,3 +1587,564 @@ model PropertyOwner {
   @@index([propertyId])
   @@index([ownerId])
 }
+
+// ============================================================================
+// OWNER STATEMENTS (Phase 123)
+// ============================================================================
+
+enum StatementPeriod {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+enum StatementStatus {
+  DRAFT
+  GENERATED
+  SENT
+  VIEWED
+}
+
+model OwnerStatement {
+  id          String   @id @default(cuid())
+
+  ownerId     String
+  propertyId  String?  // null = all properties
+
+  period      StatementPeriod
+  status      StatementStatus @default(DRAFT)
+
+  // Period dates
+  startDate   DateTime
+  endDate     DateTime
+
+  // Financial summary
+  grossIncome     Decimal @db.Decimal(15, 2) @default(0)
+  totalExpenses   Decimal @db.Decimal(15, 2) @default(0)
+  netIncome       Decimal @db.Decimal(15, 2) @default(0)
+  managementFee   Decimal @db.Decimal(15, 2) @default(0)
+  ownerDraw       Decimal @db.Decimal(15, 2) @default(0)
+
+  // Detailed breakdown (JSON)
+  incomeDetails   Json    @default("[]")
+  expenseDetails  Json    @default("[]")
+
+  // Document
+  documentUrl     String?
+  sentAt          DateTime?
+  viewedAt        DateTime?
+
+  // Multi-tenant
+  organizationId  String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+// ============================================================================
+// OWNER DISTRIBUTIONS (Phase 124)
+// ============================================================================
+
+enum DistributionStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model OwnerDistribution {
+  id          String   @id @default(cuid())
+
+  ownerId     String
+  statementId String?
+
+  status      DistributionStatus @default(PENDING)
+
+  // Amount
+  amount      Decimal @db.Decimal(15, 2)
+
+  // Payment details
+  paymentMethod String?  // "ACH", "Check", "Wire"
+  paymentReference String?
+  checkNumber String?
+
+  // Dates
+  scheduledDate DateTime?
+  processedDate DateTime?
+
+  notes       String?
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([status])
+}
+
+// ============================================================================
+// PORTFOLIO ANALYTICS (Phase 125)
+// ============================================================================
+
+model PortfolioSnapshot {
+  id          String   @id @default(cuid())
+
+  // Snapshot date
+  snapshotDate DateTime
+
+  // Portfolio metrics
+  totalProperties     Int      @default(0)
+  totalUnits          Int      @default(0)
+  occupiedUnits       Int      @default(0)
+  vacantUnits         Int      @default(0)
+  occupancyRate       Decimal  @db.Decimal(5, 2) @default(0)
+
+  // Financial metrics
+  totalMonthlyRent    Decimal  @db.Decimal(15, 2) @default(0)
+  totalCollected      Decimal  @db.Decimal(15, 2) @default(0)
+  collectionRate      Decimal  @db.Decimal(5, 2) @default(0)
+  totalOutstanding    Decimal  @db.Decimal(15, 2) @default(0)
+
+  // Work orders
+  openWorkOrders      Int      @default(0)
+  completedWorkOrders Int      @default(0)
+  avgCompletionDays   Decimal? @db.Decimal(5, 1)
+
+  // Leases
+  expiringLeases30    Int      @default(0)
+  expiringLeases60    Int      @default(0)
+  expiringLeases90    Int      @default(0)
+
+  // Revenue metrics
+  netOperatingIncome  Decimal? @db.Decimal(15, 2)
+  expenseRatio        Decimal? @db.Decimal(5, 2)
+
+  // By property breakdown (JSON)
+  propertyBreakdown   Json     @default("[]")
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+
+  @@unique([organizationId, snapshotDate])
+  @@index([organizationId])
+  @@index([snapshotDate])
+}
+
+// ============================================================================
+// BUDGETING (Phase 126)
+// ============================================================================
+
+model PropertyBudget {
+  id          String   @id @default(cuid())
+
+  propertyId  String
+
+  // Budget period
+  year        Int
+  month       Int?     // null = annual budget
+
+  // Budget line items (JSON array)
+  lineItems   Json     @default("[]")
+
+  // Totals
+  totalBudgeted   Decimal @db.Decimal(15, 2) @default(0)
+  totalActual     Decimal @db.Decimal(15, 2) @default(0)
+  variance        Decimal @db.Decimal(15, 2) @default(0)
+
+  // Status
+  isApproved  Boolean  @default(false)
+  approvedBy  String?
+  approvedAt  DateTime?
+
+  notes       String?
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([propertyId, year, month])
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([year])
+}
+
+// ============================================================================
+// 1099 GENERATION (Phase 127)
+// ============================================================================
+
+enum Form1099Status {
+  DRAFT
+  GENERATED
+  SENT
+  FILED
+}
+
+model Form1099 {
+  id          String   @id @default(cuid())
+
+  vendorId    String?
+  ownerId     String?
+
+  taxYear     Int
+  status      Form1099Status @default(DRAFT)
+
+  // Recipient info
+  recipientName    String
+  recipientTaxId   String?
+  recipientAddress String?
+
+  // Amounts by box
+  box1Rents           Decimal? @db.Decimal(15, 2)
+  box2Royalties       Decimal? @db.Decimal(15, 2)
+  box3OtherIncome     Decimal? @db.Decimal(15, 2)
+  box7NonemployeeComp Decimal? @db.Decimal(15, 2)
+
+  totalAmount     Decimal @db.Decimal(15, 2) @default(0)
+
+  // Document
+  documentUrl     String?
+  sentAt          DateTime?
+  filedAt         DateTime?
+
+  // Multi-tenant
+  organizationId  String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([vendorId])
+  @@index([ownerId])
+  @@index([taxYear])
+  @@index([status])
+}
+
+// ============================================================================
+// CAM RECONCILIATION (Phase 128)
+// ============================================================================
+
+model CAMPool {
+  id          String   @id @default(cuid())
+
+  propertyId  String
+  name        String   // "Common Area Maintenance", "Operating Expenses"
+
+  // Budget
+  annualBudget    Decimal @db.Decimal(15, 2) @default(0)
+  actualExpenses  Decimal @db.Decimal(15, 2) @default(0)
+
+  // Allocation method
+  allocationMethod String @default("pro_rata")  // "pro_rata", "fixed", "square_footage"
+
+  // Period
+  year        Int
+
+  isActive    Boolean  @default(true)
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  charges     CAMCharge[]
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([year])
+}
+
+model CAMCharge {
+  id          String   @id @default(cuid())
+
+  poolId      String
+  pool        CAMPool  @relation(fields: [poolId], references: [id], onDelete: Cascade)
+
+  leaseId     String
+
+  // Charge details
+  estimatedAmount Decimal @db.Decimal(10, 2) @default(0)
+  actualAmount    Decimal @db.Decimal(10, 2) @default(0)
+  adjustmentAmount Decimal @db.Decimal(10, 2) @default(0)
+
+  // Period
+  year        Int
+  month       Int?
+
+  // Billing
+  billedDate  DateTime?
+  chargeId    String?  // Link to Charge record
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([poolId])
+  @@index([leaseId])
+  @@index([year])
+}
+
+// ============================================================================
+// UTILITY BILLING / RUBS (Phase 129)
+// ============================================================================
+
+enum UtilityType {
+  WATER
+  ELECTRIC
+  GAS
+  SEWER
+  TRASH
+  CABLE
+  INTERNET
+  OTHER
+}
+
+enum AllocationMethod {
+  EQUAL
+  SQUARE_FOOTAGE
+  OCCUPANCY
+  SUBMETER
+  FIXED
+}
+
+model UtilityAccount {
+  id          String   @id @default(cuid())
+
+  propertyId  String
+  utilityType UtilityType
+  accountNumber String?
+  providerName String?
+
+  // Allocation settings
+  allocationMethod AllocationMethod @default(EQUAL)
+
+  // Markup (for RUBS)
+  markupPercent   Decimal @db.Decimal(5, 2) @default(0)
+  adminFee        Decimal @db.Decimal(10, 2) @default(0)
+
+  isActive    Boolean  @default(true)
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  readings    UtilityReading[]
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([utilityType])
+}
+
+model UtilityReading {
+  id          String   @id @default(cuid())
+
+  accountId   String
+  account     UtilityAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // Reading details
+  readingDate DateTime
+  meterReading Decimal? @db.Decimal(15, 4)
+  totalAmount  Decimal  @db.Decimal(10, 2)
+
+  // Billing period
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Bill document
+  billUrl     String?
+
+  // Allocation status
+  isAllocated Boolean  @default(false)
+  allocatedAt DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([accountId])
+  @@index([readingDate])
+}
+
+// ============================================================================
+// LEASE RENEWALS AUTOMATION (Phase 130)
+// ============================================================================
+
+enum RenewalStatus {
+  PENDING
+  OFFER_SENT
+  ACCEPTED
+  DECLINED
+  NEGOTIATING
+  RENEWED
+  EXPIRED
+}
+
+model LeaseRenewal {
+  id          String   @id @default(cuid())
+
+  leaseId     String
+
+  status      RenewalStatus @default(PENDING)
+
+  // Current terms
+  currentRent     Decimal @db.Decimal(10, 2)
+  currentEndDate  DateTime
+
+  // Proposed terms
+  proposedRent    Decimal? @db.Decimal(10, 2)
+  proposedStartDate DateTime?
+  proposedEndDate DateTime?
+  proposedTermMonths Int?
+
+  // Rent increase
+  increasePercent Decimal? @db.Decimal(5, 2)
+  increaseAmount  Decimal? @db.Decimal(10, 2)
+
+  // Communication tracking
+  offerSentDate   DateTime?
+  responseDate    DateTime?
+  remindersSent   Int      @default(0)
+  lastReminderDate DateTime?
+
+  // Tenant response
+  tenantNotes     String?
+  counterOffer    Decimal? @db.Decimal(10, 2)
+
+  // New lease (if renewed)
+  newLeaseId      String?
+
+  // Multi-tenant
+  organizationId  String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([leaseId])
+  @@index([status])
+}
+
+// ============================================================================
+// MARKET RENT ANALYSIS (Phase 131)
+// ============================================================================
+
+model MarketRentComp {
+  id          String   @id @default(cuid())
+
+  propertyId  String?  // null = general market comp
+  unitId      String?
+
+  // Comp details
+  address     String
+  city        String
+  state       String
+  zipCode     String
+
+  // Unit details
+  bedrooms    Int
+  bathrooms   Decimal  @db.Decimal(3, 1)
+  squareFeet  Int?
+  unitType    String?
+
+  // Rent info
+  askingRent  Decimal  @db.Decimal(10, 2)
+  effectiveRent Decimal? @db.Decimal(10, 2)
+
+  // Additional info
+  amenities   String[] @default([])
+  source      String?  // "Zillow", "Apartments.com", "Manual"
+  sourceUrl   String?
+  listingDate DateTime?
+
+  // Analysis
+  pricePerSqFt Decimal? @db.Decimal(10, 2)
+  notes       String?
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([city, state])
+  @@index([bedrooms])
+}
+
+// ============================================================================
+// VACANCY LOSS TRACKING (Phase 132)
+// ============================================================================
+
+enum VacancyReason {
+  LEASE_END
+  EVICTION
+  EARLY_TERMINATION
+  UNIT_RENOVATION
+  MARKET_CONDITIONS
+  OTHER
+}
+
+model VacancyRecord {
+  id          String   @id @default(cuid())
+
+  unitId      String
+  propertyId  String
+
+  // Vacancy period
+  startDate   DateTime
+  endDate     DateTime?
+  daysVacant  Int?
+
+  // Previous lease
+  previousLeaseId String?
+  previousRent    Decimal? @db.Decimal(10, 2)
+
+  // Vacancy details
+  reason      VacancyReason?
+  reasonNotes String?
+
+  // Revenue loss
+  marketRent      Decimal? @db.Decimal(10, 2)
+  dailyLoss       Decimal? @db.Decimal(10, 2)
+  totalLoss       Decimal? @db.Decimal(15, 2)
+
+  // Turnover costs
+  turnoverCost    Decimal? @db.Decimal(10, 2)
+  turnoverNotes   String?
+
+  // Marketing
+  marketingStartDate DateTime?
+  listingPrice    Decimal? @db.Decimal(10, 2)
+  showings        Int      @default(0)
+  applications    Int      @default(0)
+
+  // Resolution
+  newLeaseId      String?
+
+  // Multi-tenant
+  organizationId  String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([startDate])
+}
