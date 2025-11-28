@@ -6,6 +6,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Include cookies with requests for httpOnly refresh token
+  withCredentials: true,
 });
 
 // Request interceptor
@@ -31,21 +33,20 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const { refreshToken } = useAuthStore.getState();
-        if (!refreshToken) {
-          throw new Error('No refresh token');
+        // Refresh token is in httpOnly cookie, no need to send it in body
+        const response = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
+
+        if (response.data.success) {
+          const { accessToken } = response.data.data;
+          useAuthStore.getState().setAccessToken(accessToken);
+
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return api(originalRequest);
+        } else {
+          throw new Error('Token refresh failed');
         }
-
-        const response = await axios.post('/api/v1/auth/refresh', {
-          refreshToken,
-        });
-
-        const { accessToken } = response.data.data;
-        useAuthStore.getState().login(accessToken, refreshToken, useAuthStore.getState().user!);
-
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return api(originalRequest);
       } catch (refreshError) {
+        // Clear auth state and redirect to login
         useAuthStore.getState().logout();
         window.location.href = '/login';
         return Promise.reject(refreshError);
@@ -55,5 +56,15 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+// Helper function for logout that also calls the backend to clear cookie
+export const logoutUser = async () => {
+  try {
+    await api.post('/auth/logout');
+  } catch {
+    // Ignore errors, still clear local state
+  }
+  useAuthStore.getState().logout();
+};
 
 export default api;

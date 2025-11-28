@@ -95,6 +95,8 @@ model User {
 
   // Security
   emailVerified Boolean  @default(false)
+  emailVerificationToken String?
+  emailVerificationExpiry DateTime?
   lastLoginAt   DateTime?
 
   createdAt     DateTime @default(now())

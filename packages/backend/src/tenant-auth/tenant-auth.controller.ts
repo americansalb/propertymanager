@@ -1,19 +1,19 @@
 import { Controller, Post, Put, Get, Body, Headers, UnauthorizedException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { IsEmail, IsString, IsOptional, MinLength, Matches } from 'class-validator';
 import { TenantAuthService } from './tenant-auth.service';
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 
 class LoginDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
   email!: string;
 
   @IsString()
-  @MinLength(1)
+  @MinLength(1, { message: 'Password is required' })
   password!: string;
 }
 
 class ForgotPasswordDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
   email!: string;
 }
 
@@ -22,7 +22,13 @@ class ResetPasswordDto {
   token!: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @Matches(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+  @Matches(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+  @Matches(/[0-9]/, { message: 'Password must contain at least one number' })
+  @Matches(/[!@#$%^&*(),.?":{}|<>]/, {
+    message: 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)',
+  })
   password!: string;
 }
 
@@ -53,7 +59,13 @@ class ChangePasswordDto {
   currentPassword!: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @Matches(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+  @Matches(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+  @Matches(/[0-9]/, { message: 'Password must contain at least one number' })
+  @Matches(/[!@#$%^&*(),.?":{}|<>]/, {
+    message: 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)',
+  })
   newPassword!: string;
 }
 
@@ -64,6 +76,8 @@ export class TenantAuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Tenant portal login' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() dto: LoginDto) {
     const result = await this.tenantAuthService.login(dto.email, dto.password);
     return { success: true, data: result };
@@ -71,6 +85,7 @@ export class TenantAuthController {
 
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ status: 200, description: 'Password reset email sent (if email exists)' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     const result = await this.tenantAuthService.requestPasswordReset(dto.email);
     return { success: true, data: result };
@@ -78,6 +93,8 @@ export class TenantAuthController {
 
   @Post('reset-password')
   @ApiOperation({ summary: 'Reset password with token' })
+  @ApiResponse({ status: 200, description: 'Password reset successful' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token, or weak password' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     const result = await this.tenantAuthService.resetPassword(dto.token, dto.password);
     return { success: true, data: result };
@@ -86,6 +103,8 @@ export class TenantAuthController {
   @Get('profile')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get tenant profile' })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   async getProfile(@Headers('authorization') authHeader: string) {
     const tenantId = await this.extractTenantId(authHeader);
     const result = await this.tenantAuthService.getProfile(tenantId);
@@ -95,10 +114,9 @@ export class TenantAuthController {
   @Put('profile')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update tenant profile' })
-  async updateProfile(
-    @Headers('authorization') authHeader: string,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  async updateProfile(@Headers('authorization') authHeader: string, @Body() dto: UpdateProfileDto) {
     const tenantId = await this.extractTenantId(authHeader);
     const result = await this.tenantAuthService.updateProfile(tenantId, dto);
     return { success: true, data: result };
@@ -107,6 +125,9 @@ export class TenantAuthController {
   @Post('change-password')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 400, description: 'Current password incorrect or new password too weak' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   async changePassword(
     @Headers('authorization') authHeader: string,
     @Body() dto: ChangePasswordDto,

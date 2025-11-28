@@ -26,6 +26,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ScheduledTasksModule } from './scheduled/scheduled-tasks.module';
 import { TenantAuthModule } from './tenant-auth/tenant-auth.module';
 import { TenantPortalModule } from './tenant-portal/tenant-portal.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   controllers: [AppController],
@@ -49,6 +50,7 @@ import { TenantPortalModule } from './tenant-portal/tenant-portal.module';
 
     // Core modules
     PrismaModule,
+    EmailModule,
     AuthModule,
     UsersModule,
     OrganizationsModule,

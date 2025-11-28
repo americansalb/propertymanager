@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Building2 } from 'lucide-react';
 import { authService } from '../services/auth.service';
@@ -11,13 +11,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuthStore();
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [verificationMessage, setVerificationMessage] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  // Check for verification status in URL params
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    const error = searchParams.get('error');
+
+    if (verified === 'true') {
+      setVerificationMessage({
+        type: 'success',
+        message: 'Email verified successfully! You can now sign in.',
+      });
+    } else if (error) {
+      setVerificationMessage({ type: 'error', message: decodeURIComponent(error) });
+    }
+  }, [searchParams]);
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
-      login(data.accessToken, data.refreshToken, data.user);
+      // Refresh token is now in httpOnly cookie - only store accessToken
+      login(data.accessToken, data.user);
       navigate('/');
     },
   });
@@ -40,6 +61,17 @@ export default function LoginPage() {
           <CardDescription>Sign in to your PM Command Center</CardDescription>
         </CardHeader>
         <CardContent>
+          {verificationMessage && (
+            <div
+              className={`mb-4 p-3 rounded-md text-sm ${
+                verificationMessage.type === 'success'
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}
+            >
+              {verificationMessage.message}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

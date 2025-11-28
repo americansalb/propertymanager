@@ -1,8 +1,17 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import {
   UserRole,
   type OrganizationType,
@@ -55,11 +64,23 @@ export type UserWithOrganization = User & { organization: Organization };
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly baseUrl: string;
 
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) {}
+    private emailService: EmailService,
+    private configService: ConfigService,
+  ) {
+    this.baseUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3001';
+  }
+
+  /**
+   * Generate a cryptographically secure token
+   */
+  private generateToken(): string {
+    return crypto.randomBytes(32).toString('hex');
+  }
 
   /**
    * Validate user credentials (used by LocalStrategy)
@@ -153,6 +174,10 @@ export class AuthService {
         },
       });
 
+      // Generate email verification token
+      const emailVerificationToken = this.generateToken();
+      const emailVerificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
       // Create user
       const user = await tx.user.create({
         data: {
@@ -164,6 +189,8 @@ export class AuthService {
           role: UserRole.ORGANIZATION_ADMIN,
           organizationId: organization.id,
           emailVerified: false,
+          emailVerificationToken,
+          emailVerificationExpiry,
         },
         include: {
           organization: true,
@@ -178,7 +205,111 @@ export class AuthService {
 
     this.logger.log(`New organization registered: ${result.organization.name}`);
 
+    // Send verification email (non-blocking)
+    const verificationToken = result.emailVerificationToken;
+    if (verificationToken) {
+      this.emailService
+        .sendEmailVerificationEmail(result.email, result.firstName, verificationToken, this.baseUrl)
+        .catch((error) => {
+          this.logger.error(`Failed to send verification email: ${error.message}`);
+        });
+    }
+
     return this.login(result);
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        emailVerificationToken: token,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid verification token');
+    }
+
+    if (user.emailVerificationExpiry && user.emailVerificationExpiry < new Date()) {
+      throw new BadRequestException(
+        'Verification token has expired. Please request a new verification email.',
+      );
+    }
+
+    if (user.emailVerified) {
+      return { success: true, message: 'Email already verified' };
+    }
+
+    // Mark email as verified and clear token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiry: null,
+      },
+    });
+
+    this.logger.log(`Email verified for user: ${user.email}`);
+
+    // Send welcome email (non-blocking)
+    this.emailService
+      .sendWelcomeEmail(user.email, user.firstName, `${this.baseUrl}/login`)
+      .catch((error) => {
+        this.logger.error(`Failed to send welcome email: ${error.message}`);
+      });
+
+    return { success: true, message: 'Email verified successfully' };
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerificationEmail(email: string): Promise<{ success: boolean; message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists
+      return {
+        success: true,
+        message: 'If an account exists with this email, a verification email has been sent.',
+      };
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    // Generate new verification token
+    const emailVerificationToken = this.generateToken();
+    const emailVerificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken,
+        emailVerificationExpiry,
+      },
+    });
+
+    // Send verification email
+    await this.emailService.sendEmailVerificationEmail(
+      user.email,
+      user.firstName,
+      emailVerificationToken,
+      this.baseUrl,
+    );
+
+    this.logger.log(`Verification email resent to: ${user.email}`);
+
+    return {
+      success: true,
+      message: 'If an account exists with this email, a verification email has been sent.',
+    };
   }
 
   /**

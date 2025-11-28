@@ -5,11 +5,11 @@ import { type AuthUser } from '@propertymaster/shared';
 interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
-  login: (accessToken: string, refreshToken: string, user: AuthUser) => void;
+  login: (accessToken: string, user: AuthUser) => void;
   logout: () => void;
   setUser: (user: AuthUser) => void;
+  setAccessToken: (accessToken: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -17,13 +17,11 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
 
-      login: (accessToken, refreshToken, user) => {
+      login: (accessToken, user) => {
         set({
           accessToken,
-          refreshToken,
           user,
           isAuthenticated: true,
         });
@@ -33,7 +31,6 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: null,
           accessToken: null,
-          refreshToken: null,
           isAuthenticated: false,
         });
       },
@@ -41,9 +38,19 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => {
         set({ user });
       },
+
+      setAccessToken: (accessToken) => {
+        set({ accessToken });
+      },
     }),
     {
       name: 'auth-storage',
+      // Only persist user and accessToken - refresh token is in httpOnly cookie
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        isAuthenticated: state.isAuthenticated,
+      }),
     },
   ),
 );

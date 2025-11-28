@@ -6,6 +6,7 @@ import { join } from 'path';
 import { WinstonModule } from 'nest-winston';
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { createWinstonOptions } from './logger/logger.config';
 
@@ -26,6 +27,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger,
   });
+
+  // Parse cookies for httpOnly refresh tokens
+  app.use(cookieParser());
 
   // Serve static files from frontend build
   const frontendDistPath = join(__dirname, '..', '..', 'frontend-admin', 'dist');
