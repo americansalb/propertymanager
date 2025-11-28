@@ -2,6 +2,7 @@ import { Injectable, Inject, LoggerService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 // Notification types matching the Prisma schema
 type NotificationType =
@@ -36,20 +37,13 @@ interface EmailTemplate {
 
 @Injectable()
 export class NotificationsService {
-  private readonly emailEnabled: boolean;
-
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    private emailService: EmailService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
-  ) {
-    this.emailEnabled = !!this.configService.get<string>('SENDGRID_API_KEY');
-
-    if (!this.emailEnabled) {
-      this.logger.warn('Email notifications disabled - SENDGRID_API_KEY not configured');
-    }
-  }
+  ) {}
 
   /**
    * Create and queue a notification
@@ -97,26 +91,32 @@ export class NotificationsService {
     }
 
     try {
-      if (this.emailEnabled) {
-        // In production, integrate with SendGrid or similar
-        // For now, we'll just mark as sent
-        await this.sendEmail(notification.recipientEmail!, notification.subject, notification.body);
+      // Send email using the EmailService
+      const emailSent = await this.emailService.sendEmail({
+        to: notification.recipientEmail!,
+        subject: notification.subject,
+        text: notification.body,
+        html: notification.htmlBody || undefined,
+      });
+
+      if (emailSent) {
+        await this.prisma.notification.update({
+          where: { id: notificationId },
+          data: {
+            status: 'SENT',
+            sentAt: new Date(),
+          },
+        });
+
+        this.logger.log({
+          message: 'notification.sent',
+          notificationId,
+          type: notification.type,
+          recipient: notification.recipientEmail,
+        });
+      } else {
+        throw new Error('Email service returned false');
       }
-
-      await this.prisma.notification.update({
-        where: { id: notificationId },
-        data: {
-          status: 'SENT',
-          sentAt: new Date(),
-        },
-      });
-
-      this.logger.log({
-        message: 'notification.sent',
-        notificationId,
-        type: notification.type,
-        recipient: notification.recipientEmail,
-      });
     } catch (error) {
       await this.prisma.notification.update({
         where: { id: notificationId },
@@ -132,23 +132,6 @@ export class NotificationsService {
         error: (error as Error).message,
       });
     }
-  }
-
-  /**
-   * Send email (placeholder - integrate with SendGrid/SES in production)
-   */
-  private async sendEmail(to: string, subject: string, body: string) {
-    // In production, use SendGrid, AWS SES, or similar
-    // For now, just log the email
-    this.logger.log({
-      message: 'email.send',
-      to,
-      subject,
-      bodyLength: body.length,
-    });
-
-    // Simulate email sending delay
-    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   // ============================================================

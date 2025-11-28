@@ -608,4 +608,142 @@ export class PaymentsService {
       remainingRefund -= reverseAmount;
     }
   }
+
+  // ============================================================
+  // SAVED PAYMENT METHODS (Stripe)
+  // ============================================================
+
+  /**
+   * Get saved payment methods for a user (from Stripe)
+   */
+  async getSavedPaymentMethods(userId: string) {
+    // Get user's Stripe customer ID from their tenant record
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        OR: [
+          { id: userId },
+          { email: userId }, // Allow lookup by email as fallback
+        ],
+        stripeCustomerId: { not: null },
+      },
+    });
+
+    if (!tenant || !tenant.stripeCustomerId) {
+      return [];
+    }
+
+    try {
+      const paymentMethods = await this.stripeService.listPaymentMethods(tenant.stripeCustomerId);
+
+      // Get default payment method
+      const customer = await this.stripeService.getCustomer(tenant.stripeCustomerId);
+      const defaultMethodId =
+        typeof customer.invoice_settings?.default_payment_method === 'string'
+          ? customer.invoice_settings.default_payment_method
+          : customer.invoice_settings?.default_payment_method?.id;
+
+      return paymentMethods.map((method) => ({
+        id: method.id,
+        brand: method.card?.brand || 'unknown',
+        last4: method.card?.last4 || '****',
+        expiryMonth: method.card?.exp_month || 0,
+        expiryYear: method.card?.exp_year || 0,
+        isDefault: method.id === defaultMethodId,
+      }));
+    } catch (error) {
+      this.logger.error({
+        message: 'payment_methods.fetch_failed',
+        userId,
+        error: (error as Error).message,
+      });
+      return [];
+    }
+  }
+
+  /**
+   * Remove a saved payment method
+   */
+  async removeSavedPaymentMethod(methodId: string, userId: string) {
+    // Verify the payment method belongs to this user
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        OR: [{ id: userId }, { email: userId }],
+        stripeCustomerId: { not: null },
+      },
+    });
+
+    if (!tenant || !tenant.stripeCustomerId) {
+      throw new NotFoundException('User not found or no Stripe customer');
+    }
+
+    try {
+      // Verify ownership by checking if the method belongs to this customer
+      const method = await this.stripeService.getPaymentMethod(methodId);
+      if (method.customer !== tenant.stripeCustomerId) {
+        throw new NotFoundException('Payment method not found');
+      }
+
+      await this.stripeService.detachPaymentMethod(methodId);
+
+      this.logger.log({
+        message: 'payment_methods.removed',
+        userId,
+        methodId,
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error({
+        message: 'payment_methods.remove_failed',
+        userId,
+        methodId,
+        error: (error as Error).message,
+      });
+      throw new BadRequestException('Failed to remove payment method');
+    }
+  }
+
+  /**
+   * Set a payment method as the default
+   */
+  async setDefaultPaymentMethod(methodId: string, userId: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        OR: [{ id: userId }, { email: userId }],
+        stripeCustomerId: { not: null },
+      },
+    });
+
+    if (!tenant || !tenant.stripeCustomerId) {
+      throw new NotFoundException('User not found or no Stripe customer');
+    }
+
+    try {
+      // Verify ownership
+      const method = await this.stripeService.getPaymentMethod(methodId);
+      if (method.customer !== tenant.stripeCustomerId) {
+        throw new NotFoundException('Payment method not found');
+      }
+
+      await this.stripeService.setDefaultPaymentMethod(tenant.stripeCustomerId, methodId);
+
+      this.logger.log({
+        message: 'payment_methods.default_set',
+        userId,
+        methodId,
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error({
+        message: 'payment_methods.set_default_failed',
+        userId,
+        methodId,
+        error: (error as Error).message,
+      });
+      throw new BadRequestException('Failed to set default payment method');
+    }
+  }
 }

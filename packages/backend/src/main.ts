@@ -7,6 +7,7 @@ import { WinstonModule } from 'nest-winston';
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import * as cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { createWinstonOptions } from './logger/logger.config';
 
@@ -30,6 +31,42 @@ async function bootstrap() {
 
   // Parse cookies for httpOnly refresh tokens
   app.use(cookieParser());
+
+  // Security headers with Helmet
+  app.use(
+    helmet({
+      // Content Security Policy - allow Stripe, fonts, and inline styles for React
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://js.stripe.com'],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+          connectSrc: ["'self'", 'https://api.stripe.com', 'https://*.stripe.com'],
+          frameSrc: ["'self'", 'https://js.stripe.com', 'https://hooks.stripe.com'],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+        },
+      },
+      // Prevent clickjacking
+      frameguard: { action: 'deny' },
+      // Hide X-Powered-By header
+      hidePoweredBy: true,
+      // Strict Transport Security (HTTPS only in production)
+      hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+      },
+      // Prevent MIME type sniffing
+      noSniff: true,
+      // XSS filter
+      xssFilter: true,
+      // Referrer policy
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }),
+  );
 
   // Serve static files from frontend build
   const frontendDistPath = join(__dirname, '..', '..', 'frontend-admin', 'dist');

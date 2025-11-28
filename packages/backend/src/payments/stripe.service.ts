@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class StripeService {
@@ -11,6 +12,7 @@ export class StripeService {
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
+    private notificationsService: NotificationsService,
   ) {
     const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!stripeKey) {
@@ -220,6 +222,27 @@ export class StripeService {
 
     const amount = paymentIntent.amount / 100;
 
+    // Get tenant details for notification
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      this.logger.error(`Tenant not found: ${tenantId}`);
+      return;
+    }
+
     // Create payment record
     const payment = await this.prisma.payment.create({
       data: {
@@ -278,6 +301,22 @@ export class StripeService {
     }
 
     this.logger.log(`Payment allocated across ${chargeIdList.length} charges`);
+
+    // Send payment received notification
+    try {
+      await this.notificationsService.sendPaymentReceivedNotification(
+        tenant.email,
+        `${tenant.firstName} ${tenant.lastName}`,
+        amount,
+        new Date(),
+        tenant.lease.unit.property.name,
+        tenant.lease.unit.unitNumber,
+        payment.id,
+        tenant.lease.unit.property.organizationId,
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send payment notification: ${(error as Error).message}`);
+    }
   }
 
   /**
@@ -291,18 +330,62 @@ export class StripeService {
       return;
     }
 
-    await this.prisma.payment.create({
+    const amount = paymentIntent.amount / 100;
+
+    // Get tenant details for notification
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      this.logger.error(`Tenant not found: ${tenantId}`);
+      return;
+    }
+
+    const payment = await this.prisma.payment.create({
       data: {
         tenantId,
         method: this.mapPaymentMethod(paymentIntent.payment_method_types[0]),
         status: 'FAILED',
-        amount: paymentIntent.amount / 100,
+        amount,
         stripePaymentIntentId: paymentIntent.id,
         paymentDate: new Date(),
       },
     });
 
     this.logger.warn(`Payment failed for tenant: ${tenantId}`);
+
+    // Determine failure reason
+    const failureMessage =
+      paymentIntent.last_payment_error?.message ||
+      'Your payment could not be processed. Please check your payment details and try again.';
+
+    // Send payment failed notification
+    try {
+      await this.notificationsService.sendPaymentFailedNotification(
+        tenant.email,
+        `${tenant.firstName} ${tenant.lastName}`,
+        amount,
+        tenant.lease.unit.property.name,
+        tenant.lease.unit.unitNumber,
+        failureMessage,
+        payment.id,
+        tenant.lease.unit.property.organizationId,
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send payment failure notification: ${(error as Error).message}`);
+    }
   }
 
   /**
@@ -344,6 +427,49 @@ export class StripeService {
     });
 
     return paymentMethods.data;
+  }
+
+  /**
+   * Get a specific payment method
+   */
+  async getPaymentMethod(paymentMethodId: string): Promise<Stripe.PaymentMethod> {
+    return this.stripe.paymentMethods.retrieve(paymentMethodId);
+  }
+
+  /**
+   * Get customer details
+   */
+  async getCustomer(customerId: string): Promise<Stripe.Customer> {
+    const customer = await this.stripe.customers.retrieve(customerId);
+    if (customer.deleted) {
+      throw new Error('Customer has been deleted');
+    }
+    return customer as Stripe.Customer;
+  }
+
+  /**
+   * Detach a payment method from customer
+   */
+  async detachPaymentMethod(paymentMethodId: string): Promise<Stripe.PaymentMethod> {
+    const paymentMethod = await this.stripe.paymentMethods.detach(paymentMethodId);
+    this.logger.log(`Payment method ${paymentMethodId} detached`);
+    return paymentMethod;
+  }
+
+  /**
+   * Set default payment method for customer
+   */
+  async setDefaultPaymentMethod(
+    customerId: string,
+    paymentMethodId: string,
+  ): Promise<Stripe.Customer> {
+    const customer = await this.stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+    this.logger.log(`Default payment method set for customer ${customerId}`);
+    return customer;
   }
 
   /**

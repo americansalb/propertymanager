@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -154,5 +156,39 @@ export class PaymentsController {
       endDate ? new Date(endDate) : undefined,
     );
     return { success: true, data: summary };
+  }
+
+  // ============================================================
+  // SAVED PAYMENT METHODS (Stripe)
+  // ============================================================
+
+  @Get('methods')
+  @ApiOperation({ summary: 'Get saved payment methods for current user' })
+  @ApiResponse({ status: 200, description: 'List of saved payment methods' })
+  async getSavedPaymentMethods(@UserId() userId: string) {
+    const methods = await this.paymentsService.getSavedPaymentMethods(userId);
+    return { success: true, data: methods };
+  }
+
+  @Delete('methods/:methodId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove a saved payment method' })
+  @ApiParam({ name: 'methodId', description: 'Stripe payment method ID' })
+  @ApiResponse({ status: 200, description: 'Payment method removed' })
+  @ApiResponse({ status: 404, description: 'Payment method not found' })
+  async removeSavedPaymentMethod(@Param('methodId') methodId: string, @UserId() userId: string) {
+    await this.paymentsService.removeSavedPaymentMethod(methodId, userId);
+    return { success: true, message: 'Payment method removed' };
+  }
+
+  @Patch('methods/:methodId/default')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Set a payment method as default' })
+  @ApiParam({ name: 'methodId', description: 'Stripe payment method ID' })
+  @ApiResponse({ status: 200, description: 'Default payment method updated' })
+  @ApiResponse({ status: 404, description: 'Payment method not found' })
+  async setDefaultPaymentMethod(@Param('methodId') methodId: string, @UserId() userId: string) {
+    await this.paymentsService.setDefaultPaymentMethod(methodId, userId);
+    return { success: true, message: 'Default payment method updated' };
   }
 }
