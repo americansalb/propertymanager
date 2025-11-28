@@ -3,7 +3,7 @@ import { Logger } from 'winston';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
-import { CreateWorkOrderDto, WorkOrderStatus } from './dto/create-work-order.dto';
+import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { AssignWorkOrderDto } from './dto/assign-work-order.dto';
 import { CompleteWorkOrderDto } from './dto/complete-work-order.dto';
@@ -706,7 +706,8 @@ export class WorkOrdersService {
   }
 
   async getStatusHistory(id: string, organizationId: string) {
-    const workOrder = await this.findOne(id, organizationId);
+    // Validate work order exists and belongs to organization
+    await this.findOne(id, organizationId);
 
     const history = await this.prisma.workOrderStatusHistory.findMany({
       where: { workOrderId: id },

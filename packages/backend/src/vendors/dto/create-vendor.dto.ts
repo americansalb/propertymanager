@@ -32,7 +32,7 @@ export class CreateVendorDto {
   @ApiProperty({ description: 'Company name' })
   @IsString()
   @MaxLength(255)
-  companyName: string;
+  companyName!: string;
 
   @ApiPropertyOptional({ description: 'Contact person name' })
   @IsOptional()
@@ -53,7 +53,7 @@ export class CreateVendorDto {
 
   @ApiProperty({ enum: VendorType, description: 'Type of vendor' })
   @IsEnum(VendorType)
-  type: VendorType;
+  type!: VendorType;
 
   @ApiPropertyOptional({ enum: VendorStatus, description: 'Vendor status' })
   @IsOptional()

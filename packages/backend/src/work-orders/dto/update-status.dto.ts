@@ -5,7 +5,7 @@ import { WorkOrderStatus } from './create-work-order.dto';
 export class UpdateWorkOrderStatusDto {
   @ApiProperty({ enum: WorkOrderStatus, description: 'New status' })
   @IsEnum(WorkOrderStatus)
-  status: WorkOrderStatus;
+  status!: WorkOrderStatus;
 
   @ApiPropertyOptional({ description: 'Notes about the status change' })
   @IsString()

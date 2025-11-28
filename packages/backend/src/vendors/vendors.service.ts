@@ -100,8 +100,8 @@ export class VendorsService {
   }
 
   async remove(id: string, organizationId: string) {
-    // First check if vendor exists and belongs to organization
-    const vendor = await this.findOne(id, organizationId);
+    // Validate vendor exists and belongs to organization
+    await this.findOne(id, organizationId);
 
     // Check if vendor has any assigned work orders that are not completed/cancelled
     const activeWorkOrders = await this.prisma.workOrder.count({

@@ -6,14 +6,14 @@ import { IsString, IsOptional, IsBoolean, IsNumber, IsIn, Min, Max } from 'class
 
 class CreateMaintenanceRequestDto {
   @IsString()
-  title: string;
+  title!: string;
 
   @IsString()
-  description: string;
+  description!: string;
 
   @IsString()
   @IsIn(['Plumbing', 'Electrical', 'HVAC', 'Appliance', 'Pest Control', 'General', 'Other'])
-  category: string;
+  category!: string;
 
   @IsOptional()
   @IsString()
@@ -43,7 +43,7 @@ class SendMessageDto {
   subject?: string;
 
   @IsString()
-  content: string;
+  content!: string;
 
   @IsOptional()
   @IsString()
@@ -52,7 +52,7 @@ class SendMessageDto {
 
 class UpdateAutoPayDto {
   @IsBoolean()
-  enabled: boolean;
+  enabled!: boolean;
 
   @IsOptional()
   @IsNumber()
