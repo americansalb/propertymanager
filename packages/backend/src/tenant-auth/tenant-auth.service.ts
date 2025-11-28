@@ -1,7 +1,14 @@
-import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { randomBytes } from 'crypto';
 
 @Injectable()
@@ -9,6 +16,8 @@ export class TenantAuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
+    private emailService: EmailService,
   ) {}
 
   async login(email: string, password: string) {
@@ -36,7 +45,9 @@ export class TenantAuthService {
     }
 
     if (!tenant.portalPassword) {
-      throw new UnauthorizedException('Portal access not set up. Please contact your property manager.');
+      throw new UnauthorizedException(
+        'Portal access not set up. Please contact your property manager.',
+      );
     }
 
     // Check password
@@ -100,9 +111,15 @@ export class TenantAuthService {
       },
     });
 
-    // TODO: Send email with reset link
-    // For now, just log the token (in production, send email)
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    // Send password reset email
+    const tenantPortalUrl =
+      this.configService.get<string>('FRONTEND_TENANT_URL') || 'http://localhost:3002';
+    await this.emailService.sendPasswordResetEmail(
+      tenant.email,
+      `${tenant.firstName} ${tenant.lastName}`,
+      resetToken,
+      tenantPortalUrl,
+    );
 
     return { success: true };
   }
@@ -169,18 +186,29 @@ export class TenantAuthService {
       unitId: tenant.lease?.unitId || null,
       unit: tenant.lease?.unit || null,
       property: tenant.lease?.unit?.property || null,
-      lease: tenant.lease ? {
-        id: tenant.lease.id,
-        startDate: tenant.lease.startDate,
-        endDate: tenant.lease.endDate,
-        monthlyRent: tenant.lease.monthlyRent,
-        securityDeposit: tenant.lease.securityDeposit,
-        status: tenant.lease.status,
-      } : null,
+      lease: tenant.lease
+        ? {
+            id: tenant.lease.id,
+            startDate: tenant.lease.startDate,
+            endDate: tenant.lease.endDate,
+            monthlyRent: tenant.lease.monthlyRent,
+            securityDeposit: tenant.lease.securityDeposit,
+            status: tenant.lease.status,
+          }
+        : null,
     };
   }
 
-  async updateProfile(tenantId: string, data: { firstName?: string; lastName?: string; phone?: string; emergencyContact?: string; emergencyPhone?: string }) {
+  async updateProfile(
+    tenantId: string,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      emergencyContact?: string;
+      emergencyPhone?: string;
+    },
+  ) {
     const tenant = await this.prisma.tenant.update({
       where: { id: tenantId },
       data: {

@@ -24,7 +24,8 @@ export default function RegisterPage() {
   const registerMutation = useMutation({
     mutationFn: authService.register,
     onSuccess: (data) => {
-      login(data.accessToken, data.refreshToken, data.user);
+      // Refresh token is now in httpOnly cookie - only store accessToken
+      login(data.accessToken, data.user);
       navigate('/');
     },
   });
