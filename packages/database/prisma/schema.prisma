@@ -258,6 +258,11 @@ model Lease {
   monthlyRent Decimal  @db.Decimal(10, 2)
   securityDeposit Decimal @db.Decimal(10, 2)
 
+  // Auto-pay settings
+  autoPayEnabled Boolean @default(false)
+  autoPayDay     Int?    // Day of month (1-28) when auto-pay runs
+  autoPayPaymentMethodId String? // Stripe payment method ID
+
   // Lease terms
   terms       Json     @default("{}")
   documentUrl String?
@@ -276,6 +281,7 @@ model Lease {
   @@index([status])
   @@index([startDate])
   @@index([endDate])
+  @@index([autoPayEnabled])
 }
 
 model Tenant {
@@ -288,11 +294,23 @@ model Tenant {
   phone       String
 
   // Emergency contact
-  emergencyContactName  String?
-  emergencyContactPhone String?
+  emergencyContact  String?
+  emergencyPhone    String?
+  emergencyContactName  String?  // Legacy field, use emergencyContact
+  emergencyContactPhone String?  // Legacy field, use emergencyPhone
 
   // Linked user account (for portal access)
   userId      String?  @unique
+
+  // Portal access
+  portalEnabled     Boolean  @default(false)
+  portalPassword    String?
+  lastPortalLogin   DateTime?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+
+  // Stripe integration for payments
+  stripeCustomerId String? @unique
 
   leaseId     String
   lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
@@ -304,9 +322,12 @@ model Tenant {
 
   // Relations
   payments    Payment[]
+  maintenanceRequests MaintenanceRequest[]
+  messages    TenantMessage[]
 
   @@index([leaseId])
   @@index([email])
+  @@index([portalEnabled])
 }
 
 // ============================================================================
@@ -844,12 +865,14 @@ enum WorkOrderStatus {
   SUBMITTED
   ASSIGNED
   IN_PROGRESS
+  ON_HOLD
   COMPLETED
   CANCELLED
 }
 
 model WorkOrder {
-  id          String   @id @default(cuid())
+  id             String   @id @default(cuid())
+  organizationId String
 
   title       String
   description String
@@ -897,6 +920,7 @@ model WorkOrder {
   attachments WorkOrderAttachment[]
   statusHistory WorkOrderStatusHistory[]
 
+  @@index([organizationId])
   @@index([propertyId])
   @@index([unitId])
   @@index([status])
@@ -1018,6 +1042,75 @@ model Event {
 }
 
 // ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+enum NotificationType {
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  PAYMENT_REMINDER
+  AUTOPAY_UPCOMING
+  AUTOPAY_PROCESSED
+  AUTOPAY_FAILED
+  LEASE_EXPIRING
+  LEASE_EXPIRED
+  LATE_FEE_APPLIED
+  WORK_ORDER_UPDATE
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+
+  type        NotificationType
+  status      NotificationStatus @default(PENDING)
+  channel     NotificationChannel @default(EMAIL)
+
+  // Recipient
+  recipientEmail String?
+  recipientPhone String?
+  recipientUserId String?
+
+  // Content
+  subject     String
+  body        String   @db.Text
+  htmlBody    String?  @db.Text
+
+  // Reference
+  referenceType String? // "Lease", "Payment", "Charge", etc.
+  referenceId   String?
+
+  // Tracking
+  sentAt      DateTime?
+  readAt      DateTime?
+  errorMessage String?
+
+  // Multi-tenant
+  organizationId String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([type])
+  @@index([recipientUserId])
+  @@index([createdAt])
+}
+
+// ============================================================================
 // SYSTEM CONFIGURATION
 // ============================================================================
 
@@ -1029,4 +1122,100 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 
   @@index([key])
+}
+
+// ============================================================================
+// TENANT PORTAL
+// ============================================================================
+
+enum MaintenanceRequestStatus {
+  SUBMITTED
+  ACKNOWLEDGED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MaintenanceRequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+}
+
+model MaintenanceRequest {
+  id          String   @id @default(cuid())
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Request details
+  title       String
+  description String   @db.Text
+  category    String   // "Plumbing", "Electrical", "HVAC", "Appliance", "Other"
+  priority    MaintenanceRequestPriority @default(MEDIUM)
+  status      MaintenanceRequestStatus @default(SUBMITTED)
+
+  // Location
+  location    String?  // Specific area within unit
+
+  // Permission
+  permissionToEnter Boolean @default(false)
+  preferredTimes    String?
+
+  // Photos
+  photos      String[] @default([])
+
+  // Resolution
+  resolvedAt  DateTime?
+  resolution  String?
+
+  // Link to work order
+  workOrderId String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum MessageDirection {
+  TENANT_TO_MANAGEMENT
+  MANAGEMENT_TO_TENANT
+}
+
+model TenantMessage {
+  id          String   @id @default(cuid())
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  direction   MessageDirection
+  subject     String?
+  content     String   @db.Text
+
+  // Attachments
+  attachments String[] @default([])
+
+  // Read status
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+
+  // Reply tracking
+  parentId    String?
+  parent      TenantMessage? @relation("MessageReplies", fields: [parentId], references: [id])
+  replies     TenantMessage[] @relation("MessageReplies")
+
+  // Sender info (for management messages)
+  senderName  String?
+  senderId    String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([direction])
+  @@index([isRead])
+  @@index([createdAt])
 }

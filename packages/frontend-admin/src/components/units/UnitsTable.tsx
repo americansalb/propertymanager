@@ -174,7 +174,7 @@ export default function UnitsTable({ propertyId, propertyName }: UnitsTableProps
                         {TYPE_LABELS[unit.type] || unit.type}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-600">
-                        {unit.bedrooms} / {unit.bathrooms}
+                        {Number(unit.bedrooms)} / {Number(unit.bathrooms)}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {unit.squareFeet ? unit.squareFeet.toLocaleString() : '-'}

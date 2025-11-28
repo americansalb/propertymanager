@@ -220,6 +220,9 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
           } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(tenant.email)) {
             newErrors[`tenant_${index}_email`] = 'Invalid email format';
           }
+          if (!tenant.phone.trim()) {
+            newErrors[`tenant_${index}_phone`] = 'Phone is required';
+          }
         });
         break;
       }
@@ -247,17 +250,16 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
 
     const data = {
       unitId: formData.unitId,
+      type: 'FIXED_TERM', // Required by backend - FIXED_TERM for leases with end date
       startDate: formData.startDate,
       endDate: formData.endDate,
       monthlyRent: parseFloat(formData.monthlyRent),
       securityDeposit: parseFloat(formData.securityDeposit || '0'),
-      paymentDueDay: formData.paymentDueDay,
-      status: 'DRAFT',
       tenants: formData.tenants.map((t) => ({
         firstName: t.firstName.trim(),
         lastName: t.lastName.trim(),
         email: t.email.trim(),
-        phone: t.phone.trim() || undefined,
+        phone: t.phone.trim() || 'N/A', // Phone is required by backend
         isPrimary: t.isPrimary,
       })),
     };
@@ -386,7 +388,7 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                         <div>
                           <span className="font-medium">Unit {unit.unitNumber}</span>
                           <span className="text-gray-500 ml-2">
-                            {unit.bedrooms} bed / {unit.bathrooms} bath
+                            {Number(unit.bedrooms)} bed / {Number(unit.bathrooms)} bath
                           </span>
                         </div>
                         <span className="font-medium text-green-600">
@@ -569,12 +571,19 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
                       <Input
                         type="tel"
                         value={tenant.phone}
                         onChange={(e) => handleTenantChange(index, 'phone', e.target.value)}
+                        className={errors[`tenant_${index}_phone`] ? 'border-red-500' : ''}
+                        placeholder="(555) 555-5555"
                       />
+                      {errors[`tenant_${index}_phone`] && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {errors[`tenant_${index}_phone`]}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -615,7 +624,7 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                 </p>
                 <p>
                   <span className="font-medium">Unit:</span> {selectedUnit?.unitNumber} (
-                  {selectedUnit?.bedrooms} bed / {selectedUnit?.bathrooms} bath)
+                  {Number(selectedUnit?.bedrooms || 0)} bed / {Number(selectedUnit?.bathrooms || 0)} bath)
                 </p>
               </div>
             </div>

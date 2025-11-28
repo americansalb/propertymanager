@@ -29,6 +29,7 @@ import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { formatCurrency } from '../lib/utils';
+import ExpiringLeasesWidget from '../components/dashboard/ExpiringLeasesWidget';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -437,7 +438,10 @@ export default function DashboardPage() {
       </Card>
 
       {/* Recent Activity Row */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Expiring Leases Widget */}
+        <ExpiringLeasesWidget />
+
         {/* Active Work Orders */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">

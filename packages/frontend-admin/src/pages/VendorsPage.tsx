@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,13 +11,33 @@ import {
   AlertTriangle,
   TrendingUp,
   ExternalLink,
+  Edit,
+  Shield,
+  FileText,
+  ShieldCheck,
+  ShieldX,
+  ShieldAlert,
 } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import VendorModal from '../components/vendors/VendorModal';
 
 export default function VendorsPage() {
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<any>(null);
+
+  const handleAddVendor = () => {
+    setSelectedVendor(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditVendor = (vendor: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedVendor(vendor);
+    setIsModalOpen(true);
+  };
 
   const { data: vendors, isLoading: isLoadingVendors } = useQuery({
     queryKey: ['vendors'],
@@ -143,6 +163,83 @@ export default function VendorsPage() {
     navigate(`/work-orders?vendorId=${vendorId}`);
   };
 
+  // Compliance status helper
+  const getComplianceStatus = (vendor: any) => {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // Insurance status
+    let insuranceStatus: 'valid' | 'expiring' | 'expired' | 'missing' = 'missing';
+    if (vendor.insuranceExpiryDate) {
+      const expiryDate = new Date(vendor.insuranceExpiryDate);
+      if (expiryDate < now) {
+        insuranceStatus = 'expired';
+      } else if (expiryDate < thirtyDaysFromNow) {
+        insuranceStatus = 'expiring';
+      } else {
+        insuranceStatus = 'valid';
+      }
+    }
+
+    // License status
+    let licenseStatus: 'valid' | 'expiring' | 'expired' | 'missing' = 'missing';
+    if (vendor.licenseExpiryDate) {
+      const expiryDate = new Date(vendor.licenseExpiryDate);
+      if (expiryDate < now) {
+        licenseStatus = 'expired';
+      } else if (expiryDate < thirtyDaysFromNow) {
+        licenseStatus = 'expiring';
+      } else {
+        licenseStatus = 'valid';
+      }
+    } else if (vendor.licenseNumber) {
+      // Has license number but no expiry tracked
+      licenseStatus = 'valid';
+    }
+
+    // W9 status
+    const w9Status: 'valid' | 'missing' = vendor.w9Url || vendor.taxId ? 'valid' : 'missing';
+
+    // Overall compliance score
+    const issues = [
+      insuranceStatus === 'expired' || insuranceStatus === 'missing',
+      licenseStatus === 'expired' || licenseStatus === 'missing',
+      w9Status === 'missing',
+    ].filter(Boolean).length;
+
+    const warnings = [
+      insuranceStatus === 'expiring',
+      licenseStatus === 'expiring',
+    ].filter(Boolean).length;
+
+    let overallStatus: 'compliant' | 'warning' | 'non-compliant' = 'compliant';
+    if (issues > 0) {
+      overallStatus = 'non-compliant';
+    } else if (warnings > 0) {
+      overallStatus = 'warning';
+    }
+
+    return { insuranceStatus, licenseStatus, w9Status, overallStatus, issues, warnings };
+  };
+
+  // Portfolio compliance summary
+  const complianceStats = useMemo(() => {
+    if (!vendors) return { compliant: 0, warning: 0, nonCompliant: 0 };
+
+    let compliant = 0;
+    let warning = 0;
+    let nonCompliant = 0;
+
+    vendors.forEach((vendor: any) => {
+      const status = getComplianceStatus(vendor);
+      if (status.overallStatus === 'compliant') compliant++;
+      else if (status.overallStatus === 'warning') warning++;
+      else nonCompliant++;
+    });
+
+    return { compliant, warning, nonCompliant };
+  }, [vendors]);
+
   if (isLoadingVendors) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -158,14 +255,14 @@ export default function VendorsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Vendor Portal</h1>
           <p className="text-gray-500 mt-1">Manage vendors and track work order performance</p>
         </div>
-        <Button>
+        <Button onClick={handleAddVendor}>
           <Users className="w-4 h-4 mr-2" />
           Add Vendor
         </Button>
       </div>
 
       {/* Portfolio Summary Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Vendors</CardTitle>
@@ -181,13 +278,34 @@ export default function VendorsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Active Vendors</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Compliance</CardTitle>
             <div className="p-2 rounded-lg bg-green-100 text-green-600">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-green-700">{complianceStats.compliant}</span>
+              {complianceStats.warning > 0 && (
+                <span className="text-sm text-amber-600">{complianceStats.warning} warning</span>
+              )}
+              {complianceStats.nonCompliant > 0 && (
+                <span className="text-sm text-red-600">{complianceStats.nonCompliant} issues</span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Fully compliant vendors</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Active Vendors</CardTitle>
+            <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
               <TrendingUp className="w-4 h-4" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-700">{portfolioStats.activeVendors}</div>
+            <div className="text-2xl font-bold text-purple-700">{portfolioStats.activeVendors}</div>
             <p className="text-xs text-gray-500 mt-1">With open work orders</p>
           </CardContent>
         </Card>
@@ -197,12 +315,12 @@ export default function VendorsPage() {
             <CardTitle className="text-sm font-medium text-gray-600">
               Assigned Work Orders
             </CardTitle>
-            <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
+            <div className="p-2 rounded-lg bg-indigo-100 text-indigo-600">
               <Wrench className="w-4 h-4" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-700">{portfolioStats.totalAssigned}</div>
+            <div className="text-2xl font-bold text-indigo-700">{portfolioStats.totalAssigned}</div>
             <p className="text-xs text-gray-500 mt-1">Total vendor assignments</p>
           </CardContent>
         </Card>
@@ -234,23 +352,42 @@ export default function VendorsPage() {
               avgCompletionDays: 0,
               overdueCount: 0,
             };
+            const compliance = getComplianceStatus(vendor);
 
             return (
               <Card key={vendor.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-start justify-between">
                     <span className="text-lg">{vendor.companyName}</span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        vendor.status === 'ACTIVE'
-                          ? 'bg-green-100 text-green-700'
-                          : vendor.status === 'SUSPENDED'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {vendor.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {/* Overall Compliance Badge */}
+                      {compliance.overallStatus === 'compliant' && (
+                        <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-100 text-green-700" title="All compliance documents current">
+                          <ShieldCheck className="w-3 h-3" />
+                        </span>
+                      )}
+                      {compliance.overallStatus === 'warning' && (
+                        <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700" title="Documents expiring soon">
+                          <ShieldAlert className="w-3 h-3" />
+                        </span>
+                      )}
+                      {compliance.overallStatus === 'non-compliant' && (
+                        <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-100 text-red-700" title="Missing or expired documents">
+                          <ShieldX className="w-3 h-3" />
+                        </span>
+                      )}
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          vendor.status === 'ACTIVE'
+                            ? 'bg-green-100 text-green-700'
+                            : vendor.status === 'SUSPENDED'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {vendor.status}
+                      </span>
+                    </div>
                   </CardTitle>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <span className="font-medium">{vendor.type?.replace('_', ' ')}</span>
@@ -299,6 +436,78 @@ export default function VendorsPage() {
                       </div>
                     )}
 
+                    {/* Compliance Indicators */}
+                    <div className="flex flex-wrap gap-2">
+                      {/* Insurance Badge */}
+                      <span
+                        className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+                          compliance.insuranceStatus === 'valid'
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : compliance.insuranceStatus === 'expiring'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : compliance.insuranceStatus === 'expired'
+                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                : 'bg-gray-50 text-gray-500 border border-gray-200'
+                        }`}
+                        title={
+                          compliance.insuranceStatus === 'valid'
+                            ? `Insurance valid until ${vendor.insuranceExpiryDate ? new Date(vendor.insuranceExpiryDate).toLocaleDateString() : 'N/A'}`
+                            : compliance.insuranceStatus === 'expiring'
+                              ? `Insurance expiring ${vendor.insuranceExpiryDate ? new Date(vendor.insuranceExpiryDate).toLocaleDateString() : 'soon'}`
+                              : compliance.insuranceStatus === 'expired'
+                                ? 'Insurance has expired'
+                                : 'No insurance on file'
+                        }
+                      >
+                        <Shield className="w-3 h-3" />
+                        {compliance.insuranceStatus === 'valid' && 'Insured'}
+                        {compliance.insuranceStatus === 'expiring' && 'Ins. Expiring'}
+                        {compliance.insuranceStatus === 'expired' && 'Ins. Expired'}
+                        {compliance.insuranceStatus === 'missing' && 'No Insurance'}
+                      </span>
+
+                      {/* License Badge */}
+                      <span
+                        className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+                          compliance.licenseStatus === 'valid'
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : compliance.licenseStatus === 'expiring'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : compliance.licenseStatus === 'expired'
+                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                : 'bg-gray-50 text-gray-500 border border-gray-200'
+                        }`}
+                        title={
+                          compliance.licenseStatus === 'valid'
+                            ? `License ${vendor.licenseNumber || ''} ${vendor.licenseExpiryDate ? `valid until ${new Date(vendor.licenseExpiryDate).toLocaleDateString()}` : 'on file'}`
+                            : compliance.licenseStatus === 'expiring'
+                              ? `License expiring ${vendor.licenseExpiryDate ? new Date(vendor.licenseExpiryDate).toLocaleDateString() : 'soon'}`
+                              : compliance.licenseStatus === 'expired'
+                                ? 'License has expired'
+                                : 'No license on file'
+                        }
+                      >
+                        <FileText className="w-3 h-3" />
+                        {compliance.licenseStatus === 'valid' && 'Licensed'}
+                        {compliance.licenseStatus === 'expiring' && 'Lic. Expiring'}
+                        {compliance.licenseStatus === 'expired' && 'Lic. Expired'}
+                        {compliance.licenseStatus === 'missing' && 'No License'}
+                      </span>
+
+                      {/* W9 Badge */}
+                      <span
+                        className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+                          compliance.w9Status === 'valid'
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : 'bg-gray-50 text-gray-500 border border-gray-200'
+                        }`}
+                        title={compliance.w9Status === 'valid' ? 'W9/Tax ID on file' : 'No W9/Tax ID on file'}
+                      >
+                        <FileText className="w-3 h-3" />
+                        {compliance.w9Status === 'valid' ? 'W9' : 'No W9'}
+                      </span>
+                    </div>
+
                     {/* Contact Info */}
                     <div className="space-y-2 pt-2 border-t">
                       {vendor.contactName && (
@@ -325,18 +534,29 @@ export default function VendorsPage() {
                       )}
                     </div>
 
-                    {/* View Work Orders Button */}
-                    {stats.totalCount > 0 && (
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full"
-                        onClick={(e) => handleViewWorkOrders(vendor.id, e)}
+                        className="flex-1"
+                        onClick={(e) => handleEditVendor(vendor, e)}
                       >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View {stats.totalCount} Work Order{stats.totalCount > 1 ? 's' : ''}
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
                       </Button>
-                    )}
+                      {stats.totalCount > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => handleViewWorkOrders(vendor.id, e)}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          {stats.totalCount} WO{stats.totalCount > 1 ? 's' : ''}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -350,7 +570,7 @@ export default function VendorsPage() {
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No vendors yet</h3>
               <p className="text-gray-500 mb-6">Add vendors to manage your service providers</p>
-              <Button>
+              <Button onClick={handleAddVendor}>
                 <Users className="w-4 h-4 mr-2" />
                 Add Your First Vendor
               </Button>
@@ -358,6 +578,13 @@ export default function VendorsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Vendor Modal */}
+      <VendorModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        vendor={selectedVendor}
+      />
     </div>
   );
 }

@@ -22,6 +22,10 @@ import { WorkOrdersModule } from './work-orders/work-orders.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { ReportsModule } from './reports/reports.module';
 import { EventsModule } from './events/events.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ScheduledTasksModule } from './scheduled/scheduled-tasks.module';
+import { TenantAuthModule } from './tenant-auth/tenant-auth.module';
+import { TenantPortalModule } from './tenant-portal/tenant-portal.module';
 
 @Module({
   controllers: [AppController],
@@ -57,6 +61,10 @@ import { EventsModule } from './events/events.module';
     VendorsModule,
     ReportsModule,
     EventsModule,
+    NotificationsModule,
+    ScheduledTasksModule,
+    TenantAuthModule,
+    TenantPortalModule,
   ],
   providers: [
     {
