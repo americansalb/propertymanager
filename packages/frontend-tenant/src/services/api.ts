@@ -1,7 +1,17 @@
 import axios from 'axios';
 
+// Build API URL - append /api/v1 to the base URL if it's set from env
+const getApiBaseUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl) {
+    // Remove trailing slash if present and append /api/v1
+    return `${envUrl.replace(/\/$/, '')}/api/v1`;
+  }
+  return 'http://localhost:3001/api/v1';
+};
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

@@ -25,6 +25,21 @@ services:
           name: propertymaster-redis
           property: connectionString
 
+  - type: web
+    name: propertymaster-tenant-portal
+    runtime: docker
+    dockerfilePath: ./Dockerfile.tenant
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: propertymaster-api
+          envVarKey: RENDER_EXTERNAL_URL
+
   - type: redis
     name: propertymaster-redis
     plan: starter
