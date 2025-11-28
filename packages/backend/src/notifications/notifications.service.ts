@@ -37,7 +37,8 @@ interface EmailTemplate {
 @Injectable()
 export class NotificationsService {
   private readonly emailEnabled: boolean;
-  private readonly fromEmail: string;
+  // Email sender address - will be used when SendGrid integration is complete
+  private readonly _fromEmail: string;
 
   constructor(
     private prisma: PrismaService,
@@ -46,7 +47,7 @@ export class NotificationsService {
     private readonly logger: LoggerService,
   ) {
     this.emailEnabled = !!this.configService.get<string>('SENDGRID_API_KEY');
-    this.fromEmail = this.configService.get<string>('FROM_EMAIL') || 'noreply@propertymaster.com';
+    this._fromEmail = this.configService.get<string>('FROM_EMAIL') || 'noreply@propertymaster.com';
 
     if (!this.emailEnabled) {
       this.logger.warn('Email notifications disabled - SENDGRID_API_KEY not configured');

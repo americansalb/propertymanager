@@ -5,25 +5,25 @@ import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 
 class LoginDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   @MinLength(1)
-  password: string;
+  password!: string;
 }
 
 class ForgotPasswordDto {
   @IsEmail()
-  email: string;
+  email!: string;
 }
 
 class ResetPasswordDto {
   @IsString()
-  token: string;
+  token!: string;
 
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
 }
 
 class UpdateProfileDto {
@@ -50,11 +50,11 @@ class UpdateProfileDto {
 
 class ChangePasswordDto {
   @IsString()
-  currentPassword: string;
+  currentPassword!: string;
 
   @IsString()
   @MinLength(8)
-  newPassword: string;
+  newPassword!: string;
 }
 
 @ApiTags('tenant-auth')
