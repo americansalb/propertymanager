@@ -952,7 +952,8 @@ export class LeasesService {
    * Disable auto-pay for a lease
    */
   async disableAutoPay(leaseId: string, organizationId: string, userId?: string) {
-    const lease = await this.findOne(leaseId, organizationId);
+    // Validate lease exists and belongs to organization
+    await this.findOne(leaseId, organizationId);
 
     const updated = await this.prisma.lease.update({
       where: { id: leaseId },
