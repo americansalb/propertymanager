@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LeasesService } from '../leases/leases.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { StripeService } from '../payments/stripe.service';
+import { ChargesService } from '../financial/charges.service';
 
 @Injectable()
 export class ScheduledTasksService {
@@ -13,6 +14,7 @@ export class ScheduledTasksService {
     private leasesService: LeasesService,
     private notificationsService: NotificationsService,
     private stripeService: StripeService,
+    private chargesService: ChargesService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -61,7 +63,9 @@ export class ScheduledTasksService {
 
         for (const lease of expiringLeases) {
           const primaryTenant = lease.tenants.find((t: any) => t.isPrimary);
-          if (!primaryTenant) continue;
+          if (!primaryTenant) {
+            continue;
+          }
 
           const organizationId = lease.unit.property.organizationId;
 
@@ -209,13 +213,17 @@ export class ScheduledTasksService {
 
       for (const lease of upcomingAutoPayLeases) {
         const primaryTenant = lease.tenants[0];
-        if (!primaryTenant) continue;
+        if (!primaryTenant) {
+          continue;
+        }
 
         const outstandingAmount = lease.charges.reduce((sum, charge) => {
           return sum + (Number(charge.amount) - Number(charge.amountPaid));
         }, 0);
 
-        if (outstandingAmount <= 0) continue;
+        if (outstandingAmount <= 0) {
+          continue;
+        }
 
         const chargeDate = new Date();
         chargeDate.setDate(lease.autoPayDay!);
@@ -379,13 +387,19 @@ export class ScheduledTasksService {
 
       for (const charge of upcomingCharges) {
         // Skip if auto-pay is enabled
-        if (charge.lease.autoPayEnabled) continue;
+        if (charge.lease.autoPayEnabled) {
+          continue;
+        }
 
         const primaryTenant = charge.lease.tenants[0];
-        if (!primaryTenant) continue;
+        if (!primaryTenant) {
+          continue;
+        }
 
         const outstandingAmount = Number(charge.amount) - Number(charge.amountPaid);
-        if (outstandingAmount <= 0) continue;
+        if (outstandingAmount <= 0) {
+          continue;
+        }
 
         const organizationId = charge.lease.unit.property.organizationId;
 
@@ -433,6 +447,63 @@ export class ScheduledTasksService {
     } catch (error) {
       this.logger.error({
         message: 'scheduled.notifications.error',
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  // ============================================================
+  // LATE FEE GENERATION
+  // ============================================================
+
+  /**
+   * Generate late fees daily at 7 AM for all organizations
+   * Applies late fees to rent charges past the grace period
+   */
+  @Cron('0 7 * * *') // 7:00 AM daily
+  async handleLateFeeGeneration() {
+    this.logger.log({ message: 'scheduled.late_fees.start' });
+
+    try {
+      // Get all organizations
+      const organizations = await this.prisma.organization.findMany({
+        select: { id: true },
+      });
+
+      let totalGenerated = 0;
+      let totalSkipped = 0;
+
+      for (const org of organizations) {
+        try {
+          const result = await this.chargesService.generateLateFees(
+            {
+              gracePeriodDays: 5,
+              feeType: 'FLAT',
+              feeAmount: 50,
+            },
+            org.id,
+          );
+
+          totalGenerated += result.generated;
+          totalSkipped += result.skipped;
+        } catch (error) {
+          this.logger.error({
+            message: 'scheduled.late_fees.org_error',
+            organizationId: org.id,
+            error: (error as Error).message,
+          });
+        }
+      }
+
+      this.logger.log({
+        message: 'scheduled.late_fees.complete',
+        generated: totalGenerated,
+        skipped: totalSkipped,
+        organizations: organizations.length,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: 'scheduled.late_fees.error',
         error: (error as Error).message,
       });
     }

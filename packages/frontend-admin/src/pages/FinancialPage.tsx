@@ -258,6 +258,85 @@ export default function FinancialPage() {
     };
   }, [leases, payments]);
 
+  // Calculate trends by comparing current month to previous month
+  const trends = useMemo(() => {
+    if (!leases || !payments) {
+      return {
+        rentTrend: null,
+        collectionTrend: null,
+        noiTrend: null,
+      };
+    }
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Previous month
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    // Get active leases for current and previous month
+    const activeLeases = leases.filter((lease) => lease.status === 'ACTIVE');
+    const currentMonthlyRent = activeLeases.reduce(
+      (sum, lease) => sum + Number(lease.monthlyRent || 0),
+      0,
+    );
+
+    // For previous month rent, we use the same active leases (simplified - could track historical)
+    const prevMonthlyRent = currentMonthlyRent; // In reality, would need historical data
+
+    // Calculate collection rates for current and previous month
+    const currentMonthPayments = (payments || []).filter((payment) => {
+      const paymentDate = new Date(payment.paymentDate);
+      return (
+        paymentDate.getMonth() === currentMonth &&
+        paymentDate.getFullYear() === currentYear &&
+        payment.status === 'COMPLETED'
+      );
+    });
+
+    const prevMonthPayments = (payments || []).filter((payment) => {
+      const paymentDate = new Date(payment.paymentDate);
+      return (
+        paymentDate.getMonth() === prevMonth &&
+        paymentDate.getFullYear() === prevYear &&
+        payment.status === 'COMPLETED'
+      );
+    });
+
+    const currentCollected = currentMonthPayments.reduce(
+      (sum, payment) => sum + Number(payment.amount || 0),
+      0,
+    );
+    const prevCollected = prevMonthPayments.reduce(
+      (sum, payment) => sum + Number(payment.amount || 0),
+      0,
+    );
+
+    const currentCollectionRate =
+      currentMonthlyRent > 0 ? (currentCollected / currentMonthlyRent) * 100 : 0;
+    const prevCollectionRate = prevMonthlyRent > 0 ? (prevCollected / prevMonthlyRent) * 100 : 0;
+
+    // Calculate rent trend (comparing payment volumes)
+    const rentTrend =
+      prevCollected > 0
+        ? Math.round(((currentCollected - prevCollected) / prevCollected) * 100 * 10) / 10
+        : null;
+
+    // Calculate collection rate trend
+    const collectionTrend =
+      prevCollectionRate > 0
+        ? Math.round((currentCollectionRate - prevCollectionRate) * 10) / 10
+        : null;
+
+    return {
+      rentTrend,
+      collectionTrend,
+      noiTrend: null, // Would need YoY data for this
+    };
+  }, [leases, payments]);
+
   const propertyPerformance = useMemo(() => {
     if (!properties || !leases || !payments) {
       return [];
@@ -383,7 +462,11 @@ export default function FinancialPage() {
           value={formatCurrency(portfolioSummary.totalMonthlyRent)}
           subtext={`${portfolioSummary.activeLeaseCount} active leases`}
           icon={Wallet}
-          trend={{ value: 2.5, label: 'vs last month' }}
+          trend={
+            trends.rentTrend !== null
+              ? { value: trends.rentTrend, label: 'vs last month' }
+              : undefined
+          }
           colorClass="text-emerald-600"
           bgClass="bg-emerald-50"
         />
@@ -392,7 +475,11 @@ export default function FinancialPage() {
           value={`${portfolioSummary.collectionRate}%`}
           subtext="Current month"
           icon={Percent}
-          trend={{ value: 1.2, label: 'vs last month' }}
+          trend={
+            trends.collectionTrend !== null
+              ? { value: trends.collectionTrend, label: 'vs last month' }
+              : undefined
+          }
           colorClass={portfolioSummary.collectionRate >= 90 ? 'text-emerald-600' : 'text-amber-600'}
           bgClass={portfolioSummary.collectionRate >= 90 ? 'bg-emerald-50' : 'bg-amber-50'}
         />
@@ -411,7 +498,9 @@ export default function FinancialPage() {
           value={formatCurrency(dashboard?.netOperatingIncome || 0)}
           subtext="YTD Performance"
           icon={TrendingUp}
-          trend={{ value: 5.4, label: 'vs last year' }}
+          trend={
+            trends.noiTrend !== null ? { value: trends.noiTrend, label: 'vs last year' } : undefined
+          }
           colorClass="text-blue-600"
           bgClass="bg-blue-50"
         />

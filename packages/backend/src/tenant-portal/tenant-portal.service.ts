@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StripeService } from '../payments/stripe.service';
 
 @Injectable()
 export class TenantPortalService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private stripeService: StripeService,
+  ) {}
 
   // ============================================================================
   // DASHBOARD
@@ -48,14 +52,15 @@ export class TenantPortalService {
     }
 
     // Calculate balance
-    const totalCharges = tenant.lease?.charges.reduce(
-      (sum, charge) => sum + (Number(charge.amount) - Number(charge.amountPaid)),
-      0
-    ) || 0;
+    const totalCharges =
+      tenant.lease?.charges.reduce(
+        (sum, charge) => sum + (Number(charge.amount) - Number(charge.amountPaid)),
+        0,
+      ) || 0;
 
     // Get next due charge
     const nextDueCharge = tenant.lease?.charges.find(
-      (c) => c.status !== 'PAID' && c.status !== 'VOID'
+      (c) => c.status !== 'PAID' && c.status !== 'VOID',
     );
 
     return {
@@ -65,36 +70,44 @@ export class TenantPortalService {
         lastName: tenant.lastName,
         email: tenant.email,
       },
-      lease: tenant.lease ? {
-        id: tenant.lease.id,
-        status: tenant.lease.status,
-        startDate: tenant.lease.startDate,
-        endDate: tenant.lease.endDate,
-        monthlyRent: tenant.lease.monthlyRent,
-        autoPayEnabled: tenant.lease.autoPayEnabled,
-        autoPayDay: tenant.lease.autoPayDay,
-      } : null,
-      unit: tenant.lease?.unit ? {
-        id: tenant.lease.unit.id,
-        unitNumber: tenant.lease.unit.unitNumber,
-        bedrooms: tenant.lease.unit.bedrooms,
-        bathrooms: tenant.lease.unit.bathrooms,
-      } : null,
-      property: tenant.lease?.unit?.property ? {
-        id: tenant.lease.unit.property.id,
-        name: tenant.lease.unit.property.name,
-        address1: tenant.lease.unit.property.address1,
-        city: tenant.lease.unit.property.city,
-        state: tenant.lease.unit.property.state,
-        zipCode: tenant.lease.unit.property.zipCode,
-      } : null,
+      lease: tenant.lease
+        ? {
+            id: tenant.lease.id,
+            status: tenant.lease.status,
+            startDate: tenant.lease.startDate,
+            endDate: tenant.lease.endDate,
+            monthlyRent: tenant.lease.monthlyRent,
+            autoPayEnabled: tenant.lease.autoPayEnabled,
+            autoPayDay: tenant.lease.autoPayDay,
+          }
+        : null,
+      unit: tenant.lease?.unit
+        ? {
+            id: tenant.lease.unit.id,
+            unitNumber: tenant.lease.unit.unitNumber,
+            bedrooms: tenant.lease.unit.bedrooms,
+            bathrooms: tenant.lease.unit.bathrooms,
+          }
+        : null,
+      property: tenant.lease?.unit?.property
+        ? {
+            id: tenant.lease.unit.property.id,
+            name: tenant.lease.unit.property.name,
+            address1: tenant.lease.unit.property.address1,
+            city: tenant.lease.unit.property.city,
+            state: tenant.lease.unit.property.state,
+            zipCode: tenant.lease.unit.property.zipCode,
+          }
+        : null,
       balance: totalCharges,
-      nextDue: nextDueCharge ? {
-        amount: Number(nextDueCharge.amount) - Number(nextDueCharge.amountPaid),
-        dueDate: nextDueCharge.dueDate,
-        type: nextDueCharge.type,
-      } : null,
-      recentPayments: tenant.payments.map(p => ({
+      nextDue: nextDueCharge
+        ? {
+            amount: Number(nextDueCharge.amount) - Number(nextDueCharge.amountPaid),
+            dueDate: nextDueCharge.dueDate,
+            type: nextDueCharge.type,
+          }
+        : null,
+      recentPayments: tenant.payments.map((p) => ({
         id: p.id,
         amount: p.amount,
         date: p.paymentDate,
@@ -102,7 +115,7 @@ export class TenantPortalService {
         method: p.method,
       })),
       activeMaintenanceRequests: tenant.maintenanceRequests.filter(
-        mr => mr.status !== 'COMPLETED' && mr.status !== 'CANCELLED'
+        (mr) => mr.status !== 'COMPLETED' && mr.status !== 'CANCELLED',
       ).length,
       unreadMessages: tenant.messages.length,
     };
@@ -133,14 +146,14 @@ export class TenantPortalService {
     ]);
 
     return {
-      payments: payments.map(p => ({
+      payments: payments.map((p) => ({
         id: p.id,
         amount: p.amount,
         date: p.paymentDate,
         method: p.method,
         status: p.status,
         memo: p.memo,
-        allocations: p.allocations.map(a => ({
+        allocations: p.allocations.map((a) => ({
           amount: a.amount,
           chargeType: a.charge.type,
           chargeDescription: a.charge.description,
@@ -176,7 +189,7 @@ export class TenantPortalService {
       return { charges: [], total: 0 };
     }
 
-    const charges = tenant.lease.charges.map(c => ({
+    const charges = tenant.lease.charges.map((c) => ({
       id: c.id,
       type: c.type,
       description: c.description,
@@ -237,6 +250,73 @@ export class TenantPortalService {
     return { success: true };
   }
 
+  async createPaymentIntent(tenantId: string, chargeIds: string[], amount: number) {
+    // Verify tenant exists and has a lease
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+            charges: {
+              where: {
+                id: { in: chargeIds },
+                status: { in: ['POSTED', 'PARTIALLY_PAID'] },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant?.lease) {
+      throw new NotFoundException('Lease not found');
+    }
+
+    // Verify all charges belong to this tenant's lease
+    if (tenant.lease.charges.length !== chargeIds.length) {
+      throw new BadRequestException('One or more charges are invalid or already paid');
+    }
+
+    // Verify the amount matches the outstanding balance
+    const totalOutstanding = tenant.lease.charges.reduce((sum, charge) => {
+      const balance = Number(charge.amount) - Number(charge.amountPaid);
+      return sum + balance;
+    }, 0);
+
+    if (amount > totalOutstanding + 0.01) {
+      throw new BadRequestException('Payment amount exceeds outstanding balance');
+    }
+
+    // Check if Stripe is configured
+    if (!this.stripeService.isConfigured()) {
+      throw new BadRequestException(
+        'Payment processing is not configured. Please contact support.',
+      );
+    }
+
+    // Create the payment intent
+    const paymentIntent = await this.stripeService.createPaymentIntent(
+      amount,
+      tenantId,
+      chargeIds,
+      {
+        propertyName: tenant.lease.unit.property.name,
+        unitNumber: tenant.lease.unit.unitNumber,
+      },
+    );
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      amount,
+    };
+  }
+
   // ============================================================================
   // MAINTENANCE REQUESTS
   // ============================================================================
@@ -252,7 +332,7 @@ export class TenantPortalService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return requests.map(r => ({
+    return requests.map((r) => ({
       id: r.id,
       title: r.title,
       description: r.description,
@@ -279,7 +359,7 @@ export class TenantPortalService {
       permissionToEnter?: boolean;
       preferredTimes?: string;
       photos?: string[];
-    }
+    },
   ) {
     // Verify tenant has active lease
     const tenant = await this.prisma.tenant.findUnique({
@@ -417,7 +497,10 @@ export class TenantPortalService {
       },
       tenants: lease.tenants,
       daysRemaining: lease.endDate
-        ? Math.max(0, Math.ceil((new Date(lease.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+        ? Math.max(
+            0,
+            Math.ceil((new Date(lease.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+          )
         : null,
     };
   }
@@ -450,7 +533,7 @@ export class TenantPortalService {
     ]);
 
     return {
-      messages: messages.map(m => ({
+      messages: messages.map((m) => ({
         id: m.id,
         subject: m.subject,
         content: m.content,
@@ -458,7 +541,7 @@ export class TenantPortalService {
         isRead: m.isRead,
         senderName: m.senderName,
         createdAt: m.createdAt,
-        replies: m.replies.map(r => ({
+        replies: m.replies.map((r) => ({
           id: r.id,
           content: r.content,
           direction: r.direction,
@@ -477,7 +560,7 @@ export class TenantPortalService {
 
   async sendMessage(
     tenantId: string,
-    data: { subject?: string; content: string; parentId?: string }
+    data: { subject?: string; content: string; parentId?: string },
   ) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

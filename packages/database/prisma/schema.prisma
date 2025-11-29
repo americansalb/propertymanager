@@ -320,6 +320,11 @@ model Tenant {
   resetToken        String?
   resetTokenExpiry  DateTime?
 
+  // Account lockout
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime?
+  lastFailedLoginAt   DateTime?
+
   // Stripe integration for payments
   stripeCustomerId String? @unique
 

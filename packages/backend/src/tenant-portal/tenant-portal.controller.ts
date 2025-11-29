@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Put, Body, Param, Query, Headers, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Query,
+  Headers,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TenantPortalService } from './tenant-portal.service';
 import { TenantAuthService } from '../tenant-auth/tenant-auth.service';
@@ -59,6 +69,15 @@ class UpdateAutoPayDto {
   @Min(1)
   @Max(28)
   day?: number;
+}
+
+class CreatePaymentIntentDto {
+  @IsString({ each: true })
+  chargeIds!: string[];
+
+  @IsNumber()
+  @Min(0.01)
+  amount!: number;
 }
 
 @ApiTags('tenant-portal')
@@ -125,10 +144,21 @@ export class TenantPortalController {
     @Body() dto: UpdateAutoPayDto,
   ) {
     const tenantId = await this.extractTenantId(authHeader);
-    const result = await this.portalService.updateAutoPaySettings(
+    const result = await this.portalService.updateAutoPaySettings(tenantId, dto.enabled, dto.day);
+    return { success: true, data: result };
+  }
+
+  @Post('payments/create-intent')
+  @ApiOperation({ summary: 'Create a payment intent for submitting payment' })
+  async createPaymentIntent(
+    @Headers('authorization') authHeader: string,
+    @Body() dto: CreatePaymentIntentDto,
+  ) {
+    const tenantId = await this.extractTenantId(authHeader);
+    const result = await this.portalService.createPaymentIntent(
       tenantId,
-      dto.enabled,
-      dto.day,
+      dto.chargeIds,
+      dto.amount,
     );
     return { success: true, data: result };
   }
@@ -204,10 +234,7 @@ export class TenantPortalController {
 
   @Post('messages')
   @ApiOperation({ summary: 'Send a message' })
-  async sendMessage(
-    @Headers('authorization') authHeader: string,
-    @Body() dto: SendMessageDto,
-  ) {
+  async sendMessage(@Headers('authorization') authHeader: string, @Body() dto: SendMessageDto) {
     const tenantId = await this.extractTenantId(authHeader);
     const result = await this.portalService.sendMessage(tenantId, dto);
     return { success: true, data: result };
@@ -215,10 +242,7 @@ export class TenantPortalController {
 
   @Put('messages/:id/read')
   @ApiOperation({ summary: 'Mark message as read' })
-  async markMessageAsRead(
-    @Headers('authorization') authHeader: string,
-    @Param('id') id: string,
-  ) {
+  async markMessageAsRead(@Headers('authorization') authHeader: string, @Param('id') id: string) {
     const tenantId = await this.extractTenantId(authHeader);
     const result = await this.portalService.markMessageAsRead(tenantId, id);
     return { success: true, data: result };

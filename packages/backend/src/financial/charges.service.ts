@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   type CreateChargeDto,
   type UpdateChargeDto,
@@ -19,6 +20,7 @@ import {
 export class ChargesService {
   constructor(
     private prisma: PrismaService,
+    private notificationsService: NotificationsService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -432,6 +434,12 @@ export class ChargesService {
                 type: 'LATE_FEE',
               },
             },
+            tenant: true,
+            unit: {
+              include: {
+                property: true,
+              },
+            },
           },
         },
       },
@@ -474,6 +482,37 @@ export class ChargesService {
       });
 
       generatedFees.push(lateFee);
+
+      // Send late fee notification to tenant
+      if (charge.lease.tenant) {
+        const tenant = charge.lease.tenant;
+        const property = charge.lease.unit.property;
+        const unit = charge.lease.unit;
+
+        try {
+          await this.notificationsService.sendLateFeeNotification(
+            tenant.email,
+            `${tenant.firstName} ${tenant.lastName}`,
+            Math.round(lateFeeAmount * 100) / 100,
+            balance,
+            property.name,
+            unit.unitNumber,
+            lateFee.id,
+            organizationId,
+          );
+          this.logger.log({
+            message: 'charges.late_fee_notification_sent',
+            tenantEmail: tenant.email,
+            lateFeeId: lateFee.id,
+          });
+        } catch (error) {
+          this.logger.error({
+            message: 'charges.late_fee_notification_failed',
+            tenantEmail: tenant.email,
+            error: (error as Error).message,
+          });
+        }
+      }
     }
 
     this.logger.log({
