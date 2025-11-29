@@ -34,31 +34,31 @@ import { UserRole } from '@propertymaster/database';
 // DTO Classes
 class ChangePasswordDto {
   @IsString()
-  currentPassword: string;
+  currentPassword!: string;
 
   @IsString()
   @MinLength(8)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/, {
     message: 'Password must contain at least one uppercase, one lowercase, one number, and one special character',
   })
-  newPassword: string;
+  newPassword!: string;
 }
 
 class ForgotPasswordDto {
   @IsEmail()
-  email: string;
+  email!: string;
 }
 
 class ResetPasswordDto {
   @IsString()
-  token: string;
+  token!: string;
 
   @IsString()
   @MinLength(8)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/, {
     message: 'Password must contain at least one uppercase, one lowercase, one number, and one special character',
   })
-  newPassword: string;
+  newPassword!: string;
 }
 
 // Local type definitions
@@ -341,7 +341,7 @@ export class AuthController {
     @Request() req: AuthenticatedRequest,
   ): Promise<ApiResponse<{ message: string }>> {
     // Only admins can unlock accounts
-    const allowedRoles = [UserRole.SUPER_ADMIN, UserRole.ORGANIZATION_ADMIN];
+    const allowedRoles: UserRole[] = [UserRole.SUPER_ADMIN, UserRole.ORGANIZATION_ADMIN];
     if (!allowedRoles.includes(req.user.role)) {
       throw new ForbiddenException('Only administrators can unlock accounts');
     }

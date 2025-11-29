@@ -32,7 +32,6 @@ interface NotificationPayload {
 @Injectable()
 export class NotificationsService {
   private readonly portalUrl: string;
-  private readonly _adminUrl: string;
 
   constructor(
     private prisma: PrismaService,
@@ -42,7 +41,6 @@ export class NotificationsService {
     private readonly logger: LoggerService,
   ) {
     this.portalUrl = this.configService.get<string>('FRONTEND_TENANT_URL') || 'http://localhost:3002';
-    this._adminUrl = this.configService.get<string>('FRONTEND_ADMIN_URL') || 'http://localhost:3000';
   }
 
   /**

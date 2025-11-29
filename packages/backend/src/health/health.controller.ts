@@ -150,7 +150,7 @@ export class HealthController {
     cpu: NodeJS.CpuUsage;
   } {
     const memoryUsage = process.memoryUsage();
-    const totalMemory = require('os').totalmem();
+    const _totalMemory = require('os').totalmem();
 
     return {
       uptime: Math.floor((Date.now() - this.startTime) / 1000),

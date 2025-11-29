@@ -29,7 +29,7 @@ export class AlertsService {
   private readonly cooldownMinutes = 15; // Prevent alert spam
 
   constructor(
-    private configService: ConfigService,
+    private _configService: ConfigService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}

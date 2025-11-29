@@ -13,7 +13,7 @@ export class MetricsService {
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
-    private readonly logger: LoggerService,
+    private readonly _logger: LoggerService,
   ) {}
 
   /**
