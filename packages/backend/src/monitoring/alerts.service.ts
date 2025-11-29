@@ -1,7 +1,6 @@
 import { Injectable, Inject, LoggerService } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { captureMessage, Sentry } from './sentry.config';
+import { captureMessage, type Sentry } from './sentry.config';
 
 export enum AlertSeverity {
   INFO = 'info',
@@ -29,7 +28,6 @@ export class AlertsService {
   private readonly cooldownMinutes = 15; // Prevent alert spam
 
   constructor(
-    private _configService: ConfigService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -86,7 +84,11 @@ export class AlertsService {
     });
 
     // Send to Sentry
-    captureMessage(`[${severity.toUpperCase()}] ${title}: ${message}`, this.getSentrySeverity(severity), context);
+    captureMessage(
+      `[${severity.toUpperCase()}] ${title}: ${message}`,
+      this.getSentrySeverity(severity),
+      context,
+    );
 
     // Send to additional channels based on severity
     if (severity === AlertSeverity.CRITICAL) {
@@ -135,11 +137,7 @@ export class AlertsService {
   /**
    * Alert for payment processing failure
    */
-  async alertPaymentFailure(
-    paymentId: string,
-    amount: number,
-    error: string,
-  ): Promise<void> {
+  async alertPaymentFailure(paymentId: string, amount: number, error: string): Promise<void> {
     await this.sendAlert(
       AlertSeverity.ERROR,
       'Payment Processing Failed',
@@ -168,12 +166,7 @@ export class AlertsService {
     details: string,
     context?: Record<string, unknown>,
   ): Promise<void> {
-    await this.sendAlert(
-      AlertSeverity.CRITICAL,
-      `Security Alert: ${eventType}`,
-      details,
-      context,
-    );
+    await this.sendAlert(AlertSeverity.CRITICAL, `Security Alert: ${eventType}`, details, context);
   }
 
   /**
@@ -221,7 +214,9 @@ export class AlertsService {
    */
   private isOnCooldown(alertKey: string): boolean {
     const lastSent = this.alertCooldowns.get(alertKey);
-    if (!lastSent) return false;
+    if (!lastSent) {
+      return false;
+    }
 
     const cooldownEnd = new Date(lastSent.getTime() + this.cooldownMinutes * 60 * 1000);
     return new Date() < cooldownEnd;

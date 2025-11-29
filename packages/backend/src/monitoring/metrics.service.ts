@@ -1,5 +1,4 @@
-import { Injectable, Inject, LoggerService } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { Injectable } from '@nestjs/common';
 
 /**
  * Simple metrics tracking service
@@ -11,10 +10,7 @@ export class MetricsService {
   private gauges: Map<string, number> = new Map();
   private histograms: Map<string, number[]> = new Map();
 
-  constructor(
-    @Inject(WINSTON_MODULE_NEST_PROVIDER)
-    private readonly _logger: LoggerService,
-  ) {}
+  constructor() {}
 
   /**
    * Increment a counter metric
@@ -52,12 +48,7 @@ export class MetricsService {
   /**
    * Track API request timing
    */
-  trackRequestDuration(
-    path: string,
-    method: string,
-    statusCode: number,
-    durationMs: number,
-  ): void {
+  trackRequestDuration(path: string, method: string, statusCode: number, durationMs: number): void {
     this.recordHistogram('http_request_duration_ms', durationMs, {
       path: this.normalizePath(path),
       method,
@@ -120,7 +111,10 @@ export class MetricsService {
   getMetrics(): {
     counters: Record<string, number>;
     gauges: Record<string, number>;
-    histograms: Record<string, { count: number; avg: number; p50: number; p95: number; p99: number }>;
+    histograms: Record<
+      string,
+      { count: number; avg: number; p50: number; p95: number; p99: number }
+    >;
   } {
     const histogramStats: Record<
       string,

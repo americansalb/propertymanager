@@ -150,7 +150,6 @@ export class HealthController {
     cpu: NodeJS.CpuUsage;
   } {
     const memoryUsage = process.memoryUsage();
-    const _totalMemory = require('os').totalmem();
 
     return {
       uptime: Math.floor((Date.now() - this.startTime) / 1000),
@@ -213,10 +212,7 @@ export class HealthController {
   }
 
   private checkConfiguration(): boolean {
-    const requiredEnvVars = [
-      'DATABASE_URL',
-      'JWT_SECRET',
-    ];
+    const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
 
     return requiredEnvVars.every((envVar) => {
       const value = this.configService.get<string>(envVar);

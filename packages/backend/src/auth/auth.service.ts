@@ -31,7 +31,6 @@ const BCRYPT_ROUNDS = 12;
 // Password complexity requirements
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
-const _PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
 // Local type definitions
 export interface JwtPayload {
@@ -118,7 +117,7 @@ export class AuthService {
       errors.push('Password must contain at least one number');
     }
 
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       errors.push('Password must contain at least one special character');
     }
 
@@ -138,7 +137,9 @@ export class AuthService {
    * Check if account is locked
    */
   private isAccountLocked(user: { lockedUntil: Date | null }): boolean {
-    if (!user.lockedUntil) return false;
+    if (!user.lockedUntil) {
+      return false;
+    }
     return new Date() < user.lockedUntil;
   }
 
@@ -204,7 +205,7 @@ export class AuthService {
 
     // Check if account is locked
     if (this.isAccountLocked(user)) {
-      const remainingMinutes = this.getRemainingLockoutMinutes(user.lockedUntil!);
+      const remainingMinutes = this.getRemainingLockoutMinutes(user.lockedUntil as Date);
       throw new UnauthorizedException(
         `Account is temporarily locked. Please try again in ${remainingMinutes} minutes.`,
       );
