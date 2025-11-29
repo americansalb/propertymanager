@@ -107,6 +107,9 @@ model User {
   assignedWorkOrders WorkOrder[]
   auditLogs      AuditLog[]
   events         Event[]
+  deviceTokens   DeviceToken[]
+  refreshTokens  RefreshToken[]
+  apiKeys        ApiKey[]
 
   @@index([organizationId])
   @@index([email])
@@ -1220,4 +1223,115 @@ model TenantMessage {
   @@index([direction])
   @@index([isRead])
   @@index([createdAt])
+}
+
+// ============================================================================
+// MOBILE APP API
+// ============================================================================
+
+model DeviceToken {
+  id          String   @id @default(cuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Device info
+  platform    String   // "IOS", "ANDROID", "WEB"
+  token       String   @unique
+  deviceId    String?
+  deviceName  String?
+  deviceModel String?
+  osVersion   String?
+  appVersion  String?
+
+  // Status
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime @default(now())
+
+  // Notification preferences
+  enablePush  Boolean  @default(true)
+  enablePaymentAlerts Boolean @default(true)
+  enableMaintenanceAlerts Boolean @default(true)
+  enableLeaseAlerts Boolean @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([token])
+  @@index([isActive])
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Token
+  token       String   @unique
+  tokenHash   String
+
+  // Device association
+  deviceId    String?
+  userAgent   String?
+  ipAddress   String?
+
+  // Validity
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  revokedReason String?
+
+  // Usage tracking
+  lastUsedAt  DateTime?
+  useCount    Int      @default(0)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+
+  organizationId String
+
+  // Key info
+  name        String
+  description String?
+  keyHash     String   @unique // Hashed full key
+  keyPreview  String   // First few chars for identification
+
+  // Permissions
+  scopes      String[] @default(["read"])
+
+  // Rate limiting
+  rateLimitPerMinute Int @default(60)
+  rateLimitPerDay    Int @default(10000)
+
+  // Restrictions
+  allowedIps     String[] @default([])
+  allowedOrigins String[] @default([])
+
+  // Status
+  isActive    Boolean  @default(true)
+
+  // Validity
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  usageCount  Int      @default(0)
+
+  // Creator
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([keyHash])
+  @@index([createdById])
 }

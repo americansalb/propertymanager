@@ -27,6 +27,7 @@ import { ScheduledTasksModule } from './scheduled/scheduled-tasks.module';
 import { TenantAuthModule } from './tenant-auth/tenant-auth.module';
 import { TenantPortalModule } from './tenant-portal/tenant-portal.module';
 import { EmailModule } from './email/email.module';
+import { MobileModule } from './mobile/mobile.module';
 
 @Module({
   controllers: [AppController],
@@ -67,6 +68,7 @@ import { EmailModule } from './email/email.module';
     ScheduledTasksModule,
     TenantAuthModule,
     TenantPortalModule,
+    MobileModule,
   ],
   providers: [
     {
