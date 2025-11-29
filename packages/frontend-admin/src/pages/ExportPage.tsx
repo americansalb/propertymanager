@@ -156,15 +156,8 @@ export default function ExportPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Log page mount
+  // Initialize field selections when type changes
   useEffect(() => {
-    console.log('[ExportPage] Component mounted');
-  }, []);
-
-  // Log type changes
-  useEffect(() => {
-    console.log('[ExportPage] Selected type changed:', selectedType);
-    // Initialize field selections for the selected type
     const config = exportConfigs.find((c) => c.type === selectedType);
     if (config) {
       const selections: Record<string, boolean> = {};
@@ -172,7 +165,6 @@ export default function ExportPage() {
         selections[field.key] = field.selected;
       });
       setFieldSelections(selections);
-      console.log('[ExportPage] Initialized field selections:', selections);
     }
   }, [selectedType]);
 
@@ -180,7 +172,6 @@ export default function ExportPage() {
   const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      console.log('[ExportPage] Fetching properties');
       const response = await api.get('/properties');
       return response.data.data;
     },
@@ -190,7 +181,6 @@ export default function ExportPage() {
   const { data: leases } = useQuery({
     queryKey: ['leases'],
     queryFn: async () => {
-      console.log('[ExportPage] Fetching leases');
       const response = await api.get('/leases');
       return response.data.data;
     },
@@ -201,7 +191,6 @@ export default function ExportPage() {
   const { data: workOrders } = useQuery({
     queryKey: ['work-orders'],
     queryFn: async () => {
-      console.log('[ExportPage] Fetching work orders');
       const response = await api.get('/work-orders');
       return response.data.data;
     },
@@ -211,7 +200,6 @@ export default function ExportPage() {
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
     queryFn: async () => {
-      console.log('[ExportPage] Fetching vendors');
       const response = await api.get('/vendors');
       return response.data.data;
     },
@@ -255,8 +243,6 @@ export default function ExportPage() {
 
   // Process data for export
   const processedData = useMemo(() => {
-    console.log('[ExportPage] Processing data for type:', selectedType);
-
     const { from, to } = getDateRange();
     let data: any[] = [];
 
@@ -401,7 +387,6 @@ export default function ExportPage() {
       });
     }
 
-    console.log('[ExportPage] Processed data count:', data.length);
     return data;
   }, [selectedType, properties, leases, workOrders, vendors, statusFilter, getDateRange]);
 
@@ -416,7 +401,6 @@ export default function ExportPage() {
 
   // Toggle field selection
   const toggleField = useCallback((key: string) => {
-    console.log('[ExportPage] Toggling field:', key);
     setFieldSelections((prev) => ({
       ...prev,
       [key]: !prev[key],
@@ -426,7 +410,6 @@ export default function ExportPage() {
   // Select/deselect all fields
   const toggleAllFields = useCallback(
     (selected: boolean) => {
-      console.log('[ExportPage] Toggle all fields:', selected);
       const config = exportConfigs.find((c) => c.type === selectedType);
       if (!config) {
         return;
@@ -443,13 +426,6 @@ export default function ExportPage() {
 
   // Export handlers
   const handleExport = useCallback(async () => {
-    console.log('[ExportPage] handleExport called:', {
-      type: selectedType,
-      format: selectedFormat,
-      recordCount: processedData.length,
-      fields: selectedFields.map((f) => f.key),
-    });
-
     if (processedData.length === 0) {
       alert('No data to export');
       return;
@@ -461,14 +437,12 @@ export default function ExportPage() {
     }
 
     setIsExporting(true);
-    const startTime = Date.now();
 
     try {
       const fieldKeys = selectedFields.map((f) => f.key);
       const fieldLabels = selectedFields.map((f) => f.label);
 
       if (selectedFormat === 'csv') {
-        console.log('[ExportPage] Generating CSV');
         const rows = processedData.map((item) =>
           fieldKeys.map((key) => {
             let value = item[key];
@@ -498,14 +472,7 @@ export default function ExportPage() {
         link.download = `${selectedType}-export-${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
         URL.revokeObjectURL(url);
-
-        console.log('[ExportPage] CSV export completed:', {
-          duration: Date.now() - startTime,
-          size: csvContent.length,
-          rows: rows.length,
-        });
       } else if (selectedFormat === 'json') {
-        console.log('[ExportPage] Generating JSON');
         const exportData = processedData.map((item) => {
           const obj: Record<string, any> = {};
           fieldKeys.forEach((key) => {
@@ -522,14 +489,7 @@ export default function ExportPage() {
         link.download = `${selectedType}-export-${new Date().toISOString().split('T')[0]}.json`;
         link.click();
         URL.revokeObjectURL(url);
-
-        console.log('[ExportPage] JSON export completed:', {
-          duration: Date.now() - startTime,
-          size: jsonContent.length,
-          records: exportData.length,
-        });
       } else if (selectedFormat === 'pdf') {
-        console.log('[ExportPage] Generating PDF report');
         const config = exportConfigs.find((c) => c.type === selectedType);
 
         const htmlContent = `
@@ -608,13 +568,9 @@ export default function ExportPage() {
           printWindow.document.write(htmlContent);
           printWindow.document.close();
           printWindow.print();
-          console.log('[ExportPage] PDF report generated:', {
-            duration: Date.now() - startTime,
-          });
         }
       }
-    } catch (error) {
-      console.error('[ExportPage] Export failed:', error);
+    } catch {
       alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
@@ -636,13 +592,6 @@ export default function ExportPage() {
         return [];
     }
   }, [selectedType]);
-
-  console.log('[ExportPage] Rendering with:', {
-    selectedType,
-    selectedFormat,
-    dataCount: processedData.length,
-    selectedFieldCount: selectedFields.length,
-  });
 
   return (
     <div className="space-y-6">
@@ -668,7 +617,6 @@ export default function ExportPage() {
                   <button
                     key={config.type}
                     onClick={() => {
-                      console.log('[ExportPage] Data type selected:', config.type);
                       setSelectedType(config.type);
                       setStatusFilter('all');
                     }}
@@ -733,10 +681,7 @@ export default function ExportPage() {
               ].map(({ format, label, icon: Icon, desc }) => (
                 <button
                   key={format}
-                  onClick={() => {
-                    console.log('[ExportPage] Format selected:', format);
-                    setSelectedFormat(format);
-                  }}
+                  onClick={() => setSelectedFormat(format)}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
                     selectedFormat === format
                       ? 'bg-green-50 border-2 border-green-500'
@@ -842,10 +787,7 @@ export default function ExportPage() {
                   ].map(({ value, label }) => (
                     <button
                       key={value}
-                      onClick={() => {
-                        console.log('[ExportPage] Date range selected:', value);
-                        setDateRange(value as DateRangePreset);
-                      }}
+                      onClick={() => setDateRange(value as DateRangePreset)}
                       className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                         dateRange === value
                           ? 'bg-blue-600 text-white'
@@ -890,10 +832,7 @@ export default function ExportPage() {
                     {statusOptions.map((status) => (
                       <button
                         key={status}
-                        onClick={() => {
-                          console.log('[ExportPage] Status filter selected:', status);
-                          setStatusFilter(status);
-                        }}
+                        onClick={() => setStatusFilter(status)}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                           statusFilter === status
                             ? 'bg-blue-600 text-white'
@@ -917,10 +856,7 @@ export default function ExportPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    console.log('[ExportPage] Toggle preview');
-                    setShowPreview(!showPreview);
-                  }}
+                  onClick={() => setShowPreview(!showPreview)}
                 >
                   <Eye className="w-4 h-4 mr-1" />
                   {showPreview ? 'Hide Preview' : 'Show Preview'}

@@ -93,13 +93,10 @@ export default function TenantPortalPage() {
     priority: 'medium' as 'low' | 'medium' | 'high' | 'emergency',
   });
 
-  console.log('[TenantPortal] Rendering, active tab:', activeTab);
-
   // Fetch lease data (simulating tenant's lease)
   const { data: leases } = useQuery({
     queryKey: ['leases'],
     queryFn: async () => {
-      console.log('[TenantPortal] Fetching leases...');
       const response = await api.get('/leases');
       return response.data.data;
     },
@@ -108,9 +105,6 @@ export default function TenantPortalPage() {
   // Get tenant's lease (first active lease for demo)
   const tenantLease = useMemo(() => {
     const activeLease = leases?.find((l: any) => l.status === 'ACTIVE');
-    if (activeLease) {
-      console.log('[TenantPortal] Found active lease:', activeLease.id);
-    }
     return activeLease;
   }, [leases]);
 
@@ -118,7 +112,6 @@ export default function TenantPortalPage() {
   const { data: workOrders } = useQuery({
     queryKey: ['workOrders'],
     queryFn: async () => {
-      console.log('[TenantPortal] Fetching work orders...');
       const response = await api.get('/work-orders');
       return response.data.data;
     },
@@ -161,7 +154,6 @@ export default function TenantPortalPage() {
       });
     }
 
-    console.log('[TenantPortal] Generated payment history:', payments.length, 'records');
     return payments.reverse();
   }, [tenantLease]);
 
@@ -188,7 +180,6 @@ export default function TenantPortalPage() {
       updatedAt: new Date(wo.updatedAt || Date.now()),
     }));
 
-    console.log('[TenantPortal] Mapped maintenance requests:', requests.length);
     return requests;
   }, [workOrders]);
 
@@ -206,8 +197,6 @@ export default function TenantPortalPage() {
     const daysRemaining = differenceInDays(endDate, today);
     const progress = Math.min(100, Math.max(0, (daysElapsed / totalDays) * 100));
 
-    console.log('[TenantPortal] Lease stats:', { daysRemaining, progress: progress.toFixed(1) });
-
     return {
       startDate,
       endDate,
@@ -219,16 +208,14 @@ export default function TenantPortalPage() {
   }, [tenantLease]);
 
   const handleSubmitMaintenanceRequest = useCallback(() => {
-    console.log('[TenantPortal] Submitting maintenance request:', maintenanceForm);
-    // In a real app, this would call an API
+    // TODO: Implement with real API
     alert('Maintenance request submitted successfully!');
     setShowMaintenanceModal(false);
     setMaintenanceForm({ title: '', description: '', priority: 'medium' });
-  }, [maintenanceForm]);
+  }, []);
 
   const handleMakePayment = useCallback(() => {
-    console.log('[TenantPortal] Processing payment...');
-    // In a real app, this would integrate with a payment processor
+    // TODO: Implement with real payment processor
     alert('Payment processed successfully!');
     setShowPaymentModal(false);
   }, []);
@@ -330,10 +317,7 @@ export default function TenantPortalPage() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => {
-                    console.log('[TenantPortal] Switching to tab:', tab.id);
-                    setActiveTab(tab.id as TabType);
-                  }}
+                  onClick={() => setActiveTab(tab.id as TabType)}
                   className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-primary text-primary'

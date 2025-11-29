@@ -57,19 +57,6 @@ export default function WorkOrdersPage() {
   const [showBulkVendorAssign, setShowBulkVendorAssign] = useState(false);
   const [showBulkActionsMenu, setShowBulkActionsMenu] = useState(false);
 
-  // Log component mount
-  useEffect(() => {
-    console.log('[WorkOrdersPage] Component mounted');
-    console.log('[WorkOrdersPage] URL params:', Object.fromEntries(searchParams.entries()));
-  }, [searchParams]);
-
-  // Log selection changes
-  useEffect(() => {
-    console.log('[WorkOrdersPage] Selection changed:', {
-      count: selectedIds.size,
-      ids: Array.from(selectedIds),
-    });
-  }, [selectedIds]);
 
   // Get property and vendor filters from URL
   const propertyIdFilter = searchParams.get('propertyId');
@@ -223,7 +210,6 @@ export default function WorkOrdersPage() {
 
   // Filter work orders in memory
   const filteredWorkOrders = useMemo(() => {
-    console.log('[WorkOrdersPage] Filtering work orders');
     return (
       workOrders?.filter((order: any) => {
         const statusMatch = statusFilter === 'ALL' || order.status === statusFilter;
@@ -320,27 +306,21 @@ export default function WorkOrdersPage() {
 
   // Bulk selection handlers
   const toggleSelectAll = useCallback(() => {
-    console.log('[WorkOrdersPage] toggleSelectAll called, current selection:', selectedIds.size);
     if (selectedIds.size === filteredWorkOrders.length) {
-      console.log('[WorkOrdersPage] Deselecting all');
       setSelectedIds(new Set());
     } else {
       const allIds = filteredWorkOrders.map((wo: any) => wo.id);
-      console.log('[WorkOrdersPage] Selecting all:', allIds.length, 'items');
       setSelectedIds(new Set(allIds));
     }
   }, [selectedIds.size, filteredWorkOrders]);
 
   const toggleSelectOne = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('[WorkOrdersPage] toggleSelectOne called for:', id);
     setSelectedIds((prev) => {
       const newSelected = new Set(prev);
       if (newSelected.has(id)) {
-        console.log('[WorkOrdersPage] Deselecting:', id);
         newSelected.delete(id);
       } else {
-        console.log('[WorkOrdersPage] Selecting:', id);
         newSelected.add(id);
       }
       return newSelected;
@@ -348,7 +328,6 @@ export default function WorkOrdersPage() {
   }, []);
 
   const clearSelection = useCallback(() => {
-    console.log('[WorkOrdersPage] Clearing selection');
     setSelectedIds(new Set());
     setShowBulkActionsMenu(false);
     setShowBulkVendorAssign(false);
@@ -358,22 +337,13 @@ export default function WorkOrdersPage() {
   const handleBulkStatusChange = useCallback(
     async (newStatus: string) => {
       if (selectedIds.size === 0) {
-        console.log('[WorkOrdersPage] handleBulkStatusChange: No items selected');
         return;
       }
 
-      console.log('[WorkOrdersPage] handleBulkStatusChange started:', {
-        newStatus,
-        count: selectedIds.size,
-        ids: Array.from(selectedIds),
-      });
-
       setBulkActionInProgress(true);
-      const startTime = Date.now();
 
       try {
         const promises = Array.from(selectedIds).map((id) => {
-          console.log('[WorkOrdersPage] Updating work order:', id, 'to status:', newStatus);
           return updateWorkOrder.mutateAsync({ id, data: { status: newStatus } });
         });
 
@@ -381,19 +351,12 @@ export default function WorkOrdersPage() {
         const succeeded = results.filter((r) => r.status === 'fulfilled').length;
         const failed = results.filter((r) => r.status === 'rejected').length;
 
-        console.log('[WorkOrdersPage] handleBulkStatusChange completed:', {
-          duration: Date.now() - startTime,
-          succeeded,
-          failed,
-        });
-
         if (failed > 0) {
           alert(`${succeeded} updated successfully, ${failed} failed.`);
         }
 
         clearSelection();
-      } catch (error: any) {
-        console.error('[WorkOrdersPage] Bulk status update failed:', error);
+      } catch {
         alert('Some updates failed. Please try again.');
       } finally {
         setBulkActionInProgress(false);
@@ -406,23 +369,14 @@ export default function WorkOrdersPage() {
   const handleBulkVendorAssign = useCallback(
     async (vendorId: string | null) => {
       if (selectedIds.size === 0) {
-        console.log('[WorkOrdersPage] handleBulkVendorAssign: No items selected');
         return;
       }
 
-      console.log('[WorkOrdersPage] handleBulkVendorAssign started:', {
-        vendorId,
-        count: selectedIds.size,
-        ids: Array.from(selectedIds),
-      });
-
       setBulkActionInProgress(true);
       setShowBulkVendorAssign(false);
-      const startTime = Date.now();
 
       try {
         const promises = Array.from(selectedIds).map((id) => {
-          console.log('[WorkOrdersPage] Assigning vendor to work order:', id, 'vendor:', vendorId);
           return updateWorkOrder.mutateAsync({ id, data: { vendorId } });
         });
 
@@ -430,20 +384,12 @@ export default function WorkOrdersPage() {
         const succeeded = results.filter((r) => r.status === 'fulfilled').length;
         const failed = results.filter((r) => r.status === 'rejected').length;
 
-        console.log('[WorkOrdersPage] handleBulkVendorAssign completed:', {
-          duration: Date.now() - startTime,
-          succeeded,
-          failed,
-          vendorId,
-        });
-
         if (failed > 0) {
           alert(`${succeeded} assigned successfully, ${failed} failed.`);
         }
 
         clearSelection();
-      } catch (error: any) {
-        console.error('[WorkOrdersPage] Bulk vendor assign failed:', error);
+      } catch {
         alert('Some assignments failed. Please try again.');
       } finally {
         setBulkActionInProgress(false);
@@ -458,12 +404,6 @@ export default function WorkOrdersPage() {
       selectedIds.size > 0
         ? filteredWorkOrders.filter((wo: any) => selectedIds.has(wo.id))
         : filteredWorkOrders;
-
-    console.log('[WorkOrdersPage] handleExportCSV:', {
-      exporting: selectedOrders.length,
-      selected: selectedIds.size,
-      filtered: filteredWorkOrders.length,
-    });
 
     const headers = [
       'ID',
@@ -514,12 +454,6 @@ export default function WorkOrdersPage() {
     link.href = url;
     link.download = `work-orders-export-${new Date().toISOString().split('T')[0]}.csv`;
 
-    console.log('[WorkOrdersPage] Downloading CSV:', {
-      filename: link.download,
-      rows: rows.length,
-      size: csvContent.length,
-    });
-
     link.click();
     URL.revokeObjectURL(url);
   }, [selectedIds, filteredWorkOrders]);
@@ -530,10 +464,6 @@ export default function WorkOrdersPage() {
       selectedIds.size > 0
         ? filteredWorkOrders.filter((wo: any) => selectedIds.has(wo.id))
         : filteredWorkOrders;
-
-    console.log('[WorkOrdersPage] handleExportJSON:', {
-      exporting: selectedOrders.length,
-    });
 
     const exportData = selectedOrders.map((wo: any) => ({
       id: wo.id,
@@ -560,11 +490,6 @@ export default function WorkOrdersPage() {
     link.href = url;
     link.download = `work-orders-export-${new Date().toISOString().split('T')[0]}.json`;
 
-    console.log('[WorkOrdersPage] Downloading JSON:', {
-      filename: link.download,
-      records: exportData.length,
-    });
-
     link.click();
     URL.revokeObjectURL(url);
   }, [selectedIds, filteredWorkOrders]);
@@ -575,10 +500,6 @@ export default function WorkOrdersPage() {
       selectedIds.size > 0
         ? filteredWorkOrders.filter((wo: any) => selectedIds.has(wo.id))
         : filteredWorkOrders;
-
-    console.log('[WorkOrdersPage] handleGenerateReport:', {
-      generating: selectedOrders.length,
-    });
 
     // Create a printable HTML document
     const statusCounts = {
@@ -695,7 +616,6 @@ export default function WorkOrdersPage() {
       printWindow.document.write(htmlContent);
       printWindow.document.close();
       printWindow.print();
-      console.log('[WorkOrdersPage] Report generated and print dialog opened');
     }
   }, [selectedIds, filteredWorkOrders]);
 
@@ -1022,10 +942,7 @@ export default function WorkOrdersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    console.log('[WorkOrdersPage] Start All clicked');
-                    handleBulkStatusChange('IN_PROGRESS');
-                  }}
+                  onClick={() => handleBulkStatusChange('IN_PROGRESS')}
                   disabled={bulkActionInProgress}
                   className="bg-white"
                 >
@@ -1035,10 +952,7 @@ export default function WorkOrdersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    console.log('[WorkOrdersPage] Complete All clicked');
-                    handleBulkStatusChange('COMPLETED');
-                  }}
+                  onClick={() => handleBulkStatusChange('COMPLETED')}
                   disabled={bulkActionInProgress}
                   className="bg-white"
                 >
@@ -1051,10 +965,7 @@ export default function WorkOrdersPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      console.log('[WorkOrdersPage] Assign Vendor button clicked');
-                      setShowBulkVendorAssign(!showBulkVendorAssign);
-                    }}
+                    onClick={() => setShowBulkVendorAssign(!showBulkVendorAssign)}
                     disabled={bulkActionInProgress}
                     className="bg-white"
                   >
@@ -1064,10 +975,7 @@ export default function WorkOrdersPage() {
                   {showBulkVendorAssign && (
                     <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
                       <button
-                        onClick={() => {
-                          console.log('[WorkOrdersPage] Removing vendor assignment');
-                          handleBulkVendorAssign(null);
-                        }}
+                        onClick={() => handleBulkVendorAssign(null)}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                       >
                         <X className="w-4 h-4 text-gray-400" />
@@ -1077,10 +985,7 @@ export default function WorkOrdersPage() {
                       {vendors?.map((vendor: any) => (
                         <button
                           key={vendor.id}
-                          onClick={() => {
-                            console.log('[WorkOrdersPage] Assigning vendor:', vendor.companyName);
-                            handleBulkVendorAssign(vendor.id);
-                          }}
+                          onClick={() => handleBulkVendorAssign(vendor.id)}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                         >
                           <Briefcase className="w-4 h-4 text-gray-400" />
@@ -1096,10 +1001,7 @@ export default function WorkOrdersPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      console.log('[WorkOrdersPage] Export menu toggled');
-                      setShowBulkActionsMenu(!showBulkActionsMenu);
-                    }}
+                    onClick={() => setShowBulkActionsMenu(!showBulkActionsMenu)}
                     className="bg-white"
                   >
                     <Download className="w-4 h-4 mr-1" />
@@ -1110,7 +1012,6 @@ export default function WorkOrdersPage() {
                     <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
                       <button
                         onClick={() => {
-                          console.log('[WorkOrdersPage] Export CSV clicked');
                           handleExportCSV();
                           setShowBulkActionsMenu(false);
                         }}
@@ -1121,7 +1022,6 @@ export default function WorkOrdersPage() {
                       </button>
                       <button
                         onClick={() => {
-                          console.log('[WorkOrdersPage] Export JSON clicked');
                           handleExportJSON();
                           setShowBulkActionsMenu(false);
                         }}
@@ -1133,7 +1033,6 @@ export default function WorkOrdersPage() {
                       <div className="border-t border-gray-100 my-1" />
                       <button
                         onClick={() => {
-                          console.log('[WorkOrdersPage] Generate Report clicked');
                           handleGenerateReport();
                           setShowBulkActionsMenu(false);
                         }}
@@ -1156,7 +1055,6 @@ export default function WorkOrdersPage() {
         <div
           className="fixed inset-0 z-40"
           onClick={() => {
-            console.log('[WorkOrdersPage] Closing dropdowns via overlay');
             setShowBulkVendorAssign(false);
             setShowBulkActionsMenu(false);
           }}

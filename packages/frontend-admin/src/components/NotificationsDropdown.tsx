@@ -74,13 +74,6 @@ const generateNotificationsFromData = (
   const notifications: Notification[] = [];
   let notifId = 1;
 
-  console.log('[NotificationsDropdown] Generating notifications from data:', {
-    workOrders: workOrders?.length || 0,
-    leases: leases?.length || 0,
-    properties: properties?.length || 0,
-    vendors: vendors?.length || 0,
-  });
-
   // Work order notifications
   workOrders?.slice(0, 5).forEach((wo: any) => {
     if (wo.priority === 'CRITICAL' || wo.priority === 'HIGH') {
@@ -214,7 +207,6 @@ const generateNotificationsFromData = (
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  console.log('[NotificationsDropdown] Generated notifications:', notifications.length);
   return notifications;
 };
 
@@ -226,7 +218,6 @@ export default function NotificationsDropdown() {
   const { data: workOrders } = useQuery({
     queryKey: ['workOrders'],
     queryFn: async () => {
-      console.log('[NotificationsDropdown] Fetching work orders...');
       const response = await api.get('/work-orders');
       return response.data.data;
     },
@@ -235,7 +226,6 @@ export default function NotificationsDropdown() {
   const { data: leases } = useQuery({
     queryKey: ['leases'],
     queryFn: async () => {
-      console.log('[NotificationsDropdown] Fetching leases...');
       const response = await api.get('/leases');
       return response.data.data;
     },
@@ -244,7 +234,6 @@ export default function NotificationsDropdown() {
   const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      console.log('[NotificationsDropdown] Fetching properties...');
       const response = await api.get('/properties');
       return response.data.data;
     },
@@ -253,7 +242,6 @@ export default function NotificationsDropdown() {
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
     queryFn: async () => {
-      console.log('[NotificationsDropdown] Fetching vendors...');
       const response = await api.get('/vendors');
       return response.data.data;
     },
@@ -281,23 +269,19 @@ export default function NotificationsDropdown() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleMarkAsRead = useCallback((notifId: string) => {
-    console.log('[NotificationsDropdown] Marking notification as read:', notifId);
-    // In a real app, this would call an API
+  const handleMarkAsRead = useCallback((_notifId: string) => {
+    // TODO: Implement with real API
   }, []);
 
   const handleMarkAllAsRead = useCallback(() => {
-    console.log('[NotificationsDropdown] Marking all notifications as read');
-    // In a real app, this would call an API
+    // TODO: Implement with real API
   }, []);
 
-  const handleDeleteNotification = useCallback((notifId: string) => {
-    console.log('[NotificationsDropdown] Deleting notification:', notifId);
-    // In a real app, this would call an API
+  const handleDeleteNotification = useCallback((_notifId: string) => {
+    // TODO: Implement with real API
   }, []);
 
   const toggleDropdown = () => {
-    console.log('[NotificationsDropdown] Toggle dropdown, current state:', isOpen);
     setIsOpen(!isOpen);
   };
 

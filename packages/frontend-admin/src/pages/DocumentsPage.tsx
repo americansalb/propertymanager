@@ -389,24 +389,18 @@ export default function DocumentsPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      console.log(
-        '[DocumentsPage] Files selected for upload:',
-        Array.from(files).map((f) => f.name),
-      );
       setShowUploadModal(true);
     }
   };
 
   const handleDownload = useCallback((doc: Document) => {
-    console.log('[DocumentsPage] Downloading document:', doc.name);
-    // In a real app, this would trigger a download
+    // TODO: Implement with real document storage API
     alert(`Download started: ${doc.name}`);
   }, []);
 
   const handleDelete = useCallback((doc: Document) => {
-    console.log('[DocumentsPage] Delete requested for:', doc.name);
     if (confirm(`Are you sure you want to delete "${doc.name}"?`)) {
-      console.log('[DocumentsPage] Document deleted:', doc.id);
+      // TODO: Implement with real document storage API
     }
   }, []);
 

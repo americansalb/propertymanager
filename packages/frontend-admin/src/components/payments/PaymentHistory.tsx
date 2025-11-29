@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { CreditCard, DollarSign, Calendar, CheckCircle, XCircle, Clock, Download, Filter } from 'lucide-react';
+import { CreditCard, DollarSign, Calendar, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
 import api from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -99,9 +99,8 @@ export default function PaymentHistory({
 
   const displayPayments = filteredPayments?.slice(0, limit);
 
-  const handleDownloadReceipt = (paymentId: string) => {
-    // In production, this would generate/download a PDF receipt
-    console.log('Download receipt for payment:', paymentId);
+  const handleDownloadReceipt = (_paymentId: string) => {
+    // TODO: Implement receipt download with real API
   };
 
   if (isLoading) {

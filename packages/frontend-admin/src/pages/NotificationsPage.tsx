@@ -104,13 +104,6 @@ const generateNotifications = (
   const notifications: Notification[] = [];
   let id = 1;
 
-  console.log('[NotificationsPage] Generating notifications from:', {
-    workOrders: workOrders?.length || 0,
-    leases: leases?.length || 0,
-    properties: properties?.length || 0,
-    vendors: vendors?.length || 0,
-  });
-
   // Critical work orders
   workOrders
     ?.filter((wo) => wo.priority === 'CRITICAL')
@@ -293,7 +286,6 @@ const generateNotifications = (
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  console.log('[NotificationsPage] Generated', notifications.length, 'notifications');
   return notifications;
 };
 
@@ -308,7 +300,6 @@ export default function NotificationsPage() {
   const { data: workOrders, isLoading: loadingWO } = useQuery({
     queryKey: ['workOrders'],
     queryFn: async () => {
-      console.log('[NotificationsPage] Fetching work orders...');
       const response = await api.get('/work-orders');
       return response.data.data;
     },
@@ -317,7 +308,6 @@ export default function NotificationsPage() {
   const { data: leases, isLoading: loadingLeases } = useQuery({
     queryKey: ['leases'],
     queryFn: async () => {
-      console.log('[NotificationsPage] Fetching leases...');
       const response = await api.get('/leases');
       return response.data.data;
     },
@@ -326,7 +316,6 @@ export default function NotificationsPage() {
   const { data: properties, isLoading: loadingProps } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      console.log('[NotificationsPage] Fetching properties...');
       const response = await api.get('/properties');
       return response.data.data;
     },
@@ -335,7 +324,6 @@ export default function NotificationsPage() {
   const { data: vendors, isLoading: loadingVendors } = useQuery({
     queryKey: ['vendors'],
     queryFn: async () => {
-      console.log('[NotificationsPage] Fetching vendors...');
       const response = await api.get('/vendors');
       return response.data.data;
     },
@@ -377,7 +365,6 @@ export default function NotificationsPage() {
       );
     }
 
-    console.log('[NotificationsPage] Filtered notifications:', filtered.length);
     return filtered;
   }, [allNotifications, filterType, filterStatus, searchQuery, showArchived]);
 
@@ -390,20 +377,20 @@ export default function NotificationsPage() {
   }, [allNotifications]);
 
   // Handlers
-  const handleMarkAsRead = useCallback((id: string) => {
-    console.log('[NotificationsPage] Marking as read:', id);
+  const handleMarkAsRead = useCallback((_id: string) => {
+    // TODO: Implement with real API
   }, []);
 
   const handleMarkAllAsRead = useCallback(() => {
-    console.log('[NotificationsPage] Marking all as read');
+    // TODO: Implement with real API
   }, []);
 
-  const handleArchive = useCallback((id: string) => {
-    console.log('[NotificationsPage] Archiving:', id);
+  const handleArchive = useCallback((_id: string) => {
+    // TODO: Implement with real API
   }, []);
 
-  const handleDelete = useCallback((id: string) => {
-    console.log('[NotificationsPage] Deleting:', id);
+  const handleDelete = useCallback((_id: string) => {
+    // TODO: Implement with real API
   }, []);
 
   const handleSelectNotification = (id: string) => {
@@ -427,19 +414,19 @@ export default function NotificationsPage() {
   };
 
   const handleBulkMarkAsRead = useCallback(() => {
-    console.log('[NotificationsPage] Bulk marking as read:', Array.from(selectedNotifications));
+    // TODO: Implement with real API
     setSelectedNotifications(new Set());
-  }, [selectedNotifications]);
+  }, []);
 
   const handleBulkArchive = useCallback(() => {
-    console.log('[NotificationsPage] Bulk archiving:', Array.from(selectedNotifications));
+    // TODO: Implement with real API
     setSelectedNotifications(new Set());
-  }, [selectedNotifications]);
+  }, []);
 
   const handleBulkDelete = useCallback(() => {
-    console.log('[NotificationsPage] Bulk deleting:', Array.from(selectedNotifications));
+    // TODO: Implement with real API
     setSelectedNotifications(new Set());
-  }, [selectedNotifications]);
+  }, []);
 
   return (
     <div className="space-y-6">
