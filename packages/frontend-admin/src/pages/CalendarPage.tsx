@@ -14,6 +14,9 @@ import {
   List,
   Grid,
   Plus,
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import api from '../services/api';
@@ -90,7 +93,7 @@ export default function CalendarPage() {
   const [typeFilter, setTypeFilter] = useState<EventType | 'all'>('all');
 
   // Fetch work orders
-  const { data: workOrders } = useQuery({
+  const { data: workOrders, isLoading: loadingWorkOrders, error: errorWorkOrders, refetch: refetchWorkOrders } = useQuery({
     queryKey: ['work-orders'],
     queryFn: async () => {
       const response = await api.get('/work-orders');
@@ -99,13 +102,20 @@ export default function CalendarPage() {
   });
 
   // Fetch leases
-  const { data: leases } = useQuery({
+  const { data: leases, isLoading: loadingLeases, error: errorLeases, refetch: refetchLeases } = useQuery({
     queryKey: ['leases'],
     queryFn: async () => {
       const response = await api.get('/leases');
       return response.data.data;
     },
   });
+
+  const isLoading = loadingWorkOrders || loadingLeases;
+  const hasError = errorWorkOrders || errorLeases;
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchWorkOrders(), refetchLeases()]);
+  };
 
   // Generate calendar events from data
   const events = useMemo(() => {
@@ -219,6 +229,37 @@ export default function CalendarPage() {
       navigate('/leases');
     }
   };
+
+  // Loading state
+  if (isLoading && !workOrders && !leases) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading calendar...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (hasError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to load calendar</h2>
+          <p className="text-gray-500 mb-4">
+            There was an error loading calendar data. Please try again.
+          </p>
+          <Button onClick={handleRefresh}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
