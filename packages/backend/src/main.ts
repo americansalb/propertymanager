@@ -42,7 +42,11 @@ async function bootstrap() {
               fontSrc: ["'self'", 'https://fonts.gstatic.com'],
               imgSrc: ["'self'", 'data:', 'https:'],
               scriptSrc: ["'self'"],
-              connectSrc: ["'self'", 'https://api.stripe.com'],
+              connectSrc: [
+                "'self'",
+                'https://api.stripe.com',
+                'https://nominatim.openstreetmap.org',
+              ],
               frameSrc: ["'self'", 'https://js.stripe.com', 'https://hooks.stripe.com'],
             },
           }
@@ -71,7 +75,7 @@ async function bootstrap() {
       crossOriginOpenerPolicy: { policy: 'same-origin' },
       // Cross-Origin-Resource-Policy
       crossOriginResourcePolicy: { policy: 'cross-origin' },
-    })
+    }),
   );
 
   // Parse cookies for httpOnly refresh tokens
@@ -120,10 +124,23 @@ async function bootstrap() {
     'http://localhost:3002',
   ];
 
+  // Add Render production URLs if not in the list
+  const renderUrls = [
+    'https://propertymanager-1.onrender.com',
+    'https://propertymaster.onrender.com',
+  ];
+  renderUrls.forEach((url) => {
+    if (!allowedOrigins.includes(url)) {
+      allowedOrigins.push(url);
+    }
+  });
+
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        return callback(null, true);
+      }
 
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
