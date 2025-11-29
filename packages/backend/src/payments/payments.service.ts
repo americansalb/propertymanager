@@ -695,12 +695,23 @@ export class PaymentsService {
     // Set default payment method
     await this.stripeService.setDefaultPaymentMethod(customer.id, paymentMethodId);
 
-    // Update tenant with auto-pay settings
-    await this.prisma.tenant.update({
+    // Get tenant's lease to update auto-pay settings
+    const tenantWithLease = await this.prisma.tenant.findFirst({
       where: { id: tenantId },
+      select: { leaseId: true },
+    });
+
+    if (!tenantWithLease) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    // Update lease with auto-pay settings
+    await this.prisma.lease.update({
+      where: { id: tenantWithLease.leaseId },
       data: {
         autoPayEnabled: true,
         autoPayDay: dayOfMonth,
+        autoPayPaymentMethodId: paymentMethodId,
       },
     });
 
@@ -741,11 +752,13 @@ export class PaymentsService {
       throw new NotFoundException('Tenant not found');
     }
 
-    await this.prisma.tenant.update({
-      where: { id: tenantId },
+    // Update lease to disable auto-pay
+    await this.prisma.lease.update({
+      where: { id: tenant.leaseId },
       data: {
         autoPayEnabled: false,
         autoPayDay: null,
+        autoPayPaymentMethodId: null,
       },
     });
 
@@ -774,8 +787,13 @@ export class PaymentsService {
         },
       },
       select: {
-        autoPayEnabled: true,
-        autoPayDay: true,
+        lease: {
+          select: {
+            autoPayEnabled: true,
+            autoPayDay: true,
+            autoPayPaymentMethodId: true,
+          },
+        },
       },
     });
 
@@ -801,8 +819,8 @@ export class PaymentsService {
     }
 
     return {
-      enabled: tenant.autoPayEnabled || false,
-      dayOfMonth: tenant.autoPayDay,
+      enabled: tenant.lease.autoPayEnabled || false,
+      dayOfMonth: tenant.lease.autoPayDay,
       defaultPaymentMethod,
     };
   }

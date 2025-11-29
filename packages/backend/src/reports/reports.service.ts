@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Decimal } from '@prisma/client/runtime/library';
 import {
   ChargeStatus,
   PaymentStatus,
@@ -964,14 +963,13 @@ export class ReportsService {
       }
 
       // Check if open
-      if (
-        [
-          WorkOrderStatus.SUBMITTED,
-          WorkOrderStatus.ASSIGNED,
-          WorkOrderStatus.IN_PROGRESS,
-          WorkOrderStatus.ON_HOLD,
-        ].includes(wo.status as WorkOrderStatus)
-      ) {
+      const openStatuses = [
+        WorkOrderStatus.SUBMITTED,
+        WorkOrderStatus.ASSIGNED,
+        WorkOrderStatus.IN_PROGRESS,
+        WorkOrderStatus.ON_HOLD,
+      ];
+      if (openStatuses.includes(wo.status)) {
         propertyData.open++;
       }
 
