@@ -14,6 +14,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -38,8 +39,9 @@ class ChangePasswordDto {
 
   @IsString()
   @MinLength(8)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/, {
-    message: 'Password must contain at least one uppercase, one lowercase, one number, and one special character',
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/, {
+    message:
+      'Password must contain at least one uppercase, one lowercase, one number, and one special character',
   })
   newPassword!: string;
 }
@@ -55,8 +57,9 @@ class ResetPasswordDto {
 
   @IsString()
   @MinLength(8)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/, {
-    message: 'Password must contain at least one uppercase, one lowercase, one number, and one special character',
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/, {
+    message:
+      'Password must contain at least one uppercase, one lowercase, one number, and one special character',
   })
   newPassword!: string;
 }
@@ -126,6 +129,7 @@ export class AuthController {
   }
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 registrations per minute
   @ApiOperation({ summary: 'Register new organization and admin user' })
   @ApiBody({ type: RegisterDto })
   @SwaggerResponse({ status: 201, description: 'Registration successful' })
@@ -155,6 +159,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 login attempts per minute
   @UseGuards(AuthGuard('local'))
   @ApiOperation({ summary: 'Login with email and password' })
   @SwaggerResponse({ status: 200, description: 'Login successful' })
@@ -293,12 +298,11 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 password reset requests per minute
   @ApiOperation({ summary: 'Request password reset email' })
   @ApiBody({ type: ForgotPasswordDto })
   @SwaggerResponse({ status: 200, description: 'Reset email sent if account exists' })
-  async forgotPassword(
-    @Body() dto: ForgotPasswordDto,
-  ): Promise<ApiResponse<{ message: string }>> {
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ApiResponse<{ message: string }>> {
     await this.authService.requestPasswordReset(dto.email);
 
     // Always return success to prevent email enumeration
@@ -312,13 +316,12 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 password reset attempts per minute
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiBody({ type: ResetPasswordDto })
   @SwaggerResponse({ status: 200, description: 'Password reset successfully' })
   @SwaggerResponse({ status: 400, description: 'Invalid or expired token' })
-  async resetPassword(
-    @Body() dto: ResetPasswordDto,
-  ): Promise<ApiResponse<{ message: string }>> {
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<ApiResponse<{ message: string }>> {
     await this.authService.resetPassword(dto.token, dto.newPassword);
 
     return {
@@ -425,19 +428,19 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user info' })
   @SwaggerResponse({ status: 200, description: 'Current user info' })
-  async me(
-    @Request() req: AuthenticatedRequest,
-  ): Promise<ApiResponse<{
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: string;
-    organizationId: string;
-    organizationName: string;
-    avatarUrl: string | null;
-    emailVerified: boolean;
-  }>> {
+  async me(@Request() req: AuthenticatedRequest): Promise<
+    ApiResponse<{
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+      organizationId: string;
+      organizationName: string;
+      avatarUrl: string | null;
+      emailVerified: boolean;
+    }>
+  > {
     const user = req.user;
     return {
       success: true,

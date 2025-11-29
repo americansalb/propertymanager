@@ -3,12 +3,13 @@ import { Logger } from 'winston';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
-import { CreateWorkOrderDto } from './dto/create-work-order.dto';
-import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
-import { AssignWorkOrderDto } from './dto/assign-work-order.dto';
-import { CompleteWorkOrderDto } from './dto/complete-work-order.dto';
-import { UpdateWorkOrderStatusDto } from './dto/update-status.dto';
-import { WorkOrderQueryDto } from './dto/work-order-query.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { type CreateWorkOrderDto } from './dto/create-work-order.dto';
+import { type UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { type AssignWorkOrderDto } from './dto/assign-work-order.dto';
+import { type CompleteWorkOrderDto } from './dto/complete-work-order.dto';
+import { type UpdateWorkOrderStatusDto } from './dto/update-status.dto';
+import { type WorkOrderQueryDto } from './dto/work-order-query.dto';
 
 // Valid status transitions map
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -26,6 +27,7 @@ export class WorkOrdersService {
   constructor(
     private prisma: PrismaService,
     private eventsService: EventsService,
+    private notificationsService: NotificationsService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: Logger,
   ) {}
 
@@ -42,13 +44,27 @@ export class WorkOrdersService {
     const where: any = { organizationId };
 
     // Apply filters
-    if (query?.status) where.status = query.status;
-    if (query?.priority) where.priority = query.priority;
-    if (query?.type) where.type = query.type;
-    if (query?.propertyId) where.propertyId = query.propertyId;
-    if (query?.unitId) where.unitId = query.unitId;
-    if (query?.vendorId) where.vendorId = query.vendorId;
-    if (query?.assignedToId) where.assignedToId = query.assignedToId;
+    if (query?.status) {
+      where.status = query.status;
+    }
+    if (query?.priority) {
+      where.priority = query.priority;
+    }
+    if (query?.type) {
+      where.type = query.type;
+    }
+    if (query?.propertyId) {
+      where.propertyId = query.propertyId;
+    }
+    if (query?.unitId) {
+      where.unitId = query.unitId;
+    }
+    if (query?.vendorId) {
+      where.vendorId = query.vendorId;
+    }
+    if (query?.assignedToId) {
+      where.assignedToId = query.assignedToId;
+    }
 
     const [workOrders, total] = await Promise.all([
       this.prisma.workOrder.findMany({
@@ -464,6 +480,44 @@ export class WorkOrdersService {
       userId,
     });
 
+    // Send notification to tenant if work order was tenant-reported
+    if (existingWorkOrder.unitId) {
+      try {
+        // Get the tenant for this unit
+        const tenant = await this.prisma.tenant.findFirst({
+          where: {
+            lease: {
+              unitId: existingWorkOrder.unitId,
+              status: 'ACTIVE',
+            },
+          },
+        });
+
+        if (tenant) {
+          await this.notificationsService.sendWorkOrderUpdateNotification(
+            tenant.email,
+            `${tenant.firstName} ${tenant.lastName}`,
+            workOrder.title,
+            dto.status,
+            dto.notes || null,
+            workOrder.property.name,
+            workOrder.unit?.unitNumber || '',
+            workOrder.id,
+            organizationId,
+          );
+          this.logger.log('info', 'work_order.notification_sent', {
+            workOrderId: workOrder.id,
+            tenantEmail: tenant.email,
+          });
+        }
+      } catch (error) {
+        this.logger.log('error', 'work_order.notification_failed', {
+          workOrderId: workOrder.id,
+          error: (error as Error).message,
+        });
+      }
+    }
+
     return workOrder;
   }
 
@@ -511,7 +565,9 @@ export class WorkOrdersService {
     const updateData: any = {
       vendorId: dto.vendorId || existingWorkOrder.vendorId,
       assignedToId: dto.assignedToId || existingWorkOrder.assignedToId,
-      scheduledDate: dto.scheduledDate ? new Date(dto.scheduledDate) : existingWorkOrder.scheduledDate,
+      scheduledDate: dto.scheduledDate
+        ? new Date(dto.scheduledDate)
+        : existingWorkOrder.scheduledDate,
       status: newStatus,
     };
 
@@ -719,7 +775,9 @@ export class WorkOrdersService {
 
   async getStats(organizationId: string, propertyId?: string) {
     const where: any = { organizationId };
-    if (propertyId) where.propertyId = propertyId;
+    if (propertyId) {
+      where.propertyId = propertyId;
+    }
 
     const [
       totalCount,

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class StripeService {
@@ -11,6 +12,7 @@ export class StripeService {
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
+    private notificationsService: NotificationsService,
   ) {
     const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!stripeKey) {
@@ -220,6 +222,22 @@ export class StripeService {
 
     const amount = paymentIntent.amount / 100;
 
+    // Get tenant with lease info for notification
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
     // Create payment record
     const payment = await this.prisma.payment.create({
       data: {
@@ -278,6 +296,25 @@ export class StripeService {
     }
 
     this.logger.log(`Payment allocated across ${chargeIdList.length} charges`);
+
+    // Send payment received notification
+    if (tenant && tenant.lease) {
+      try {
+        await this.notificationsService.sendPaymentReceivedNotification(
+          tenant.email,
+          `${tenant.firstName} ${tenant.lastName}`,
+          amount,
+          new Date(),
+          tenant.lease.unit.property.name,
+          tenant.lease.unit.unitNumber,
+          payment.id,
+          tenant.lease.unit.property.organizationId,
+        );
+        this.logger.log(`Payment notification sent to ${tenant.email}`);
+      } catch (error) {
+        this.logger.error('Failed to send payment notification', error);
+      }
+    }
   }
 
   /**
@@ -291,18 +328,57 @@ export class StripeService {
       return;
     }
 
-    await this.prisma.payment.create({
+    const amount = paymentIntent.amount / 100;
+
+    // Get tenant with lease info for notification
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const payment = await this.prisma.payment.create({
       data: {
         tenantId,
         method: this.mapPaymentMethod(paymentIntent.payment_method_types[0]),
         status: 'FAILED',
-        amount: paymentIntent.amount / 100,
+        amount,
         stripePaymentIntentId: paymentIntent.id,
         paymentDate: new Date(),
       },
     });
 
     this.logger.warn(`Payment failed for tenant: ${tenantId}`);
+
+    // Send payment failed notification
+    if (tenant && tenant.lease) {
+      try {
+        const failureReason =
+          paymentIntent.last_payment_error?.message || 'Payment could not be processed';
+        await this.notificationsService.sendPaymentFailedNotification(
+          tenant.email,
+          `${tenant.firstName} ${tenant.lastName}`,
+          amount,
+          tenant.lease.unit.property.name,
+          tenant.lease.unit.unitNumber,
+          failureReason,
+          payment.id,
+          tenant.lease.unit.property.organizationId,
+        );
+        this.logger.log(`Payment failure notification sent to ${tenant.email}`);
+      } catch (error) {
+        this.logger.error('Failed to send payment failure notification', error);
+      }
+    }
   }
 
   /**
@@ -608,10 +684,7 @@ export class StripeService {
   /**
    * List customer invoices
    */
-  async listInvoices(
-    customerId: string,
-    limit: number = 10,
-  ): Promise<Stripe.Invoice[]> {
+  async listInvoices(customerId: string, limit: number = 10): Promise<Stripe.Invoice[]> {
     const invoices = await this.stripe.invoices.list({
       customer: customerId,
       limit,
@@ -688,7 +761,7 @@ export class StripeService {
    */
   async verifyBankAccount(
     paymentMethodId: string,
-    amounts: [number, number],
+    _amounts: [number, number],
   ): Promise<Stripe.PaymentMethod> {
     const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
 
