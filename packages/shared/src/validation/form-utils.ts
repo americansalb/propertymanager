@@ -198,9 +198,9 @@ export function formatPhoneNumber(phone: string): string {
 }
 
 /**
- * Format currency for display
+ * Format currency for display (form utility version)
  */
-export function formatCurrency(
+export function formatFormCurrency(
   amount: number,
   options: { currency?: string; locale?: string } = {},
 ): string {
@@ -212,9 +212,9 @@ export function formatCurrency(
 }
 
 /**
- * Format date for display
+ * Format date for display (form utility version)
  */
-export function formatDate(
+export function formatFormDate(
   date: Date | string,
   options: Intl.DateTimeFormatOptions = {},
 ): string {
@@ -245,7 +245,7 @@ export function formatRelativeTime(date: Date | string): string {
   if (diffDay < 7) return `${diffDay}d ago`;
   if (diffDay < 30) return `${Math.floor(diffDay / 7)}w ago`;
 
-  return formatDate(d);
+  return formatFormDate(d);
 }
 
 /**

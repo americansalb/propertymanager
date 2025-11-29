@@ -382,7 +382,18 @@ export const createLeaseSchema = z
     },
   );
 
-export const updateLeaseSchema = createLeaseSchema.partial().omit({ unitId: true, tenants: true });
+// Base lease fields for update (without refinements)
+export const updateLeaseSchema = z.object({
+  type: leaseTypeEnum.optional(),
+  startDate: dateStringSchema.optional(),
+  endDate: dateStringSchema.optional(),
+  monthlyRent: moneySchema.optional(),
+  securityDeposit: moneySchema.optional(),
+  paymentDueDay: z.number().int().min(1).max(28).optional(),
+  lateFeeAmount: moneySchema.optional(),
+  lateFeeGracePeriod: z.number().int().min(0).max(30).optional(),
+  terms: z.string().max(10000).optional(),
+});
 
 // =====================================================
 // Work Order Schemas
@@ -469,7 +480,7 @@ export const recordPaymentSchema = z.object({
     .array(
       z.object({
         chargeId: uuidSchema,
-        amount: moneySchema.positive(),
+        amount: z.number().positive('Amount must be positive').transform((val) => Math.round(val * 100) / 100),
       }),
     )
     .optional(),
