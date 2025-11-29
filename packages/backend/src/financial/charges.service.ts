@@ -434,7 +434,7 @@ export class ChargesService {
                 type: 'LATE_FEE',
               },
             },
-            tenant: true,
+            tenants: true,
             unit: {
               include: {
                 property: true,
@@ -484,8 +484,8 @@ export class ChargesService {
       generatedFees.push(lateFee);
 
       // Send late fee notification to tenant
-      if (charge.lease.tenant) {
-        const tenant = charge.lease.tenant;
+      const tenant = charge.lease.tenants?.[0];
+      if (tenant) {
         const property = charge.lease.unit.property;
         const unit = charge.lease.unit;
 
