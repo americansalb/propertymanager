@@ -225,8 +225,8 @@ importers:
   packages/frontend-admin:
     dependencies:
       '@hookform/resolvers':
-        specifier: ^5.2.2
-        version: 5.2.2(react-hook-form@7.67.0)
+        specifier: ^3.3.4
+        version: 3.10.0(react-hook-form@7.67.0)
       '@propertymaster/shared':
         specifier: workspace:*
         version: link:../shared
@@ -294,7 +294,7 @@ importers:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
       react-hook-form:
-        specifier: ^7.67.0
+        specifier: ^7.49.3
         version: 7.67.0(react@18.3.1)
       react-router-dom:
         specifier: ^6.21.0
@@ -2042,12 +2042,11 @@ packages:
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
     dev: false
 
-  /@hookform/resolvers@5.2.2(react-hook-form@7.67.0):
-    resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
+  /@hookform/resolvers@3.10.0(react-hook-form@7.67.0):
+    resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
     peerDependencies:
-      react-hook-form: ^7.55.0
+      react-hook-form: ^7.0.0
     dependencies:
-      '@standard-schema/utils': 0.3.0
       react-hook-form: 7.67.0(react@18.3.1)
     dev: false
 
@@ -4870,10 +4869,6 @@ packages:
     dependencies:
       color: 5.0.3
       text-hex: 1.0.0
-    dev: false
-
-  /@standard-schema/utils@0.3.0:
-    resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
     dev: false
 
   /@stripe/react-stripe-js@2.9.0(@stripe/stripe-js@2.4.0)(react-dom@18.3.1)(react@18.3.1):
