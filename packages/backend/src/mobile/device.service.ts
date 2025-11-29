@@ -263,19 +263,14 @@ export class DeviceService {
   ) {
     // Web Push integration
     // In production, use web-push library
-    const _pushPayload = {
-      subscription: JSON.parse(device.token),
-      payload: JSON.stringify({
-        title: notification.title,
-        body: notification.body,
-        data: notification.data,
-      }),
-    };
-
     this.logger.log(
       {
         message: 'web.push.notification.sent',
         deviceId: device.id,
+        notification: {
+          title: notification.title,
+          body: notification.body,
+        },
       },
       DeviceService.name,
     );
