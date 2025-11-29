@@ -19,7 +19,7 @@ import { UserId } from '../common/decorators/user-id.decorator';
 
 class SendTestEmailDto {
   @IsEmail()
-  to: string;
+  to!: string;
 
   @IsOptional()
   @IsString()

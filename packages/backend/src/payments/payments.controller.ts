@@ -34,12 +34,12 @@ import { IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
 
 class CreateSetupIntentDto {
   @IsString()
-  tenantId: string;
+  tenantId!: string;
 }
 
 class AttachPaymentMethodDto {
   @IsString()
-  paymentMethodId: string;
+  paymentMethodId!: string;
 
   @IsOptional()
   @IsBoolean()
@@ -48,18 +48,18 @@ class AttachPaymentMethodDto {
 
 class SetDefaultPaymentMethodDto {
   @IsString()
-  paymentMethodId: string;
+  paymentMethodId!: string;
 }
 
 class ChargeWithSavedMethodDto {
   @IsString()
-  paymentMethodId: string;
+  paymentMethodId!: string;
 
   @IsNumber()
-  amount: number;
+  amount!: number;
 
   @IsString({ each: true })
-  chargeIds: string[];
+  chargeIds!: string[];
 }
 
 @ApiTags('payments')

@@ -10,7 +10,7 @@ import { AlertsService } from './alerts.service';
   exports: [MetricsService, AlertsService],
 })
 export class MonitoringModule implements OnModuleInit {
-  constructor(private configService: ConfigService) {}
+  constructor(private _configService: ConfigService) {}
 
   onModuleInit(): void {
     // Initialize Sentry on module init

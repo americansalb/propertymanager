@@ -963,7 +963,7 @@ export class ReportsService {
       }
 
       // Check if open
-      const openStatuses = [
+      const openStatuses: WorkOrderStatus[] = [
         WorkOrderStatus.SUBMITTED,
         WorkOrderStatus.ASSIGNED,
         WorkOrderStatus.IN_PROGRESS,
