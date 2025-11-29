@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
   { title: 'Activity', href: '/activity', icon: Bell },
   { title: 'Reports', href: '/reports', icon: BarChart3 },
   { title: 'Export Data', href: '/export', icon: Download },
-  { title: 'Tenant Portal', href: '/tenant-portal', icon: User },
+  { title: 'Tenant Preview', href: '/tenant-preview', icon: User },
   { title: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -170,10 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <Menu className="w-6 h-6" />
             </Button>
-            <button
-              onClick={() => commandPalette.open()}
-              className="flex items-center gap-2"
-            >
+            <button onClick={() => commandPalette.open()} className="flex items-center gap-2">
               <Building2 className="w-6 h-6 text-primary" />
               <span className="font-semibold">PropertyMaster</span>
             </button>
@@ -184,10 +181,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <Search className="w-5 h-5 text-gray-600" />
               </button>
-              <button
-                onClick={() => helpPanel.open()}
-                className="p-2 rounded-lg hover:bg-gray-100"
-              >
+              <button onClick={() => helpPanel.open()} className="p-2 rounded-lg hover:bg-gray-100">
                 <HelpCircle className="w-5 h-5 text-gray-600" />
               </button>
               <NotificationsDropdown />

@@ -237,6 +237,29 @@ export default function TenantPortalPage() {
 
   return (
     <div className="space-y-6">
+      {/* Preview Banner */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-amber-100 rounded-lg">
+            <Eye className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <p className="font-medium text-amber-800">Tenant Portal Preview</p>
+            <p className="text-sm text-amber-600">
+              This is a preview of what your tenants see. Tenants log in at a separate URL.
+            </p>
+          </div>
+        </div>
+        <a
+          href="/tenant/login"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-200 transition-colors"
+        >
+          Open Tenant Portal →
+        </a>
+      </div>
+
       {/* Header */}
       <div className="bg-gradient-to-r from-primary to-blue-600 rounded-2xl p-6 text-white">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

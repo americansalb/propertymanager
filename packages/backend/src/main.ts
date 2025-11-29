@@ -86,17 +86,42 @@ async function bootstrap() {
     app.set('trust proxy', 1);
   }
 
-  // Serve static files from frontend build
-  const frontendDistPath = join(__dirname, '..', '..', 'frontend-admin', 'dist');
-  app.useStaticAssets(frontendDistPath);
+  // Serve static files from frontend builds
+  const adminDistPath = join(__dirname, '..', '..', 'frontend-admin', 'dist');
+  const tenantDistPath = join(__dirname, '..', '..', 'frontend-tenant', 'out');
 
-  // Serve index.html for all non-API routes (SPA routing)
+  // Serve tenant portal static files at /tenant
+  app.useStaticAssets(tenantDistPath, { prefix: '/tenant' });
+
+  // Serve admin portal static files at root
+  app.useStaticAssets(adminDistPath);
+
+  // Handle SPA routing for both apps
   app.use((req: any, res: any, next: any) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(join(frontendDistPath, 'index.html'));
-    } else {
-      next();
+    // Skip API routes
+    if (req.path.startsWith('/api')) {
+      return next();
     }
+
+    // Tenant portal routes
+    if (req.path.startsWith('/tenant')) {
+      // Remove /tenant prefix to get the actual page path
+      const pagePath = req.path.replace('/tenant', '') || '/';
+      // Try to serve the specific page, fallback to index
+      const htmlPath = pagePath === '/' ? 'index.html' : `${pagePath.replace(/\/$/, '')}.html`;
+      const fullPath = join(tenantDistPath, htmlPath);
+
+      // Check if specific page exists, otherwise serve index for client-side routing
+      res.sendFile(fullPath, (err: any) => {
+        if (err) {
+          res.sendFile(join(tenantDistPath, 'index.html'));
+        }
+      });
+      return;
+    }
+
+    // Admin portal routes (default)
+    res.sendFile(join(adminDistPath, 'index.html'));
   });
 
   // Global validation pipe with strict settings

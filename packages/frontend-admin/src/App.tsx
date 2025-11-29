@@ -53,7 +53,7 @@ function App() {
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/documents" element={<DocumentsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/tenant-portal" element={<TenantPortalPage />} />
+                <Route path="/tenant-preview" element={<TenantPortalPage />} />
                 <Route path="/export" element={<ExportPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/qa" element={<QADashboard />} />
