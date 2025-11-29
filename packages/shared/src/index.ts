@@ -10,3 +10,6 @@ export * from './types/financial.types';
 // Utilities
 export * from './utils/formatters';
 export * from './utils/validators';
+
+// Validation schemas and utilities
+export * from './validation';

@@ -99,6 +99,12 @@ model User {
   emailVerificationExpiry DateTime?
   lastLoginAt   DateTime?
 
+  // Account lockout
+  failedLoginAttempts Int @default(0)
+  lockedUntil   DateTime?
+  lastFailedLoginAt DateTime?
+  passwordChangedAt DateTime?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -1334,4 +1340,65 @@ model ApiKey {
   @@index([organizationId])
   @@index([keyHash])
   @@index([createdById])
+}
+
+// ============================================================================
+// DOCUMENT MANAGEMENT
+// ============================================================================
+
+enum DocumentType {
+  LEASE_AGREEMENT
+  LEASE_ADDENDUM
+  MOVE_IN_CHECKLIST
+  MOVE_OUT_CHECKLIST
+  VENDOR_INSURANCE
+  VENDOR_W9
+  VENDOR_LICENSE
+  VENDOR_CONTRACT
+  WORK_ORDER_PHOTO
+  WORK_ORDER_INVOICE
+  MAINTENANCE_PHOTO
+  PROPERTY_PHOTO
+  UNIT_PHOTO
+  OTHER
+}
+
+model Document {
+  id          String   @id @default(cuid())
+
+  // File info
+  name        String   // Original filename
+  description String?
+  type        DocumentType @default(OTHER)
+
+  // Storage info
+  storageKey  String   @unique // Key in storage provider
+  storageUrl  String   // URL to access file
+  storageProvider String // 'local' or 's3'
+
+  // File metadata
+  mimeType    String
+  size        Int      // File size in bytes
+
+  // Entity association (polymorphic)
+  entityType  String   // 'Property', 'Unit', 'Lease', 'Vendor', 'WorkOrder', etc.
+  entityId    String
+
+  // Access control
+  isPublic    Boolean  @default(false)
+
+  // Multi-tenant
+  organizationId String
+
+  // Audit
+  uploadedById String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime? // Soft delete
+
+  @@index([organizationId])
+  @@index([entityType, entityId])
+  @@index([type])
+  @@index([storageKey])
 }

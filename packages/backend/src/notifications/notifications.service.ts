@@ -2,6 +2,7 @@ import { Injectable, Inject, LoggerService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 // Notification types matching the Prisma schema
 type NotificationType =
@@ -28,27 +29,20 @@ interface NotificationPayload {
   organizationId: string;
 }
 
-interface EmailTemplate {
-  subject: string;
-  body: string;
-  htmlBody: string;
-}
-
 @Injectable()
 export class NotificationsService {
-  private readonly emailEnabled: boolean;
+  private readonly portalUrl: string;
+  private readonly adminUrl: string;
 
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    private emailService: EmailService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {
-    this.emailEnabled = !!this.configService.get<string>('SENDGRID_API_KEY');
-
-    if (!this.emailEnabled) {
-      this.logger.warn('Email notifications disabled - SENDGRID_API_KEY not configured');
-    }
+    this.portalUrl = this.configService.get<string>('FRONTEND_TENANT_URL') || 'http://localhost:3002';
+    this.adminUrl = this.configService.get<string>('FRONTEND_ADMIN_URL') || 'http://localhost:3000';
   }
 
   /**
@@ -97,26 +91,33 @@ export class NotificationsService {
     }
 
     try {
-      if (this.emailEnabled) {
-        // In production, integrate with SendGrid or similar
-        // For now, we'll just mark as sent
-        await this.sendEmail(notification.recipientEmail!, notification.subject, notification.body);
+      // Send via EmailService
+      const result = await this.emailService.sendEmail({
+        to: notification.recipientEmail!,
+        subject: notification.subject,
+        text: notification.body,
+        html: notification.htmlBody || undefined,
+      });
+
+      if (result.success) {
+        await this.prisma.notification.update({
+          where: { id: notificationId },
+          data: {
+            status: 'SENT',
+            sentAt: new Date(),
+          },
+        });
+
+        this.logger.log({
+          message: 'notification.sent',
+          notificationId,
+          type: notification.type,
+          recipient: notification.recipientEmail,
+          messageId: result.messageId,
+        });
+      } else {
+        throw new Error(result.error || 'Email send failed');
       }
-
-      await this.prisma.notification.update({
-        where: { id: notificationId },
-        data: {
-          status: 'SENT',
-          sentAt: new Date(),
-        },
-      });
-
-      this.logger.log({
-        message: 'notification.sent',
-        notificationId,
-        type: notification.type,
-        recipient: notification.recipientEmail,
-      });
     } catch (error) {
       await this.prisma.notification.update({
         where: { id: notificationId },
@@ -134,25 +135,8 @@ export class NotificationsService {
     }
   }
 
-  /**
-   * Send email (placeholder - integrate with SendGrid/SES in production)
-   */
-  private async sendEmail(to: string, subject: string, body: string) {
-    // In production, use SendGrid, AWS SES, or similar
-    // For now, just log the email
-    this.logger.log({
-      message: 'email.send',
-      to,
-      subject,
-      bodyLength: body.length,
-    });
-
-    // Simulate email sending delay
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-
   // ============================================================
-  // PAYMENT NOTIFICATION TEMPLATES (Phase 72)
+  // HIGH-LEVEL NOTIFICATION METHODS
   // ============================================================
 
   /**
@@ -168,24 +152,35 @@ export class NotificationsService {
     paymentId: string,
     organizationId: string,
   ) {
-    const template = this.getPaymentReceivedTemplate(
+    // Send via EmailService directly for better templating
+    const result = await this.emailService.sendPaymentReceivedEmail(
+      tenantEmail,
       tenantName,
       amount,
       paymentDate,
       propertyName,
       unitNumber,
+      paymentId.substring(0, 8).toUpperCase(),
     );
 
-    return this.createNotification({
-      type: 'PAYMENT_RECEIVED',
-      recipientEmail: tenantEmail,
-      subject: template.subject,
-      body: template.body,
-      htmlBody: template.htmlBody,
-      referenceType: 'Payment',
-      referenceId: paymentId,
-      organizationId,
+    // Also create notification record for tracking
+    await this.prisma.notification.create({
+      data: {
+        type: 'PAYMENT_RECEIVED',
+        status: result.success ? 'SENT' : 'FAILED',
+        channel: 'EMAIL',
+        recipientEmail: tenantEmail,
+        subject: `Payment Received - ${this.formatCurrency(amount)}`,
+        body: `Payment of ${this.formatCurrency(amount)} received`,
+        referenceType: 'Payment',
+        referenceId: paymentId,
+        organizationId,
+        sentAt: result.success ? new Date() : null,
+        errorMessage: result.error,
+      },
     });
+
+    return result;
   }
 
   /**
@@ -201,24 +196,33 @@ export class NotificationsService {
     paymentId: string,
     organizationId: string,
   ) {
-    const template = this.getPaymentFailedTemplate(
+    const result = await this.emailService.sendPaymentFailedEmail(
+      tenantEmail,
       tenantName,
       amount,
       propertyName,
       unitNumber,
       reason,
+      this.portalUrl,
     );
 
-    return this.createNotification({
-      type: 'PAYMENT_FAILED',
-      recipientEmail: tenantEmail,
-      subject: template.subject,
-      body: template.body,
-      htmlBody: template.htmlBody,
-      referenceType: 'Payment',
-      referenceId: paymentId,
-      organizationId,
+    await this.prisma.notification.create({
+      data: {
+        type: 'PAYMENT_FAILED',
+        status: result.success ? 'SENT' : 'FAILED',
+        channel: 'EMAIL',
+        recipientEmail: tenantEmail,
+        subject: 'Payment Failed - Action Required',
+        body: `Payment of ${this.formatCurrency(amount)} failed: ${reason}`,
+        referenceType: 'Payment',
+        referenceId: paymentId,
+        organizationId,
+        sentAt: result.success ? new Date() : null,
+        errorMessage: result.error,
+      },
     });
+
+    return result;
   }
 
   /**
@@ -234,24 +238,33 @@ export class NotificationsService {
     leaseId: string,
     organizationId: string,
   ) {
-    const template = this.getAutoPayUpcomingTemplate(
+    const result = await this.emailService.sendAutoPayUpcomingEmail(
+      tenantEmail,
       tenantName,
       amount,
       chargeDate,
       propertyName,
       unitNumber,
+      this.portalUrl,
     );
 
-    return this.createNotification({
-      type: 'AUTOPAY_UPCOMING',
-      recipientEmail: tenantEmail,
-      subject: template.subject,
-      body: template.body,
-      htmlBody: template.htmlBody,
-      referenceType: 'Lease',
-      referenceId: leaseId,
-      organizationId,
+    await this.prisma.notification.create({
+      data: {
+        type: 'AUTOPAY_UPCOMING',
+        status: result.success ? 'SENT' : 'FAILED',
+        channel: 'EMAIL',
+        recipientEmail: tenantEmail,
+        subject: `Auto-Pay Scheduled - ${this.formatDate(chargeDate)}`,
+        body: `Auto-pay of ${this.formatCurrency(amount)} scheduled for ${this.formatDate(chargeDate)}`,
+        referenceType: 'Lease',
+        referenceId: leaseId,
+        organizationId,
+        sentAt: result.success ? new Date() : null,
+        errorMessage: result.error,
+      },
     });
+
+    return result;
   }
 
   /**
@@ -266,18 +279,32 @@ export class NotificationsService {
     paymentId: string,
     organizationId: string,
   ) {
-    const template = this.getAutoPayProcessedTemplate(tenantName, amount, propertyName, unitNumber);
+    const result = await this.emailService.sendAutoPayProcessedEmail(
+      tenantEmail,
+      tenantName,
+      amount,
+      propertyName,
+      unitNumber,
+      paymentId.substring(0, 8).toUpperCase(),
+    );
 
-    return this.createNotification({
-      type: 'AUTOPAY_PROCESSED',
-      recipientEmail: tenantEmail,
-      subject: template.subject,
-      body: template.body,
-      htmlBody: template.htmlBody,
-      referenceType: 'Payment',
-      referenceId: paymentId,
-      organizationId,
+    await this.prisma.notification.create({
+      data: {
+        type: 'AUTOPAY_PROCESSED',
+        status: result.success ? 'SENT' : 'FAILED',
+        channel: 'EMAIL',
+        recipientEmail: tenantEmail,
+        subject: `Auto-Pay Processed - ${this.formatCurrency(amount)}`,
+        body: `Auto-pay of ${this.formatCurrency(amount)} processed successfully`,
+        referenceType: 'Payment',
+        referenceId: paymentId,
+        organizationId,
+        sentAt: result.success ? new Date() : null,
+        errorMessage: result.error,
+      },
     });
+
+    return result;
   }
 
   /**
@@ -293,24 +320,75 @@ export class NotificationsService {
     chargeId: string,
     organizationId: string,
   ) {
-    const template = this.getRentDueReminderTemplate(
+    const result = await this.emailService.sendRentDueReminderEmail(
+      tenantEmail,
       tenantName,
       amount,
       dueDate,
       propertyName,
       unitNumber,
+      this.portalUrl,
     );
 
-    return this.createNotification({
-      type: 'PAYMENT_REMINDER',
-      recipientEmail: tenantEmail,
-      subject: template.subject,
-      body: template.body,
-      htmlBody: template.htmlBody,
-      referenceType: 'Charge',
-      referenceId: chargeId,
-      organizationId,
+    await this.prisma.notification.create({
+      data: {
+        type: 'PAYMENT_REMINDER',
+        status: result.success ? 'SENT' : 'FAILED',
+        channel: 'EMAIL',
+        recipientEmail: tenantEmail,
+        subject: `Rent Due Reminder - ${this.formatDate(dueDate)}`,
+        body: `Rent of ${this.formatCurrency(amount)} due on ${this.formatDate(dueDate)}`,
+        referenceType: 'Charge',
+        referenceId: chargeId,
+        organizationId,
+        sentAt: result.success ? new Date() : null,
+        errorMessage: result.error,
+      },
     });
+
+    return result;
+  }
+
+  /**
+   * Send late fee applied notification
+   */
+  async sendLateFeeNotification(
+    tenantEmail: string,
+    tenantName: string,
+    lateFeeAmount: number,
+    totalDue: number,
+    propertyName: string,
+    unitNumber: string,
+    chargeId: string,
+    organizationId: string,
+  ) {
+    const result = await this.emailService.sendLateFeeAppliedEmail(
+      tenantEmail,
+      tenantName,
+      lateFeeAmount,
+      totalDue,
+      propertyName,
+      unitNumber,
+      this.portalUrl,
+    );
+
+    await this.prisma.notification.create({
+      data: {
+        type: 'LATE_FEE_APPLIED',
+        status: result.success ? 'SENT' : 'FAILED',
+        channel: 'EMAIL',
+        recipientEmail: tenantEmail,
+        subject: 'Late Fee Applied to Your Account',
+        body: `Late fee of ${this.formatCurrency(lateFeeAmount)} applied. Total due: ${this.formatCurrency(totalDue)}`,
+        referenceType: 'Charge',
+        referenceId: chargeId,
+        organizationId,
+        sentAt: result.success ? new Date() : null,
+        errorMessage: result.error,
+      },
+    });
+
+    return result;
   }
 
   /**
@@ -326,417 +404,82 @@ export class NotificationsService {
     leaseId: string,
     organizationId: string,
   ) {
-    const template = this.getLeaseExpiringTemplate(
+    // Get organization's contact email
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+    const contactEmail = (org?.settings as { contactEmail?: string })?.contactEmail || 'support@propertymaster.io';
+
+    const result = await this.emailService.sendLeaseExpiringEmail(
+      tenantEmail,
       tenantName,
       expirationDate,
       daysRemaining,
       propertyName,
       unitNumber,
+      contactEmail,
     );
 
-    return this.createNotification({
-      type: 'LEASE_EXPIRING',
-      recipientEmail: tenantEmail,
-      subject: template.subject,
-      body: template.body,
-      htmlBody: template.htmlBody,
-      referenceType: 'Lease',
-      referenceId: leaseId,
-      organizationId,
-    });
-  }
-
-  // ============================================================
-  // EMAIL TEMPLATES
-  // ============================================================
-
-  private getPaymentReceivedTemplate(
-    tenantName: string,
-    amount: number,
-    paymentDate: Date,
-    propertyName: string,
-    unitNumber: string,
-  ): EmailTemplate {
-    const formattedAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-    const formattedDate = paymentDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    await this.prisma.notification.create({
+      data: {
+        type: 'LEASE_EXPIRING',
+        status: result.success ? 'SENT' : 'FAILED',
+        channel: 'EMAIL',
+        recipientEmail: tenantEmail,
+        subject: `Lease Expiring in ${daysRemaining} Days`,
+        body: `Your lease expires on ${this.formatDate(expirationDate)}`,
+        referenceType: 'Lease',
+        referenceId: leaseId,
+        organizationId,
+        sentAt: result.success ? new Date() : null,
+        errorMessage: result.error,
+      },
     });
 
-    return {
-      subject: `Payment Received - ${formattedAmount}`,
-      body: `Dear ${tenantName},
-
-We have received your payment of ${formattedAmount} on ${formattedDate}.
-
-Property: ${propertyName}
-Unit: ${unitNumber}
-Amount: ${formattedAmount}
-Date: ${formattedDate}
-
-Thank you for your payment!
-
-Best regards,
-Property Management Team`,
-      htmlBody: `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
-    .details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-    .amount { font-size: 24px; font-weight: bold; color: #10b981; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Payment Received</h1>
-    </div>
-    <div class="content">
-      <p>Dear ${tenantName},</p>
-      <p>We have received your payment. Thank you!</p>
-      <div class="details">
-        <p><strong>Property:</strong> ${propertyName}</p>
-        <p><strong>Unit:</strong> ${unitNumber}</p>
-        <p><strong>Amount:</strong> <span class="amount">${formattedAmount}</span></p>
-        <p><strong>Date:</strong> ${formattedDate}</p>
-      </div>
-      <p>Best regards,<br>Property Management Team</p>
-    </div>
-  </div>
-</body>
-</html>`,
-    };
+    return result;
   }
 
-  private getPaymentFailedTemplate(
+  /**
+   * Send work order update notification
+   */
+  async sendWorkOrderUpdateNotification(
+    tenantEmail: string,
     tenantName: string,
-    amount: number,
+    workOrderTitle: string,
+    newStatus: string,
+    notes: string | null,
     propertyName: string,
     unitNumber: string,
-    reason: string,
-  ): EmailTemplate {
-    const formattedAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+    workOrderId: string,
+    organizationId: string,
+  ) {
+    const result = await this.emailService.sendWorkOrderUpdateEmail(
+      tenantEmail,
+      tenantName,
+      workOrderTitle,
+      newStatus,
+      notes,
+      propertyName,
+      unitNumber,
+    );
 
-    return {
-      subject: `Payment Failed - Action Required`,
-      body: `Dear ${tenantName},
-
-Unfortunately, your payment of ${formattedAmount} could not be processed.
-
-Property: ${propertyName}
-Unit: ${unitNumber}
-Amount: ${formattedAmount}
-Reason: ${reason}
-
-Please update your payment method or try again.
-
-Best regards,
-Property Management Team`,
-      htmlBody: `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #ef4444; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
-    .details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-    .alert { background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Payment Failed</h1>
-    </div>
-    <div class="content">
-      <p>Dear ${tenantName},</p>
-      <div class="alert">
-        <p>Your payment of <strong>${formattedAmount}</strong> could not be processed.</p>
-        <p><strong>Reason:</strong> ${reason}</p>
-      </div>
-      <div class="details">
-        <p><strong>Property:</strong> ${propertyName}</p>
-        <p><strong>Unit:</strong> ${unitNumber}</p>
-      </div>
-      <p>Please update your payment method or try again.</p>
-      <p>Best regards,<br>Property Management Team</p>
-    </div>
-  </div>
-</body>
-</html>`,
-    };
-  }
-
-  private getAutoPayUpcomingTemplate(
-    tenantName: string,
-    amount: number,
-    chargeDate: Date,
-    propertyName: string,
-    unitNumber: string,
-  ): EmailTemplate {
-    const formattedAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-    const formattedDate = chargeDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    await this.prisma.notification.create({
+      data: {
+        type: 'WORK_ORDER_UPDATE',
+        status: result.success ? 'SENT' : 'FAILED',
+        channel: 'EMAIL',
+        recipientEmail: tenantEmail,
+        subject: `Work Order Update: ${workOrderTitle}`,
+        body: `Work order status changed to: ${newStatus}`,
+        referenceType: 'WorkOrder',
+        referenceId: workOrderId,
+        organizationId,
+        sentAt: result.success ? new Date() : null,
+        errorMessage: result.error,
+      },
     });
 
-    return {
-      subject: `Auto-Pay Scheduled - ${formattedDate}`,
-      body: `Dear ${tenantName},
-
-This is a reminder that your auto-pay of ${formattedAmount} will be processed on ${formattedDate}.
-
-Property: ${propertyName}
-Unit: ${unitNumber}
-Amount: ${formattedAmount}
-Scheduled Date: ${formattedDate}
-
-If you need to make any changes, please update your payment settings before the scheduled date.
-
-Best regards,
-Property Management Team`,
-      htmlBody: `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #3b82f6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
-    .details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-    .info { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Auto-Pay Reminder</h1>
-    </div>
-    <div class="content">
-      <p>Dear ${tenantName},</p>
-      <div class="info">
-        <p>Your auto-pay of <strong>${formattedAmount}</strong> will be processed on <strong>${formattedDate}</strong>.</p>
-      </div>
-      <div class="details">
-        <p><strong>Property:</strong> ${propertyName}</p>
-        <p><strong>Unit:</strong> ${unitNumber}</p>
-      </div>
-      <p>If you need to make any changes, please update your payment settings before the scheduled date.</p>
-      <p>Best regards,<br>Property Management Team</p>
-    </div>
-  </div>
-</body>
-</html>`,
-    };
-  }
-
-  private getAutoPayProcessedTemplate(
-    tenantName: string,
-    amount: number,
-    propertyName: string,
-    unitNumber: string,
-  ): EmailTemplate {
-    const formattedAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-
-    return {
-      subject: `Auto-Pay Processed - ${formattedAmount}`,
-      body: `Dear ${tenantName},
-
-Your auto-pay of ${formattedAmount} has been successfully processed.
-
-Property: ${propertyName}
-Unit: ${unitNumber}
-Amount: ${formattedAmount}
-
-Thank you for using auto-pay!
-
-Best regards,
-Property Management Team`,
-      htmlBody: `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
-    .details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-    .success { background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 15px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Auto-Pay Processed</h1>
-    </div>
-    <div class="content">
-      <p>Dear ${tenantName},</p>
-      <div class="success">
-        <p>Your auto-pay of <strong>${formattedAmount}</strong> has been successfully processed.</p>
-      </div>
-      <div class="details">
-        <p><strong>Property:</strong> ${propertyName}</p>
-        <p><strong>Unit:</strong> ${unitNumber}</p>
-      </div>
-      <p>Thank you for using auto-pay!</p>
-      <p>Best regards,<br>Property Management Team</p>
-    </div>
-  </div>
-</body>
-</html>`,
-    };
-  }
-
-  private getRentDueReminderTemplate(
-    tenantName: string,
-    amount: number,
-    dueDate: Date,
-    propertyName: string,
-    unitNumber: string,
-  ): EmailTemplate {
-    const formattedAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-    const formattedDate = dueDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
-    return {
-      subject: `Rent Due Reminder - ${formattedDate}`,
-      body: `Dear ${tenantName},
-
-This is a friendly reminder that your rent payment of ${formattedAmount} is due on ${formattedDate}.
-
-Property: ${propertyName}
-Unit: ${unitNumber}
-Amount Due: ${formattedAmount}
-Due Date: ${formattedDate}
-
-Please make your payment to avoid late fees.
-
-Best regards,
-Property Management Team`,
-      htmlBody: `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #f59e0b; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
-    .details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-    .reminder { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin: 15px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Rent Due Reminder</h1>
-    </div>
-    <div class="content">
-      <p>Dear ${tenantName},</p>
-      <div class="reminder">
-        <p>Your rent payment of <strong>${formattedAmount}</strong> is due on <strong>${formattedDate}</strong>.</p>
-      </div>
-      <div class="details">
-        <p><strong>Property:</strong> ${propertyName}</p>
-        <p><strong>Unit:</strong> ${unitNumber}</p>
-      </div>
-      <p>Please make your payment to avoid late fees.</p>
-      <p>Best regards,<br>Property Management Team</p>
-    </div>
-  </div>
-</body>
-</html>`,
-    };
-  }
-
-  private getLeaseExpiringTemplate(
-    tenantName: string,
-    expirationDate: Date,
-    daysRemaining: number,
-    propertyName: string,
-    unitNumber: string,
-  ): EmailTemplate {
-    const formattedDate = expirationDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
-    return {
-      subject: `Lease Expiring in ${daysRemaining} Days`,
-      body: `Dear ${tenantName},
-
-Your lease at ${propertyName}, Unit ${unitNumber} will expire on ${formattedDate} (${daysRemaining} days remaining).
-
-Please contact us to discuss renewal options or move-out procedures.
-
-Best regards,
-Property Management Team`,
-      htmlBody: `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #8b5cf6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
-    .details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-    .notice { background: #faf5ff; border-left: 4px solid #8b5cf6; padding: 15px; margin: 15px 0; }
-    .countdown { font-size: 32px; font-weight: bold; color: #8b5cf6; text-align: center; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Lease Expiring Soon</h1>
-    </div>
-    <div class="content">
-      <p>Dear ${tenantName},</p>
-      <div class="notice">
-        <p class="countdown">${daysRemaining} Days Remaining</p>
-        <p style="text-align: center;">Your lease expires on <strong>${formattedDate}</strong></p>
-      </div>
-      <div class="details">
-        <p><strong>Property:</strong> ${propertyName}</p>
-        <p><strong>Unit:</strong> ${unitNumber}</p>
-      </div>
-      <p>Please contact us to discuss renewal options or move-out procedures.</p>
-      <p>Best regards,<br>Property Management Team</p>
-    </div>
-  </div>
-</body>
-</html>`,
-    };
+    return result;
   }
 
   // ============================================================
@@ -785,7 +528,7 @@ Property Management Team`,
   }
 
   /**
-   * Process pending notifications
+   * Process pending notifications (called by scheduled task)
    */
   async processPendingNotifications() {
     const pendingNotifications = await this.prisma.notification.findMany({
@@ -799,10 +542,92 @@ Property Management Team`,
       take: 100,
     });
 
+    let successCount = 0;
+    let failCount = 0;
+
     for (const notification of pendingNotifications) {
+      try {
+        await this.sendNotification(notification.id);
+        successCount++;
+      } catch (error) {
+        failCount++;
+        this.logger.error({
+          message: 'notification.process_failed',
+          notificationId: notification.id,
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    this.logger.log({
+      message: 'notifications.batch_processed',
+      total: pendingNotifications.length,
+      success: successCount,
+      failed: failCount,
+    });
+
+    return { processed: pendingNotifications.length, success: successCount, failed: failCount };
+  }
+
+  /**
+   * Get notification statistics
+   */
+  async getNotificationStats(organizationId: string) {
+    const [total, pending, sent, failed, read] = await Promise.all([
+      this.prisma.notification.count({ where: { organizationId } }),
+      this.prisma.notification.count({ where: { organizationId, status: 'PENDING' } }),
+      this.prisma.notification.count({ where: { organizationId, status: 'SENT' } }),
+      this.prisma.notification.count({ where: { organizationId, status: 'FAILED' } }),
+      this.prisma.notification.count({ where: { organizationId, status: 'READ' } }),
+    ]);
+
+    return { total, pending, sent, failed, read };
+  }
+
+  /**
+   * Retry failed notifications
+   */
+  async retryFailedNotifications(organizationId: string, limit: number = 50) {
+    const failedNotifications = await this.prisma.notification.findMany({
+      where: {
+        organizationId,
+        status: 'FAILED',
+        createdAt: {
+          // Only retry notifications from the last 7 days
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        },
+      },
+      take: limit,
+    });
+
+    // Reset status to PENDING and retry
+    for (const notification of failedNotifications) {
+      await this.prisma.notification.update({
+        where: { id: notification.id },
+        data: { status: 'PENDING', errorMessage: null },
+      });
       await this.sendNotification(notification.id);
     }
 
-    return { processed: pendingNotifications.length };
+    return { retried: failedNotifications.length };
+  }
+
+  // ============================================================
+  // UTILITY METHODS
+  // ============================================================
+
+  private formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  }
+
+  private formatDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   }
 }

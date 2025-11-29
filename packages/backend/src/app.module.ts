@@ -28,6 +28,11 @@ import { TenantAuthModule } from './tenant-auth/tenant-auth.module';
 import { TenantPortalModule } from './tenant-portal/tenant-portal.module';
 import { EmailModule } from './email/email.module';
 import { MobileModule } from './mobile/mobile.module';
+import { StorageModule } from './storage/storage.module';
+import { DocumentsModule } from './documents/documents.module';
+import { HealthModule } from './health/health.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
+import { RequestLoggerMiddleware } from './monitoring/request-logger.middleware';
 
 @Module({
   controllers: [AppController],
@@ -52,6 +57,7 @@ import { MobileModule } from './mobile/mobile.module';
     // Core modules
     PrismaModule,
     EmailModule,
+    StorageModule,
     AuthModule,
     UsersModule,
     OrganizationsModule,
@@ -69,6 +75,9 @@ import { MobileModule } from './mobile/mobile.module';
     TenantAuthModule,
     TenantPortalModule,
     MobileModule,
+    DocumentsModule,
+    HealthModule,
+    MonitoringModule,
   ],
   providers: [
     {
@@ -83,6 +92,8 @@ import { MobileModule } from './mobile/mobile.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+    consumer
+      .apply(CorrelationIdMiddleware, RequestLoggerMiddleware)
+      .forRoutes('*');
   }
 }

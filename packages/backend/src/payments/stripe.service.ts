@@ -352,4 +352,377 @@ export class StripeService {
   calculatePlatformFee(amount: number, feePercentage: number = 2.5): number {
     return Math.round(amount * (feePercentage / 100) * 100) / 100;
   }
+
+  /**
+   * Create a Setup Intent for saving payment methods without immediate charge
+   */
+  async createSetupIntent(
+    customerId: string,
+    metadata?: Record<string, string>,
+  ): Promise<Stripe.SetupIntent> {
+    const setupIntent = await this.stripe.setupIntents.create({
+      customer: customerId,
+      payment_method_types: ['card', 'us_bank_account'],
+      metadata,
+    });
+
+    this.logger.log(`Setup intent created: ${setupIntent.id} for customer ${customerId}`);
+
+    return setupIntent;
+  }
+
+  /**
+   * Confirm a Setup Intent
+   */
+  async confirmSetupIntent(
+    setupIntentId: string,
+    paymentMethodId: string,
+  ): Promise<Stripe.SetupIntent> {
+    const setupIntent = await this.stripe.setupIntents.confirm(setupIntentId, {
+      payment_method: paymentMethodId,
+    });
+
+    this.logger.log(`Setup intent confirmed: ${setupIntent.id}`);
+
+    return setupIntent;
+  }
+
+  /**
+   * Charge using a saved payment method
+   */
+  async chargeWithSavedMethod(
+    customerId: string,
+    paymentMethodId: string,
+    amount: number,
+    metadata: Record<string, string>,
+  ): Promise<Stripe.PaymentIntent> {
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount: Math.round(amount * 100),
+      currency: 'usd',
+      customer: customerId,
+      payment_method: paymentMethodId,
+      off_session: true,
+      confirm: true,
+      metadata,
+    });
+
+    this.logger.log(`Off-session payment created: ${paymentIntent.id} for $${amount}`);
+
+    return paymentIntent;
+  }
+
+  /**
+   * Detach a payment method from customer
+   */
+  async detachPaymentMethod(paymentMethodId: string): Promise<Stripe.PaymentMethod> {
+    const paymentMethod = await this.stripe.paymentMethods.detach(paymentMethodId);
+
+    this.logger.log(`Payment method detached: ${paymentMethodId}`);
+
+    return paymentMethod;
+  }
+
+  /**
+   * Set default payment method for customer
+   */
+  async setDefaultPaymentMethod(
+    customerId: string,
+    paymentMethodId: string,
+  ): Promise<Stripe.Customer> {
+    const customer = await this.stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+
+    this.logger.log(`Default payment method set: ${paymentMethodId} for customer ${customerId}`);
+
+    return customer as Stripe.Customer;
+  }
+
+  /**
+   * Get default payment method for customer
+   */
+  async getDefaultPaymentMethod(customerId: string): Promise<Stripe.PaymentMethod | null> {
+    const customer = await this.stripe.customers.retrieve(customerId, {
+      expand: ['invoice_settings.default_payment_method'],
+    });
+
+    if (customer.deleted) {
+      return null;
+    }
+
+    const defaultMethod = (customer as Stripe.Customer).invoice_settings?.default_payment_method;
+
+    if (!defaultMethod || typeof defaultMethod === 'string') {
+      return null;
+    }
+
+    return defaultMethod as Stripe.PaymentMethod;
+  }
+
+  /**
+   * List all payment methods for customer (cards and bank accounts)
+   */
+  async listAllPaymentMethods(customerId: string): Promise<{
+    cards: Stripe.PaymentMethod[];
+    bankAccounts: Stripe.PaymentMethod[];
+  }> {
+    const [cards, bankAccounts] = await Promise.all([
+      this.stripe.paymentMethods.list({
+        customer: customerId,
+        type: 'card',
+      }),
+      this.stripe.paymentMethods.list({
+        customer: customerId,
+        type: 'us_bank_account',
+      }),
+    ]);
+
+    return {
+      cards: cards.data,
+      bankAccounts: bankAccounts.data,
+    };
+  }
+
+  /**
+   * Cancel a subscription
+   */
+  async cancelSubscription(
+    subscriptionId: string,
+    cancelAtPeriodEnd: boolean = true,
+  ): Promise<Stripe.Subscription> {
+    if (cancelAtPeriodEnd) {
+      const subscription = await this.stripe.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: true,
+      });
+      this.logger.log(`Subscription ${subscriptionId} will cancel at period end`);
+      return subscription;
+    }
+
+    const subscription = await this.stripe.subscriptions.cancel(subscriptionId);
+    this.logger.log(`Subscription ${subscriptionId} canceled immediately`);
+    return subscription;
+  }
+
+  /**
+   * Pause a subscription
+   */
+  async pauseSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+    const subscription = await this.stripe.subscriptions.update(subscriptionId, {
+      pause_collection: {
+        behavior: 'mark_uncollectible',
+      },
+    });
+
+    this.logger.log(`Subscription ${subscriptionId} paused`);
+
+    return subscription;
+  }
+
+  /**
+   * Resume a paused subscription
+   */
+  async resumeSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+    const subscription = await this.stripe.subscriptions.update(subscriptionId, {
+      pause_collection: '',
+    });
+
+    this.logger.log(`Subscription ${subscriptionId} resumed`);
+
+    return subscription;
+  }
+
+  /**
+   * Get subscription details
+   */
+  async getSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+    return this.stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ['default_payment_method', 'latest_invoice'],
+    });
+  }
+
+  /**
+   * List customer subscriptions
+   */
+  async listSubscriptions(customerId: string): Promise<Stripe.Subscription[]> {
+    const subscriptions = await this.stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      expand: ['data.default_payment_method'],
+    });
+
+    return subscriptions.data;
+  }
+
+  /**
+   * Create an invoice for one-time charges
+   */
+  async createInvoice(
+    customerId: string,
+    items: Array<{ amount: number; description: string }>,
+    metadata?: Record<string, string>,
+  ): Promise<Stripe.Invoice> {
+    // Create invoice items
+    for (const item of items) {
+      await this.stripe.invoiceItems.create({
+        customer: customerId,
+        amount: Math.round(item.amount * 100),
+        currency: 'usd',
+        description: item.description,
+      });
+    }
+
+    // Create and finalize the invoice
+    const invoice = await this.stripe.invoices.create({
+      customer: customerId,
+      auto_advance: true,
+      metadata,
+    });
+
+    const finalizedInvoice = await this.stripe.invoices.finalizeInvoice(invoice.id);
+
+    this.logger.log(`Invoice created and finalized: ${finalizedInvoice.id}`);
+
+    return finalizedInvoice;
+  }
+
+  /**
+   * Pay an invoice immediately
+   */
+  async payInvoice(invoiceId: string): Promise<Stripe.Invoice> {
+    const invoice = await this.stripe.invoices.pay(invoiceId);
+
+    this.logger.log(`Invoice paid: ${invoiceId}`);
+
+    return invoice;
+  }
+
+  /**
+   * Get invoice by ID
+   */
+  async getInvoice(invoiceId: string): Promise<Stripe.Invoice> {
+    return this.stripe.invoices.retrieve(invoiceId);
+  }
+
+  /**
+   * List customer invoices
+   */
+  async listInvoices(
+    customerId: string,
+    limit: number = 10,
+  ): Promise<Stripe.Invoice[]> {
+    const invoices = await this.stripe.invoices.list({
+      customer: customerId,
+      limit,
+    });
+
+    return invoices.data;
+  }
+
+  /**
+   * Void an invoice
+   */
+  async voidInvoice(invoiceId: string): Promise<Stripe.Invoice> {
+    const invoice = await this.stripe.invoices.voidInvoice(invoiceId);
+
+    this.logger.log(`Invoice voided: ${invoiceId}`);
+
+    return invoice;
+  }
+
+  /**
+   * Retrieve payment intent by ID
+   */
+  async getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
+    return this.stripe.paymentIntents.retrieve(paymentIntentId);
+  }
+
+  /**
+   * Cancel a payment intent
+   */
+  async cancelPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
+    const paymentIntent = await this.stripe.paymentIntents.cancel(paymentIntentId);
+
+    this.logger.log(`Payment intent canceled: ${paymentIntentId}`);
+
+    return paymentIntent;
+  }
+
+  /**
+   * Get balance transactions for reconciliation
+   */
+  async getBalanceTransactions(
+    startDate: Date,
+    endDate: Date,
+    limit: number = 100,
+  ): Promise<Stripe.BalanceTransaction[]> {
+    const transactions = await this.stripe.balanceTransactions.list({
+      created: {
+        gte: Math.floor(startDate.getTime() / 1000),
+        lte: Math.floor(endDate.getTime() / 1000),
+      },
+      limit,
+    });
+
+    return transactions.data;
+  }
+
+  /**
+   * Get payout details
+   */
+  async getPayout(payoutId: string): Promise<Stripe.Payout> {
+    return this.stripe.payouts.retrieve(payoutId);
+  }
+
+  /**
+   * List payouts
+   */
+  async listPayouts(limit: number = 10): Promise<Stripe.Payout[]> {
+    const payouts = await this.stripe.payouts.list({ limit });
+    return payouts.data;
+  }
+
+  /**
+   * Verify bank account with micro-deposits
+   */
+  async verifyBankAccount(
+    paymentMethodId: string,
+    amounts: [number, number],
+  ): Promise<Stripe.PaymentMethod> {
+    const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+
+    if (paymentMethod.type !== 'us_bank_account') {
+      throw new Error('Payment method is not a bank account');
+    }
+
+    // Bank account verification is handled through the SetupIntent flow
+    // This is a placeholder for manual verification if needed
+    this.logger.log(`Bank account verification requested for: ${paymentMethodId}`);
+
+    return paymentMethod;
+  }
+
+  /**
+   * Check if Stripe is properly configured
+   */
+  isConfigured(): boolean {
+    return !!this.stripe;
+  }
+
+  /**
+   * Get Stripe account details (for debugging)
+   */
+  async getAccountInfo(): Promise<Stripe.Account | null> {
+    if (!this.isConfigured()) {
+      return null;
+    }
+
+    try {
+      return await this.stripe.accounts.retrieve();
+    } catch (error) {
+      this.logger.error('Failed to retrieve Stripe account info', error);
+      return null;
+    }
+  }
 }

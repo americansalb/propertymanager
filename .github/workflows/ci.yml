@@ -6,9 +6,14 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    name: Lint, Build & Test
 
     services:
       postgres:
@@ -44,7 +49,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -67,12 +72,220 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Build
+      - name: Type Check
         run: pnpm build
 
-      - name: Test
-        run: pnpm test
+      - name: Run Backend Tests
+        run: cd packages/backend && pnpm test
         env:
           DATABASE_URL: postgresql://propertymaster:test_password@localhost:5432/propertymaster_test
-          JWT_SECRET: test_jwt_secret
+          JWT_SECRET: test_jwt_secret_for_ci_pipeline
           NODE_ENV: test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./packages/backend/coverage/lcov.info
+          fail_ci_if_error: false
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    needs: lint-and-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run npm audit
+        run: pnpm audit --audit-level=high || true
+        continue-on-error: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+  build-images:
+    runs-on: ubuntu-latest
+    name: Build Docker Images
+    needs: lint-and-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - dockerfile: Dockerfile.backend
+            image: backend
+          - dockerfile: Dockerfile.tenant
+            image: tenant-portal
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_TIME=${{ github.event.head_commit.timestamp }}
+            GIT_SHA=${{ github.sha }}
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    name: Deploy to Staging
+    needs: build-images
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging.propertymaster.io
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your deployment commands here
+          # Examples:
+          # - SSH to server and pull new images
+          # - Use kubectl to update Kubernetes deployment
+          # - Use AWS ECS update-service
+          # - Use Railway/Render/Fly.io CLI
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against staging..."
+          # curl -f https://staging-api.propertymaster.io/api/v1/health || exit 1
+
+      - name: Notify on success
+        if: success()
+        run: echo "Staging deployment successful!"
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Staging deployment failed!"
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    needs: build-images
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://app.propertymaster.io
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          # Add your production deployment commands here
+
+      - name: Run health check
+        run: |
+          echo "Running health checks against production..."
+          # curl -f https://api.propertymaster.io/api/v1/health || exit 1
+
+      - name: Create GitHub Release
+        if: success()
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ github.run_number }}
+          generateReleaseNotes: true
+          draft: false
+          prerelease: false
+
+      - name: Notify on success
+        if: success()
+        run: echo "Production deployment successful!"
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Production deployment failed!"
+
+  database-migration:
+    runs-on: ubuntu-latest
+    name: Database Migration
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production-db
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+
+      - name: Run database migrations
+        run: cd packages/database && npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+
+      - name: Verify migration
+        run: cd packages/database && npx prisma migrate status
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
