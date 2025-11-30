@@ -36,7 +36,15 @@ export class WorkOrdersService {
     return validTransitions.includes(toStatus);
   }
 
+  private validateRequiredParams(organizationId: string): void {
+    if (!organizationId) {
+      this.logger.log('error', 'work_order.missing_organization_id');
+      throw new BadRequestException('Organization ID is required');
+    }
+  }
+
   async findAll(organizationId: string, query?: WorkOrderQueryDto) {
+    this.validateRequiredParams(organizationId);
     const page = query?.page || 1;
     const limit = query?.limit || 20;
     const skip = (page - 1) * limit;
@@ -127,6 +135,12 @@ export class WorkOrdersService {
   }
 
   async findOne(id: string, organizationId: string) {
+    this.validateRequiredParams(organizationId);
+
+    if (!id) {
+      throw new BadRequestException('Work order ID is required');
+    }
+
     const workOrder = await this.prisma.workOrder.findFirst({
       where: {
         id,
@@ -160,6 +174,13 @@ export class WorkOrdersService {
   }
 
   async create(dto: CreateWorkOrderDto, organizationId: string, userId: string) {
+    this.validateRequiredParams(organizationId);
+
+    if (!userId) {
+      this.logger.log('error', 'work_order.create.missing_user_id');
+      throw new BadRequestException('User ID is required to create a work order');
+    }
+
     // Verify property belongs to organization
     const property = await this.prisma.property.findFirst({
       where: {
@@ -289,6 +310,10 @@ export class WorkOrdersService {
   }
 
   async update(id: string, dto: UpdateWorkOrderDto, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to update a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Cannot update completed or cancelled work orders
@@ -432,6 +457,9 @@ export class WorkOrdersService {
     organizationId: string,
     userId: string,
   ) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to update work order status');
+    }
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     if (!this.validateStatusTransition(existingWorkOrder.status, dto.status)) {
@@ -522,6 +550,10 @@ export class WorkOrdersService {
   }
 
   async assign(id: string, dto: AssignWorkOrderDto, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to assign a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Cannot assign completed or cancelled work orders
@@ -610,6 +642,10 @@ export class WorkOrdersService {
   }
 
   async complete(id: string, dto: CompleteWorkOrderDto, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to complete a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Can only complete work orders that are IN_PROGRESS or ASSIGNED
@@ -691,6 +727,10 @@ export class WorkOrdersService {
   }
 
   async cancel(id: string, reason: string, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to cancel a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Cannot cancel already completed or cancelled work orders
@@ -736,6 +776,10 @@ export class WorkOrdersService {
   }
 
   async remove(id: string, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to delete a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Can only delete DRAFT or CANCELLED work orders
