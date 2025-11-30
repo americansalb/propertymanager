@@ -11,11 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuthStore } from '@/store/auth.store';
 
 function ResetPasswordForm() {
-  const router = useRouter();
+  const _router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
-  const { resetPassword, isLoading, error, clearError } = useAuthStore();
+  const { resetPassword, isLoading, error } = useAuthStore();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -57,9 +57,7 @@ function ResetPasswordForm() {
             <Lock className="w-8 h-8 text-red-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Invalid Reset Link</h3>
-          <p className="text-gray-600 mb-6">
-            This password reset link is invalid or has expired.
-          </p>
+          <p className="text-gray-600 mb-6">This password reset link is invalid or has expired.</p>
           <Link href="/forgot-password">
             <Button>Request New Reset Link</Button>
           </Link>
@@ -186,13 +184,15 @@ export default function ResetPasswordPage() {
           <p className="text-gray-600">Tenant Portal</p>
         </div>
 
-        <Suspense fallback={
-          <Card className="shadow-xl border-0">
-            <CardContent className="py-12 flex justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-            </CardContent>
-          </Card>
-        }>
+        <Suspense
+          fallback={
+            <Card className="shadow-xl border-0">
+              <CardContent className="py-12 flex justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              </CardContent>
+            </Card>
+          }
+        >
           <ResetPasswordForm />
         </Suspense>
 

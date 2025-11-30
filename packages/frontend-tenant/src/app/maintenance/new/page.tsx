@@ -32,10 +32,25 @@ const CATEGORIES = [
 ];
 
 const PRIORITIES = [
-  { id: 'LOW', label: 'Low', description: 'Not urgent, can wait a few days', color: 'border-gray-300' },
-  { id: 'MEDIUM', label: 'Medium', description: 'Should be addressed soon', color: 'border-blue-500' },
+  {
+    id: 'LOW',
+    label: 'Low',
+    description: 'Not urgent, can wait a few days',
+    color: 'border-gray-300',
+  },
+  {
+    id: 'MEDIUM',
+    label: 'Medium',
+    description: 'Should be addressed soon',
+    color: 'border-blue-500',
+  },
   { id: 'HIGH', label: 'High', description: 'Needs quick attention', color: 'border-orange-500' },
-  { id: 'EMERGENCY', label: 'Emergency', description: 'Safety hazard, needs immediate attention', color: 'border-red-500' },
+  {
+    id: 'EMERGENCY',
+    label: 'Emergency',
+    description: 'Safety hazard, needs immediate attention',
+    color: 'border-red-500',
+  },
 ];
 
 export default function NewMaintenanceRequestPage() {
@@ -103,9 +118,7 @@ export default function NewMaintenanceRequestPage() {
             <div key={s} className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step >= s
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-gray-200 text-gray-500'
+                  step >= s ? 'bg-primary text-primary-foreground' : 'bg-gray-200 text-gray-500'
                 }`}
               >
                 {step > s ? <CheckCircle className="w-5 h-5" /> : s}
@@ -172,10 +185,10 @@ export default function NewMaintenanceRequestPage() {
                         priority.id === 'EMERGENCY'
                           ? 'bg-red-500'
                           : priority.id === 'HIGH'
-                          ? 'bg-orange-500'
-                          : priority.id === 'MEDIUM'
-                          ? 'bg-blue-500'
-                          : 'bg-gray-400'
+                            ? 'bg-orange-500'
+                            : priority.id === 'MEDIUM'
+                              ? 'bg-blue-500'
+                              : 'bg-gray-400'
                       }`}
                     />
                     <div>
@@ -193,8 +206,9 @@ export default function NewMaintenanceRequestPage() {
                     <div>
                       <p className="font-medium text-red-800">Emergency Request</p>
                       <p className="text-sm text-red-700 mt-1">
-                        For life-threatening emergencies, please call 911. For urgent property issues
-                        (gas leaks, flooding, no heat in winter), call our emergency line directly.
+                        For life-threatening emergencies, please call 911. For urgent property
+                        issues (gas leaks, flooding, no heat in winter), call our emergency line
+                        directly.
                       </p>
                     </div>
                   </div>
@@ -224,7 +238,8 @@ export default function NewMaintenanceRequestPage() {
               <CardContent className="space-y-6">
                 {createMutation.error && (
                   <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">
-                    {(createMutation.error as any)?.response?.data?.message || 'Failed to submit request'}
+                    {(createMutation.error as any)?.response?.data?.message ||
+                      'Failed to submit request'}
                   </div>
                 )}
 
@@ -239,10 +254,10 @@ export default function NewMaintenanceRequestPage() {
                       formData.priority === 'EMERGENCY'
                         ? 'bg-red-100 text-red-700'
                         : formData.priority === 'HIGH'
-                        ? 'bg-orange-100 text-orange-700'
-                        : formData.priority === 'MEDIUM'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-gray-100 text-gray-700'
+                          ? 'bg-orange-100 text-orange-700'
+                          : formData.priority === 'MEDIUM'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-gray-100 text-gray-700'
                     }`}
                   >
                     {formData.priority}
@@ -317,7 +332,7 @@ export default function NewMaintenanceRequestPage() {
                       Permission to enter
                     </Label>
                     <p className="text-sm text-gray-500">
-                      I give permission for maintenance staff to enter my unit if I'm not home
+                      I give permission for maintenance staff to enter my unit if I&apos;m not home
                     </p>
                   </div>
                 </div>

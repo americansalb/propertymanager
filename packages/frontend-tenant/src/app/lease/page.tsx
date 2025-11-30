@@ -15,14 +15,13 @@ import {
   Square,
   Clock,
   AlertCircle,
-  CheckCircle,
   Loader2,
 } from 'lucide-react';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import TenantLayout from '@/components/layouts/TenantLayout';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 
 interface LeaseDetails {
   id: string;
@@ -81,7 +80,11 @@ const UNIT_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function LeasePage() {
-  const { data: lease, isLoading, error } = useQuery({
+  const {
+    data: lease,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['lease-details'],
     queryFn: async () => {
       const response = await api.get('/tenant-portal/lease');
@@ -112,7 +115,8 @@ export default function LeasePage() {
   }
 
   const statusConfig = LEASE_STATUS_COLORS[lease.status] || LEASE_STATUS_COLORS.ACTIVE;
-  const isExpiringSoon = lease.daysRemaining !== null && lease.daysRemaining <= 60 && lease.daysRemaining > 0;
+  const isExpiringSoon =
+    lease.daysRemaining !== null && lease.daysRemaining <= 60 && lease.daysRemaining > 0;
   const isExpired = lease.daysRemaining !== null && lease.daysRemaining <= 0;
 
   return (
@@ -182,7 +186,9 @@ export default function LeasePage() {
                   </CardDescription>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusConfig.bg} ${statusConfig.text}`}>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${statusConfig.bg} ${statusConfig.text}`}
+              >
                 {lease.status}
               </span>
             </div>
@@ -217,9 +223,7 @@ export default function LeasePage() {
                 <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500">Security Deposit</p>
-                  <p className="font-medium">
-                    ${Number(lease.securityDeposit).toLocaleString()}
-                  </p>
+                  <p className="font-medium">${Number(lease.securityDeposit).toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -299,10 +303,7 @@ export default function LeasePage() {
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
               {lease.tenants.map((tenant) => (
-                <div
-                  key={tenant.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-gray-50"
-                >
+                <div key={tenant.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-primary font-semibold">
                       {tenant.firstName[0]}
@@ -335,7 +336,10 @@ export default function LeasePage() {
             <CardContent>
               <div className="space-y-3">
                 {Object.entries(lease.terms).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div
+                    key={key}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                  >
                     <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
                     <span className="font-medium">{String(value)}</span>
                   </div>

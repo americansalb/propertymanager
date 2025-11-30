@@ -129,7 +129,7 @@ export default function PaymentsPage() {
 
   const handleSelectCharge = (chargeId: string) => {
     setSelectedCharges((prev) =>
-      prev.includes(chargeId) ? prev.filter((id) => id !== chargeId) : [...prev, chargeId]
+      prev.includes(chargeId) ? prev.filter((id) => id !== chargeId) : [...prev, chargeId],
     );
   };
 
@@ -141,9 +141,10 @@ export default function PaymentsPage() {
     }
   };
 
-  const selectedTotal = outstandingData?.charges
-    .filter((c) => selectedCharges.includes(c.id))
-    .reduce((sum, c) => sum + c.amountDue, 0) || 0;
+  const selectedTotal =
+    outstandingData?.charges
+      .filter((c) => selectedCharges.includes(c.id))
+      .reduce((sum, c) => sum + c.amountDue, 0) || 0;
 
   return (
     <TenantLayout>
@@ -161,16 +162,26 @@ export default function PaymentsPage() {
         </div>
 
         {/* Balance Card */}
-        <Card className={totalDue > 0 ? 'border-amber-200 bg-amber-50/50' : 'border-green-200 bg-green-50/50'}>
+        <Card
+          className={
+            totalDue > 0 ? 'border-amber-200 bg-amber-50/50' : 'border-green-200 bg-green-50/50'
+          }
+        >
           <CardContent className="py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className={`p-4 rounded-full ${totalDue > 0 ? 'bg-amber-100' : 'bg-green-100'}`}>
-                  <DollarSign className={`w-8 h-8 ${totalDue > 0 ? 'text-amber-600' : 'text-green-600'}`} />
+                <div
+                  className={`p-4 rounded-full ${totalDue > 0 ? 'bg-amber-100' : 'bg-green-100'}`}
+                >
+                  <DollarSign
+                    className={`w-8 h-8 ${totalDue > 0 ? 'text-amber-600' : 'text-green-600'}`}
+                  />
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Total Balance Due</p>
-                  <p className={`text-3xl font-bold ${totalDue > 0 ? 'text-amber-700' : 'text-green-700'}`}>
+                  <p
+                    className={`text-3xl font-bold ${totalDue > 0 ? 'text-amber-700' : 'text-green-700'}`}
+                  >
                     ${totalDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -237,7 +248,9 @@ export default function PaymentsPage() {
               <Card>
                 <CardContent className="py-12 text-center">
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">You're all caught up!</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    You&apos;re all caught up!
+                  </h3>
                   <p className="text-gray-500">No outstanding charges at this time.</p>
                 </CardContent>
               </Card>
@@ -278,7 +291,10 @@ export default function PaymentsPage() {
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-red-700">
-                                ${charge.amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                $
+                                {charge.amountDue.toLocaleString(undefined, {
+                                  minimumFractionDigits: 2,
+                                })}
                               </p>
                             </div>
                           </div>
@@ -330,7 +346,10 @@ export default function PaymentsPage() {
                             </div>
                             <div className="text-right">
                               <p className="font-bold">
-                                ${charge.amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                $
+                                {charge.amountDue.toLocaleString(undefined, {
+                                  minimumFractionDigits: 2,
+                                })}
                               </p>
                             </div>
                           </div>
@@ -347,7 +366,8 @@ export default function PaymentsPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-gray-600">
-                            {selectedCharges.length} charge{selectedCharges.length > 1 ? 's' : ''} selected
+                            {selectedCharges.length} charge{selectedCharges.length > 1 ? 's' : ''}{' '}
+                            selected
                           </p>
                           <p className="text-2xl font-bold">
                             ${selectedTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -397,7 +417,10 @@ export default function PaymentsPage() {
                         </div>
                         <div>
                           <p className="font-medium">
-                            ${Number(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            $
+                            {Number(payment.amount).toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                            })}
                           </p>
                           <p className="text-sm text-gray-500">
                             {format(new Date(payment.date), 'MMMM d, yyyy')} via {payment.method}
@@ -405,7 +428,9 @@ export default function PaymentsPage() {
                           {payment.allocations.length > 0 && (
                             <p className="text-xs text-gray-400 mt-1">
                               Applied to:{' '}
-                              {payment.allocations.map((a) => CHARGE_TYPE_LABELS[a.chargeType] || a.chargeType).join(', ')}
+                              {payment.allocations
+                                .map((a) => CHARGE_TYPE_LABELS[a.chargeType] || a.chargeType)
+                                .join(', ')}
                             </p>
                           )}
                         </div>
@@ -478,7 +503,8 @@ export default function PaymentsPage() {
                     {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
                       <option key={day} value={day}>
                         {day}
-                        {day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of each month
+                        {day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of each
+                        month
                       </option>
                     ))}
                   </select>
@@ -502,15 +528,16 @@ export default function PaymentsPage() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Make a Payment</DialogTitle>
-              <DialogDescription>
-                Enter your payment details below.
-              </DialogDescription>
+              <DialogDescription>Enter your payment details below.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Amount to Pay</p>
                 <p className="text-3xl font-bold">
-                  ${(selectedTotal || totalDue).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  $
+                  {(selectedTotal || totalDue).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })}
                 </p>
               </div>
 
@@ -533,7 +560,8 @@ export default function PaymentsPage() {
 
               <div className="pt-4 border-t">
                 <p className="text-sm text-gray-500 mb-4">
-                  Payment processing is securely handled through Stripe. You'll be redirected to complete your payment.
+                  Payment processing is securely handled through Stripe. You&apos;ll be redirected
+                  to complete your payment.
                 </p>
                 <Button className="w-full" size="lg">
                   <CreditCard className="w-5 h-5 mr-2" />

@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/dialog';
 
 export default function ProfilePage() {
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const { tenant, updateProfile } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications'>('profile');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -432,7 +432,9 @@ export default function ProfilePage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Change Password</DialogTitle>
-              <DialogDescription>Enter your current password and choose a new one.</DialogDescription>
+              <DialogDescription>
+                Enter your current password and choose a new one.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleChangePassword} className="space-y-4 py-4">
               {passwordError && (
