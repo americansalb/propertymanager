@@ -110,7 +110,10 @@ export default function RegisterPage() {
 
             {registerMutation.isError && (
               <div className="text-sm text-destructive">
-                Registration failed. Please check your information and try again.
+                {(registerMutation.error as any)?.response?.data?.error?.message ||
+                  (registerMutation.error as any)?.response?.data?.message ||
+                  (registerMutation.error as any)?.message ||
+                  'Registration failed. Please check your information and try again.'}
               </div>
             )}
 
