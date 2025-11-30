@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Building2,
   LayoutDashboard,
@@ -20,6 +20,7 @@ import {
   Download,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
+import { logoutUser } from '../../services/api';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 import { useState } from 'react';
@@ -51,10 +52,16 @@ const navItems: NavItem[] = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const commandPalette = useCommandPalette();
   const helpPanel = useHelpPanel();
+
+  const handleLogout = async () => {
+    await logoutUser();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -116,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="text-xs text-gray-500 truncate">{user?.organizationName}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="w-full" onClick={logout}>
+            <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
             </Button>
