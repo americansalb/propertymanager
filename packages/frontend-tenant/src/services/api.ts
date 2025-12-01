@@ -1,10 +1,14 @@
 import axios from 'axios';
 
-// Build API URL - append /api/v1 to the base URL if it's set from env
+// Build API URL - use same origin in production (static export)
 const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // In browser, use same origin (works for both dev and prod)
+    return `${window.location.origin}/api/v1`;
+  }
+  // Fallback for SSR/build time
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (envUrl) {
-    // Remove trailing slash if present and append /api/v1
     return `${envUrl.replace(/\/$/, '')}/api/v1`;
   }
   return 'http://localhost:3001/api/v1';
@@ -30,7 +34,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Handle auth errors
@@ -41,11 +45,11 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('tenant_token');
         localStorage.removeItem('tenant_user');
-        window.location.href = '/login';
+        window.location.href = '/tenant/login';
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

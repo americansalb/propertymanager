@@ -30,7 +30,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       tenant: null,
       token: null,
       isAuthenticated: false,
@@ -54,7 +54,8 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: any) {
-          const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
+          const message =
+            error.response?.data?.message || 'Login failed. Please check your credentials.';
           set({
             isLoading: false,
             error: Array.isArray(message) ? message.join(', ') : message,
@@ -133,6 +134,6 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
-    }
-  )
+    },
+  ),
 );

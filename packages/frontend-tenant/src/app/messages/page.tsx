@@ -97,7 +97,9 @@ export default function MessagesPage() {
 
   const handleSendReply = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyContent.trim() || !selectedMessage) return;
+    if (!replyContent.trim() || !selectedMessage) {
+      return;
+    }
     sendMutation.mutate({
       content: replyContent.trim(),
       parentId: selectedMessage.id,
@@ -106,16 +108,17 @@ export default function MessagesPage() {
 
   const handleSendNew = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.content.trim()) return;
+    if (!newMessage.content.trim()) {
+      return;
+    }
     sendMutation.mutate({
       subject: newMessage.subject.trim() || undefined,
       content: newMessage.content.trim(),
     });
   };
 
-  const unreadCount = data?.messages.filter(
-    (m) => !m.isRead && m.direction === 'MANAGEMENT_TO_TENANT'
-  ).length || 0;
+  const unreadCount =
+    data?.messages.filter((m) => !m.isRead && m.direction === 'MANAGEMENT_TO_TENANT').length || 0;
 
   return (
     <TenantLayout>
@@ -124,9 +127,7 @@ export default function MessagesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-            <p className="text-gray-600">
-              Communicate with your property management team
-            </p>
+            <p className="text-gray-600">Communicate with your property management team</p>
           </div>
           <Button onClick={() => setComposeOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
@@ -203,22 +204,29 @@ export default function MessagesPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <p className={`font-medium truncate ${isUnread ? 'text-blue-900' : ''}`}>
-                                {isFromManagement ? message.senderName || 'Property Manager' : 'You'}
+                              <p
+                                className={`font-medium truncate ${isUnread ? 'text-blue-900' : ''}`}
+                              >
+                                {isFromManagement
+                                  ? message.senderName || 'Property Manager'
+                                  : 'You'}
                               </p>
                               <span className="text-xs text-gray-500">
                                 {format(new Date(message.createdAt), 'MMM d')}
                               </span>
                             </div>
                             {message.subject && (
-                              <p className={`text-sm font-medium truncate ${isUnread ? 'text-blue-800' : 'text-gray-900'}`}>
+                              <p
+                                className={`text-sm font-medium truncate ${isUnread ? 'text-blue-800' : 'text-gray-900'}`}
+                              >
                                 {message.subject}
                               </p>
                             )}
                             <p className="text-sm text-gray-500 truncate">{message.content}</p>
                             {message.replies.length > 0 && (
                               <p className="text-xs text-gray-400 mt-1">
-                                {message.replies.length} repl{message.replies.length === 1 ? 'y' : 'ies'}
+                                {message.replies.length} repl
+                                {message.replies.length === 1 ? 'y' : 'ies'}
                               </p>
                             )}
                           </div>
@@ -248,9 +256,7 @@ export default function MessagesPage() {
                       Back
                     </Button>
                     <div className="flex-1">
-                      <CardTitle>
-                        {selectedMessage.subject || 'Message'}
-                      </CardTitle>
+                      <CardTitle>{selectedMessage.subject || 'Message'}</CardTitle>
                       <CardDescription>
                         Conversation with{' '}
                         {selectedMessage.direction === 'MANAGEMENT_TO_TENANT'
@@ -337,7 +343,10 @@ export default function MessagesPage() {
                         onChange={(e) => setReplyContent(e.target.value)}
                         className="flex-1"
                       />
-                      <Button type="submit" disabled={!replyContent.trim() || sendMutation.isPending}>
+                      <Button
+                        type="submit"
+                        disabled={!replyContent.trim() || sendMutation.isPending}
+                      >
                         {sendMutation.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
@@ -365,9 +374,7 @@ export default function MessagesPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Message</DialogTitle>
-              <DialogDescription>
-                Send a message to your property management team
-              </DialogDescription>
+              <DialogDescription>Send a message to your property management team</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSendNew} className="space-y-4 py-4">
               <div className="space-y-2">
@@ -376,9 +383,7 @@ export default function MessagesPage() {
                   id="subject"
                   placeholder="What is this about?"
                   value={newMessage.subject}
-                  onChange={(e) =>
-                    setNewMessage((prev) => ({ ...prev, subject: e.target.value }))
-                  }
+                  onChange={(e) => setNewMessage((prev) => ({ ...prev, subject: e.target.value }))}
                 />
               </div>
 
@@ -388,9 +393,7 @@ export default function MessagesPage() {
                   id="content"
                   placeholder="Type your message here..."
                   value={newMessage.content}
-                  onChange={(e) =>
-                    setNewMessage((prev) => ({ ...prev, content: e.target.value }))
-                  }
+                  onChange={(e) => setNewMessage((prev) => ({ ...prev, content: e.target.value }))}
                   className="w-full min-h-[150px] border rounded-md px-3 py-2 text-sm"
                   required
                 />
@@ -400,7 +403,10 @@ export default function MessagesPage() {
                 <Button type="button" variant="outline" onClick={() => setComposeOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={!newMessage.content.trim() || sendMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={!newMessage.content.trim() || sendMutation.isPending}
+                >
                   {sendMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />

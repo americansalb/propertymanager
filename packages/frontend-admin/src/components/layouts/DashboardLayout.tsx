@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Building2,
   LayoutDashboard,
@@ -20,9 +20,10 @@ import {
   Download,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
+import { logoutUser } from '../../services/api';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import NotificationsDropdown from '../NotificationsDropdown';
 import CommandPalette, { useCommandPalette } from '../CommandPalette';
 import HelpPanel, { useHelpPanel } from '../HelpPanel';
@@ -45,21 +46,22 @@ const navItems: NavItem[] = [
   { title: 'Activity', href: '/activity', icon: Bell },
   { title: 'Reports', href: '/reports', icon: BarChart3 },
   { title: 'Export Data', href: '/export', icon: Download },
-  { title: 'Tenant Portal', href: '/tenant-portal', icon: User },
+  { title: 'Tenant Preview', href: '/tenant-preview', icon: User },
   { title: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const commandPalette = useCommandPalette();
   const helpPanel = useHelpPanel();
 
-  // Log component mount
-  useEffect(() => {
-    console.log('[DashboardLayout] Mounted with command palette and help panel hooks');
-  }, []);
+  const handleLogout = async () => {
+    await logoutUser();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -121,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="text-xs text-gray-500 truncate">{user?.organizationName}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="w-full" onClick={logout}>
+            <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
             </Button>
@@ -136,10 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center justify-between px-6 py-3">
             {/* Search Button */}
             <button
-              onClick={() => {
-                console.log('[DashboardLayout] Search button clicked');
-                commandPalette.open();
-              }}
+              onClick={() => commandPalette.open()}
               className="flex items-center gap-3 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors group"
             >
               <Search className="w-4 h-4 text-gray-500" />
@@ -152,10 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-4">
               {/* Help Button */}
               <button
-                onClick={() => {
-                  console.log('[DashboardLayout] Help button clicked');
-                  helpPanel.open();
-                }}
+                onClick={() => helpPanel.open()}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 title="Help & Resources (⌘/)"
               >
@@ -181,33 +177,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <Menu className="w-6 h-6" />
             </Button>
-            <button
-              onClick={() => {
-                console.log('[DashboardLayout] Mobile search button clicked');
-                commandPalette.open();
-              }}
-              className="flex items-center gap-2"
-            >
+            <button onClick={() => commandPalette.open()} className="flex items-center gap-2">
               <Building2 className="w-6 h-6 text-primary" />
               <span className="font-semibold">PropertyMaster</span>
             </button>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  console.log('[DashboardLayout] Mobile search icon clicked');
-                  commandPalette.open();
-                }}
+                onClick={() => commandPalette.open()}
                 className="p-2 rounded-lg hover:bg-gray-100"
               >
                 <Search className="w-5 h-5 text-gray-600" />
               </button>
-              <button
-                onClick={() => {
-                  console.log('[DashboardLayout] Mobile help button clicked');
-                  helpPanel.open();
-                }}
-                className="p-2 rounded-lg hover:bg-gray-100"
-              >
+              <button onClick={() => helpPanel.open()} className="p-2 rounded-lg hover:bg-gray-100">
                 <HelpCircle className="w-5 h-5 text-gray-600" />
               </button>
               <NotificationsDropdown />

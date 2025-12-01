@@ -13,6 +13,9 @@ import { randomBytes } from 'crypto';
 
 @Injectable()
 export class TenantAuthService {
+  private readonly MAX_FAILED_ATTEMPTS = 5;
+  private readonly LOCKOUT_DURATION_MINUTES = 15;
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -44,6 +47,14 @@ export class TenantAuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    // Check if account is locked
+    if (tenant.lockedUntil && tenant.lockedUntil > new Date()) {
+      const minutesRemaining = Math.ceil((tenant.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(
+        `Account is locked. Please try again in ${minutesRemaining} minute(s).`,
+      );
+    }
+
     if (!tenant.portalPassword) {
       throw new UnauthorizedException(
         'Portal access not set up. Please contact your property manager.',
@@ -53,13 +64,39 @@ export class TenantAuthService {
     // Check password
     const isValid = await bcrypt.compare(password, tenant.portalPassword);
     if (!isValid) {
+      // Increment failed login attempts
+      const newFailedAttempts = (tenant.failedLoginAttempts || 0) + 1;
+      const shouldLock = newFailedAttempts >= this.MAX_FAILED_ATTEMPTS;
+
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: {
+          failedLoginAttempts: newFailedAttempts,
+          lastFailedLoginAt: new Date(),
+          ...(shouldLock && {
+            lockedUntil: new Date(Date.now() + this.LOCKOUT_DURATION_MINUTES * 60 * 1000),
+          }),
+        },
+      });
+
+      if (shouldLock) {
+        throw new UnauthorizedException(
+          `Too many failed login attempts. Account locked for ${this.LOCKOUT_DURATION_MINUTES} minutes.`,
+        );
+      }
+
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Update last login
+    // Reset failed attempts on successful login
     await this.prisma.tenant.update({
       where: { id: tenant.id },
-      data: { lastPortalLogin: new Date() },
+      data: {
+        lastPortalLogin: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        lastFailedLoginAt: null,
+      },
     });
 
     // Generate JWT token

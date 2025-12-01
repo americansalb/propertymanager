@@ -247,9 +247,6 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
         }
       }
 
-      // FINAL ID CHECK before API call
-      console.log('[WorkOrderUpdateModal] Submitting update with ID:', workOrder.id);
-
       await updateWorkOrder.mutateAsync({
         id: workOrder.id,
         data: payload,

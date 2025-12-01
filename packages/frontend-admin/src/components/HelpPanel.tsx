@@ -35,9 +35,7 @@ export function useHelpPanel() {
   const [isOpen, setIsOpen] = useState(helpPanelState);
 
   useEffect(() => {
-    console.log('[useHelpPanel] Registering listener');
     const listener = (newState: boolean) => {
-      console.log('[useHelpPanel] State changed:', newState);
       setIsOpen(newState);
     };
     helpPanelListeners.push(listener);
@@ -47,19 +45,16 @@ export function useHelpPanel() {
   }, []);
 
   const open = useCallback(() => {
-    console.log('[useHelpPanel] Opening help panel');
     helpPanelState = true;
     helpPanelListeners.forEach((l) => l(true));
   }, []);
 
   const close = useCallback(() => {
-    console.log('[useHelpPanel] Closing help panel');
     helpPanelState = false;
     helpPanelListeners.forEach((l) => l(false));
   }, []);
 
   const toggle = useCallback(() => {
-    console.log('[useHelpPanel] Toggling help panel');
     helpPanelState = !helpPanelState;
     helpPanelListeners.forEach((l) => l(helpPanelState));
   }, []);
@@ -273,7 +268,6 @@ export default function HelpPanel() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === '/') {
         e.preventDefault();
-        console.log('[HelpPanel] Cmd+/ pressed');
         if (isOpen) {
           close();
         } else {
@@ -296,7 +290,6 @@ export default function HelpPanel() {
   );
 
   const handleQuickStartClick = (step: QuickStartStep) => {
-    console.log('[HelpPanel] Quick start step clicked:', step.title);
     setQuickStartSteps((prev) =>
       prev.map((s) => (s.id === step.id ? { ...s, completed: true } : s)),
     );
@@ -305,7 +298,6 @@ export default function HelpPanel() {
   };
 
   const handleNextTourStep = () => {
-    console.log('[HelpPanel] Next tour step, current:', tourStep);
     if (tourStep < tourSteps.length - 1) {
       setTourStep(tourStep + 1);
     } else {
@@ -315,7 +307,6 @@ export default function HelpPanel() {
   };
 
   const handleSkipTour = () => {
-    console.log('[HelpPanel] Tour skipped');
     setTourStep(0);
     setActiveTab('help');
   };
@@ -326,8 +317,6 @@ export default function HelpPanel() {
   if (!isOpen) {
     return null;
   }
-
-  console.log('[HelpPanel] Rendering, activeTab:', activeTab);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end">
@@ -364,10 +353,7 @@ export default function HelpPanel() {
             return (
               <button
                 key={tab.id}
-                onClick={() => {
-                  console.log('[HelpPanel] Tab clicked:', tab.id);
-                  setActiveTab(tab.id);
-                }}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? 'text-primary border-b-2 border-primary'
@@ -393,10 +379,7 @@ export default function HelpPanel() {
                   type="text"
                   placeholder="Search help articles..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    console.log('[HelpPanel] Search query:', e.target.value);
-                    setSearchQuery(e.target.value);
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
@@ -462,10 +445,7 @@ export default function HelpPanel() {
                     <Link
                       key={article.id}
                       to={article.link}
-                      onClick={() => {
-                        console.log('[HelpPanel] Article clicked:', article.title);
-                        close();
-                      }}
+                      onClick={() => close()}
                       className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
                     >
                       <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-primary/10">
@@ -603,10 +583,7 @@ export default function HelpPanel() {
                         {tourSteps.map((_, index) => (
                           <button
                             key={index}
-                            onClick={() => {
-                              console.log('[HelpPanel] Tour dot clicked:', index);
-                              setTourStep(index);
-                            }}
+                            onClick={() => setTourStep(index)}
                             className={`w-2 h-2 rounded-full transition-colors ${
                               index === tourStep
                                 ? 'bg-primary w-6'
@@ -647,10 +624,7 @@ export default function HelpPanel() {
                     return (
                       <button
                         key={index}
-                        onClick={() => {
-                          console.log('[HelpPanel] Jump to tour step:', index + 1);
-                          setTourStep(index + 1);
-                        }}
+                        onClick={() => setTourStep(index + 1)}
                         className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                       >
                         <div className="p-2 bg-gray-100 rounded-lg">

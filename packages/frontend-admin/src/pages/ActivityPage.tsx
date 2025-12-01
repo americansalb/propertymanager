@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bell,
@@ -18,10 +18,14 @@ import {
   UserCheck,
   Eye,
   EyeOff,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import api from '../services/api';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
+
+const STORAGE_KEY = 'propertymaster_read_activities';
 
 type ActivityType = 'work_order' | 'lease' | 'property' | 'vendor' | 'payment' | 'all';
 type ActivityAction =
@@ -287,13 +291,41 @@ const groupActivitiesByDate = (activities: Activity[]) => {
   return groups;
 };
 
+// Helper to load read activities from localStorage
+const loadReadActivities = (): Set<string> => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return new Set(JSON.parse(stored));
+    }
+  } catch {
+    // Invalid data, reset
+  }
+  return new Set();
+};
+
+// Helper to save read activities to localStorage
+const saveReadActivities = (ids: Set<string>) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
+  } catch {
+    // Storage error, ignore
+  }
+};
+
 export default function ActivityPage() {
   const [typeFilter, setTypeFilter] = useState<ActivityType>('all');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const [readActivities, setReadActivities] = useState<Set<string>>(new Set());
+  const [readActivities, setReadActivities] = useState<Set<string>>(() => loadReadActivities());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Persist read activities to localStorage
+  useEffect(() => {
+    saveReadActivities(readActivities);
+  }, [readActivities]);
 
   // Fetch all data
-  const { data: workOrders, refetch: refetchWorkOrders } = useQuery({
+  const { data: workOrders, refetch: refetchWorkOrders, isLoading: loadingWorkOrders, error: errorWorkOrders } = useQuery({
     queryKey: ['work-orders'],
     queryFn: async () => {
       const response = await api.get('/work-orders');
@@ -301,7 +333,7 @@ export default function ActivityPage() {
     },
   });
 
-  const { data: leases, refetch: refetchLeases } = useQuery({
+  const { data: leases, refetch: refetchLeases, isLoading: loadingLeases, error: errorLeases } = useQuery({
     queryKey: ['leases'],
     queryFn: async () => {
       const response = await api.get('/leases');
@@ -309,7 +341,7 @@ export default function ActivityPage() {
     },
   });
 
-  const { data: properties, refetch: refetchProperties } = useQuery({
+  const { data: properties, refetch: refetchProperties, isLoading: loadingProperties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const response = await api.get('/properties');
@@ -317,13 +349,16 @@ export default function ActivityPage() {
     },
   });
 
-  const { data: vendors, refetch: refetchVendors } = useQuery({
+  const { data: vendors, refetch: refetchVendors, isLoading: loadingVendors } = useQuery({
     queryKey: ['vendors'],
     queryFn: async () => {
       const response = await api.get('/vendors');
       return response.data.data;
     },
   });
+
+  const isLoading = loadingWorkOrders || loadingLeases || loadingProperties || loadingVendors;
+  const hasError = errorWorkOrders || errorLeases;
 
   // Generate activities from real data
   const activities = useMemo(() => {
@@ -369,21 +404,32 @@ export default function ActivityPage() {
     return { unread, critical, overdue, todayCount };
   }, [activities]);
 
-  const handleRefresh = () => {
-    refetchWorkOrders();
-    refetchLeases();
-    refetchProperties();
-    refetchVendors();
-  };
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchWorkOrders(),
+        refetchLeases(),
+        refetchProperties(),
+        refetchVendors(),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetchWorkOrders, refetchLeases, refetchProperties, refetchVendors]);
 
-  const markAsRead = (id: string) => {
+  const markAsRead = useCallback((id: string) => {
     setReadActivities((prev) => new Set([...prev, id]));
-  };
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     const allIds = activities.map((a) => a.id);
     setReadActivities(new Set(allIds));
-  };
+  }, [activities]);
+
+  const _clearReadHistory = useCallback(() => {
+    setReadActivities(new Set());
+  }, []);
 
   const filterTypes: { value: ActivityType; label: string; icon: React.ComponentType<any> }[] = [
     { value: 'all', label: 'All Activity', icon: Bell },
@@ -392,6 +438,46 @@ export default function ActivityPage() {
     { value: 'property', label: 'Properties', icon: Home },
     { value: 'vendor', label: 'Vendors', icon: Users },
   ];
+
+  // Loading state
+  if (isLoading && !workOrders && !leases) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading activity...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (hasError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to load activity</h2>
+          <p className="text-gray-500 mb-4">
+            There was an error loading activity data. Please try again.
+          </p>
+          <Button onClick={handleRefresh} disabled={isRefreshing}>
+            {isRefreshing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Retrying...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Try Again
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -407,9 +493,13 @@ export default function ActivityPage() {
           <p className="text-gray-500 mt-1">Track all changes and updates across your portfolio</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} className="gap-2">
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+          <Button variant="outline" size="sm" onClick={handleRefresh} className="gap-2" disabled={isRefreshing}>
+            {isRefreshing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
           <Button
             variant="outline"

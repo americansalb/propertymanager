@@ -96,7 +96,12 @@ export default function LoginPage() {
             </div>
 
             {loginMutation.isError && (
-              <div className="text-sm text-destructive">Invalid credentials. Please try again.</div>
+              <div className="text-sm text-destructive">
+                {(loginMutation.error as any)?.response?.data?.error?.message ||
+                  (loginMutation.error as any)?.response?.data?.message ||
+                  (loginMutation.error as any)?.message ||
+                  'Login failed. Please try again.'}
+              </div>
             )}
 
             <Button type="submit" className="w-full" disabled={loginMutation.isPending}>

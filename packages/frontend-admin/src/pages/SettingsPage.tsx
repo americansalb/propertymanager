@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import {
   Settings,
   User,
@@ -15,9 +16,12 @@ import {
   ChevronRight,
   Save,
   AlertCircle,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuthStore } from '../store/auth.store';
+import api from '../services/api';
 
 type SettingsTab =
   | 'profile'
@@ -36,21 +40,49 @@ interface NotificationSetting {
   sms: boolean;
 }
 
+interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  timezone: string;
+}
+
+interface OrganizationSettings {
+  name: string;
+  email: string;
+}
+
 export default function SettingsPage() {
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Profile form state
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<UserProfile>({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
-    phone: '(555) 123-4567',
-    timezone: 'America/Los_Angeles',
+    phone: user?.phone || '',
+    timezone: user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
+
+  // Update profile when user changes
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+    }
+  }, [user]);
 
   // Notification settings
   const [notifications, setNotifications] = useState<NotificationSetting[]>([
@@ -103,13 +135,146 @@ export default function SettingsPage() {
     loginAlerts: true,
   });
 
+  // Organization settings
+  const [organization, setOrganization] = useState<OrganizationSettings>({
+    name: user?.organizationName || '',
+    email: user?.email || '',
+  });
+
+  // Password change state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  // Preferences
+  const [preferences, setPreferences] = useState({
+    language: localStorage.getItem('language') || 'en-US',
+    dateFormat: localStorage.getItem('dateFormat') || 'MM/DD/YYYY',
+    currency: localStorage.getItem('currency') || 'USD',
+  });
+
+  // Profile update mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: UserProfile) => {
+      const response = await api.patch('/users/me', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      if (data.data) {
+        setUser({ ...user, ...data.data });
+      }
+      setSaveSuccess(true);
+      setSaveError(null);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    },
+    onError: (error: any) => {
+      setSaveError(error.response?.data?.message || 'Failed to update profile');
+      setTimeout(() => setSaveError(null), 5000);
+    },
+  });
+
+  // Notification preferences mutation
+  const updateNotificationsMutation = useMutation({
+    mutationFn: async (data: NotificationSetting[]) => {
+      const response = await api.patch('/users/me/notification-preferences', {
+        preferences: data,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      setSaveSuccess(true);
+      setSaveError(null);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    },
+    onError: (error: any) => {
+      setSaveError(error.response?.data?.message || 'Failed to update notification preferences');
+      setTimeout(() => setSaveError(null), 5000);
+    },
+  });
+
+  // Password change mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const response = await api.post('/auth/change-password', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      setSaveSuccess(true);
+      setShowPasswordModal(false);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => setSaveSuccess(false), 3000);
+    },
+    onError: (error: any) => {
+      setSaveError(error.response?.data?.message || 'Failed to change password');
+      setTimeout(() => setSaveError(null), 5000);
+    },
+  });
+
+  // Organization update mutation
+  const updateOrganizationMutation = useMutation({
+    mutationFn: async (data: OrganizationSettings) => {
+      const response = await api.patch('/organization', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      if (data.data) {
+        setUser({ ...user, organizationName: data.data.name });
+      }
+      setSaveSuccess(true);
+      setSaveError(null);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    },
+    onError: (error: any) => {
+      setSaveError(error.response?.data?.message || 'Failed to update organization');
+      setTimeout(() => setSaveError(null), 5000);
+    },
+  });
+
   const handleSave = async () => {
-    setIsSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    setSaveError(null);
+
+    switch (activeTab) {
+      case 'profile':
+        updateProfileMutation.mutate(profile);
+        break;
+      case 'notifications':
+        updateNotificationsMutation.mutate(notifications);
+        break;
+      case 'organization':
+        updateOrganizationMutation.mutate(organization);
+        break;
+      case 'preferences':
+        // Save preferences to localStorage
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        localStorage.setItem('language', preferences.language);
+        localStorage.setItem('dateFormat', preferences.dateFormat);
+        localStorage.setItem('currency', preferences.currency);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handlePasswordChange = () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setSaveError('Passwords do not match');
+      setTimeout(() => setSaveError(null), 5000);
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      setSaveError('Password must be at least 8 characters');
+      setTimeout(() => setSaveError(null), 5000);
+      return;
+    }
+    changePasswordMutation.mutate({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+    });
   };
 
   const toggleNotification = (id: string, channel: 'email' | 'push' | 'sms') => {
@@ -117,6 +282,12 @@ export default function SettingsPage() {
       prev.map((n) => (n.id === id ? { ...n, [channel]: !n[channel] } : n)),
     );
   };
+
+  const isSaving =
+    updateProfileMutation.isPending ||
+    updateNotificationsMutation.isPending ||
+    updateOrganizationMutation.isPending ||
+    changePasswordMutation.isPending;
 
   const tabs: { id: SettingsTab; label: string; icon: React.ComponentType<any> }[] = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -147,9 +318,15 @@ export default function SettingsPage() {
               Saved successfully
             </span>
           )}
+          {saveError && (
+            <span className="flex items-center gap-2 text-red-600 text-sm font-medium animate-in fade-in">
+              <AlertCircle className="w-4 h-4" />
+              {saveError}
+            </span>
+          )}
           <Button onClick={handleSave} disabled={isSaving} className="gap-2">
             {isSaving ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Save className="w-4 h-4" />
             )}
@@ -197,8 +374,8 @@ export default function SettingsPage() {
 
                 <div className="flex items-center gap-6 pb-6 border-b border-gray-200">
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-2xl font-bold text-white">
-                    {profile.firstName[0]}
-                    {profile.lastName[0]}
+                    {profile.firstName[0] || 'U'}
+                    {profile.lastName[0] || ''}
                   </div>
                   <div>
                     <Button variant="outline" size="sm">
@@ -250,6 +427,7 @@ export default function SettingsPage() {
                       type="tel"
                       value={profile.phone}
                       onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                      placeholder="(555) 123-4567"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
                     />
                   </div>
@@ -264,6 +442,7 @@ export default function SettingsPage() {
                       <option value="America/Denver">Mountain Time (MT)</option>
                       <option value="America/Chicago">Central Time (CT)</option>
                       <option value="America/New_York">Eastern Time (ET)</option>
+                      <option value="UTC">UTC</option>
                     </select>
                   </div>
                 </div>
@@ -347,9 +526,9 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-gray-900">Password</h4>
-                        <p className="text-sm text-gray-500">Last changed 30 days ago</p>
+                        <p className="text-sm text-gray-500">Change your account password</p>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => setShowPasswordModal(true)}>
                         Change Password
                       </Button>
                     </div>
@@ -444,7 +623,8 @@ export default function SettingsPage() {
                         <div>
                           <p className="font-medium text-gray-900">Current Session</p>
                           <p className="text-xs text-gray-500">
-                            Chrome on macOS • San Francisco, CA
+                            {navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Browser'} •{' '}
+                            {navigator.platform}
                           </p>
                         </div>
                       </div>
@@ -474,9 +654,9 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {user?.organizationName || 'My Organization'}
+                        {organization.name || 'My Organization'}
                       </h3>
-                      <p className="text-sm text-gray-500">Professional Plan • 5 team members</p>
+                      <p className="text-sm text-gray-500">Professional Plan</p>
                     </div>
                   </div>
                 </div>
@@ -488,7 +668,8 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="text"
-                      defaultValue={user?.organizationName || ''}
+                      value={organization.name}
+                      onChange={(e) => setOrganization({ ...organization, name: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     />
                   </div>
@@ -498,7 +679,8 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="email"
-                      defaultValue="admin@company.com"
+                      value={organization.email}
+                      onChange={(e) => setOrganization({ ...organization, email: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     />
                   </div>
@@ -547,39 +729,19 @@ export default function SettingsPage() {
                         <CreditCard className="w-5 h-5 text-gray-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">•••• •••• •••• 4242</p>
-                        <p className="text-sm text-gray-500">Expires 12/25</p>
+                        <p className="font-medium text-gray-900">No payment method</p>
+                        <p className="text-sm text-gray-500">Add a payment method</p>
                       </div>
                     </div>
                     <Button variant="outline" size="sm">
-                      Update
+                      Add Card
                     </Button>
                   </div>
                 </div>
 
                 <div className="p-4 border border-gray-200 rounded-lg">
                   <h4 className="font-medium text-gray-900 mb-3">Billing History</h4>
-                  <div className="space-y-2">
-                    {[
-                      { date: 'Nov 1, 2024', amount: '$49.00', status: 'Paid' },
-                      { date: 'Oct 1, 2024', amount: '$49.00', status: 'Paid' },
-                      { date: 'Sep 1, 2024', amount: '$49.00', status: 'Paid' },
-                    ].map((invoice, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
-                      >
-                        <span className="text-sm text-gray-700">{invoice.date}</span>
-                        <span className="text-sm font-medium text-gray-900">{invoice.amount}</span>
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                          {invoice.status}
-                        </span>
-                        <Button variant="ghost" size="sm" className="text-xs">
-                          Download
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-sm text-gray-500">No billing history available</p>
                 </div>
               </div>
             )}
@@ -632,11 +794,17 @@ export default function SettingsPage() {
                         <h4 className="font-medium text-gray-900">Language</h4>
                         <p className="text-sm text-gray-500">Select your preferred language</p>
                       </div>
-                      <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
-                        <option>English (US)</option>
-                        <option>Spanish</option>
-                        <option>French</option>
-                        <option>German</option>
+                      <select
+                        value={preferences.language}
+                        onChange={(e) =>
+                          setPreferences({ ...preferences, language: e.target.value })
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="en-US">English (US)</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
                       </select>
                     </div>
                   </div>
@@ -650,10 +818,16 @@ export default function SettingsPage() {
                           How dates are displayed throughout the app
                         </p>
                       </div>
-                      <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
-                        <option>MM/DD/YYYY</option>
-                        <option>DD/MM/YYYY</option>
-                        <option>YYYY-MM-DD</option>
+                      <select
+                        value={preferences.dateFormat}
+                        onChange={(e) =>
+                          setPreferences({ ...preferences, dateFormat: e.target.value })
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
                       </select>
                     </div>
                   </div>
@@ -665,11 +839,17 @@ export default function SettingsPage() {
                         <h4 className="font-medium text-gray-900">Currency</h4>
                         <p className="text-sm text-gray-500">Default currency for financial data</p>
                       </div>
-                      <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
-                        <option>USD ($)</option>
-                        <option>EUR (€)</option>
-                        <option>GBP (£)</option>
-                        <option>CAD (C$)</option>
+                      <select
+                        value={preferences.currency}
+                        onChange={(e) =>
+                          setPreferences({ ...preferences, currency: e.target.value })
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (euro)</option>
+                        <option value="GBP">GBP (pound)</option>
+                        <option value="CAD">CAD (C$)</option>
                       </select>
                     </div>
                   </div>
@@ -679,6 +859,73 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Change Password</h3>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowPasswordModal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handlePasswordChange} disabled={changePasswordMutation.isPending}>
+                  {changePasswordMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : null}
+                  Change Password
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

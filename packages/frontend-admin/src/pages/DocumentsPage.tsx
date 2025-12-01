@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
   Upload,
@@ -25,62 +25,83 @@ import {
   Link as LinkIcon,
   Copy,
   ExternalLink,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import api from '../services/api';
 import { format, formatDistanceToNow } from 'date-fns';
 
-type DocumentCategory =
+type DocumentType =
   | 'all'
-  | 'lease'
-  | 'property'
-  | 'work_order'
-  | 'vendor'
-  | 'financial'
-  | 'other';
+  | 'LEASE_AGREEMENT'
+  | 'LEASE_ADDENDUM'
+  | 'MOVE_IN_CHECKLIST'
+  | 'MOVE_OUT_CHECKLIST'
+  | 'VENDOR_INSURANCE'
+  | 'VENDOR_W9'
+  | 'VENDOR_LICENSE'
+  | 'VENDOR_CONTRACT'
+  | 'WORK_ORDER_PHOTO'
+  | 'WORK_ORDER_INVOICE'
+  | 'MAINTENANCE_PHOTO'
+  | 'PROPERTY_PHOTO'
+  | 'UNIT_PHOTO'
+  | 'OTHER';
+
 type ViewMode = 'grid' | 'list';
 type SortBy = 'name' | 'date' | 'size' | 'type';
 type SortOrder = 'asc' | 'desc';
 
-interface Document {
+interface BackendDocument {
   id: string;
   name: string;
+  description: string | null;
   type: string;
+  storageKey: string;
+  storageUrl: string | null;
+  storageProvider: string;
+  mimeType: string;
   size: number;
-  category: DocumentCategory;
-  linkedTo?: {
-    type: 'property' | 'lease' | 'work_order' | 'vendor';
-    id: string;
-    name: string;
-  };
-  uploadedBy: string;
-  uploadedAt: Date;
-  description?: string;
-  tags: string[];
-  url: string;
+  entityType: string;
+  entityId: string;
+  isPublic: boolean;
+  organizationId: string;
+  uploadedById: string;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-const categoryConfig: Record<
-  DocumentCategory,
-  { label: string; icon: React.ComponentType<any>; color: string }
+const typeConfig: Record<
+  string,
+  { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
 > = {
-  all: { label: 'All Documents', icon: FolderOpen, color: 'gray' },
-  lease: { label: 'Lease Documents', icon: FileText, color: 'blue' },
-  property: { label: 'Property Documents', icon: Home, color: 'green' },
-  work_order: { label: 'Work Orders', icon: Wrench, color: 'orange' },
-  vendor: { label: 'Vendor Documents', icon: Users, color: 'purple' },
-  financial: { label: 'Financial', icon: FileSpreadsheet, color: 'emerald' },
-  other: { label: 'Other', icon: File, color: 'gray' },
+  all: { label: 'All', icon: FolderOpen, color: 'gray' },
+  LEASE_AGREEMENT: { label: 'Lease Agreement', icon: FileText, color: 'blue' },
+  LEASE_ADDENDUM: { label: 'Lease Addendum', icon: FileText, color: 'blue' },
+  MOVE_IN_CHECKLIST: { label: 'Move-in Checklist', icon: FileText, color: 'green' },
+  MOVE_OUT_CHECKLIST: { label: 'Move-out Checklist', icon: FileText, color: 'orange' },
+  VENDOR_INSURANCE: { label: 'Vendor Insurance', icon: Users, color: 'purple' },
+  VENDOR_W9: { label: 'Vendor W9', icon: Users, color: 'purple' },
+  VENDOR_LICENSE: { label: 'Vendor License', icon: Users, color: 'purple' },
+  VENDOR_CONTRACT: { label: 'Vendor Contract', icon: Users, color: 'purple' },
+  WORK_ORDER_PHOTO: { label: 'Work Order Photo', icon: Wrench, color: 'orange' },
+  WORK_ORDER_INVOICE: { label: 'Work Order Invoice', icon: Wrench, color: 'orange' },
+  MAINTENANCE_PHOTO: { label: 'Maintenance Photo', icon: Wrench, color: 'yellow' },
+  PROPERTY_PHOTO: { label: 'Property Photo', icon: Home, color: 'green' },
+  UNIT_PHOTO: { label: 'Unit Photo', icon: Home, color: 'emerald' },
+  OTHER: { label: 'Other', icon: File, color: 'gray' },
 };
 
-const getFileIcon = (type: string) => {
-  if (type.includes('image')) {
+const getFileIcon = (mimeType: string) => {
+  if (mimeType.includes('image')) {
     return FileImage;
   }
-  if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) {
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) {
     return FileSpreadsheet;
   }
-  if (type.includes('zip') || type.includes('archive') || type.includes('rar')) {
+  if (mimeType.includes('zip') || mimeType.includes('archive') || mimeType.includes('rar')) {
     return FileArchive;
   }
   return FileText;
@@ -96,185 +117,42 @@ const formatFileSize = (bytes: number): string => {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
-// Generate mock documents from real data
-const generateDocumentsFromData = (
-  properties: any[],
-  leases: any[],
-  workOrders: any[],
-  vendors: any[],
-): Document[] => {
-  const documents: Document[] = [];
-  let docId = 1;
-
-  // Property documents
-  properties?.forEach((property: any) => {
-    documents.push({
-      id: `doc-${docId++}`,
-      name: `${property.name} - Property Deed.pdf`,
-      type: 'application/pdf',
-      size: Math.floor(Math.random() * 5000000) + 500000,
-      category: 'property',
-      linkedTo: { type: 'property', id: property.id, name: property.name },
-      uploadedBy: 'System',
-      uploadedAt: new Date(
-        property.createdAt || Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-      ),
-      description: 'Property deed and title documentation',
-      tags: ['deed', 'legal', 'property'],
-      url: '#',
-    });
-
-    documents.push({
-      id: `doc-${docId++}`,
-      name: `${property.name} - Insurance Certificate.pdf`,
-      type: 'application/pdf',
-      size: Math.floor(Math.random() * 2000000) + 200000,
-      category: 'property',
-      linkedTo: { type: 'property', id: property.id, name: property.name },
-      uploadedBy: 'System',
-      uploadedAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000),
-      description: 'Property insurance documentation',
-      tags: ['insurance', 'legal'],
-      url: '#',
-    });
-  });
-
-  // Lease documents
-  leases?.forEach((lease: any) => {
-    const tenantName = `${lease.tenant?.firstName || 'Unknown'} ${lease.tenant?.lastName || 'Tenant'}`;
-
-    documents.push({
-      id: `doc-${docId++}`,
-      name: `Lease Agreement - ${tenantName}.pdf`,
-      type: 'application/pdf',
-      size: Math.floor(Math.random() * 3000000) + 400000,
-      category: 'lease',
-      linkedTo: { type: 'lease', id: lease.id, name: `Lease - ${tenantName}` },
-      uploadedBy: 'System',
-      uploadedAt: new Date(
-        lease.createdAt || Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000,
-      ),
-      description: 'Signed lease agreement',
-      tags: ['lease', 'agreement', 'signed'],
-      url: '#',
-    });
-
-    if (Math.random() > 0.5) {
-      documents.push({
-        id: `doc-${docId++}`,
-        name: `ID Verification - ${tenantName}.jpg`,
-        type: 'image/jpeg',
-        size: Math.floor(Math.random() * 1000000) + 100000,
-        category: 'lease',
-        linkedTo: { type: 'lease', id: lease.id, name: `Lease - ${tenantName}` },
-        uploadedBy: 'System',
-        uploadedAt: new Date(
-          lease.createdAt || Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000,
-        ),
-        description: 'Tenant ID verification document',
-        tags: ['id', 'verification', 'tenant'],
-        url: '#',
-      });
-    }
-  });
-
-  // Work order documents
-  workOrders?.forEach((wo: any) => {
-    if (wo.status === 'COMPLETED' || Math.random() > 0.7) {
-      documents.push({
-        id: `doc-${docId++}`,
-        name: `Work Order #${wo.id.slice(-6)} - ${wo.status === 'COMPLETED' ? 'Completion Report' : 'Photos'}.pdf`,
-        type: wo.status === 'COMPLETED' ? 'application/pdf' : 'image/jpeg',
-        size: Math.floor(Math.random() * 4000000) + 300000,
-        category: 'work_order',
-        linkedTo: {
-          type: 'work_order',
-          id: wo.id,
-          name: wo.title || `Work Order #${wo.id.slice(-6)}`,
-        },
-        uploadedBy: wo.vendor?.companyName || 'Maintenance Team',
-        uploadedAt: new Date(wo.updatedAt || Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-        description:
-          wo.status === 'COMPLETED' ? 'Work completion report and photos' : 'Before/after photos',
-        tags: [
-          'work-order',
-          wo.priority?.toLowerCase() || 'normal',
-          wo.status?.toLowerCase() || 'pending',
-        ],
-        url: '#',
-      });
-    }
-  });
-
-  // Vendor documents
-  vendors?.forEach((vendor: any) => {
-    documents.push({
-      id: `doc-${docId++}`,
-      name: `${vendor.companyName} - W9 Form.pdf`,
-      type: 'application/pdf',
-      size: Math.floor(Math.random() * 500000) + 100000,
-      category: 'vendor',
-      linkedTo: { type: 'vendor', id: vendor.id, name: vendor.companyName },
-      uploadedBy: vendor.companyName,
-      uploadedAt: new Date(
-        vendor.createdAt || Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,
-      ),
-      description: 'Vendor W9 tax form',
-      tags: ['w9', 'tax', 'vendor'],
-      url: '#',
-    });
-
-    if (Math.random() > 0.5) {
-      documents.push({
-        id: `doc-${docId++}`,
-        name: `${vendor.companyName} - Insurance Certificate.pdf`,
-        type: 'application/pdf',
-        size: Math.floor(Math.random() * 1500000) + 200000,
-        category: 'vendor',
-        linkedTo: { type: 'vendor', id: vendor.id, name: vendor.companyName },
-        uploadedBy: vendor.companyName,
-        uploadedAt: new Date(Date.now() - Math.random() * 120 * 24 * 60 * 60 * 1000),
-        description: 'Vendor liability insurance certificate',
-        tags: ['insurance', 'liability', 'vendor'],
-        url: '#',
-      });
-    }
-  });
-
-  // Financial documents
-  for (let i = 0; i < 5; i++) {
-    const month = new Date();
-    month.setMonth(month.getMonth() - i);
-
-    documents.push({
-      id: `doc-${docId++}`,
-      name: `Financial Report - ${format(month, 'MMMM yyyy')}.xlsx`,
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      size: Math.floor(Math.random() * 2000000) + 500000,
-      category: 'financial',
-      uploadedBy: 'System',
-      uploadedAt: new Date(month),
-      description: 'Monthly financial report and rent roll',
-      tags: ['financial', 'report', 'monthly'],
-      url: '#',
-    });
-  }
-
-  return documents;
-};
-
 export default function DocumentsPage() {
-  const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>('all');
+  const queryClient = useQueryClient();
+  const [selectedType, setSelectedType] = useState<DocumentType>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<BackendDocument | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  const [uploadEntityType, setUploadEntityType] = useState('Property');
+  const [uploadEntityId, setUploadEntityId] = useState('');
+  const [uploadDescription, setUploadDescription] = useState('');
+  const [uploadType, setUploadType] = useState<DocumentType>('OTHER');
+  const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch data
+  // Fetch documents from backend
+  const { data: documentsResponse, isLoading } = useQuery({
+    queryKey: ['documents'],
+    queryFn: async () => {
+      const response = await api.get('/documents?limit=100');
+      return response.data;
+    },
+  });
+
+  // Fetch storage stats
+  const { data: statsResponse } = useQuery({
+    queryKey: ['documents', 'stats'],
+    queryFn: async () => {
+      const response = await api.get('/documents/stats');
+      return response.data;
+    },
+  });
+
+  // Fetch properties for upload form
   const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
@@ -283,22 +161,7 @@ export default function DocumentsPage() {
     },
   });
 
-  const { data: leases } = useQuery({
-    queryKey: ['leases'],
-    queryFn: async () => {
-      const response = await api.get('/leases');
-      return response.data.data;
-    },
-  });
-
-  const { data: workOrders } = useQuery({
-    queryKey: ['workOrders'],
-    queryFn: async () => {
-      const response = await api.get('/work-orders');
-      return response.data.data;
-    },
-  });
-
+  // Fetch vendors for upload form
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
     queryFn: async () => {
@@ -307,23 +170,45 @@ export default function DocumentsPage() {
     },
   });
 
-  // Generate documents from real data
-  const documents = useMemo(() => {
-    return generateDocumentsFromData(
-      properties || [],
-      leases || [],
-      workOrders || [],
-      vendors || [],
-    );
-  }, [properties, leases, workOrders, vendors]);
+  // Upload mutation
+  const uploadMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await api.post('/documents/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      setShowUploadModal(false);
+      setUploadFiles(null);
+      setUploadDescription('');
+      setUploadType('OTHER');
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.delete(`/documents/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      setSelectedDocument(null);
+    },
+  });
+
+  const documents: BackendDocument[] = documentsResponse?.data || [];
+  const stats = statsResponse?.data || { totalDocuments: 0, totalSize: 0, totalSizeFormatted: '0 Bytes', byType: {} };
 
   // Filter and sort documents
   const filteredDocuments = useMemo(() => {
     let filtered = documents;
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter((doc) => doc.category === selectedCategory);
+    // Filter by type
+    if (selectedType !== 'all') {
+      filtered = filtered.filter((doc) => doc.type === selectedType);
     }
 
     // Filter by search query
@@ -333,20 +218,19 @@ export default function DocumentsPage() {
         (doc) =>
           doc.name.toLowerCase().includes(query) ||
           doc.description?.toLowerCase().includes(query) ||
-          doc.tags.some((tag) => tag.toLowerCase().includes(query)) ||
-          doc.linkedTo?.name.toLowerCase().includes(query),
+          doc.entityType.toLowerCase().includes(query),
       );
     }
 
     // Sort
-    filtered.sort((a, b) => {
+    filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortBy) {
         case 'name':
           comparison = a.name.localeCompare(b.name);
           break;
         case 'date':
-          comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
           break;
         case 'size':
           comparison = a.size - b.size;
@@ -359,28 +243,7 @@ export default function DocumentsPage() {
     });
 
     return filtered;
-  }, [documents, selectedCategory, searchQuery, sortBy, sortOrder]);
-
-  // Stats
-  const stats = useMemo(() => {
-    const totalSize = documents.reduce((sum, doc) => sum + doc.size, 0);
-    const categoryBreakdown = documents.reduce(
-      (acc, doc) => {
-        acc[doc.category] = (acc[doc.category] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    return {
-      total: documents.length,
-      totalSize,
-      categoryBreakdown,
-      recentUploads: documents.filter(
-        (doc) => new Date(doc.uploadedAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000,
-      ).length,
-    };
-  }, [documents]);
+  }, [documents, selectedType, searchQuery, sortBy, sortOrder]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -389,26 +252,42 @@ export default function DocumentsPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      console.log(
-        '[DocumentsPage] Files selected for upload:',
-        Array.from(files).map((f) => f.name),
-      );
+      setUploadFiles(files);
       setShowUploadModal(true);
     }
   };
 
-  const handleDownload = useCallback((doc: Document) => {
-    console.log('[DocumentsPage] Downloading document:', doc.name);
-    // In a real app, this would trigger a download
-    alert(`Download started: ${doc.name}`);
-  }, []);
+  const handleUploadSubmit = async () => {
+    if (!uploadFiles || !uploadEntityId) return;
 
-  const handleDelete = useCallback((doc: Document) => {
-    console.log('[DocumentsPage] Delete requested for:', doc.name);
-    if (confirm(`Are you sure you want to delete "${doc.name}"?`)) {
-      console.log('[DocumentsPage] Document deleted:', doc.id);
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const formData = new FormData();
+      formData.append('file', uploadFiles[i]);
+      formData.append('entityType', uploadEntityType);
+      formData.append('entityId', uploadEntityId);
+      formData.append('type', uploadType);
+      if (uploadDescription) {
+        formData.append('description', uploadDescription);
+      }
+      await uploadMutation.mutateAsync(formData);
+    }
+  };
+
+  const handleDownload = useCallback(async (doc: BackendDocument) => {
+    try {
+      const response = await api.get(`/documents/${doc.id}/download-url`);
+      const url = response.data.data.url;
+      window.open(url, '_blank');
+    } catch {
+      alert('Failed to get download URL');
     }
   }, []);
+
+  const handleDelete = useCallback((doc: BackendDocument) => {
+    if (confirm(`Are you sure you want to delete "${doc.name}"?`)) {
+      deleteMutation.mutate(doc.id);
+    }
+  }, [deleteMutation]);
 
   const handleSelectDocument = (docId: string) => {
     setSelectedDocuments((prev) => {
@@ -459,6 +338,7 @@ export default function DocumentsPage() {
             multiple
             className="hidden"
             onChange={handleFileChange}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp"
           />
           <Button onClick={handleUploadClick} className="gap-2">
             <Upload className="w-4 h-4" />
@@ -476,7 +356,7 @@ export default function DocumentsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Documents</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalDocuments}</p>
             </div>
           </div>
         </div>
@@ -488,7 +368,7 @@ export default function DocumentsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Storage</p>
-              <p className="text-2xl font-bold text-gray-900">{formatFileSize(stats.totalSize)}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalSizeFormatted}</p>
             </div>
           </div>
         </div>
@@ -499,8 +379,8 @@ export default function DocumentsPage() {
               <Upload className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Recent Uploads</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.recentUploads}</p>
+              <p className="text-sm text-gray-500">Storage Provider</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.storageProvider || 'Local'}</p>
             </div>
           </div>
         </div>
@@ -511,9 +391,9 @@ export default function DocumentsPage() {
               <FolderOpen className="w-6 h-6 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Categories</p>
+              <p className="text-sm text-gray-500">Document Types</p>
               <p className="text-2xl font-bold text-gray-900">
-                {Object.keys(stats.categoryBreakdown).length}
+                {Object.keys(stats.byType || {}).length}
               </p>
             </div>
           </div>
@@ -528,44 +408,27 @@ export default function DocumentsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search documents by name, tags, or linked items..."
+              placeholder="Search documents by name or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(categoryConfig) as DocumentCategory[]).map((category) => {
-              const config = categoryConfig[category];
-              const Icon = config.icon;
-              const count =
-                category === 'all' ? stats.total : stats.categoryBreakdown[category] || 0;
-
-              return (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    selectedCategory === category
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {config.label}
-                  <span
-                    className={`px-1.5 py-0.5 rounded-full text-xs ${
-                      selectedCategory === category ? 'bg-white/20' : 'bg-gray-200'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {/* Type Filter */}
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value as DocumentType)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+          >
+            <option value="all">All Types</option>
+            <option value="LEASE_AGREEMENT">Lease Agreement</option>
+            <option value="VENDOR_W9">Vendor W9</option>
+            <option value="VENDOR_INSURANCE">Vendor Insurance</option>
+            <option value="WORK_ORDER_PHOTO">Work Order Photo</option>
+            <option value="PROPERTY_PHOTO">Property Photo</option>
+            <option value="OTHER">Other</option>
+          </select>
 
           {/* View Mode Toggle */}
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -584,7 +447,7 @@ export default function DocumentsPage() {
           </div>
         </div>
 
-        {/* Selection and Sort Controls */}
+        {/* Selection Controls */}
         {selectedDocuments.size > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -596,13 +459,9 @@ export default function DocumentsPage() {
               <span className="text-sm text-gray-500">{selectedDocuments.size} selected</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Download className="w-4 h-4" />
-                Download
-              </Button>
               <Button variant="outline" size="sm" className="gap-2 text-red-600 hover:text-red-700">
                 <Trash2 className="w-4 h-4" />
-                Delete
+                Delete Selected
               </Button>
             </div>
           </div>
@@ -610,11 +469,30 @@ export default function DocumentsPage() {
       </div>
 
       {/* Documents View */}
-      {viewMode === 'grid' ? (
+      {isLoading ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+          <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
+          <p className="text-gray-500">Loading documents...</p>
+        </div>
+      ) : filteredDocuments.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-gray-900 mb-1">No documents found</h3>
+          <p className="text-gray-500">
+            {searchQuery
+              ? 'Try adjusting your search or filter criteria'
+              : 'Upload your first document to get started'}
+          </p>
+          <Button onClick={handleUploadClick} className="mt-4 gap-2">
+            <Upload className="w-4 h-4" />
+            Upload Files
+          </Button>
+        </div>
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredDocuments.map((doc) => {
-            const FileIcon = getFileIcon(doc.type);
-            const categoryConf = categoryConfig[doc.category];
+            const FileIcon = getFileIcon(doc.mimeType);
+            const typeConf = typeConfig[doc.type] || typeConfig.OTHER;
 
             return (
               <div
@@ -627,8 +505,8 @@ export default function DocumentsPage() {
                 onClick={() => setSelectedDocument(doc)}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`p-3 bg-${categoryConf.color}-100 rounded-xl`}>
-                    <FileIcon className={`w-6 h-6 text-${categoryConf.color}-600`} />
+                  <div className="p-3 bg-gray-100 rounded-xl">
+                    <FileIcon className="w-6 h-6 text-gray-600" />
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
@@ -667,35 +545,21 @@ export default function DocumentsPage() {
                   {doc.name}
                 </h3>
 
-                {doc.linkedTo && (
-                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                    <LinkIcon className="w-3 h-3" />
-                    <span className="truncate">{doc.linkedTo.name}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+                  <LinkIcon className="w-3 h-3" />
+                  <span className="truncate">{doc.entityType}: {doc.entityId.slice(0, 8)}...</span>
+                </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span>{formatFileSize(doc.size)}</span>
-                  <span>{formatDistanceToNow(new Date(doc.uploadedAt), { addSuffix: true })}</span>
+                  <span>{formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}</span>
                 </div>
 
-                {doc.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {doc.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {doc.tags.length > 3 && (
-                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
-                        +{doc.tags.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
+                <div className="mt-3">
+                  <span className={`px-2 py-0.5 bg-${typeConf.color}-100 text-${typeConf.color}-700 rounded-full text-xs font-medium`}>
+                    {typeConf.label}
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -730,8 +594,8 @@ export default function DocumentsPage() {
                       ))}
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Category</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Linked To</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Type</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Entity</th>
                 <th
                   className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                   onClick={() => toggleSort('size')}
@@ -765,9 +629,8 @@ export default function DocumentsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredDocuments.map((doc) => {
-                const FileIcon = getFileIcon(doc.type);
-                const categoryConf = categoryConfig[doc.category];
-                const CategoryIcon = categoryConf.icon;
+                const FileIcon = getFileIcon(doc.mimeType);
+                const typeConf = typeConfig[doc.type] || typeConfig.OTHER;
 
                 return (
                   <tr
@@ -801,28 +664,18 @@ export default function DocumentsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-${categoryConf.color}-100 text-${categoryConf.color}-700`}
-                      >
-                        <CategoryIcon className="w-3 h-3" />
-                        {categoryConf.label}
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-${typeConf.color}-100 text-${typeConf.color}-700`}>
+                        {typeConf.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      {doc.linkedTo ? (
-                        <span className="text-sm text-gray-600 truncate max-w-xs block">
-                          {doc.linkedTo.name}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-gray-400">—</span>
-                      )}
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {doc.entityType}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{formatFileSize(doc.size)}</td>
                     <td className="px-4 py-3">
                       <div className="text-sm text-gray-600">
-                        {format(new Date(doc.uploadedAt), 'MMM d, yyyy')}
+                        {format(new Date(doc.createdAt), 'MMM d, yyyy')}
                       </div>
-                      <div className="text-xs text-gray-400">by {doc.uploadedBy}</div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
@@ -851,14 +704,6 @@ export default function DocumentsPage() {
               })}
             </tbody>
           </table>
-
-          {filteredDocuments.length === 0 && (
-            <div className="p-12 text-center">
-              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 mb-1">No documents found</h3>
-              <p className="text-gray-500">Try adjusting your search or filter criteria</p>
-            </div>
-          )}
         </div>
       )}
 
@@ -879,7 +724,7 @@ export default function DocumentsPage() {
             <div className="p-6 overflow-y-auto">
               {/* Document Preview Area */}
               <div className="bg-gray-100 rounded-xl p-8 mb-6 flex items-center justify-center">
-                {selectedDocument.type.includes('image') ? (
+                {selectedDocument.mimeType.includes('image') ? (
                   <div className="text-center">
                     <FileImage className="w-16 h-16 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">Image Preview</p>
@@ -888,7 +733,7 @@ export default function DocumentsPage() {
                   <div className="text-center">
                     <FileText className="w-16 h-16 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">
-                      {selectedDocument.type.includes('pdf') ? 'PDF Document' : 'Document Preview'}
+                      {selectedDocument.mimeType.includes('pdf') ? 'PDF Document' : 'Document'}
                     </p>
                   </div>
                 )}
@@ -913,63 +758,50 @@ export default function DocumentsPage() {
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500 mb-1">File Type</p>
                     <p className="font-medium text-gray-900">
-                      {selectedDocument.type.split('/')[1]?.toUpperCase() || 'Unknown'}
+                      {selectedDocument.mimeType.split('/')[1]?.toUpperCase() || 'Unknown'}
                     </p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500 mb-1">Uploaded</p>
                     <p className="font-medium text-gray-900">
-                      {format(new Date(selectedDocument.uploadedAt), 'MMM d, yyyy')}
+                      {format(new Date(selectedDocument.createdAt), 'MMM d, yyyy')}
                     </p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">Uploaded By</p>
-                    <p className="font-medium text-gray-900">{selectedDocument.uploadedBy}</p>
+                    <p className="text-xs text-gray-500 mb-1">Document Type</p>
+                    <p className="font-medium text-gray-900">{typeConfig[selectedDocument.type]?.label || 'Other'}</p>
                   </div>
                 </div>
 
-                {selectedDocument.linkedTo && (
-                  <div className="p-4 border border-gray-200 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-2">Linked To</p>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium text-gray-900">
-                        {selectedDocument.linkedTo.name}
-                      </span>
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                        {selectedDocument.linkedTo.type.replace('_', ' ')}
-                      </span>
-                    </div>
+                <div className="p-4 border border-gray-200 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-2">Linked To</p>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-gray-400" />
+                    <span className="font-medium text-gray-900">
+                      {selectedDocument.entityType}
+                    </span>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                      {selectedDocument.entityId.slice(0, 8)}...
+                    </span>
                   </div>
-                )}
+                </div>
 
-                {selectedDocument.tags.length > 0 && (
-                  <div>
-                    <p className="text-xs text-gray-500 mb-2">Tags</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedDocument.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="p-4 border border-gray-200 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-2">Storage</p>
+                  <p className="text-sm text-gray-600">Provider: {selectedDocument.storageProvider}</p>
+                  <p className="text-xs text-gray-400 mt-1 truncate">Key: {selectedDocument.storageKey}</p>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                  navigator.clipboard.writeText(selectedDocument.storageKey);
+                  alert('Storage key copied to clipboard');
+                }}>
                   <Copy className="w-4 h-4" />
-                  Copy Link
-                </Button>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  Open
+                  Copy Key
                 </Button>
               </div>
               <div className="flex items-center gap-2">
@@ -979,7 +811,6 @@ export default function DocumentsPage() {
                   className="gap-2 text-red-600 hover:text-red-700"
                   onClick={() => {
                     handleDelete(selectedDocument);
-                    setSelectedDocument(null);
                   }}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1006,7 +837,10 @@ export default function DocumentsPage() {
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Upload Documents</h2>
               <button
-                onClick={() => setShowUploadModal(false)}
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setUploadFiles(null);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -1014,6 +848,14 @@ export default function DocumentsPage() {
             </div>
 
             <div className="p-6">
+              {uploadFiles && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-700">
+                    {uploadFiles.length} file(s) selected: {Array.from(uploadFiles).map(f => f.name).join(', ')}
+                  </p>
+                </div>
+              )}
+
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
                 <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-600 mb-2">Drag and drop files here, or click to browse</p>
@@ -1025,38 +867,51 @@ export default function DocumentsPage() {
 
               <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
-                    {(Object.keys(categoryConfig) as DocumentCategory[])
-                      .filter((c) => c !== 'all')
-                      .map((category) => (
-                        <option key={category} value={category}>
-                          {categoryConfig[category].label}
-                        </option>
-                      ))}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type *</label>
+                  <select
+                    value={uploadEntityType}
+                    onChange={(e) => setUploadEntityType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="Property">Property</option>
+                    <option value="Vendor">Vendor</option>
+                    <option value="Lease">Lease</option>
+                    <option value="WorkOrder">Work Order</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Link to (optional)
+                    Link to *
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
-                    <option value="">No link</option>
-                    <optgroup label="Properties">
-                      {properties?.map((p: any) => (
-                        <option key={p.id} value={`property:${p.id}`}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Vendors">
-                      {vendors?.map((v: any) => (
-                        <option key={v.id} value={`vendor:${v.id}`}>
-                          {v.companyName}
-                        </option>
-                      ))}
-                    </optgroup>
+                  <select
+                    value={uploadEntityId}
+                    onChange={(e) => setUploadEntityId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="">Select...</option>
+                    {uploadEntityType === 'Property' && properties?.map((p: { id: string; name: string }) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                    {uploadEntityType === 'Vendor' && vendors?.map((v: { id: string; companyName: string }) => (
+                      <option key={v.id} value={v.id}>{v.companyName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                  <select
+                    value={uploadType}
+                    onChange={(e) => setUploadType(e.target.value as DocumentType)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="OTHER">Other</option>
+                    <option value="LEASE_AGREEMENT">Lease Agreement</option>
+                    <option value="VENDOR_W9">Vendor W9</option>
+                    <option value="VENDOR_INSURANCE">Vendor Insurance</option>
+                    <option value="PROPERTY_PHOTO">Property Photo</option>
+                    <option value="WORK_ORDER_PHOTO">Work Order Photo</option>
                   </select>
                 </div>
 
@@ -1067,6 +922,8 @@ export default function DocumentsPage() {
                   <textarea
                     rows={3}
                     placeholder="Add a description..."
+                    value={uploadDescription}
+                    onChange={(e) => setUploadDescription(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -1074,11 +931,22 @@ export default function DocumentsPage() {
             </div>
 
             <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50">
-              <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+              <Button variant="outline" onClick={() => {
+                setShowUploadModal(false);
+                setUploadFiles(null);
+              }}>
                 Cancel
               </Button>
-              <Button className="gap-2">
-                <Upload className="w-4 h-4" />
+              <Button
+                className="gap-2"
+                onClick={handleUploadSubmit}
+                disabled={!uploadFiles || !uploadEntityId || uploadMutation.isPending}
+              >
+                {uploadMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
                 Upload Files
               </Button>
             </div>

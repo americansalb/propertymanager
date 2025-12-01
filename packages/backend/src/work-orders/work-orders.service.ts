@@ -3,12 +3,13 @@ import { Logger } from 'winston';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
-import { CreateWorkOrderDto } from './dto/create-work-order.dto';
-import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
-import { AssignWorkOrderDto } from './dto/assign-work-order.dto';
-import { CompleteWorkOrderDto } from './dto/complete-work-order.dto';
-import { UpdateWorkOrderStatusDto } from './dto/update-status.dto';
-import { WorkOrderQueryDto } from './dto/work-order-query.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { type CreateWorkOrderDto } from './dto/create-work-order.dto';
+import { type UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { type AssignWorkOrderDto } from './dto/assign-work-order.dto';
+import { type CompleteWorkOrderDto } from './dto/complete-work-order.dto';
+import { type UpdateWorkOrderStatusDto } from './dto/update-status.dto';
+import { type WorkOrderQueryDto } from './dto/work-order-query.dto';
 
 // Valid status transitions map
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -26,6 +27,7 @@ export class WorkOrdersService {
   constructor(
     private prisma: PrismaService,
     private eventsService: EventsService,
+    private notificationsService: NotificationsService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: Logger,
   ) {}
 
@@ -34,7 +36,15 @@ export class WorkOrdersService {
     return validTransitions.includes(toStatus);
   }
 
+  private validateRequiredParams(organizationId: string): void {
+    if (!organizationId) {
+      this.logger.log('error', 'work_order.missing_organization_id');
+      throw new BadRequestException('Organization ID is required');
+    }
+  }
+
   async findAll(organizationId: string, query?: WorkOrderQueryDto) {
+    this.validateRequiredParams(organizationId);
     const page = query?.page || 1;
     const limit = query?.limit || 20;
     const skip = (page - 1) * limit;
@@ -42,13 +52,27 @@ export class WorkOrdersService {
     const where: any = { organizationId };
 
     // Apply filters
-    if (query?.status) where.status = query.status;
-    if (query?.priority) where.priority = query.priority;
-    if (query?.type) where.type = query.type;
-    if (query?.propertyId) where.propertyId = query.propertyId;
-    if (query?.unitId) where.unitId = query.unitId;
-    if (query?.vendorId) where.vendorId = query.vendorId;
-    if (query?.assignedToId) where.assignedToId = query.assignedToId;
+    if (query?.status) {
+      where.status = query.status;
+    }
+    if (query?.priority) {
+      where.priority = query.priority;
+    }
+    if (query?.type) {
+      where.type = query.type;
+    }
+    if (query?.propertyId) {
+      where.propertyId = query.propertyId;
+    }
+    if (query?.unitId) {
+      where.unitId = query.unitId;
+    }
+    if (query?.vendorId) {
+      where.vendorId = query.vendorId;
+    }
+    if (query?.assignedToId) {
+      where.assignedToId = query.assignedToId;
+    }
 
     const [workOrders, total] = await Promise.all([
       this.prisma.workOrder.findMany({
@@ -111,6 +135,12 @@ export class WorkOrdersService {
   }
 
   async findOne(id: string, organizationId: string) {
+    this.validateRequiredParams(organizationId);
+
+    if (!id) {
+      throw new BadRequestException('Work order ID is required');
+    }
+
     const workOrder = await this.prisma.workOrder.findFirst({
       where: {
         id,
@@ -144,6 +174,13 @@ export class WorkOrdersService {
   }
 
   async create(dto: CreateWorkOrderDto, organizationId: string, userId: string) {
+    this.validateRequiredParams(organizationId);
+
+    if (!userId) {
+      this.logger.log('error', 'work_order.create.missing_user_id');
+      throw new BadRequestException('User ID is required to create a work order');
+    }
+
     // Verify property belongs to organization
     const property = await this.prisma.property.findFirst({
       where: {
@@ -273,6 +310,10 @@ export class WorkOrdersService {
   }
 
   async update(id: string, dto: UpdateWorkOrderDto, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to update a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Cannot update completed or cancelled work orders
@@ -416,6 +457,9 @@ export class WorkOrdersService {
     organizationId: string,
     userId: string,
   ) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to update work order status');
+    }
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     if (!this.validateStatusTransition(existingWorkOrder.status, dto.status)) {
@@ -464,10 +508,52 @@ export class WorkOrdersService {
       userId,
     });
 
+    // Send notification to tenant if work order was tenant-reported
+    if (existingWorkOrder.unitId) {
+      try {
+        // Get the tenant for this unit
+        const tenant = await this.prisma.tenant.findFirst({
+          where: {
+            lease: {
+              unitId: existingWorkOrder.unitId,
+              status: 'ACTIVE',
+            },
+          },
+        });
+
+        if (tenant) {
+          await this.notificationsService.sendWorkOrderUpdateNotification(
+            tenant.email,
+            `${tenant.firstName} ${tenant.lastName}`,
+            workOrder.title,
+            dto.status,
+            dto.notes || null,
+            workOrder.property.name,
+            workOrder.unit?.unitNumber || '',
+            workOrder.id,
+            organizationId,
+          );
+          this.logger.log('info', 'work_order.notification_sent', {
+            workOrderId: workOrder.id,
+            tenantEmail: tenant.email,
+          });
+        }
+      } catch (error) {
+        this.logger.log('error', 'work_order.notification_failed', {
+          workOrderId: workOrder.id,
+          error: (error as Error).message,
+        });
+      }
+    }
+
     return workOrder;
   }
 
   async assign(id: string, dto: AssignWorkOrderDto, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to assign a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Cannot assign completed or cancelled work orders
@@ -511,7 +597,9 @@ export class WorkOrdersService {
     const updateData: any = {
       vendorId: dto.vendorId || existingWorkOrder.vendorId,
       assignedToId: dto.assignedToId || existingWorkOrder.assignedToId,
-      scheduledDate: dto.scheduledDate ? new Date(dto.scheduledDate) : existingWorkOrder.scheduledDate,
+      scheduledDate: dto.scheduledDate
+        ? new Date(dto.scheduledDate)
+        : existingWorkOrder.scheduledDate,
       status: newStatus,
     };
 
@@ -554,6 +642,10 @@ export class WorkOrdersService {
   }
 
   async complete(id: string, dto: CompleteWorkOrderDto, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to complete a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Can only complete work orders that are IN_PROGRESS or ASSIGNED
@@ -635,6 +727,10 @@ export class WorkOrdersService {
   }
 
   async cancel(id: string, reason: string, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to cancel a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Cannot cancel already completed or cancelled work orders
@@ -680,6 +776,10 @@ export class WorkOrdersService {
   }
 
   async remove(id: string, organizationId: string, userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to delete a work order');
+    }
+
     const existingWorkOrder = await this.findOne(id, organizationId);
 
     // Can only delete DRAFT or CANCELLED work orders
@@ -719,7 +819,9 @@ export class WorkOrdersService {
 
   async getStats(organizationId: string, propertyId?: string) {
     const where: any = { organizationId };
-    if (propertyId) where.propertyId = propertyId;
+    if (propertyId) {
+      where.propertyId = propertyId;
+    }
 
     const [
       totalCount,

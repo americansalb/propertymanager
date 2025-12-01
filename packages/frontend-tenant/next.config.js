@@ -1,15 +1,17 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  output: 'export',
+  basePath: '/tenant',
+  trailingSlash: true,
   transpilePackages: ['@propertymaster/shared'],
-  async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiUrl}/api/v1/:path*`,
-      },
-    ];
+  images: {
+    unoptimized: true, // Required for static export
+  },
+  webpack: (config) => {
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    return config;
   },
 };
 

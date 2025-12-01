@@ -193,13 +193,10 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  console.log('[CommandPalette] Render, isOpen:', isOpen, 'query:', query);
-
   // Fetch data for search
   const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      console.log('[CommandPalette] Fetching properties...');
       const response = await api.get('/properties');
       return response.data.data;
     },
@@ -209,7 +206,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   const { data: leases } = useQuery({
     queryKey: ['leases'],
     queryFn: async () => {
-      console.log('[CommandPalette] Fetching leases...');
       const response = await api.get('/leases');
       return response.data.data;
     },
@@ -219,7 +215,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   const { data: workOrders } = useQuery({
     queryKey: ['workOrders'],
     queryFn: async () => {
-      console.log('[CommandPalette] Fetching work orders...');
       const response = await api.get('/work-orders');
       return response.data.data;
     },
@@ -229,7 +224,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
     queryFn: async () => {
-      console.log('[CommandPalette] Fetching vendors...');
       const response = await api.get('/vendors');
       return response.data.data;
     },
@@ -246,7 +240,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         icon: Wrench,
         shortcut: 'W',
         action: () => {
-          console.log('[CommandPalette] Quick action: Create Work Order');
           navigate('/work-orders');
           onClose();
         },
@@ -258,7 +251,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         icon: FileText,
         shortcut: 'L',
         action: () => {
-          console.log('[CommandPalette] Quick action: Create Lease');
           navigate('/leases');
           onClose();
         },
@@ -270,7 +262,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         icon: BarChart3,
         shortcut: 'R',
         action: () => {
-          console.log('[CommandPalette] Quick action: View Reports');
           navigate('/reports');
           onClose();
         },
@@ -282,7 +273,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         icon: Settings,
         shortcut: ',',
         action: () => {
-          console.log('[CommandPalette] Quick action: Settings');
           navigate('/settings');
           onClose();
         },
@@ -295,13 +285,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   const searchResults = useMemo(() => {
     const results: SearchResult[] = [];
     const q = query.toLowerCase().trim();
-
-    console.log(
-      '[CommandPalette] Building search results for query:',
-      q,
-      'category:',
-      selectedCategory,
-    );
 
     // Add pages
     if (selectedCategory === 'all' || selectedCategory === 'pages') {
@@ -425,29 +408,23 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
       });
     }
 
-    console.log('[CommandPalette] Found', results.length, 'results');
     return results.slice(0, 20); // Limit results
   }, [query, selectedCategory, properties, leases, workOrders, vendors]);
 
   // Handle result selection
   const handleSelectResult = useCallback(
     (result: SearchResult) => {
-      console.log('[CommandPalette] Selected result:', result.title, result.type);
-
       // Save to recent searches
       if (query) {
         const newRecent = [query, ...recentSearches.filter((s) => s !== query)].slice(0, 5);
         setRecentSearches(newRecent);
         localStorage.setItem('commandPaletteRecent', JSON.stringify(newRecent));
-        console.log('[CommandPalette] Saved to recent searches:', newRecent);
       }
 
       // Execute action or navigate
       if (result.action) {
-        console.log('[CommandPalette] Executing action');
         result.action();
       } else if (result.href) {
-        console.log('[CommandPalette] Navigating to:', result.href);
         navigate(result.href);
       }
 
@@ -463,8 +440,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      console.log('[CommandPalette] Key pressed:', e.key);
-
       if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'ArrowDown') {
@@ -486,7 +461,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   // Focus input on open
   useEffect(() => {
     if (isOpen) {
-      console.log('[CommandPalette] Opened, focusing input');
       setTimeout(() => inputRef.current?.focus(), 100);
       setQuery('');
       setSelectedIndex(0);
@@ -559,7 +533,6 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
               <button
                 key={cat.key}
                 onClick={() => {
-                  console.log('[CommandPalette] Category changed:', cat.key);
                   setSelectedCategory(cat.key);
                   setSelectedIndex(0);
                 }}
@@ -743,7 +716,6 @@ export function useCommandPalette() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        console.log('[useCommandPalette] Cmd+K pressed, toggling palette');
         setIsOpen((prev) => !prev);
       }
     };

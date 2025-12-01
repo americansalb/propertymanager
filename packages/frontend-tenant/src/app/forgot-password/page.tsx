@@ -60,11 +60,11 @@ export default function ForgotPasswordPage() {
                 </div>
                 <div className="space-y-2">
                   <p className="text-gray-600">
-                    If an account exists for <strong>{email}</strong>, you will receive an email with
-                    instructions to reset your password.
+                    If an account exists for <strong>{email}</strong>, you will receive an email
+                    with instructions to reset your password.
                   </p>
                   <p className="text-sm text-gray-500">
-                    Didn't receive the email? Check your spam folder or try again.
+                    Didn&apos;t receive the email? Check your spam folder or try again.
                   </p>
                 </div>
                 <div className="space-y-3">
