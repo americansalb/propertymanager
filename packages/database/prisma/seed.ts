@@ -17,19 +17,23 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Clear existing data
+  // Clear existing demo data (but keep user data intact)
   console.log('🧹 Clearing existing seed data...');
   await prisma.bankAccount.deleteMany({});
   await prisma.vendor.deleteMany({});
   await prisma.unit.deleteMany({});
   await prisma.property.deleteMany({});
   await prisma.chartOfAccounts.deleteMany({});
-  await prisma.user.deleteMany({ where: { email: 'contact@aalb.org' } });
-  await prisma.organization.deleteMany({ where: { slug: 'aalb' } });
 
-  // Create organization
-  const organization = await prisma.organization.create({
-    data: {
+  // Upsert organization
+  const organization = await prisma.organization.upsert({
+    where: { slug: 'aalb' },
+    update: {
+      name: 'AALB Properties',
+      type: OrganizationType.PROPERTY_MANAGER,
+      plan: SubscriptionPlan.PROFESSIONAL,
+    },
+    create: {
       name: 'AALB Properties',
       slug: 'aalb',
       type: OrganizationType.PROPERTY_MANAGER,
@@ -38,12 +42,21 @@ async function main() {
     },
   });
 
-  console.log('✅ Created organization:', organization.name);
+  console.log('✅ Created/updated organization:', organization.name);
 
-  // Create admin user
+  // Upsert admin user - always ensures correct password
   const passwordHash = await bcrypt.hash('winner', 10);
-  const adminUser = await prisma.user.create({
-    data: {
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'contact@aalb.org' },
+    update: {
+      passwordHash,
+      firstName: 'Admin',
+      lastName: 'AALB',
+      role: UserRole.SUPER_ADMIN,
+      emailVerified: true,
+      organizationId: organization.id,
+    },
+    create: {
       email: 'contact@aalb.org',
       passwordHash,
       firstName: 'Admin',
