@@ -37,8 +37,9 @@ async function runDatabaseSetup() {
       stdio: 'inherit',
     });
     console.log('✅ Seed complete');
-  } catch (error) {
-    console.error('⚠️ Database setup error (may be ok if already done):', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('⚠️ Database setup error (may be ok if already done):', message);
   }
 }
 
