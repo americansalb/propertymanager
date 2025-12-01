@@ -34,20 +34,20 @@ export class PropertiesController {
     }
 
     try {
+      // Use Photon (free, optimized for autocomplete) with US bias
       const params = new URLSearchParams({
         q: query,
-        format: 'json',
-        addressdetails: '1',
-        countrycodes: 'us',
         limit: '5',
+        lang: 'en',
+        lat: '39.8283',  // Center of US for better results
+        lon: '-98.5795',
       });
 
-      const url = `https://nominatim.openstreetmap.org/search?${params}`;
-      console.log('[Address Search] Fetching:', url);
+      const url = `https://photon.komoot.io/api/?${params}`;
+      console.log('[Address Search] Fetching Photon:', url);
 
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'PropertyManager/1.0 (https://propertymanager-1.onrender.com; property management)',
           Accept: 'application/json',
         },
       });
@@ -56,12 +56,41 @@ export class PropertiesController {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[Address Search] Nominatim error:', response.status, errorText);
+        console.error('[Address Search] Photon error:', response.status, errorText);
         return { success: false, data: [], error: `Geocoding service returned ${response.status}` };
       }
 
-      const data = await response.json();
-      console.log('[Address Search] Results count:', data.length);
+      const geojson = await response.json();
+      console.log('[Address Search] Results count:', geojson.features?.length || 0);
+
+      // Transform Photon GeoJSON to Nominatim-like format for frontend compatibility
+      // Filter to only US addresses
+      const data = (geojson.features || [])
+        .filter((f: any) => f.properties?.country === 'United States')
+        .map((feature: any) => {
+          const p = feature.properties || {};
+          return {
+            display_name: [
+              p.housenumber,
+              p.street,
+              p.city,
+              p.state,
+              p.postcode,
+              p.country,
+            ].filter(Boolean).join(', '),
+            address: {
+              house_number: p.housenumber,
+              road: p.street,
+              city: p.city,
+              town: p.city,
+              state: p.state,
+              postcode: p.postcode,
+              country: p.country,
+            },
+            type: p.type,
+          };
+        });
+
       return { success: true, data };
     } catch (error) {
       console.error('[Address Search] Failed:', error);
