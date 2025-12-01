@@ -287,22 +287,22 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-5 flex items-center justify-between">
+        {/* Header - Midnight Blue */}
+        <div className="bg-gradient-to-r from-[#0f172a] to-[#1e3a5f] px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-white/10 rounded-lg">
-              <Building2 className="w-5 h-5 text-white" />
+            <div className="p-2.5 bg-amber-500/20 rounded-lg border border-amber-500/30">
+              <Building2 className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Add Property</h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-blue-200/70">
                 {step === 'address' ? 'Start with the address' : 'Confirm details'}
               </p>
             </div>
           </div>
           <button
             onClick={() => onOpenChange(false)}
-            className="text-slate-400 hover:text-white transition-colors p-1"
+            className="text-blue-300/50 hover:text-white transition-colors p-1"
           >
             <X className="w-5 h-5" />
           </button>
@@ -315,7 +315,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
             <div className="space-y-4">
               <div className="relative" ref={suggestionsRef}>
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500" />
                   <input
                     ref={inputRef}
                     type="text"
@@ -323,11 +323,11 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                     onChange={(e) => handleAddressInput(e.target.value)}
                     onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                     placeholder="Start typing an address..."
-                    className="w-full pl-12 pr-12 py-4 text-lg border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
+                    className="w-full pl-12 pr-12 py-4 text-lg border-2 border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
                     autoComplete="off"
                   />
                   {isSearching && (
-                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500 animate-spin" />
+                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500 animate-spin" />
                   )}
                 </div>
 
@@ -341,10 +341,10 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                           key={index}
                           type="button"
                           onClick={() => selectAddress(suggestion)}
-                          className="w-full text-left px-4 py-3 hover:bg-indigo-50 border-b border-slate-100 last:border-b-0 transition-colors group"
+                          className="w-full text-left px-4 py-3 hover:bg-amber-50 border-b border-slate-100 last:border-b-0 transition-colors group"
                         >
                           <div className="flex items-start gap-3">
-                            <MapPin className="w-4 h-4 text-slate-400 mt-0.5 group-hover:text-indigo-500" />
+                            <MapPin className="w-4 h-4 text-slate-400 mt-0.5 group-hover:text-amber-500" />
                             <div>
                               <div className="font-medium text-slate-900">{street || 'Address'}</div>
                               <div className="text-sm text-slate-500">
@@ -377,13 +377,13 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
           {step === 'details' && selectedAddress && (
             <div className="space-y-5">
               {/* Selected address display */}
-              <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
-                <Check className="w-5 h-5 text-green-600 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-[#0f172a] border border-[#1e3a5f] rounded-xl">
+                <Check className="w-5 h-5 text-amber-400 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-green-900">
+                  <p className="font-medium text-white">
                     {getFormattedAddress(selectedAddress).street}
                   </p>
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-blue-200/70">
                     {[
                       getFormattedAddress(selectedAddress).city,
                       getFormattedAddress(selectedAddress).state,
@@ -393,7 +393,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                 </div>
                 <button
                   onClick={() => setStep('address')}
-                  className="text-sm text-green-700 hover:text-green-900 font-medium"
+                  className="text-sm text-amber-400 hover:text-amber-300 font-medium"
                 >
                   Change
                 </button>
@@ -415,10 +415,10 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                   }}
                   onBlur={() => handleBlur('propertyName', propertyName)}
                   placeholder="e.g. Sunset Apartments"
-                  className={`w-full px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none ${
+                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:outline-none focus:ring-2 ${
                     errors.propertyName && touched.propertyName
-                      ? 'border-red-300 focus:border-red-500'
-                      : 'border-slate-200 focus:border-indigo-500'
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-slate-200 focus:border-amber-500 focus:ring-amber-500/20'
                   }`}
                 />
                 {errors.propertyName && touched.propertyName && (
@@ -445,8 +445,8 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                         onClick={() => setPropertyType(type.value)}
                         className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
                           isSelected
-                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                            : 'border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 text-slate-600'
                         }`}
                       >
                         <Icon className="w-5 h-5" />
@@ -474,10 +474,10 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                   }}
                   onBlur={() => handleBlur('totalUnits', totalUnits)}
                   placeholder="1"
-                  className={`w-full px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none ${
+                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:outline-none focus:ring-2 ${
                     errors.totalUnits && touched.totalUnits
-                      ? 'border-red-300 focus:border-red-500'
-                      : 'border-slate-200 focus:border-indigo-500'
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-slate-200 focus:border-amber-500 focus:ring-amber-500/20'
                   }`}
                 />
                 {errors.totalUnits && touched.totalUnits && (
@@ -515,10 +515,10 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                       onChange={(e) => setYearBuilt(e.target.value)}
                       onBlur={() => handleBlur('yearBuilt', yearBuilt)}
                       placeholder="e.g. 1995"
-                      className={`w-full px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none ${
+                      className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:outline-none focus:ring-2 ${
                         errors.yearBuilt && touched.yearBuilt
-                          ? 'border-red-300 focus:border-red-500'
-                          : 'border-slate-200 focus:border-indigo-500'
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-slate-200 focus:border-amber-500 focus:ring-amber-500/20'
                       }`}
                     />
                     {errors.yearBuilt && touched.yearBuilt && (
@@ -535,10 +535,10 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                       onChange={(e) => setSquareFeet(e.target.value)}
                       onBlur={() => handleBlur('squareFeet', squareFeet)}
                       placeholder="e.g. 50000"
-                      className={`w-full px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none ${
+                      className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:outline-none focus:ring-2 ${
                         errors.squareFeet && touched.squareFeet
-                          ? 'border-red-300 focus:border-red-500'
-                          : 'border-slate-200 focus:border-indigo-500'
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-slate-200 focus:border-amber-500 focus:ring-amber-500/20'
                       }`}
                     />
                     {errors.squareFeet && touched.squareFeet && (
@@ -563,7 +563,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
 
         {/* Footer */}
         {step === 'details' && (
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+          <div className="px-6 py-4 bg-[#0f172a]/5 border-t border-slate-200 flex justify-end gap-3">
             <Button
               variant="ghost"
               onClick={() => onOpenChange(false)}
@@ -574,7 +574,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
             <Button
               onClick={handleSubmit}
               disabled={createMutation.isPending}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]"
+              className="bg-amber-500 hover:bg-amber-600 text-white min-w-[120px] font-medium"
             >
               {createMutation.isPending ? (
                 <>
