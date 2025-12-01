@@ -16,6 +16,8 @@ import api from '../../services/api';
 import { Dialog, DialogContent } from '../ui/dialog';
 import { Button } from '../ui/button';
 
+// Use backend proxy to avoid CORS issues with Nominatim
+
 interface AddPropertyModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -104,7 +106,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Address search with Nominatim
+  // Address search via backend proxy (avoids CORS issues)
   const searchAddress = async (query: string) => {
     if (query.length < 3) {
       setSuggestions([]);
@@ -113,17 +115,10 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
 
     setIsSearching(true);
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?${new URLSearchParams({
-          q: query,
-          format: 'json',
-          addressdetails: '1',
-          countrycodes: 'us',
-          limit: '5',
-        })}`,
-        { headers: { 'User-Agent': 'PropertyManager/1.0' } }
-      );
-      const data = await response.json();
+      const response = await api.get('/properties/address/search', {
+        params: { q: query },
+      });
+      const data = response.data.data || [];
       setSuggestions(data);
       setShowSuggestions(data.length > 0);
     } catch (error) {

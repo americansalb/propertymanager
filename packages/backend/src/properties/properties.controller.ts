@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -22,6 +22,43 @@ export class PropertiesController {
   async findAll(@OrganizationId() organizationId: string) {
     const properties = await this.propertiesService.findAll(organizationId);
     return { success: true, data: properties };
+  }
+
+  @Get('address/search')
+  @ApiOperation({ summary: 'Search for addresses using geocoding' })
+  async searchAddress(@Query('q') query: string) {
+    if (!query || query.length < 3) {
+      return { success: true, data: [] };
+    }
+
+    try {
+      const params = new URLSearchParams({
+        q: query,
+        format: 'json',
+        addressdetails: '1',
+        countrycodes: 'us',
+        limit: '5',
+      });
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?${params}`,
+        {
+          headers: {
+            'User-Agent': 'PropertyManager/1.0 (property management application)',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Nominatim returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      console.error('Address search failed:', error);
+      return { success: true, data: [] };
+    }
   }
 
   @Get(':id')
