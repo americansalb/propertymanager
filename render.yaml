@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: propertymaster-api
+    name: propertymanager-1-api
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
     plan: starter
@@ -13,7 +13,7 @@ services:
         value: 3001
       - key: DATABASE_URL
         fromDatabase:
-          name: propertymaster-db
+          name: propertymanager-1-db
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
@@ -22,33 +22,29 @@ services:
       - key: REDIS_URL
         fromService:
           type: redis
-          name: propertymaster-redis
+          name: propertymanager-1-redis
           property: connectionString
       - key: FRONTEND_ADMIN_URL
-        value: 'https://propertymaster-admin.onrender.com'
+        value: 'https://propertymanager-1.onrender.com'
       - key: FRONTEND_TENANT_URL
-        value: 'https://propertymaster-tenant-portal.onrender.com'
+        value: 'https://propertymanager-1-tenant.onrender.com'
       - key: ALLOWED_ORIGINS
-        value: 'https://propertymaster-admin.onrender.com,https://propertymaster-tenant-portal.onrender.com'
+        value: 'https://propertymanager-1.onrender.com,https://propertymanager-1-tenant.onrender.com'
       - key: COOKIE_DOMAIN
         value: '.onrender.com'
 
   - type: web
-    name: propertymaster-admin
+    name: propertymanager-1
     runtime: docker
     dockerfilePath: ./Dockerfile.admin
     plan: starter
     autoDeploy: true
-    dockerCommand: ''
-    buildCommand: ''
     envVars:
       - key: NODE_ENV
         value: production
-      # VITE_API_URL is a build arg, set in Dockerfile.admin
-      # The actual API URL is baked in at build time
 
   - type: web
-    name: propertymaster-tenant-portal
+    name: propertymanager-1-tenant
     runtime: docker
     dockerfilePath: ./Dockerfile.tenant
     plan: starter
@@ -57,17 +53,17 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        value: 'https://propertymaster-api.onrender.com'
+        value: 'https://propertymanager-1-api.onrender.com'
 
   - type: redis
-    name: propertymaster-redis
+    name: propertymanager-1-redis
     plan: starter
     maxmemoryPolicy: allkeys-lru
     ipAllowList: []
 
 databases:
-  - name: propertymaster-db
-    databaseName: propertymaster
-    user: propertymaster
+  - name: propertymanager-1-db
+    databaseName: propertymanager
+    user: propertymanager
     plan: starter
     postgresMajorVersion: 15

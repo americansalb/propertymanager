@@ -24,14 +24,14 @@ async function main() {
   await prisma.unit.deleteMany({});
   await prisma.property.deleteMany({});
   await prisma.chartOfAccounts.deleteMany({});
-  await prisma.user.deleteMany({ where: { email: 'admin@demo.propertymaster.io' } });
-  await prisma.organization.deleteMany({ where: { slug: 'demo-pm' } });
+  await prisma.user.deleteMany({ where: { email: 'contact@aalb.org' } });
+  await prisma.organization.deleteMany({ where: { slug: 'aalb' } });
 
-  // Create demo organization
+  // Create organization
   const organization = await prisma.organization.create({
     data: {
-      name: 'Demo Property Management Co.',
-      slug: 'demo-pm',
+      name: 'AALB Properties',
+      slug: 'aalb',
       type: OrganizationType.PROPERTY_MANAGER,
       plan: SubscriptionPlan.PROFESSIONAL,
       settings: {},
@@ -41,14 +41,14 @@ async function main() {
   console.log('✅ Created organization:', organization.name);
 
   // Create admin user
-  const passwordHash = await bcrypt.hash('Demo@Password123!', 10);
+  const passwordHash = await bcrypt.hash('winner', 10);
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@demo.propertymaster.io',
+      email: 'contact@aalb.org',
       passwordHash,
-      firstName: 'Demo',
-      lastName: 'Admin',
-      phone: '+1-555-0100',
+      firstName: 'Admin',
+      lastName: 'AALB',
+      phone: '',
       role: UserRole.SUPER_ADMIN,
       emailVerified: true,
       organizationId: organization.id,
@@ -263,9 +263,9 @@ async function main() {
   console.log('✅ Created bank account:', bankAccount.accountName);
 
   console.log('\n🎉 Seed completed successfully!');
-  console.log('\n📝 Demo Login credentials:');
-  console.log('   Email: admin@demo.propertymaster.io');
-  console.log('   Password: Demo@Password123!');
+  console.log('\n📝 Login credentials:');
+  console.log('   Email: contact@aalb.org');
+  console.log('   Password: winner');
 }
 
 main()

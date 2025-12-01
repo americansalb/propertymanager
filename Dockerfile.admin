@@ -17,7 +17,7 @@ COPY --from=dependencies /app/packages ./packages
 COPY . .
 
 # Set the API URL for production build
-ENV VITE_API_URL=https://propertymaster-api.onrender.com/api/v1
+ENV VITE_API_URL=https://propertymanager-1-api.onrender.com/api/v1
 
 # Build shared package
 RUN cd packages/shared && pnpm build
