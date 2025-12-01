@@ -36,6 +36,8 @@ interface AddressSuggestion {
     postcode?: string;
     country?: string;
   };
+  latitude?: number;
+  longitude?: number;
   type?: string;
   class?: string;
 }
@@ -320,6 +322,9 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
           totalUnits: parseInt(totalUnits),
           ...(yearBuilt && { yearBuilt: parseInt(yearBuilt) }),
           ...(squareFeet && { squareFeet: parseInt(squareFeet) }),
+          // Store coordinates for map display (captured once, no ongoing API cost)
+          ...(selectedAddress.latitude && { latitude: selectedAddress.latitude }),
+          ...(selectedAddress.longitude && { longitude: selectedAddress.longitude }),
         };
       }
 

@@ -155,6 +155,8 @@ model Property {
   state       String
   zipCode     String
   country     String   @default("US")
+  latitude    Float?
+  longitude   Float?
 
   // Details
   yearBuilt   Int?

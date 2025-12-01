@@ -71,6 +71,16 @@ export class CreatePropertyDto {
   @IsOptional()
   country?: string;
 
+  @ApiPropertyOptional({ description: 'Latitude coordinate for map display' })
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({ description: 'Longitude coordinate for map display' })
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
   @ApiPropertyOptional({ description: 'Year the property was built' })
   @IsInt()
   @IsOptional()

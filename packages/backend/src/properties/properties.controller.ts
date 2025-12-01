@@ -96,7 +96,7 @@ export class PropertiesController {
       const params = new URLSearchParams({
         place_id: placeId,
         key: apiKey,
-        fields: 'address_components,formatted_address',
+        fields: 'address_components,formatted_address,geometry',
       });
 
       const url = `https://maps.googleapis.com/maps/api/place/details/json?${params}`;
@@ -113,6 +113,9 @@ export class PropertiesController {
       const getShortComponent = (type: string) =>
         components.find((c: any) => c.types.includes(type))?.short_name || '';
 
+      // Extract coordinates for map display
+      const location = result.result.geometry?.location;
+
       return {
         success: true,
         data: {
@@ -125,6 +128,8 @@ export class PropertiesController {
             postcode: getComponent('postal_code'),
             country: getComponent('country'),
           },
+          latitude: location?.lat || null,
+          longitude: location?.lng || null,
         },
       };
     } catch (error) {
