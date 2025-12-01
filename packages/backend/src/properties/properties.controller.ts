@@ -27,8 +27,10 @@ export class PropertiesController {
   @Get('address/search')
   @ApiOperation({ summary: 'Search for addresses using geocoding' })
   async searchAddress(@Query('q') query: string) {
+    console.log('[Address Search] Query received:', query);
+
     if (!query || query.length < 3) {
-      return { success: true, data: [] };
+      return { success: true, data: [], message: 'Query too short' };
     }
 
     try {
@@ -40,24 +42,30 @@ export class PropertiesController {
         limit: '5',
       });
 
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?${params}`,
-        {
-          headers: {
-            'User-Agent': 'PropertyManager/1.0 (property management application)',
-          },
+      const url = `https://nominatim.openstreetmap.org/search?${params}`;
+      console.log('[Address Search] Fetching:', url);
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'PropertyManager/1.0 (https://propertymanager-1.onrender.com; property management)',
+          Accept: 'application/json',
         },
-      );
+      });
+
+      console.log('[Address Search] Response status:', response.status);
 
       if (!response.ok) {
-        throw new Error(`Nominatim returned ${response.status}`);
+        const errorText = await response.text();
+        console.error('[Address Search] Nominatim error:', response.status, errorText);
+        return { success: false, data: [], error: `Geocoding service returned ${response.status}` };
       }
 
       const data = await response.json();
+      console.log('[Address Search] Results count:', data.length);
       return { success: true, data };
     } catch (error) {
-      console.error('Address search failed:', error);
-      return { success: true, data: [] };
+      console.error('[Address Search] Failed:', error);
+      return { success: false, data: [], error: String(error) };
     }
   }
 

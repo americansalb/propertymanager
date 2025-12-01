@@ -91,6 +91,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
       setSquareFeet('');
       setErrors({});
       setTouched({});
+      setSearchError(null);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open]);
@@ -106,23 +107,36 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Search error state
+  const [searchError, setSearchError] = useState<string | null>(null);
+
   // Address search via backend proxy (avoids CORS issues)
   const searchAddress = async (query: string) => {
     if (query.length < 3) {
       setSuggestions([]);
+      setSearchError(null);
       return;
     }
 
     setIsSearching(true);
+    setSearchError(null);
     try {
       const response = await api.get('/properties/address/search', {
         params: { q: query },
       });
-      const data = response.data.data || [];
-      setSuggestions(data);
-      setShowSuggestions(data.length > 0);
-    } catch (error) {
+      console.log('Address search response:', response.data);
+
+      if (response.data.error) {
+        setSearchError(response.data.error);
+        setSuggestions([]);
+      } else {
+        const data = response.data.data || [];
+        setSuggestions(data);
+        setShowSuggestions(data.length > 0);
+      }
+    } catch (error: any) {
       console.error('Address search failed:', error);
+      setSearchError(error.response?.data?.message || error.message || 'Search failed');
       setSuggestions([]);
     } finally {
       setIsSearching(false);
@@ -365,7 +379,13 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                 </p>
               )}
 
-              {addressQuery.length >= 3 && !isSearching && suggestions.length === 0 && (
+              {searchError && (
+                <p className="text-sm text-red-600 text-center">
+                  {searchError}
+                </p>
+              )}
+
+              {addressQuery.length >= 3 && !isSearching && !searchError && suggestions.length === 0 && (
                 <p className="text-sm text-slate-500 text-center">
                   No addresses found. Try a different search.
                 </p>
