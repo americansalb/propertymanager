@@ -5,7 +5,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
 import { EventsService } from '../events/events.service';
 import { OrganizationId } from '../common/decorators/organization.decorator';
-import { CreatePropertyDto, UpdatePropertyDto } from './dto/property.dto';
+import { CreatePropertyDto, UpdatePropertyDto, FullPropertySetupDto } from './dto/property.dto';
 
 @ApiTags('properties')
 @Controller('properties')
@@ -150,6 +150,13 @@ export class PropertiesController {
   async create(@Body() data: CreatePropertyDto, @OrganizationId() organizationId: string) {
     const property = await this.propertiesService.create(data, organizationId);
     return { success: true, data: property };
+  }
+
+  @Post('setup')
+  @ApiOperation({ summary: 'Full property setup - creates property, units, leases, and tenants in one transaction' })
+  async fullSetup(@Body() data: FullPropertySetupDto, @OrganizationId() organizationId: string) {
+    const result = await this.propertiesService.fullSetup(data, organizationId);
+    return { success: true, data: result };
   }
 
   @Put(':id')
