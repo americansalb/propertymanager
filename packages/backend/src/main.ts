@@ -8,55 +8,10 @@ import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import { execSync } from 'child_process';
 import { AppModule } from './app.module';
 import { createWinstonOptions } from './logger/logger.config';
 
-// Run database migrations and seed on startup
-async function runDatabaseSetup() {
-  if (process.env.NODE_ENV !== 'production') {
-    return;
-  }
-
-  // Use process.cwd() for Render native builds
-  const dbPath = join(process.cwd(), 'packages', 'database');
-
-  console.log('🔧 DATABASE SETUP STARTING...');
-  console.log('🔧 Database path:', dbPath);
-
-  // Run db push (simpler than migrate deploy)
-  try {
-    console.log('📦 Running prisma db push...');
-    execSync('npx prisma db push --skip-generate --accept-data-loss', {
-      cwd: dbPath,
-      stdio: 'inherit',
-      env: { ...process.env },
-    });
-    console.log('✅ DB push complete');
-  } catch (e: unknown) {
-    console.error('❌ DB push failed:', e instanceof Error ? e.message : e);
-  }
-
-  // Run seed
-  try {
-    console.log('🌱 Running seed...');
-    execSync('npx tsx prisma/seed.ts', {
-      cwd: dbPath,
-      stdio: 'inherit',
-      env: { ...process.env },
-    });
-    console.log('✅ Seed complete');
-  } catch (e: unknown) {
-    console.error('❌ Seed failed:', e instanceof Error ? e.message : e);
-  }
-
-  console.log('🔧 DATABASE SETUP FINISHED');
-}
-
 async function bootstrap() {
-  // Run migrations and seed before anything else
-  await runDatabaseSetup();
-
   // Initialize Sentry as early as possible (production only)
   if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
     Sentry.init({

@@ -1,8 +1,16 @@
-import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
+import {
+  Module,
+  type MiddlewareConsumer,
+  type NestModule,
+  type OnModuleInit,
+  Logger,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { WinstonModule } from 'nest-winston';
+import { execSync } from 'child_process';
+import { join } from 'path';
 import { CorrelationIdMiddleware } from './logger/correlation-id.middleware';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { createWinstonOptions } from './logger/logger.config';
@@ -90,10 +98,48 @@ import { RequestLoggerMiddleware } from './monitoring/request-logger.middleware'
     },
   ],
 })
-export class AppModule implements NestModule {
+export class AppModule implements NestModule, OnModuleInit {
+  private readonly logger = new Logger('DatabaseSetup');
+
+  async onModuleInit() {
+    if (process.env.NODE_ENV !== 'production') {
+      return;
+    }
+
+    const dbPath = join(process.cwd(), 'packages', 'database');
+    this.logger.log('🔧 DATABASE SETUP STARTING...');
+    this.logger.log(`Database path: ${dbPath}`);
+
+    // Run db push
+    try {
+      this.logger.log('📦 Running prisma db push...');
+      execSync('npx prisma db push --skip-generate --accept-data-loss', {
+        cwd: dbPath,
+        stdio: 'inherit',
+        env: { ...process.env },
+      });
+      this.logger.log('✅ DB push complete');
+    } catch (e: unknown) {
+      this.logger.error(`❌ DB push failed: ${e instanceof Error ? e.message : e}`);
+    }
+
+    // Run seed
+    try {
+      this.logger.log('🌱 Running seed...');
+      execSync('npx tsx prisma/seed.ts', {
+        cwd: dbPath,
+        stdio: 'inherit',
+        env: { ...process.env },
+      });
+      this.logger.log('✅ Seed complete');
+    } catch (e: unknown) {
+      this.logger.error(`❌ Seed failed: ${e instanceof Error ? e.message : e}`);
+    }
+
+    this.logger.log('🔧 DATABASE SETUP FINISHED');
+  }
+
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(CorrelationIdMiddleware, RequestLoggerMiddleware)
-      .forRoutes('*');
+    consumer.apply(CorrelationIdMiddleware, RequestLoggerMiddleware).forRoutes('*');
   }
 }
