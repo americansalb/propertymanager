@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, MapPin, Users, Edit, Wrench, FileText } from 'lucide-react';
+import { Building2, MapPin, Users, Edit, Wrench, FileText, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import PropertyEditModal from '../components/properties/PropertyEditModal';
+import AddPropertyModal from '../components/properties/AddPropertyModal';
 import { WorkOrderCreateModal } from '../components/work-orders/WorkOrderCreateModal';
 import { useWorkOrders } from '../hooks/useWorkOrders';
 
@@ -13,6 +14,7 @@ export default function PropertiesPage() {
   const navigate = useNavigate();
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [createWorkOrderOpen, setCreateWorkOrderOpen] = useState(false);
   const [selectedPropertyForWorkOrder, setSelectedPropertyForWorkOrder] = useState<any>(null);
 
@@ -135,8 +137,7 @@ export default function PropertiesPage() {
   };
 
   const handleAddProperty = () => {
-    setSelectedProperty(null);
-    setEditModalOpen(true);
+    setAddModalOpen(true);
   };
 
   const handleCreateWorkOrder = (property: any, e: React.MouseEvent) => {
@@ -166,7 +167,7 @@ export default function PropertiesPage() {
           <p className="text-gray-500 mt-1">Manage your property portfolio</p>
         </div>
         <Button onClick={handleAddProperty}>
-          <Building2 className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4 mr-2" />
           Add Property
         </Button>
       </div>
@@ -321,7 +322,7 @@ export default function PropertiesPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-2">No properties yet</h3>
               <p className="text-gray-500 mb-6">Get started by adding your first property</p>
               <Button onClick={handleAddProperty}>
-                <Building2 className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4 mr-2" />
                 Add Your First Property
               </Button>
             </div>
@@ -333,6 +334,11 @@ export default function PropertiesPage() {
         property={selectedProperty}
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
+      />
+
+      <AddPropertyModal
+        open={addModalOpen}
+        onOpenChange={setAddModalOpen}
       />
 
       <WorkOrderCreateModal
