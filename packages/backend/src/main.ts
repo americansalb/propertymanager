@@ -14,33 +14,43 @@ import { createWinstonOptions } from './logger/logger.config';
 
 // Run database migrations and seed on startup
 async function runDatabaseSetup() {
-  const isProduction = process.env.NODE_ENV === 'production';
-  if (!isProduction) {
+  if (process.env.NODE_ENV !== 'production') {
     return;
   }
 
-  console.log('🔧 Running database setup...');
+  // Use process.cwd() for Render native builds
+  const dbPath = join(process.cwd(), 'packages', 'database');
 
+  console.log('🔧 DATABASE SETUP STARTING...');
+  console.log('🔧 Database path:', dbPath);
+
+  // Run db push (simpler than migrate deploy)
   try {
-    // Run migrations
-    console.log('📦 Running migrations...');
-    execSync('npx prisma migrate deploy', {
-      cwd: join(__dirname, '..', '..', 'database'),
+    console.log('📦 Running prisma db push...');
+    execSync('npx prisma db push --skip-generate --accept-data-loss', {
+      cwd: dbPath,
       stdio: 'inherit',
+      env: { ...process.env },
     });
-    console.log('✅ Migrations complete');
+    console.log('✅ DB push complete');
+  } catch (e: unknown) {
+    console.error('❌ DB push failed:', e instanceof Error ? e.message : e);
+  }
 
-    // Run seed
+  // Run seed
+  try {
     console.log('🌱 Running seed...');
     execSync('npx tsx prisma/seed.ts', {
-      cwd: join(__dirname, '..', '..', 'database'),
+      cwd: dbPath,
       stdio: 'inherit',
+      env: { ...process.env },
     });
     console.log('✅ Seed complete');
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('⚠️ Database setup error (may be ok if already done):', message);
+  } catch (e: unknown) {
+    console.error('❌ Seed failed:', e instanceof Error ? e.message : e);
   }
+
+  console.log('🔧 DATABASE SETUP FINISHED');
 }
 
 async function bootstrap() {
