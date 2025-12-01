@@ -21,6 +21,7 @@ RUN cd packages/shared && pnpm build
 
 # Build tenant frontend with standalone output
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=https://propertymaster-api.onrender.com
 RUN cd packages/frontend-tenant && pnpm build
 
 # Production stage

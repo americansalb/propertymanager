@@ -24,6 +24,28 @@ services:
           type: redis
           name: propertymaster-redis
           property: connectionString
+      - key: FRONTEND_ADMIN_URL
+        value: 'https://propertymaster-admin.onrender.com'
+      - key: FRONTEND_TENANT_URL
+        value: 'https://propertymaster-tenant-portal.onrender.com'
+      - key: ALLOWED_ORIGINS
+        value: 'https://propertymaster-admin.onrender.com,https://propertymaster-tenant-portal.onrender.com'
+      - key: COOKIE_DOMAIN
+        value: '.onrender.com'
+
+  - type: web
+    name: propertymaster-admin
+    runtime: docker
+    dockerfilePath: ./Dockerfile.admin
+    plan: starter
+    autoDeploy: true
+    dockerCommand: ''
+    buildCommand: ''
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # VITE_API_URL is a build arg, set in Dockerfile.admin
+      # The actual API URL is baked in at build time
 
   - type: web
     name: propertymaster-tenant-portal
@@ -35,10 +57,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: propertymaster-api
-          envVarKey: RENDER_EXTERNAL_URL
+        value: 'https://propertymaster-api.onrender.com'
 
   - type: redis
     name: propertymaster-redis
