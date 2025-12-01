@@ -710,6 +710,7 @@ model Vendor {
   properties  PropertyVendor[]
   bills       Bill[]
   workOrders  WorkOrder[]
+  marketplaceProfile VendorMarketplaceProfile?
 
   @@index([organizationId])
   @@index([status])
@@ -1406,4 +1407,349 @@ model Document {
   @@index([entityType, entityId])
   @@index([type])
   @@index([storageKey])
+}
+
+// ============================================================================
+// VENDOR MARKETPLACE
+// ============================================================================
+
+enum ServiceCategory {
+  LOCKSMITH
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  APPLIANCE_REPAIR
+  CLEANING
+  LANDSCAPING
+  PEST_CONTROL
+  PAINTING
+  FLOORING
+  ROOFING
+  GENERAL_HANDYMAN
+  OTHER
+}
+
+enum MarketplaceRegion {
+  CHICAGO_IL
+  // Add more regions as we expand
+}
+
+// Standardized service catalog with pricing
+model ServiceCatalog {
+  id            String   @id @default(cuid())
+
+  // Service identification
+  category      ServiceCategory
+  name          String   // "Rekey Lock", "Replace Deadbolt", etc.
+  description   String?
+
+  // Pricing structure
+  requiresQuote     Boolean  @default(false)
+  standardQuoteFee  Decimal? @db.Decimal(10, 2) // Fee for quote visit
+
+  // Labor pricing (per hour or flat rate)
+  isFlatRate        Boolean  @default(true)
+  laborMin          Decimal? @db.Decimal(10, 2)
+  laborMax          Decimal? @db.Decimal(10, 2)
+
+  // Parts/materials (typical range)
+  partsMin          Decimal? @db.Decimal(10, 2)
+  partsMax          Decimal? @db.Decimal(10, 2)
+
+  // Total typical cost range
+  typicalTotalMin   Decimal  @db.Decimal(10, 2)
+  typicalTotalMax   Decimal  @db.Decimal(10, 2)
+
+  // Time estimate
+  typicalDurationMinutes Int?
+
+  // Region-specific pricing
+  region            MarketplaceRegion @default(CHICAGO_IL)
+
+  // Status
+  isActive          Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  vendorServices    VendorService[]
+  marketplaceJobs   MarketplaceJob[]
+
+  @@unique([category, name, region])
+  @@index([category])
+  @@index([region])
+  @@index([isActive])
+}
+
+enum VendorTier {
+  STANDARD          // Charge what they want
+  VERIFIED_PRICING  // Agreed to standardized rates
+  PREMIUM           // Top-rated + verified pricing
+}
+
+enum VendorVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+// Extended vendor profile for marketplace
+model VendorMarketplaceProfile {
+  id            String   @id @default(cuid())
+
+  vendorId      String   @unique
+  vendor        Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  // Marketplace settings
+  tier                VendorTier @default(STANDARD)
+  isMarketplaceActive Boolean    @default(true)
+
+  // Service area (zip codes they serve)
+  serviceZipCodes     String[]   @default([])
+  serviceRadius       Int?       // Miles from base location
+
+  // Verification status
+  backgroundCheckStatus   VendorVerificationStatus @default(PENDING)
+  backgroundCheckDate     DateTime?
+  backgroundCheckProvider String?
+
+  insuranceVerified       Boolean   @default(false)
+  insuranceVerifiedDate   DateTime?
+  insuranceAmount         Decimal?  @db.Decimal(15, 2)
+
+  licenseVerified         Boolean   @default(false)
+  licenseVerifiedDate     DateTime?
+
+  // Performance metrics (calculated)
+  averageRating           Decimal?  @db.Decimal(3, 2) // 1.00 to 5.00
+  totalJobsCompleted      Int       @default(0)
+  totalJobsCancelled      Int       @default(0)
+  averageResponseMinutes  Int?      // Time to accept jobs
+  onTimePercentage        Decimal?  @db.Decimal(5, 2)
+
+  // Payment settings
+  stripeConnectAccountId  String?   @unique
+  payoutSpeed             String    @default("standard") // "instant" or "standard"
+
+  // Availability
+  acceptingJobs           Boolean   @default(true)
+  maxConcurrentJobs       Int       @default(5)
+  currentActiveJobs       Int       @default(0)
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // Relations
+  services                VendorService[]
+  marketplaceJobs         MarketplaceJob[]
+  ratings                 VendorRating[]
+  dispatches              JobDispatch[]
+
+  @@index([tier])
+  @@index([isMarketplaceActive])
+  @@index([averageRating])
+}
+
+// Services a vendor offers with their pricing
+model VendorService {
+  id            String   @id @default(cuid())
+
+  vendorProfileId String
+  vendorProfile   VendorMarketplaceProfile @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+
+  serviceCatalogId String
+  serviceCatalog   ServiceCatalog @relation(fields: [serviceCatalogId], references: [id])
+
+  // Custom pricing (if different from catalog)
+  customQuoteFee    Decimal? @db.Decimal(10, 2)
+  customLaborRate   Decimal? @db.Decimal(10, 2) // Per hour
+  customFlatRate    Decimal? @db.Decimal(10, 2) // If flat rate
+
+  // Availability for this service
+  isActive          Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([vendorProfileId, serviceCatalogId])
+  @@index([vendorProfileId])
+  @@index([serviceCatalogId])
+}
+
+enum MarketplaceJobSource {
+  MARKETPLACE       // Landlord selected from marketplace
+  BYOV              // Bring Your Own Vendor
+}
+
+enum MarketplaceJobStatus {
+  PENDING_DISPATCH  // Waiting for vendor selection
+  DISPATCHED        // Sent to vendor(s)
+  ACCEPTED          // Vendor accepted
+  QUOTE_SUBMITTED   // Vendor submitted quote
+  QUOTE_APPROVED    // Landlord approved quote
+  QUOTE_DECLINED    // Landlord declined quote
+  IN_PROGRESS       // Work started
+  COMPLETED         // Work done, pending confirmation
+  CONFIRMED         // Landlord confirmed completion
+  DISPUTED          // Issue raised
+  CANCELLED         // Job cancelled
+}
+
+enum ProtectionTier {
+  BASIC             // 2-3% - payment only
+  PROTECTED         // 10-15% - full guarantees
+}
+
+// Marketplace extension of work order
+model MarketplaceJob {
+  id            String   @id @default(cuid())
+
+  workOrderId   String   @unique
+
+  // Source
+  source        MarketplaceJobSource @default(MARKETPLACE)
+  status        MarketplaceJobStatus @default(PENDING_DISPATCH)
+
+  // Service
+  serviceCatalogId String?
+  serviceCatalog   ServiceCatalog? @relation(fields: [serviceCatalogId], references: [id])
+
+  // Assigned vendor
+  vendorProfileId String?
+  vendorProfile   VendorMarketplaceProfile? @relation(fields: [vendorProfileId], references: [id])
+
+  // Protection tier
+  protectionTier ProtectionTier @default(PROTECTED)
+
+  // Pricing
+  quoteFee          Decimal? @db.Decimal(10, 2)
+  quoteFeePaid      Boolean  @default(false)
+  estimatedTotal    Decimal? @db.Decimal(10, 2)
+  actualTotal       Decimal? @db.Decimal(10, 2)
+
+  // Platform fees
+  platformFeePercent Decimal @db.Decimal(5, 2) @default(12.00)
+  platformFeeAmount  Decimal? @db.Decimal(10, 2)
+
+  // Payment escrow
+  paymentSecuredAt     DateTime?
+  paymentSecuredAmount Decimal? @db.Decimal(10, 2)
+  paymentReleasedAt    DateTime?
+  paymentReleasedAmount Decimal? @db.Decimal(10, 2)
+
+  // Stripe references
+  stripePaymentIntentId String? @unique
+  stripeTransferId      String? // Transfer to vendor
+
+  // Scheduling
+  scheduledDate      DateTime?
+  scheduledTimeSlot  String?   // "9am-12pm", "1pm-5pm", etc.
+  vendorEta          DateTime?
+
+  // Completion
+  completedAt        DateTime?
+  completionPhotos   String[]  @default([])
+  completionNotes    String?
+
+  // Confirmation
+  confirmedAt        DateTime?
+  confirmedBy        String?   // userId
+
+  // Dispute
+  disputeStatus      String?   // "OPEN", "RESOLVED", "REFUNDED"
+  disputeReason      String?
+  disputeResolvedAt  DateTime?
+  disputeResolution  String?
+
+  // Guarantee
+  workmanshipGuaranteeExpiry DateTime?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  dispatches         JobDispatch[]
+  rating             VendorRating?
+
+  @@index([workOrderId])
+  @@index([status])
+  @@index([vendorProfileId])
+  @@index([serviceCatalogId])
+  @@index([createdAt])
+}
+
+enum DispatchStatus {
+  PENDING           // Waiting for vendor response
+  ACCEPTED          // Vendor accepted
+  DECLINED          // Vendor declined
+  EXPIRED           // Response window expired
+  CANCELLED         // Landlord cancelled
+}
+
+// Track job dispatch attempts to vendors
+model JobDispatch {
+  id            String   @id @default(cuid())
+
+  marketplaceJobId String
+  marketplaceJob   MarketplaceJob @relation(fields: [marketplaceJobId], references: [id], onDelete: Cascade)
+
+  vendorProfileId String
+  vendorProfile   VendorMarketplaceProfile @relation(fields: [vendorProfileId], references: [id])
+
+  status          DispatchStatus @default(PENDING)
+
+  // Timing
+  dispatchedAt    DateTime @default(now())
+  respondedAt     DateTime?
+  responseDeadline DateTime
+
+  // Response
+  declineReason   String?
+
+  createdAt       DateTime @default(now())
+
+  @@unique([marketplaceJobId, vendorProfileId])
+  @@index([marketplaceJobId])
+  @@index([vendorProfileId])
+  @@index([status])
+}
+
+// Vendor ratings after job completion
+model VendorRating {
+  id            String   @id @default(cuid())
+
+  vendorProfileId String
+  vendorProfile   VendorMarketplaceProfile @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+
+  marketplaceJobId String @unique
+  marketplaceJob   MarketplaceJob @relation(fields: [marketplaceJobId], references: [id], onDelete: Cascade)
+
+  // Ratings (1-5)
+  overallRating       Int
+  qualityRating       Int?
+  communicationRating Int?
+  punctualityRating   Int?
+  valueRating         Int?
+
+  // Review
+  review              String? @db.Text
+
+  // Photos (before/after)
+  photos              String[] @default([])
+
+  // Reviewer
+  reviewerUserId      String
+  reviewerName        String?
+
+  // Visibility
+  isPublic            Boolean @default(true)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([vendorProfileId])
+  @@index([overallRating])
+  @@index([createdAt])
 }

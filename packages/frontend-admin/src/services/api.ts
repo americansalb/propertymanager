@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/auth.store';
 
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -34,7 +34,11 @@ api.interceptors.response.use(
 
       try {
         // Refresh token is in httpOnly cookie, no need to send it in body
-        const response = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL || '/api/v1'}/auth/refresh`,
+          {},
+          { withCredentials: true },
+        );
 
         if (response.data.success) {
           const { accessToken } = response.data.data;
