@@ -163,7 +163,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
 
     searchTimeoutRef.current = setTimeout(() => {
       searchAddress(value);
-    }, 300);
+    }, 600); // Longer debounce to let user type more
   };
 
   const selectAddress = (suggestion: AddressSuggestion) => {
@@ -369,7 +369,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                     value={addressQuery}
                     onChange={(e) => handleAddressInput(e.target.value)}
                     onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                    placeholder="Start typing an address..."
+                    placeholder="e.g. 123 Main St, Boston MA"
                     className="w-full pl-12 pr-12 py-4 text-lg border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
                     autoComplete="off"
                   />
@@ -406,9 +406,15 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                 )}
               </div>
 
+              {addressQuery.length === 0 && (
+                <p className="text-sm text-slate-500 text-center">
+                  Include street number, city and state for best results
+                </p>
+              )}
+
               {addressQuery.length > 0 && addressQuery.length < 3 && (
                 <p className="text-sm text-slate-500 text-center">
-                  Type at least 3 characters to search
+                  Keep typing...
                 </p>
               )}
 
