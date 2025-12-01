@@ -32,11 +32,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { formatCurrency } from '../lib/utils';
 import ExpiringLeasesWidget from '../components/dashboard/ExpiringLeasesWidget';
+import PropertyMap from '../components/dashboard/PropertyMap';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
 
-  const { data: properties, isLoading: loadingProperties, error: errorProperties, refetch: refetchProperties } = useQuery({
+  const {
+    data: properties,
+    isLoading: loadingProperties,
+    error: errorProperties,
+    refetch: refetchProperties,
+  } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const response = await api.get('/properties');
@@ -44,7 +50,12 @@ export default function DashboardPage() {
     },
   });
 
-  const { data: leases, isLoading: loadingLeases, error: errorLeases, refetch: refetchLeases } = useQuery({
+  const {
+    data: leases,
+    isLoading: loadingLeases,
+    error: errorLeases,
+    refetch: refetchLeases,
+  } = useQuery({
     queryKey: ['leases'],
     queryFn: async () => {
       const response = await api.get('/leases');
@@ -52,7 +63,12 @@ export default function DashboardPage() {
     },
   });
 
-  const { data: workOrders, isLoading: loadingWorkOrders, error: errorWorkOrders, refetch: refetchWorkOrders } = useQuery({
+  const {
+    data: workOrders,
+    isLoading: loadingWorkOrders,
+    error: errorWorkOrders,
+    refetch: refetchWorkOrders,
+  } = useQuery({
     queryKey: ['work-orders'],
     queryFn: async () => {
       const response = await api.get('/work-orders');
@@ -60,7 +76,11 @@ export default function DashboardPage() {
     },
   });
 
-  const { data: payments, isLoading: loadingPayments, refetch: refetchPayments } = useQuery({
+  const {
+    data: payments,
+    isLoading: loadingPayments,
+    refetch: refetchPayments,
+  } = useQuery({
     queryKey: ['payments'],
     queryFn: async () => {
       const response = await api.get('/payments');
@@ -346,6 +366,9 @@ export default function DashboardPage() {
           );
         })}
       </div>
+
+      {/* Property Map */}
+      <PropertyMap properties={properties || []} />
 
       {/* Charts Row */}
       <div className="grid gap-6 lg:grid-cols-2">
