@@ -8,10 +8,44 @@ import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { execSync } from 'child_process';
 import { AppModule } from './app.module';
 import { createWinstonOptions } from './logger/logger.config';
 
+// Run database migrations and seed on startup
+async function runDatabaseSetup() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (!isProduction) {
+    return;
+  }
+
+  console.log('🔧 Running database setup...');
+
+  try {
+    // Run migrations
+    console.log('📦 Running migrations...');
+    execSync('npx prisma migrate deploy', {
+      cwd: join(__dirname, '..', '..', 'database'),
+      stdio: 'inherit',
+    });
+    console.log('✅ Migrations complete');
+
+    // Run seed
+    console.log('🌱 Running seed...');
+    execSync('npx tsx prisma/seed.ts', {
+      cwd: join(__dirname, '..', '..', 'database'),
+      stdio: 'inherit',
+    });
+    console.log('✅ Seed complete');
+  } catch (error) {
+    console.error('⚠️ Database setup error (may be ok if already done):', error.message);
+  }
+}
+
 async function bootstrap() {
+  // Run migrations and seed before anything else
+  await runDatabaseSetup();
+
   // Initialize Sentry as early as possible (production only)
   if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
     Sentry.init({
