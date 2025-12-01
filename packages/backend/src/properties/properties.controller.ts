@@ -25,7 +25,7 @@ export class PropertiesController {
   }
 
   @Get('address/search')
-  @ApiOperation({ summary: 'Search for addresses using geocoding' })
+  @ApiOperation({ summary: 'Search for addresses using Google Places Autocomplete' })
   async searchAddress(@Query('q') query: string) {
     console.log('[Address Search] Query received:', query);
 
@@ -33,68 +33,103 @@ export class PropertiesController {
       return { success: true, data: [], message: 'Query too short' };
     }
 
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+    if (!apiKey) {
+      console.error('[Address Search] GOOGLE_PLACES_API_KEY not configured');
+      return { success: false, data: [], error: 'Geocoding service not configured' };
+    }
+
     try {
-      // Use Photon (free, optimized for autocomplete) with US bias
+      // Use Google Places Autocomplete
       const params = new URLSearchParams({
-        q: query,
-        limit: '5',
-        lang: 'en',
-        lat: '39.8283',  // Center of US for better results
-        lon: '-98.5795',
+        input: query,
+        key: apiKey,
+        types: 'address',
+        components: 'country:us',
       });
 
-      const url = `https://photon.komoot.io/api/?${params}`;
-      console.log('[Address Search] Fetching Photon:', url);
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params}`;
+      console.log('[Address Search] Fetching Google Places');
 
-      const response = await fetch(url, {
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-
-      console.log('[Address Search] Response status:', response.status);
+      const response = await fetch(url);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Address Search] Photon error:', response.status, errorText);
+        console.error('[Address Search] Google error:', response.status);
         return { success: false, data: [], error: `Geocoding service returned ${response.status}` };
       }
 
-      const geojson = await response.json();
-      console.log('[Address Search] Results count:', geojson.features?.length || 0);
+      const result = await response.json();
+      console.log('[Address Search] Status:', result.status, 'Results:', result.predictions?.length || 0);
 
-      // Transform Photon GeoJSON to Nominatim-like format for frontend compatibility
-      // Filter to only US addresses
-      const data = (geojson.features || [])
-        .filter((f: any) => f.properties?.country === 'United States')
-        .map((feature: any) => {
-          const p = feature.properties || {};
-          return {
-            display_name: [
-              p.housenumber,
-              p.street,
-              p.city,
-              p.state,
-              p.postcode,
-              p.country,
-            ].filter(Boolean).join(', '),
-            address: {
-              house_number: p.housenumber,
-              road: p.street,
-              city: p.city,
-              town: p.city,
-              state: p.state,
-              postcode: p.postcode,
-              country: p.country,
-            },
-            type: p.type,
-          };
-        });
+      if (result.status !== 'OK' && result.status !== 'ZERO_RESULTS') {
+        console.error('[Address Search] Google API error:', result.status, result.error_message);
+        return { success: false, data: [], error: result.error_message || result.status };
+      }
+
+      // Transform to frontend format, include place_id for details lookup
+      const data = (result.predictions || []).map((p: any) => ({
+        display_name: p.description,
+        place_id: p.place_id,
+        address: {
+          // Parse from structured_formatting for preview
+          road: p.structured_formatting?.main_text || '',
+          city: p.structured_formatting?.secondary_text?.split(',')[0]?.trim() || '',
+        },
+      }));
 
       return { success: true, data };
     } catch (error) {
       console.error('[Address Search] Failed:', error);
       return { success: false, data: [], error: String(error) };
+    }
+  }
+
+  @Get('address/details/:placeId')
+  @ApiOperation({ summary: 'Get full address details from Google Place ID' })
+  async getAddressDetails(@Param('placeId') placeId: string) {
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'Geocoding service not configured' };
+    }
+
+    try {
+      const params = new URLSearchParams({
+        place_id: placeId,
+        key: apiKey,
+        fields: 'address_components,formatted_address',
+      });
+
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?${params}`;
+      const response = await fetch(url);
+      const result = await response.json();
+
+      if (result.status !== 'OK') {
+        return { success: false, error: result.error_message || result.status };
+      }
+
+      const components = result.result.address_components || [];
+      const getComponent = (type: string) =>
+        components.find((c: any) => c.types.includes(type))?.long_name || '';
+      const getShortComponent = (type: string) =>
+        components.find((c: any) => c.types.includes(type))?.short_name || '';
+
+      return {
+        success: true,
+        data: {
+          display_name: result.result.formatted_address,
+          address: {
+            house_number: getComponent('street_number'),
+            road: getComponent('route'),
+            city: getComponent('locality') || getComponent('sublocality') || getComponent('neighborhood'),
+            state: getShortComponent('administrative_area_level_1'),
+            postcode: getComponent('postal_code'),
+            country: getComponent('country'),
+          },
+        },
+      };
+    } catch (error) {
+      console.error('[Address Details] Failed:', error);
+      return { success: false, error: String(error) };
     }
   }
 

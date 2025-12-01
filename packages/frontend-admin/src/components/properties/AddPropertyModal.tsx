@@ -25,6 +25,7 @@ interface AddPropertyModalProps {
 
 interface AddressSuggestion {
   display_name: string;
+  place_id?: string;  // Google Places ID for fetching details
   address: {
     house_number?: string;
     road?: string;
@@ -166,33 +167,55 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
     }, 600); // Longer debounce to let user type more
   };
 
-  const selectAddress = (suggestion: AddressSuggestion) => {
-    setSelectedAddress(suggestion);
+  const selectAddress = async (suggestion: AddressSuggestion) => {
     setShowSuggestions(false);
+    setIsSearching(true);
 
-    const addr = suggestion.address;
-    const street = addr.house_number && addr.road
-      ? `${addr.house_number} ${addr.road}`
-      : addr.road || '';
-    const city = addr.city || addr.town || addr.village || '';
+    try {
+      let fullAddress = suggestion;
 
-    // Auto-generate property name
-    const autoName = street ? `${street}${city ? `, ${city}` : ''}` : suggestion.display_name.split(',')[0];
-    setPropertyName(autoName);
+      // If we have a place_id (Google), fetch full details
+      if (suggestion.place_id) {
+        const response = await api.get(`/properties/address/details/${suggestion.place_id}`);
+        if (response.data.success && response.data.data) {
+          fullAddress = response.data.data;
+        }
+      }
 
-    // Smart type detection based on address hints
-    const displayLower = suggestion.display_name.toLowerCase();
-    if (displayLower.includes('apartment') || displayLower.includes('apt')) {
-      setPropertyType('MULTIFAMILY');
-    } else if (displayLower.includes('office') || displayLower.includes('commercial') || displayLower.includes('plaza')) {
-      setPropertyType('COMMERCIAL');
-    } else if (displayLower.includes('house') || displayLower.includes('residence')) {
-      setPropertyType('SINGLE_FAMILY');
+      setSelectedAddress(fullAddress);
+
+      const addr = fullAddress.address;
+      const street = addr.house_number && addr.road
+        ? `${addr.house_number} ${addr.road}`
+        : addr.road || '';
+      const city = addr.city || addr.town || addr.village || '';
+
+      // Auto-generate property name
+      const autoName = street ? `${street}${city ? `, ${city}` : ''}` : fullAddress.display_name.split(',')[0];
+      setPropertyName(autoName);
+
+      // Smart type detection based on address hints
+      const displayLower = fullAddress.display_name.toLowerCase();
+      if (displayLower.includes('apartment') || displayLower.includes('apt')) {
+        setPropertyType('MULTIFAMILY');
+      } else if (displayLower.includes('office') || displayLower.includes('commercial') || displayLower.includes('plaza')) {
+        setPropertyType('COMMERCIAL');
+      } else if (displayLower.includes('house') || displayLower.includes('residence')) {
+        setPropertyType('SINGLE_FAMILY');
+      }
+
+      // Move to details step
+      setStep('details');
+      setErrors({});
+    } catch (error) {
+      console.error('Failed to fetch address details:', error);
+      // Still use the basic suggestion if details fetch fails
+      setSelectedAddress(suggestion);
+      setPropertyName(suggestion.display_name.split(',')[0]);
+      setStep('details');
+    } finally {
+      setIsSearching(false);
     }
-
-    // Move to details step
-    setStep('details');
-    setErrors({});
   };
 
   // Validation
