@@ -39,7 +39,7 @@ interface AddressSuggestion {
   class?: string;
 }
 
-type Step = 'address' | 'details';
+type Step = 'address' | 'details' | 'manual';
 
 const PROPERTY_TYPES = [
   { value: 'MULTIFAMILY', label: 'Multifamily', icon: Building2 },
@@ -72,6 +72,12 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
   const [yearBuilt, setYearBuilt] = useState('');
   const [squareFeet, setSquareFeet] = useState('');
 
+  // Manual address entry fields
+  const [manualAddress, setManualAddress] = useState('');
+  const [manualCity, setManualCity] = useState('');
+  const [manualState, setManualState] = useState('');
+  const [manualZip, setManualZip] = useState('');
+
   // Validation
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -89,6 +95,10 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
       setShowOptional(false);
       setYearBuilt('');
       setSquareFeet('');
+      setManualAddress('');
+      setManualCity('');
+      setManualState('');
+      setManualZip('');
       setErrors({});
       setTouched({});
       setSearchError(null);
@@ -244,29 +254,51 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
   // Submit mutation
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedAddress) throw new Error('No address selected');
+      let payload;
 
-      const addr = selectedAddress.address;
-      const street = addr.house_number && addr.road
-        ? `${addr.house_number} ${addr.road}`
-        : addr.road || '';
-      const city = addr.city || addr.town || addr.village || '';
-      const state = addr.state || '';
-      const stateAbbr = state.length > 2 ? state.substring(0, 2).toUpperCase() : state.toUpperCase();
+      if (step === 'manual') {
+        // Manual entry mode
+        if (!manualAddress.trim() || !manualCity.trim() || !manualState.trim() || !manualZip.trim() || !propertyName.trim()) {
+          throw new Error('Please fill in all required fields');
+        }
 
-      const payload = {
-        name: propertyName.trim(),
-        type: propertyType,
-        status: 'ACTIVE',
-        address1: street,
-        city,
-        state: stateAbbr,
-        zipCode: addr.postcode || '',
-        country: 'US',
-        totalUnits: parseInt(totalUnits),
-        ...(yearBuilt && { yearBuilt: parseInt(yearBuilt) }),
-        ...(squareFeet && { squareFeet: parseInt(squareFeet) }),
-      };
+        payload = {
+          name: propertyName.trim(),
+          type: propertyType,
+          status: 'ACTIVE',
+          address1: manualAddress.trim(),
+          city: manualCity.trim(),
+          state: manualState.toUpperCase(),
+          zipCode: manualZip.trim(),
+          country: 'US',
+          totalUnits: parseInt(totalUnits) || 1,
+        };
+      } else {
+        // Autocomplete mode
+        if (!selectedAddress) throw new Error('No address selected');
+
+        const addr = selectedAddress.address;
+        const street = addr.house_number && addr.road
+          ? `${addr.house_number} ${addr.road}`
+          : addr.road || '';
+        const city = addr.city || addr.town || addr.village || '';
+        const state = addr.state || '';
+        const stateAbbr = state.length > 2 ? state.substring(0, 2).toUpperCase() : state.toUpperCase();
+
+        payload = {
+          name: propertyName.trim(),
+          type: propertyType,
+          status: 'ACTIVE',
+          address1: street,
+          city,
+          state: stateAbbr,
+          zipCode: addr.postcode || '',
+          country: 'US',
+          totalUnits: parseInt(totalUnits),
+          ...(yearBuilt && { yearBuilt: parseInt(yearBuilt) }),
+          ...(squareFeet && { squareFeet: parseInt(squareFeet) }),
+        };
+      }
 
       const response = await api.post('/properties', payload);
       return response.data;
@@ -284,7 +316,8 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
   });
 
   const handleSubmit = () => {
-    if (!validateAll()) return;
+    // For manual step, validation is done in mutation
+    if (step === 'details' && !validateAll()) return;
     createMutation.mutate();
   };
 
@@ -310,7 +343,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
             <div>
               <h2 className="text-lg font-semibold text-white">Add Property</h2>
               <p className="text-sm text-slate-400">
-                {step === 'address' ? 'Start with the address' : 'Confirm details'}
+                {step === 'address' ? 'Start with the address' : step === 'manual' ? 'Enter address details' : 'Confirm details'}
               </p>
             </div>
           </div>
@@ -380,20 +413,44 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
               )}
 
               {searchError && (
-                <p className="text-sm text-red-600 text-center">
-                  {searchError}
-                </p>
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-red-600">{searchError}</p>
+                  <button
+                    type="button"
+                    onClick={() => setStep('manual')}
+                    className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Enter address manually instead
+                  </button>
+                </div>
               )}
 
               {addressQuery.length >= 3 && !isSearching && !searchError && suggestions.length === 0 && (
-                <p className="text-sm text-slate-500 text-center">
-                  No addresses found. Try a different search.
-                </p>
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-slate-500">No addresses found.</p>
+                  <button
+                    type="button"
+                    onClick={() => setStep('manual')}
+                    className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Enter address manually
+                  </button>
+                </div>
               )}
+
+              <div className="pt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setStep('manual')}
+                  className="text-sm text-slate-500 hover:text-slate-700"
+                >
+                  Or enter address manually
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Step 2: Details */}
+          {/* Step 2: Details (after address autocomplete) */}
           {step === 'details' && selectedAddress && (
             <div className="space-y-5">
               {/* Selected address display */}
@@ -579,10 +636,148 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
               )}
             </div>
           )}
+
+          {/* Manual Address Entry Step */}
+          {step === 'manual' && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 text-sm text-slate-600 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setStep('address')}
+                  className="text-indigo-600 hover:text-indigo-800"
+                >
+                  ← Back to search
+                </button>
+              </div>
+
+              {/* Street Address */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Street Address *
+                </label>
+                <input
+                  type="text"
+                  value={manualAddress}
+                  onChange={(e) => setManualAddress(e.target.value)}
+                  placeholder="123 Main Street"
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* City, State, Zip */}
+              <div className="grid grid-cols-6 gap-3">
+                <div className="col-span-3">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualCity}
+                    onChange={(e) => setManualCity(e.target.value)}
+                    placeholder="New York"
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
+                  />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    State *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualState}
+                    onChange={(e) => setManualState(e.target.value.toUpperCase().slice(0, 2))}
+                    placeholder="NY"
+                    maxLength={2}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors uppercase"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    ZIP Code *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualZip}
+                    onChange={(e) => setManualZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                    placeholder="10001"
+                    maxLength={5}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Property Name */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Property Name *
+                </label>
+                <input
+                  type="text"
+                  value={propertyName}
+                  onChange={(e) => setPropertyName(e.target.value)}
+                  placeholder="e.g. Sunset Apartments"
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Property Type */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Property Type
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {PROPERTY_TYPES.map((type) => {
+                    const Icon = type.icon;
+                    const isSelected = propertyType === type.value;
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setPropertyType(type.value)}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                          isSelected
+                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span className="text-xs font-medium">{type.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Total Units */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Number of Units *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={totalUnits}
+                  onChange={(e) => setTotalUnits(e.target.value)}
+                  placeholder="1"
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Submit Error */}
+              {errors.submit && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-sm text-red-600 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.submit}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        {step === 'details' && (
+        {(step === 'details' || step === 'manual') && (
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
             <Button
               variant="ghost"
