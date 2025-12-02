@@ -41,6 +41,14 @@ export class VendorsController {
     return { success: true, data: vendors };
   }
 
+  @Get('pending')
+  @ApiOperation({ summary: 'Get all pending vendor applications' })
+  @ApiResponse({ status: 200, description: 'List of pending vendors' })
+  async findPending(@OrganizationId() organizationId: string) {
+    const vendors = await this.vendorsService.findPendingVendors(organizationId);
+    return { success: true, data: vendors };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get vendor by ID' })
   @ApiResponse({ status: 200, description: 'Vendor details' })
@@ -123,13 +131,5 @@ export class VendorsController {
       body.notes,
     );
     return { success: true, data: vendor };
-  }
-
-  @Get('pending')
-  @ApiOperation({ summary: 'Get all pending vendor applications' })
-  @ApiResponse({ status: 200, description: 'List of pending vendors' })
-  async findPending(@OrganizationId() organizationId: string) {
-    const vendors = await this.vendorsService.findPendingVendors(organizationId);
-    return { success: true, data: vendors };
   }
 }
