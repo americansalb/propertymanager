@@ -133,8 +133,22 @@ export class PropertiesService {
       throw new Error('Property not found');
     }
 
-    return this.prisma.property.delete({
-      where: { id },
+    // Use transaction to delete related records first, then property
+    return this.prisma.$transaction(async (tx) => {
+      // Delete work orders associated with this property
+      await tx.workOrder.deleteMany({
+        where: { propertyId: id },
+      });
+
+      // Delete documents associated with this property
+      await tx.document.deleteMany({
+        where: { propertyId: id },
+      });
+
+      // Delete the property (units, leases, accounts cascade automatically)
+      return tx.property.delete({
+        where: { id },
+      });
     });
   }
 
