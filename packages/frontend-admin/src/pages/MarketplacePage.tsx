@@ -19,8 +19,10 @@ import {
   Award,
   Zap,
   Users,
+  Plus,
 } from 'lucide-react';
 import api from '../services/api';
+import AddMarketplaceVendorModal from '../components/marketplace/AddMarketplaceVendorModal';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -68,6 +70,7 @@ export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [tierFilter, setTierFilter] = useState<string>('');
+  const [isAddVendorModalOpen, setIsAddVendorModalOpen] = useState(false);
 
   // Fetch marketplace statistics
   const { data: stats, isLoading: isLoadingStats } = useQuery({
@@ -223,6 +226,10 @@ export default function MarketplacePage() {
             Find trusted vendors with transparent pricing and guaranteed work
           </p>
         </div>
+        <Button onClick={() => setIsAddVendorModalOpen(true)} className="flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          Add Vendor to Marketplace
+        </Button>
       </div>
 
       {/* Marketplace Value Proposition */}
@@ -700,6 +707,12 @@ export default function MarketplacePage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Add Vendor Modal */}
+      <AddMarketplaceVendorModal
+        open={isAddVendorModalOpen}
+        onOpenChange={setIsAddVendorModalOpen}
+      />
     </div>
   );
 }
