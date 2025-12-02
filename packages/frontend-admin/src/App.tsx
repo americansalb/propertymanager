@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import VendorRegisterPage from './pages/VendorRegisterPage';
 import MarketplaceBrowsePage from './pages/MarketplaceBrowsePage';
+import VendorDashboardPage from './pages/VendorDashboardPage';
 import DashboardLayout from './components/layouts/DashboardLayout';
 import DashboardPage from './pages/DashboardPage';
 import PropertiesPage from './pages/PropertiesPage';
@@ -38,6 +39,16 @@ function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/vendor-register" element={<VendorRegisterPage />} />
       <Route path="/marketplace-browse" element={<MarketplaceBrowsePage />} />
+
+      {/* Vendor portal route */}
+      <Route
+        path="/vendor-dashboard"
+        element={
+          <PrivateRoute>
+            <VendorDashboardPage />
+          </PrivateRoute>
+        }
+      />
 
       {/* Protected admin routes */}
       <Route

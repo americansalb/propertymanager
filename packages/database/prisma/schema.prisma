@@ -709,6 +709,9 @@ model Vendor {
   approvedAt          DateTime?          // When approved/rejected
   rejectionReason     String?  @db.Text  // If rejected, why
 
+  // User account (for vendor portal access)
+  userId          String?  @unique       // Linked user account for portal login
+
   // Multi-tenant
   organizationId String
   organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

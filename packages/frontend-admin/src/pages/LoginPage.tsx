@@ -39,7 +39,13 @@ export default function LoginPage() {
     onSuccess: (data) => {
       // Refresh token is now in httpOnly cookie - only store accessToken
       login(data.accessToken, data.user);
-      navigate('/');
+
+      // Redirect based on user role
+      if (data.user.role === 'VENDOR') {
+        navigate('/vendor-dashboard');
+      } else {
+        navigate('/');
+      }
     },
   });
 

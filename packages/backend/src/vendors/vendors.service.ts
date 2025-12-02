@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVendorDto, UpdateVendorDto } from './dto';
+import { UserRole } from '@propertymaster/database';
+import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class VendorsService {
+  private readonly logger = new Logger(VendorsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async create(organizationId: string, createVendorDto: CreateVendorDto) {
@@ -214,17 +219,101 @@ export class VendorsService {
 
   async approveVendor(id: string, organizationId: string, notes?: string) {
     // First check if vendor exists and belongs to organization
-    await this.findOne(id, organizationId);
+    const vendor = await this.findOne(id, organizationId);
 
-    return this.prisma.vendor.update({
-      where: { id },
-      data: {
-        status: 'ACTIVE',
-        approvalNotes: notes,
-        approvedAt: new Date(),
-        // approvedByUserId: userId, // TODO: Get from request context
-      },
+    // Check if vendor already has a user account
+    if (vendor.userId) {
+      this.logger.warn(`Vendor ${id} already has a user account`);
+      return this.prisma.vendor.update({
+        where: { id },
+        data: {
+          status: 'ACTIVE',
+          approvalNotes: notes,
+          approvedAt: new Date(),
+        },
+      });
+    }
+
+    // Check if vendor has an email
+    if (!vendor.email) {
+      throw new NotFoundException('Vendor must have an email address to create a user account');
+    }
+
+    // Generate a temporary password
+    const tempPassword = this.generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+    // Create user account and update vendor in a transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Create user account for vendor
+      const user = await tx.user.create({
+        data: {
+          email: vendor.email!,
+          passwordHash,
+          firstName: vendor.contactName?.split(' ')[0] || vendor.companyName,
+          lastName: vendor.contactName?.split(' ').slice(1).join(' ') || 'Vendor',
+          phone: vendor.phone || '',
+          role: UserRole.VENDOR,
+          organizationId,
+          emailVerified: false, // They'll need to verify email
+          passwordChangedAt: new Date(),
+        },
+      });
+
+      // Update vendor with user link and approval status
+      const updatedVendor = await tx.vendor.update({
+        where: { id },
+        data: {
+          status: 'ACTIVE',
+          approvalNotes: notes,
+          approvedAt: new Date(),
+          userId: user.id,
+        },
+      });
+
+      return { vendor: updatedVendor, user, tempPassword };
     });
+
+    this.logger.log(`Created user account for vendor ${id}: ${result.user.email}`);
+
+    // TODO: Send email with login credentials
+    // await this.emailService.sendVendorApprovalEmail(
+    //   result.user.email,
+    //   result.user.firstName,
+    //   result.tempPassword,
+    //   baseUrl
+    // );
+
+    this.logger.warn(
+      `TEMP PASSWORD for ${result.user.email}: ${result.tempPassword} (TODO: Send via email)`,
+    );
+
+    return result.vendor;
+  }
+
+  /**
+   * Generate a temporary password
+   */
+  private generateTempPassword(): string {
+    // Generate a random password that meets complexity requirements
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowercase = 'abcdefghjkmnpqrstuvwxyz';
+    const numbers = '23456789';
+    const special = '!@#$%^&*';
+
+    const password = [
+      uppercase[Math.floor(Math.random() * uppercase.length)],
+      uppercase[Math.floor(Math.random() * uppercase.length)],
+      lowercase[Math.floor(Math.random() * lowercase.length)],
+      lowercase[Math.floor(Math.random() * lowercase.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      special[Math.floor(Math.random() * special.length)],
+      special[Math.floor(Math.random() * special.length)],
+    ];
+
+    // Shuffle the password
+    return password.sort(() => Math.random() - 0.5).join('');
   }
 
   async rejectVendor(
