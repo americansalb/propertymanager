@@ -42,8 +42,6 @@ import {
 
 @ApiTags('marketplace')
 @Controller('marketplace')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
 export class MarketplaceController {
   constructor(private marketplaceService: MarketplaceService) {}
 
@@ -52,8 +50,9 @@ export class MarketplaceController {
   // ============================================================================
 
   @Post('services')
-  @UseGuards(RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ORGANIZATION_ADMIN', 'SUPER_ADMIN')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a service catalog entry' })
   @ApiResponse({ status: 201, description: 'Service created successfully' })
   async createService(@Body() dto: CreateServiceCatalogDto) {
@@ -62,7 +61,7 @@ export class MarketplaceController {
   }
 
   @Get('services')
-  @ApiOperation({ summary: 'Get all services in the catalog' })
+  @ApiOperation({ summary: 'Get all services in the catalog (public)' })
   @ApiResponse({ status: 200, description: 'List of services' })
   async findAllServices(@Query() query: ServiceCatalogQueryDto) {
     const services = await this.marketplaceService.findAllServiceCatalog(query);
@@ -106,12 +105,13 @@ export class MarketplaceController {
   // ============================================================================
 
   @Post('vendors')
-  @ApiOperation({ summary: 'Create a vendor marketplace profile' })
+  @ApiOperation({ summary: 'Create a vendor marketplace profile (public for self-registration)' })
   @ApiResponse({ status: 201, description: 'Profile created successfully' })
   async createVendorProfile(
-    @OrganizationId() organizationId: string,
-    @Body() dto: CreateVendorMarketplaceProfileDto,
+    @Body() dto: CreateVendorMarketplaceProfileDto & { organizationId?: string },
   ) {
+    // For public self-registration, use a default organization
+    const organizationId = dto.organizationId || 'public-marketplace';
     const profile = await this.marketplaceService.createVendorMarketplaceProfile(
       dto,
       organizationId,
@@ -120,7 +120,9 @@ export class MarketplaceController {
   }
 
   @Get('vendors')
-  @ApiOperation({ summary: 'Get all vendor marketplace profiles' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all vendor marketplace profiles (authenticated)' })
   @ApiResponse({ status: 200, description: 'List of vendor profiles' })
   async findAllVendorProfiles(
     @OrganizationId() organizationId: string,
@@ -134,7 +136,7 @@ export class MarketplaceController {
   }
 
   @Get('vendors/browse')
-  @ApiOperation({ summary: 'Browse marketplace vendors (all organizations)' })
+  @ApiOperation({ summary: 'Browse marketplace vendors (public - all organizations)' })
   @ApiResponse({ status: 200, description: 'List of marketplace vendors' })
   async browseVendors(@Query() query: VendorMarketplaceQueryDto) {
     const result = await this.marketplaceService.findAllVendorMarketplaceProfiles(query);

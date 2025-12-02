@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VendorRegisterPage from './pages/VendorRegisterPage';
+import MarketplaceBrowsePage from './pages/MarketplaceBrowsePage';
 import DashboardLayout from './components/layouts/DashboardLayout';
 import DashboardPage from './pages/DashboardPage';
 import PropertiesPage from './pages/PropertiesPage';
@@ -31,9 +33,13 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <Routes>
+      {/* Public routes - no authentication required */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/vendor-register" element={<VendorRegisterPage />} />
+      <Route path="/marketplace-browse" element={<MarketplaceBrowsePage />} />
 
+      {/* Protected admin routes */}
       <Route
         path="/*"
         element={

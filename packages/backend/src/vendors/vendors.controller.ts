@@ -16,25 +16,27 @@ import { OrganizationId } from '../common/decorators/organization.decorator';
 
 @ApiTags('vendors')
 @Controller('vendors')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
 export class VendorsController {
   constructor(private vendorsService: VendorsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new vendor' })
+  @ApiOperation({ summary: 'Create a new vendor (public endpoint for self-registration)' })
   @ApiResponse({ status: 201, description: 'Vendor created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   async create(
-    @OrganizationId() organizationId: string,
-    @Body() createVendorDto: CreateVendorDto,
+    @Body() createVendorDto: CreateVendorDto & { organizationId?: string },
   ) {
+    // For public self-registration, use a default/public organization
+    // Or create vendor without organizationId requirement
+    const organizationId = createVendorDto.organizationId || 'public-marketplace';
     const vendor = await this.vendorsService.create(organizationId, createVendorDto);
     return { success: true, data: vendor };
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all vendors' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all vendors (authenticated)' })
   @ApiResponse({ status: 200, description: 'List of vendors' })
   async findAll(@OrganizationId() organizationId: string) {
     const vendors = await this.vendorsService.findAll(organizationId);
@@ -42,7 +44,9 @@ export class VendorsController {
   }
 
   @Get('pending')
-  @ApiOperation({ summary: 'Get all pending vendor applications' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all pending vendor applications (authenticated)' })
   @ApiResponse({ status: 200, description: 'List of pending vendors' })
   async findPending(@OrganizationId() organizationId: string) {
     const vendors = await this.vendorsService.findPendingVendors(organizationId);
@@ -50,7 +54,9 @@ export class VendorsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get vendor by ID' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor by ID (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor details' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async findOne(
@@ -62,7 +68,9 @@ export class VendorsController {
   }
 
   @Get(':id/stats')
-  @ApiOperation({ summary: 'Get vendor statistics' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor statistics (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor statistics' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async getVendorStats(
@@ -74,7 +82,9 @@ export class VendorsController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update vendor' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update vendor (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor updated successfully' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async update(
@@ -87,7 +97,9 @@ export class VendorsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete vendor' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete vendor (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor deleted successfully' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async remove(
@@ -99,7 +111,9 @@ export class VendorsController {
   }
 
   @Post(':id/approve')
-  @ApiOperation({ summary: 'Approve a pending vendor application' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve a pending vendor application (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor approved successfully' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async approve(
@@ -116,7 +130,9 @@ export class VendorsController {
   }
 
   @Post(':id/reject')
-  @ApiOperation({ summary: 'Reject a pending vendor application' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reject a pending vendor application (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor rejected successfully' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async reject(
