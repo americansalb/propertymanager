@@ -276,6 +276,45 @@ export class MarketplaceController {
     return { success: true, data: job };
   }
 
+  @Post('jobs/:id/dispatch-multi')
+  @ApiOperation({ summary: 'Dispatch a job to multiple vendors (first to accept wins)' })
+  @ApiParam({ name: 'id', description: 'Marketplace job ID' })
+  @ApiResponse({ status: 200, description: 'Job dispatched to multiple vendors' })
+  async dispatchJobToMultipleVendors(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+    @Body() body: { vendorProfileIds: string[]; responseDeadlineMinutes?: number },
+  ) {
+    const result = await this.marketplaceService.dispatchJobToMultipleVendors(
+      id,
+      body.vendorProfileIds,
+      organizationId,
+      userId,
+      body.responseDeadlineMinutes,
+    );
+    return { success: true, data: result };
+  }
+
+  @Post('jobs/:id/auto-dispatch')
+  @ApiOperation({ summary: 'Auto-match and dispatch to best vendors based on service, location, and rating' })
+  @ApiParam({ name: 'id', description: 'Marketplace job ID' })
+  @ApiResponse({ status: 200, description: 'Job auto-dispatched to matched vendors' })
+  async autoDispatchJob(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+    @Body() body?: { maxVendors?: number },
+  ) {
+    const result = await this.marketplaceService.autoMatchAndDispatchVendors(
+      id,
+      organizationId,
+      userId,
+      body?.maxVendors,
+    );
+    return { success: true, data: result };
+  }
+
   @Post('jobs/:id/accept')
   @ApiOperation({ summary: 'Accept a dispatched job (vendor endpoint)' })
   @ApiParam({ name: 'id', description: 'Marketplace job ID' })
@@ -463,5 +502,56 @@ export class MarketplaceController {
   async getStats(@OrganizationId() organizationId: string) {
     const stats = await this.marketplaceService.getMarketplaceStats(organizationId);
     return { success: true, data: stats };
+  }
+
+  // ============================================================================
+  // VENDOR-SPECIFIC ENDPOINTS
+  // ============================================================================
+
+  @Get('vendor/:vendorProfileId/available-jobs')
+  @ApiOperation({ summary: 'Get available jobs for a vendor (jobs dispatched to them)' })
+  @ApiParam({ name: 'vendorProfileId', description: 'Vendor marketplace profile ID' })
+  @ApiResponse({ status: 200, description: 'List of available jobs for the vendor' })
+  async getVendorAvailableJobs(
+    @Param('vendorProfileId') vendorProfileId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.marketplaceService.getAvailableJobsForVendor(
+      vendorProfileId,
+      page,
+      limit,
+    );
+    return { success: true, ...result };
+  }
+
+  @Get('vendor/:vendorProfileId/active-jobs')
+  @ApiOperation({ summary: 'Get active jobs for a vendor (accepted/in progress)' })
+  @ApiParam({ name: 'vendorProfileId', description: 'Vendor marketplace profile ID' })
+  @ApiResponse({ status: 200, description: 'List of active jobs for the vendor' })
+  async getVendorActiveJobs(
+    @Param('vendorProfileId') vendorProfileId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.marketplaceService.getVendorActiveJobs(vendorProfileId, page, limit);
+    return { success: true, ...result };
+  }
+
+  @Get('vendor/:vendorProfileId/completed-jobs')
+  @ApiOperation({ summary: 'Get completed jobs for a vendor' })
+  @ApiParam({ name: 'vendorProfileId', description: 'Vendor marketplace profile ID' })
+  @ApiResponse({ status: 200, description: 'List of completed jobs for the vendor' })
+  async getVendorCompletedJobs(
+    @Param('vendorProfileId') vendorProfileId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.marketplaceService.getVendorCompletedJobs(
+      vendorProfileId,
+      page,
+      limit,
+    );
+    return { success: true, ...result };
   }
 }
