@@ -10,7 +10,12 @@ import {
   MaxLength,
   Matches,
   Min,
+  IsArray,
+  ValidateNested,
+  IsEmail,
+  IsBoolean,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum PropertyType {
   MULTIFAMILY = 'MULTIFAMILY',
@@ -70,6 +75,16 @@ export class CreatePropertyDto {
   @IsString()
   @IsOptional()
   country?: string;
+
+  @ApiPropertyOptional({ description: 'Latitude coordinate for map display' })
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({ description: 'Longitude coordinate for map display' })
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
 
   @ApiPropertyOptional({ description: 'Year the property was built' })
   @IsInt()
@@ -184,4 +199,182 @@ export class UpdatePropertyDto {
   @IsInt()
   @IsOptional()
   squareFeet?: number;
+}
+
+// ============================================================================
+// COMPREHENSIVE PROPERTY SETUP DTOs
+// ============================================================================
+
+export enum UnitType {
+  STUDIO = 'STUDIO',
+  ONE_BED = 'ONE_BED',
+  TWO_BED = 'TWO_BED',
+  THREE_BED = 'THREE_BED',
+  FOUR_PLUS_BED = 'FOUR_PLUS_BED',
+  COMMERCIAL = 'COMMERCIAL',
+}
+
+export enum UnitStatus {
+  VACANT = 'VACANT',
+  OCCUPIED = 'OCCUPIED',
+  VACANT_RENTED = 'VACANT_RENTED',
+  NOTICE = 'NOTICE',
+  MAINTENANCE = 'MAINTENANCE',
+}
+
+export class SetupTenantDto {
+  @ApiProperty({ description: 'Tenant first name' })
+  @IsString()
+  @IsNotEmpty()
+  firstName!: string;
+
+  @ApiProperty({ description: 'Tenant last name' })
+  @IsString()
+  @IsNotEmpty()
+  lastName!: string;
+
+  @ApiProperty({ description: 'Tenant email' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ description: 'Tenant phone' })
+  @IsString()
+  @IsNotEmpty()
+  phone!: string;
+}
+
+export class SetupUnitDto {
+  @ApiProperty({ description: 'Unit number/identifier (e.g., "101", "A", "Main House")' })
+  @IsString()
+  @IsNotEmpty()
+  unitNumber!: string;
+
+  @ApiPropertyOptional({ description: 'Floor number' })
+  @IsInt()
+  @IsOptional()
+  floor?: number;
+
+  @ApiProperty({ enum: UnitType, description: 'Unit type' })
+  @IsEnum(UnitType)
+  type!: UnitType;
+
+  @ApiProperty({ description: 'Number of bedrooms' })
+  @IsInt()
+  @Min(0)
+  bedrooms!: number;
+
+  @ApiProperty({ description: 'Number of bathrooms' })
+  @IsNumber()
+  @Min(0)
+  bathrooms!: number;
+
+  @ApiPropertyOptional({ description: 'Square footage' })
+  @IsInt()
+  @IsOptional()
+  squareFeet?: number;
+
+  @ApiProperty({ description: 'Monthly rent amount' })
+  @IsNumber()
+  @Min(0)
+  marketRent!: number;
+
+  @ApiProperty({ enum: UnitStatus, description: 'Current occupancy status' })
+  @IsEnum(UnitStatus)
+  status!: UnitStatus;
+
+  // If occupied, include lease and tenant info
+  @ApiPropertyOptional({ description: 'Lease start date (required if occupied)' })
+  @IsDateString()
+  @IsOptional()
+  leaseStart?: string;
+
+  @ApiPropertyOptional({ description: 'Lease end date' })
+  @IsDateString()
+  @IsOptional()
+  leaseEnd?: string;
+
+  @ApiPropertyOptional({ description: 'Actual rent being paid (may differ from market rent)' })
+  @IsNumber()
+  @IsOptional()
+  actualRent?: number;
+
+  @ApiPropertyOptional({ description: 'Security deposit amount' })
+  @IsNumber()
+  @IsOptional()
+  securityDeposit?: number;
+
+  @ApiPropertyOptional({ description: 'Is this a month-to-month lease?' })
+  @IsBoolean()
+  @IsOptional()
+  isMonthToMonth?: boolean;
+
+  @ApiPropertyOptional({ description: 'Tenant info (required if occupied)', type: SetupTenantDto })
+  @ValidateNested()
+  @Type(() => SetupTenantDto)
+  @IsOptional()
+  tenant?: SetupTenantDto;
+}
+
+export class FullPropertySetupDto {
+  // Property basics
+  @ApiProperty({ description: 'Property name' })
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @ApiProperty({ enum: PropertyType, description: 'Type of property' })
+  @IsEnum(PropertyType)
+  type!: PropertyType;
+
+  @ApiProperty({ description: 'Street address' })
+  @IsString()
+  @IsNotEmpty()
+  address1!: string;
+
+  @ApiPropertyOptional({ description: 'Address line 2' })
+  @IsString()
+  @IsOptional()
+  address2?: string;
+
+  @ApiProperty({ description: 'City' })
+  @IsString()
+  @IsNotEmpty()
+  city!: string;
+
+  @ApiProperty({ description: 'State' })
+  @IsString()
+  @IsNotEmpty()
+  state!: string;
+
+  @ApiProperty({ description: 'ZIP code' })
+  @IsString()
+  @IsNotEmpty()
+  zipCode!: string;
+
+  @ApiPropertyOptional({ description: 'Country', default: 'US' })
+  @IsString()
+  @IsOptional()
+  country?: string;
+
+  @ApiPropertyOptional({ description: 'Latitude' })
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({ description: 'Longitude' })
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
+  @ApiPropertyOptional({ description: 'Year built' })
+  @IsInt()
+  @IsOptional()
+  yearBuilt?: number;
+
+  // Units with occupancy info
+  @ApiProperty({ description: 'Units to create', type: [SetupUnitDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SetupUnitDto)
+  units!: SetupUnitDto[];
 }

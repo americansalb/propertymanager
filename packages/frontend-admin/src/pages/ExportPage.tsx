@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Eye,
   Loader2,
+  X,
 } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -25,6 +26,12 @@ import { formatDate } from '../lib/utils';
 
 type ExportType = 'properties' | 'leases' | 'work_orders' | 'vendors' | 'tenants' | 'financial';
 type ExportFormat = 'csv' | 'json' | 'pdf';
+
+interface ErrorState {
+  show: boolean;
+  title: string;
+  message: string;
+}
 
 interface ExportConfig {
   type: ExportType;
@@ -155,6 +162,15 @@ export default function ExportPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isExporting, setIsExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [error, setError] = useState<ErrorState>({ show: false, title: '', message: '' });
+
+  const showError = useCallback((title: string, message: string) => {
+    setError({ show: true, title, message });
+  }, []);
+
+  const closeError = useCallback(() => {
+    setError((prev) => ({ ...prev, show: false }));
+  }, []);
 
   // Initialize field selections when type changes
   useEffect(() => {
@@ -427,12 +443,12 @@ export default function ExportPage() {
   // Export handlers
   const handleExport = useCallback(async () => {
     if (processedData.length === 0) {
-      alert('No data to export');
+      showError('No Data', 'There is no data available to export. Please check your filters.');
       return;
     }
 
     if (selectedFields.length === 0) {
-      alert('Please select at least one field to export');
+      showError('No Fields Selected', 'Please select at least one field to export.');
       return;
     }
 
@@ -570,12 +586,13 @@ export default function ExportPage() {
           printWindow.print();
         }
       }
-    } catch {
-      alert('Export failed. Please try again.');
+    } catch (err: any) {
+      const message = err?.message || 'Export failed. Please try again.';
+      showError('Export Failed', message);
     } finally {
       setIsExporting(false);
     }
-  }, [selectedType, selectedFormat, processedData, selectedFields, dateRange]);
+  }, [selectedType, selectedFormat, processedData, selectedFields, dateRange, showError]);
 
   const currentConfig = exportConfigs.find((c) => c.type === selectedType);
 
@@ -853,11 +870,7 @@ export default function ExportPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Export Preview</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowPreview(!showPreview)}
-                >
+                <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
                   <Eye className="w-4 h-4 mr-1" />
                   {showPreview ? 'Hide Preview' : 'Show Preview'}
                 </Button>
@@ -962,6 +975,35 @@ export default function ExportPage() {
           </Card>
         </div>
       </div>
+
+      {/* Error Modal */}
+      {error.show && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[60]" onClick={closeError} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl z-[70] w-[90%] max-w-md p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-red-900">{error.title}</h3>
+                <p className="text-gray-600 mt-1">{error.message}</p>
+              </div>
+              <button
+                onClick={closeError}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={closeError} className="bg-red-600 hover:bg-red-700">
+                OK
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -17,6 +17,8 @@ import {
   UserPlus,
   FileText,
   MoreHorizontal,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
@@ -32,6 +34,14 @@ import { useUpdateWorkOrder } from '../hooks/useWorkOrders';
 type StatusFilter = 'ALL' | 'SUBMITTED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED';
 type PriorityFilter = 'ALL' | 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
 type DateRangePreset = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'CUSTOM';
+
+interface NotificationState {
+  show: boolean;
+  type: 'success' | 'error' | 'warning';
+  title: string;
+  message: string;
+  details?: string[];
+}
 
 export default function WorkOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,6 +67,25 @@ export default function WorkOrdersPage() {
   const [showBulkVendorAssign, setShowBulkVendorAssign] = useState(false);
   const [showBulkActionsMenu, setShowBulkActionsMenu] = useState(false);
 
+  // Notification state
+  const [notification, setNotification] = useState<NotificationState>({
+    show: false,
+    type: 'error',
+    title: '',
+    message: '',
+    details: [],
+  });
+
+  const showNotification = useCallback(
+    (type: 'success' | 'error' | 'warning', title: string, message: string, details?: string[]) => {
+      setNotification({ show: true, type, title, message, details });
+    },
+    [],
+  );
+
+  const closeNotification = useCallback(() => {
+    setNotification((prev) => ({ ...prev, show: false }));
+  }, []);
 
   // Get property and vendor filters from URL
   const propertyIdFilter = searchParams.get('propertyId');
@@ -174,7 +203,9 @@ export default function WorkOrdersPage() {
       });
     } catch (error: any) {
       console.error('Failed to update work order status:', error);
-      alert(error?.response?.data?.message || 'Failed to update status. Please try again.');
+      const errorMessage =
+        error?.response?.data?.message || 'Failed to update status. Please try again.';
+      showNotification('error', 'Update Failed', errorMessage);
     }
   };
 
@@ -349,20 +380,47 @@ export default function WorkOrdersPage() {
 
         const results = await Promise.allSettled(promises);
         const succeeded = results.filter((r) => r.status === 'fulfilled').length;
-        const failed = results.filter((r) => r.status === 'rejected').length;
+        const failedResults = results.filter(
+          (r): r is PromiseRejectedResult => r.status === 'rejected',
+        );
 
-        if (failed > 0) {
-          alert(`${succeeded} updated successfully, ${failed} failed.`);
+        if (failedResults.length > 0) {
+          // Extract specific error messages from each failed request
+          const errorDetails = failedResults.map((r) => {
+            const errorMsg =
+              r.reason?.response?.data?.message || r.reason?.message || 'Unknown error';
+            return typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg);
+          });
+
+          // Remove duplicates
+          const uniqueErrors = [...new Set(errorDetails)];
+
+          showNotification(
+            'error',
+            'Bulk Update Failed',
+            `${succeeded} updated successfully, ${failedResults.length} failed.`,
+            uniqueErrors,
+          );
+        } else if (succeeded > 0) {
+          showNotification(
+            'success',
+            'Update Complete',
+            `Successfully updated ${succeeded} work order${succeeded > 1 ? 's' : ''}.`,
+          );
         }
 
         clearSelection();
-      } catch {
-        alert('Some updates failed. Please try again.');
+      } catch (error: any) {
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          'Some updates failed. Please try again.';
+        showNotification('error', 'Update Failed', errorMessage);
       } finally {
         setBulkActionInProgress(false);
       }
     },
-    [selectedIds, updateWorkOrder, clearSelection],
+    [selectedIds, updateWorkOrder, clearSelection, showNotification],
   );
 
   // Bulk vendor assignment
@@ -382,20 +440,47 @@ export default function WorkOrdersPage() {
 
         const results = await Promise.allSettled(promises);
         const succeeded = results.filter((r) => r.status === 'fulfilled').length;
-        const failed = results.filter((r) => r.status === 'rejected').length;
+        const failedResults = results.filter(
+          (r): r is PromiseRejectedResult => r.status === 'rejected',
+        );
 
-        if (failed > 0) {
-          alert(`${succeeded} assigned successfully, ${failed} failed.`);
+        if (failedResults.length > 0) {
+          // Extract specific error messages from each failed request
+          const errorDetails = failedResults.map((r) => {
+            const errorMsg =
+              r.reason?.response?.data?.message || r.reason?.message || 'Unknown error';
+            return typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg);
+          });
+
+          // Remove duplicates
+          const uniqueErrors = [...new Set(errorDetails)];
+
+          showNotification(
+            'error',
+            'Vendor Assignment Failed',
+            `${succeeded} assigned successfully, ${failedResults.length} failed.`,
+            uniqueErrors,
+          );
+        } else if (succeeded > 0) {
+          showNotification(
+            'success',
+            'Assignment Complete',
+            `Successfully assigned vendor to ${succeeded} work order${succeeded > 1 ? 's' : ''}.`,
+          );
         }
 
         clearSelection();
-      } catch {
-        alert('Some assignments failed. Please try again.');
+      } catch (error: any) {
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          'Some assignments failed. Please try again.';
+        showNotification('error', 'Assignment Failed', errorMessage);
       } finally {
         setBulkActionInProgress(false);
       }
     },
-    [selectedIds, updateWorkOrder, clearSelection],
+    [selectedIds, updateWorkOrder, clearSelection, showNotification],
   );
 
   // Export selected to CSV
@@ -1292,6 +1377,84 @@ export default function WorkOrdersPage() {
         open={propertyEditModalOpen}
         onOpenChange={setPropertyEditModalOpen}
       />
+
+      {/* Notification Modal */}
+      {notification.show && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[60]" onClick={closeNotification} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl z-[70] w-[90%] max-w-md p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className={`p-2 rounded-lg ${
+                  notification.type === 'success'
+                    ? 'bg-green-100'
+                    : notification.type === 'warning'
+                      ? 'bg-yellow-100'
+                      : 'bg-red-100'
+                }`}
+              >
+                {notification.type === 'success' ? (
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                ) : notification.type === 'warning' ? (
+                  <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                ) : (
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3
+                  className={`text-lg font-semibold ${
+                    notification.type === 'success'
+                      ? 'text-green-900'
+                      : notification.type === 'warning'
+                        ? 'text-yellow-900'
+                        : 'text-red-900'
+                  }`}
+                >
+                  {notification.title}
+                </h3>
+                <p className="text-gray-600 mt-1">{notification.message}</p>
+              </div>
+              <button
+                onClick={closeNotification}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Error Details */}
+            {notification.details && notification.details.length > 0 && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-40 overflow-y-auto">
+                <p className="text-sm font-medium text-gray-700 mb-2">Error Details:</p>
+                <ul className="space-y-1">
+                  {notification.details.map((detail, index) => (
+                    <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
+                      <span className="text-red-500 mt-0.5">•</span>
+                      <span>{detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                onClick={closeNotification}
+                className={
+                  notification.type === 'success'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : notification.type === 'warning'
+                      ? 'bg-yellow-600 hover:bg-yellow-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                }
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

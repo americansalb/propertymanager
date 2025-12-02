@@ -94,6 +94,8 @@ export default function EditLeaseModal({ open, onOpenChange, lease }: EditLeaseM
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leases'] });
       queryClient.invalidateQueries({ queryKey: ['lease', lease?.id] });
+      queryClient.invalidateQueries({ queryKey: ['units'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       onOpenChange(false);
     },
     onError: (error: any) => {

@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
-import { type CreatePropertyDto, type UpdatePropertyDto } from './dto/property.dto';
+import {
+  type CreatePropertyDto,
+  type UpdatePropertyDto,
+  type FullPropertySetupDto,
+} from './dto/property.dto';
 
 @Injectable()
 export class PropertiesService {
@@ -129,8 +133,162 @@ export class PropertiesService {
       throw new Error('Property not found');
     }
 
-    return this.prisma.property.delete({
-      where: { id },
+    // Use transaction to delete related records first, then property
+    return this.prisma.$transaction(async (tx) => {
+      // Delete work orders associated with this property
+      await tx.workOrder.deleteMany({
+        where: { propertyId: id },
+      });
+
+      // Delete documents associated with this property (polymorphic relation)
+      await tx.document.deleteMany({
+        where: { entityType: 'Property', entityId: id },
+      });
+
+      // Delete the property (units, leases, accounts cascade automatically)
+      return tx.property.delete({
+        where: { id },
+      });
+    });
+  }
+
+  /**
+   * Full property setup - creates property, units, leases, and tenants in one transaction
+   * Handles existing units gracefully (skips duplicates, doesn't wipe data)
+   */
+  async fullSetup(dto: FullPropertySetupDto, organizationId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Create the property
+      const property = await tx.property.create({
+        data: {
+          name: dto.name,
+          type: dto.type,
+          status: 'ACTIVE',
+          address1: dto.address1,
+          address2: dto.address2,
+          city: dto.city,
+          state: dto.state,
+          zipCode: dto.zipCode,
+          country: dto.country || 'US',
+          latitude: dto.latitude,
+          longitude: dto.longitude,
+          yearBuilt: dto.yearBuilt,
+          totalUnits: dto.units.length,
+          organizationId,
+        },
+      });
+
+      this.logger.log(
+        {
+          message: 'property.fullSetup.created',
+          propertyId: property.id,
+          organizationId,
+          unitCount: dto.units.length,
+        },
+        PropertiesService.name,
+      );
+
+      // 2. Create units and leases
+      const createdUnits = [];
+      const createdLeases = [];
+      const createdTenants = [];
+
+      for (const unitDto of dto.units) {
+        // Check if unit already exists for this property (by unitNumber)
+        const existingUnit = await tx.unit.findUnique({
+          where: {
+            propertyId_unitNumber: {
+              propertyId: property.id,
+              unitNumber: unitDto.unitNumber,
+            },
+          },
+        });
+
+        if (existingUnit) {
+          // Skip existing units - don't overwrite
+          this.logger.log(
+            {
+              message: 'property.fullSetup.unitExists',
+              propertyId: property.id,
+              unitNumber: unitDto.unitNumber,
+            },
+            PropertiesService.name,
+          );
+          createdUnits.push(existingUnit);
+          continue;
+        }
+
+        // Create the unit
+        const unit = await tx.unit.create({
+          data: {
+            unitNumber: unitDto.unitNumber,
+            floor: unitDto.floor,
+            type: unitDto.type,
+            status: unitDto.status,
+            bedrooms: unitDto.bedrooms,
+            bathrooms: unitDto.bathrooms,
+            squareFeet: unitDto.squareFeet,
+            marketRent: unitDto.marketRent,
+            propertyId: property.id,
+          },
+        });
+        createdUnits.push(unit);
+
+        // 3. If occupied and has tenant info, create lease and tenant
+        if (unitDto.status === 'OCCUPIED' && unitDto.tenant) {
+          const leaseStart = unitDto.leaseStart ? new Date(unitDto.leaseStart) : new Date();
+          const leaseEnd = unitDto.leaseEnd ? new Date(unitDto.leaseEnd) : null;
+          const isMonthToMonth = unitDto.isMonthToMonth ?? !leaseEnd;
+
+          const lease = await tx.lease.create({
+            data: {
+              status: 'ACTIVE',
+              type: isMonthToMonth ? 'MONTH_TO_MONTH' : 'FIXED_TERM',
+              startDate: leaseStart,
+              endDate: leaseEnd,
+              moveInDate: leaseStart,
+              monthlyRent: unitDto.actualRent ?? unitDto.marketRent,
+              securityDeposit: unitDto.securityDeposit ?? unitDto.marketRent,
+              unitId: unit.id,
+              tenants: {
+                create: {
+                  firstName: unitDto.tenant.firstName,
+                  lastName: unitDto.tenant.lastName,
+                  email: unitDto.tenant.email,
+                  phone: unitDto.tenant.phone,
+                  isPrimary: true,
+                },
+              },
+            },
+            include: {
+              tenants: true,
+            },
+          });
+          createdLeases.push(lease);
+          createdTenants.push(...lease.tenants);
+        }
+      }
+
+      // 4. Return comprehensive result
+      const occupiedCount = createdUnits.filter((u) => u.status === 'OCCUPIED').length;
+      const vacantCount = createdUnits.filter((u) => u.status === 'VACANT').length;
+      const totalRent = createdLeases.reduce((sum, l) => sum + Number(l.monthlyRent), 0);
+
+      return {
+        property,
+        units: createdUnits,
+        leases: createdLeases,
+        tenants: createdTenants,
+        summary: {
+          totalUnits: createdUnits.length,
+          occupiedUnits: occupiedCount,
+          vacantUnits: vacantCount,
+          occupancyRate:
+            createdUnits.length > 0 ? Math.round((occupiedCount / createdUnits.length) * 100) : 0,
+          monthlyRevenue: totalRent,
+          setupComplete: true,
+        },
+      };
     });
   }
 }
