@@ -630,10 +630,20 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
               <div className="space-y-4">
                 <button
                   onClick={() => selectMode('express')}
-                  className="w-full p-6 border-2 border-slate-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all text-left group"
+                  className={`w-full p-6 border-2 rounded-xl transition-all text-left group ${
+                    setupMode === 'express'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-slate-200 hover:border-green-500 hover:bg-green-50'
+                  }`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
+                    <div
+                      className={`p-3 rounded-xl transition-colors ${
+                        setupMode === 'express'
+                          ? 'bg-green-200'
+                          : 'bg-green-100 group-hover:bg-green-200'
+                      }`}
+                    >
                       <Check className="w-6 h-6 text-green-600" />
                     </div>
                     <div className="flex-1">
@@ -658,10 +668,20 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
 
                 <button
                   onClick={() => selectMode('advanced')}
-                  className="w-full p-6 border-2 border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group"
+                  className={`w-full p-6 border-2 rounded-xl transition-all text-left group ${
+                    setupMode === 'advanced'
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-slate-200 hover:border-indigo-500 hover:bg-indigo-50'
+                  }`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-indigo-100 rounded-xl group-hover:bg-indigo-200 transition-colors">
+                    <div
+                      className={`p-3 rounded-xl transition-colors ${
+                        setupMode === 'advanced'
+                          ? 'bg-indigo-200'
+                          : 'bg-indigo-100 group-hover:bg-indigo-200'
+                      }`}
+                    >
                       <Building2 className="w-6 h-6 text-indigo-600" />
                     </div>
                     <div className="flex-1">
