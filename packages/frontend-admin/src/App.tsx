@@ -12,6 +12,7 @@ import FinancialPage from './pages/FinancialPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
 import VendorsPage from './pages/VendorsPage';
 import VendorDetailPage from './pages/VendorDetailPage';
+import MarketplacePage from './pages/MarketplacePage';
 import ActivityPage from './pages/ActivityPage';
 import CalendarPage from './pages/CalendarPage';
 import ReportsPage from './pages/ReportsPage';
@@ -48,6 +49,7 @@ function App() {
                 <Route path="/work-orders" element={<WorkOrdersPage />} />
                 <Route path="/vendors" element={<VendorsPage />} />
                 <Route path="/vendors/:id" element={<VendorDetailPage />} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
                 <Route path="/activity" element={<ActivityPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/reports" element={<ReportsPage />} />

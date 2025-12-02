@@ -39,11 +39,12 @@ export function DialogContent({ children, className }: DialogContentProps) {
 interface DialogHeaderProps {
   children: React.ReactNode;
   onClose?: () => void;
+  className?: string;
 }
 
-export function DialogHeader({ children, onClose }: DialogHeaderProps) {
+export function DialogHeader({ children, onClose, className }: DialogHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-6 pb-4 border-b">
+    <div className={cn('flex items-center justify-between mb-6 pb-4 border-b', className)}>
       <div>{children}</div>
       {onClose && (
         <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">

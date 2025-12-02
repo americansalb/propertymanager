@@ -40,6 +40,7 @@ import { StorageModule } from './storage/storage.module';
 import { DocumentsModule } from './documents/documents.module';
 import { HealthModule } from './health/health.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
+import { MarketplaceModule } from './marketplace/marketplace.module';
 import { RequestLoggerMiddleware } from './monitoring/request-logger.middleware';
 
 @Module({
@@ -86,6 +87,7 @@ import { RequestLoggerMiddleware } from './monitoring/request-logger.middleware'
     DocumentsModule,
     HealthModule,
     MonitoringModule,
+    MarketplaceModule,
   ],
   providers: [
     {
