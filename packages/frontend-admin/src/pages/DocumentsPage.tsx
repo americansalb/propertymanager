@@ -24,7 +24,6 @@ import {
   SortDesc,
   Link as LinkIcon,
   Copy,
-  ExternalLink,
   Loader2,
   RefreshCw,
 } from 'lucide-react';
@@ -133,6 +132,13 @@ export default function DocumentsPage() {
   const [uploadType, setUploadType] = useState<DocumentType>('OTHER');
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [toast, setToast] = useState<{ show: boolean; type: 'success' | 'error'; message: string }>(
+    {
+      show: false,
+      type: 'success',
+      message: '',
+    },
+  );
 
   // Fetch documents from backend
   const { data: documentsResponse, isLoading } = useQuery({
@@ -200,7 +206,12 @@ export default function DocumentsPage() {
   });
 
   const documents: BackendDocument[] = documentsResponse?.data || [];
-  const stats = statsResponse?.data || { totalDocuments: 0, totalSize: 0, totalSizeFormatted: '0 Bytes', byType: {} };
+  const stats = statsResponse?.data || {
+    totalDocuments: 0,
+    totalSize: 0,
+    totalSizeFormatted: '0 Bytes',
+    byType: {},
+  };
 
   // Filter and sort documents
   const filteredDocuments = useMemo(() => {
@@ -258,7 +269,9 @@ export default function DocumentsPage() {
   };
 
   const handleUploadSubmit = async () => {
-    if (!uploadFiles || !uploadEntityId) return;
+    if (!uploadFiles || !uploadEntityId) {
+      return;
+    }
 
     for (let i = 0; i < uploadFiles.length; i++) {
       const formData = new FormData();
@@ -278,16 +291,21 @@ export default function DocumentsPage() {
       const response = await api.get(`/documents/${doc.id}/download-url`);
       const url = response.data.data.url;
       window.open(url, '_blank');
-    } catch {
-      alert('Failed to get download URL');
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || 'Failed to get download URL. Please try again.';
+      setToast({ show: true, type: 'error', message });
     }
   }, []);
 
-  const handleDelete = useCallback((doc: BackendDocument) => {
-    if (confirm(`Are you sure you want to delete "${doc.name}"?`)) {
-      deleteMutation.mutate(doc.id);
-    }
-  }, [deleteMutation]);
+  const handleDelete = useCallback(
+    (doc: BackendDocument) => {
+      if (confirm(`Are you sure you want to delete "${doc.name}"?`)) {
+        deleteMutation.mutate(doc.id);
+      }
+    },
+    [deleteMutation],
+  );
 
   const handleSelectDocument = (docId: string) => {
     setSelectedDocuments((prev) => {
@@ -547,7 +565,9 @@ export default function DocumentsPage() {
 
                 <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
                   <LinkIcon className="w-3 h-3" />
-                  <span className="truncate">{doc.entityType}: {doc.entityId.slice(0, 8)}...</span>
+                  <span className="truncate">
+                    {doc.entityType}: {doc.entityId.slice(0, 8)}...
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-500">
@@ -556,7 +576,9 @@ export default function DocumentsPage() {
                 </div>
 
                 <div className="mt-3">
-                  <span className={`px-2 py-0.5 bg-${typeConf.color}-100 text-${typeConf.color}-700 rounded-full text-xs font-medium`}>
+                  <span
+                    className={`px-2 py-0.5 bg-${typeConf.color}-100 text-${typeConf.color}-700 rounded-full text-xs font-medium`}
+                  >
                     {typeConf.label}
                   </span>
                 </div>
@@ -664,13 +686,13 @@ export default function DocumentsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-${typeConf.color}-100 text-${typeConf.color}-700`}>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-${typeConf.color}-100 text-${typeConf.color}-700`}
+                      >
                         {typeConf.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {doc.entityType}
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{doc.entityType}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{formatFileSize(doc.size)}</td>
                     <td className="px-4 py-3">
                       <div className="text-sm text-gray-600">
@@ -769,7 +791,9 @@ export default function DocumentsPage() {
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500 mb-1">Document Type</p>
-                    <p className="font-medium text-gray-900">{typeConfig[selectedDocument.type]?.label || 'Other'}</p>
+                    <p className="font-medium text-gray-900">
+                      {typeConfig[selectedDocument.type]?.label || 'Other'}
+                    </p>
                   </div>
                 </div>
 
@@ -777,9 +801,7 @@ export default function DocumentsPage() {
                   <p className="text-xs text-gray-500 mb-2">Linked To</p>
                   <div className="flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-gray-400" />
-                    <span className="font-medium text-gray-900">
-                      {selectedDocument.entityType}
-                    </span>
+                    <span className="font-medium text-gray-900">{selectedDocument.entityType}</span>
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                       {selectedDocument.entityId.slice(0, 8)}...
                     </span>
@@ -788,18 +810,31 @@ export default function DocumentsPage() {
 
                 <div className="p-4 border border-gray-200 rounded-lg">
                   <p className="text-xs text-gray-500 mb-2">Storage</p>
-                  <p className="text-sm text-gray-600">Provider: {selectedDocument.storageProvider}</p>
-                  <p className="text-xs text-gray-400 mt-1 truncate">Key: {selectedDocument.storageKey}</p>
+                  <p className="text-sm text-gray-600">
+                    Provider: {selectedDocument.storageProvider}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1 truncate">
+                    Key: {selectedDocument.storageKey}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-                  navigator.clipboard.writeText(selectedDocument.storageKey);
-                  alert('Storage key copied to clipboard');
-                }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedDocument.storageKey);
+                    setToast({
+                      show: true,
+                      type: 'success',
+                      message: 'Storage key copied to clipboard',
+                    });
+                  }}
+                >
                   <Copy className="w-4 h-4" />
                   Copy Key
                 </Button>
@@ -851,7 +886,10 @@ export default function DocumentsPage() {
               {uploadFiles && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-sm text-green-700">
-                    {uploadFiles.length} file(s) selected: {Array.from(uploadFiles).map(f => f.name).join(', ')}
+                    {uploadFiles.length} file(s) selected:{' '}
+                    {Array.from(uploadFiles)
+                      .map((f) => f.name)
+                      .join(', ')}
                   </p>
                 </div>
               )}
@@ -867,7 +905,9 @@ export default function DocumentsPage() {
 
               <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Entity Type *
+                  </label>
                   <select
                     value={uploadEntityType}
                     onChange={(e) => setUploadEntityType(e.target.value)}
@@ -881,26 +921,32 @@ export default function DocumentsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Link to *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Link to *</label>
                   <select
                     value={uploadEntityId}
                     onChange={(e) => setUploadEntityId(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select...</option>
-                    {uploadEntityType === 'Property' && properties?.map((p: { id: string; name: string }) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                    {uploadEntityType === 'Vendor' && vendors?.map((v: { id: string; companyName: string }) => (
-                      <option key={v.id} value={v.id}>{v.companyName}</option>
-                    ))}
+                    {uploadEntityType === 'Property' &&
+                      properties?.map((p: { id: string; name: string }) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    {uploadEntityType === 'Vendor' &&
+                      vendors?.map((v: { id: string; companyName: string }) => (
+                        <option key={v.id} value={v.id}>
+                          {v.companyName}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Document Type
+                  </label>
                   <select
                     value={uploadType}
                     onChange={(e) => setUploadType(e.target.value as DocumentType)}
@@ -931,10 +977,13 @@ export default function DocumentsPage() {
             </div>
 
             <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50">
-              <Button variant="outline" onClick={() => {
-                setShowUploadModal(false);
-                setUploadFiles(null);
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setUploadFiles(null);
+                }}
+              >
                 Cancel
               </Button>
               <Button
@@ -950,6 +999,30 @@ export default function DocumentsPage() {
                 Upload Files
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed bottom-4 right-4 z-[100] animate-in slide-in-from-bottom-2">
+          <div
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg ${
+              toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+            } text-white`}
+          >
+            {toast.type === 'success' ? (
+              <CheckCircle className="w-5 h-5" />
+            ) : (
+              <X className="w-5 h-5" />
+            )}
+            <span>{toast.message}</span>
+            <button
+              onClick={() => setToast((prev) => ({ ...prev, show: false }))}
+              className="ml-2 p-1 hover:bg-white/20 rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
