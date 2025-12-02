@@ -457,13 +457,12 @@ export default function AddMarketplaceVendorModal({
         city: formData.city,
         state: formData.state,
         zipCode: formData.zipCode,
-        type: 'LOCKSMITH',
+        type: 'PROFESSIONAL_SERVICES', // Changed from 'LOCKSMITH' to valid enum value
         status: 'ACTIVE',
         licenseNumber: formData.licenseNumber || undefined,
-        licenseExpiryDate: formData.licenseExpiry || undefined,
         insuranceExpiryDate: formData.insuranceExpiry || undefined,
-        insuranceProvider: formData.insuranceCarrier || undefined,
-        insurancePolicyNumber: formData.insurancePolicyNumber || undefined,
+        // Note: Backend doesn't support insuranceProvider or insurancePolicyNumber fields
+        // These fields are collected but not stored in the current vendor schema
       });
 
       const vendorId = vendorResponse.data.data.id;
