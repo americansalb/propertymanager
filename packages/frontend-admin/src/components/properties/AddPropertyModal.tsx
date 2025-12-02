@@ -66,7 +66,8 @@ interface UnitData {
   isMonthToMonth?: boolean;
 }
 
-type Step = 'address' | 'property-type' | 'units' | 'occupancy' | 'review' | 'manual';
+type Step = 'address' | 'mode' | 'property-type' | 'units' | 'occupancy' | 'review' | 'manual';
+type SetupMode = 'express' | 'advanced';
 
 const PROPERTY_TYPES = [
   {
@@ -127,6 +128,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
   // Property data
   const [propertyName, setPropertyName] = useState('');
   const [propertyType, setPropertyType] = useState('MULTIFAMILY');
+  const [setupMode, setSetupMode] = useState<SetupMode>('advanced');
 
   // Units data
   const [units, setUnits] = useState<UnitData[]>([]);
@@ -144,6 +146,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
       setSelectedAddress(null);
       setPropertyName('');
       setPropertyType('MULTIFAMILY');
+      setSetupMode('advanced');
       setUnits([]);
       setCurrentUnitIndex(0);
       setSkipUnits(false);
@@ -221,11 +224,11 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
       setPropertyName(
         street ? `${street}${city ? `, ${city}` : ''}` : fullAddress.display_name.split(',')[0],
       );
-      setStep('property-type');
+      setStep('mode');
     } catch {
       setSelectedAddress(suggestion);
       setPropertyName(suggestion.display_name.split(',')[0]);
-      setStep('property-type');
+      setStep('mode');
     } finally {
       setIsSearching(false);
     }
@@ -252,12 +255,29 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
     setUnits(newUnits);
   };
 
+  const selectMode = (mode: SetupMode) => {
+    setSetupMode(mode);
+    if (mode === 'express') {
+      setSkipUnits(true);
+      setStep('property-type');
+    } else {
+      setSkipUnits(false);
+      setStep('property-type');
+    }
+  };
+
   const selectPropertyType = (type: string) => {
     setPropertyType(type);
-    const config = PROPERTY_TYPES.find((t) => t.value === type);
-    generateUnits(config?.defaultUnits || 1, type);
-    setSkipUnits(false);
-    setStep('units');
+    if (setupMode === 'express') {
+      // Express mode: skip units, go straight to review
+      setUnits([]);
+      setStep('review');
+    } else {
+      // Advanced mode: configure units
+      const config = PROPERTY_TYPES.find((t) => t.value === type);
+      generateUnits(config?.defaultUnits || 1, type);
+      setStep('units');
+    }
   };
 
   // Unit management
@@ -394,8 +414,10 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
   };
 
   const handleBack = () => {
-    if (step === 'property-type') {
+    if (step === 'mode') {
       setStep('address');
+    } else if (step === 'property-type') {
+      setStep('mode');
     } else if (step === 'units') {
       setStep('property-type');
     } else if (step === 'occupancy') {
@@ -405,7 +427,9 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
         setStep('units');
       }
     } else if (step === 'review') {
-      if (skipUnits) {
+      if (setupMode === 'express') {
+        setStep('property-type');
+      } else if (skipUnits) {
         setStep('units');
       } else {
         setCurrentUnitIndex(units.length - 1);
@@ -421,16 +445,19 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
   // Progress
   const getProgress = () => {
     if (step === 'address' || step === 'manual') {
-      return 15;
+      return 10;
+    }
+    if (step === 'mode') {
+      return 25;
     }
     if (step === 'property-type') {
-      return 30;
+      return setupMode === 'express' ? 50 : 35;
     }
     if (step === 'units') {
-      return 45;
+      return 50;
     }
     if (step === 'occupancy') {
-      return 50 + ((currentUnitIndex + 1) / units.length) * 35;
+      return 55 + ((currentUnitIndex + 1) / units.length) * 35;
     }
     if (step === 'review') {
       return 95;
@@ -452,11 +479,16 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                 <h2 className="text-lg font-semibold text-white">Property Setup</h2>
                 <p className="text-sm text-slate-400">
                   {step === 'address' && 'Step 1: Find property address'}
-                  {step === 'property-type' && 'Step 2: Property type'}
-                  {step === 'units' && 'Step 3: Configure units'}
+                  {step === 'mode' && 'Step 2: Choose setup mode'}
+                  {step === 'property-type' &&
+                    `Step 3: Property type${setupMode === 'express' ? ' (Express)' : ''}`}
+                  {step === 'units' && 'Step 4: Configure units'}
                   {step === 'occupancy' &&
-                    `Step 4: Unit ${currentUnitIndex + 1} of ${units.length} - Occupancy`}
-                  {step === 'review' && 'Step 5: Review & create'}
+                    `Step 5: Unit ${currentUnitIndex + 1} of ${units.length} - Occupancy`}
+                  {step === 'review' &&
+                    (setupMode === 'express'
+                      ? 'Final: Review & create'
+                      : 'Step 6: Review & create')}
                 </p>
               </div>
             </div>
@@ -574,13 +606,101 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
               <Button
                 onClick={() => {
                   if (manualAddress && manualCity && manualState && manualZip && propertyName) {
-                    setStep('property-type');
+                    setStep('mode');
                   }
                 }}
                 className="w-full bg-indigo-600 text-white"
               >
                 Continue
               </Button>
+            </div>
+          )}
+
+          {/* STEP: Mode Selection */}
+          {step === 'mode' && (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                  How would you like to set up?
+                </h3>
+                <p className="text-slate-600">
+                  Choose based on how much detail you want to add now
+                </p>
+              </div>
+              <div className="space-y-4">
+                <button
+                  onClick={() => selectMode('express')}
+                  className="w-full p-6 border-2 border-slate-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all text-left group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
+                      <Check className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-lg font-semibold text-slate-900">Express Setup</div>
+                      <p className="text-slate-500 mt-1">
+                        Just the basics — add units and tenants later
+                      </p>
+                      <ul className="mt-3 text-sm text-slate-600 space-y-1">
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" /> Property address & name
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" /> Property type
+                        </li>
+                        <li className="flex items-center gap-2 text-slate-400">
+                          <ArrowRight className="w-4 h-4" /> Add units later from property page
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => selectMode('advanced')}
+                  className="w-full p-6 border-2 border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-indigo-100 rounded-xl group-hover:bg-indigo-200 transition-colors">
+                      <Building2 className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-lg font-semibold text-slate-900">Full Setup</div>
+                      <p className="text-slate-500 mt-1">
+                        Complete setup with units, occupancy & tenants
+                      </p>
+                      <ul className="mt-3 text-sm text-slate-600 space-y-1">
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-indigo-500" /> Property address & name
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-indigo-500" /> Property type
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-indigo-500" /> Configure all units (beds,
+                          baths, rent)
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-indigo-500" /> Set occupancy & tenant info
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-indigo-500" /> Auto-create leases for
+                          occupied units
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <div className="pt-4 border-t">
+                <button
+                  onClick={() => setStep('address')}
+                  className="text-slate-500 hover:text-slate-700 flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to address
+                </button>
+              </div>
             </div>
           )}
 
@@ -1055,7 +1175,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
         </div>
 
         {/* Footer */}
-        {step !== 'address' && step !== 'manual' && (
+        {step !== 'address' && step !== 'manual' && step !== 'mode' && (
           <div className="px-6 py-4 bg-slate-50 border-t flex justify-between">
             <Button variant="ghost" onClick={handleBack} disabled={createMutation.isPending}>
               <ArrowLeft className="w-4 h-4 mr-2" /> Back
