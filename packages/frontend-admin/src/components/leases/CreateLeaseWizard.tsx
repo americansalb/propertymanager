@@ -13,6 +13,12 @@ import {
   X,
   Plus,
   Trash2,
+  Home,
+  DollarSign,
+  Bed,
+  Bath,
+  Sparkles,
+  Hash,
 } from 'lucide-react';
 import api from '../../services/api';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
@@ -62,6 +68,14 @@ interface LeaseFormData {
   tenants: Tenant[];
 }
 
+interface NewUnitData {
+  unitNumber: string;
+  bedrooms: number;
+  bathrooms: number;
+  marketRent: string;
+  squareFeet: string;
+}
+
 const STEPS = [
   { id: 'unit', title: 'Select Unit', icon: Building2 },
   { id: 'terms', title: 'Lease Terms', icon: Calendar },
@@ -83,6 +97,16 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
     securityDeposit: '',
     paymentDueDay: 1,
     tenants: [{ firstName: '', lastName: '', email: '', phone: '', isPrimary: true }],
+  });
+
+  // Inline unit creation state
+  const [showAddUnit, setShowAddUnit] = useState(false);
+  const [newUnit, setNewUnit] = useState<NewUnitData>({
+    unitNumber: '',
+    bedrooms: 1,
+    bathrooms: 1,
+    marketRent: '',
+    squareFeet: '',
   });
 
   // Fetch properties
@@ -140,6 +164,14 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
     if (!open) {
       setCurrentStep(0);
       setErrors({});
+      setShowAddUnit(false);
+      setNewUnit({
+        unitNumber: '',
+        bedrooms: 1,
+        bathrooms: 1,
+        marketRent: '',
+        squareFeet: '',
+      });
       setFormData({
         propertyId: '',
         unitId: '',
@@ -169,6 +201,76 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },
   });
+
+  // Create unit mutation
+  const createUnitMutation = useMutation({
+    mutationFn: async (data: { propertyId: string; unit: NewUnitData }) => {
+      const response = await api.post('/units', {
+        propertyId: data.propertyId,
+        unitNumber: data.unit.unitNumber,
+        type:
+          data.unit.bedrooms === 0
+            ? 'STUDIO'
+            : data.unit.bedrooms === 1
+              ? 'ONE_BED'
+              : data.unit.bedrooms === 2
+                ? 'TWO_BED'
+                : 'THREE_BED',
+        bedrooms: data.unit.bedrooms,
+        bathrooms: data.unit.bathrooms,
+        squareFeet: data.unit.squareFeet ? parseInt(data.unit.squareFeet) : null,
+        marketRent: parseFloat(data.unit.marketRent) || 0,
+        status: 'VACANT',
+      });
+      return response.data.data;
+    },
+    onSuccess: (newUnit) => {
+      queryClient.invalidateQueries({ queryKey: ['units', formData.propertyId] });
+      // Auto-select the new unit
+      setFormData((prev) => ({
+        ...prev,
+        unitId: newUnit.id,
+        monthlyRent: newUnit.marketRent?.toString() || '',
+        securityDeposit: newUnit.marketRent?.toString() || '',
+      }));
+      // Reset and close add unit form
+      setShowAddUnit(false);
+      setNewUnit({
+        unitNumber: '',
+        bedrooms: 1,
+        bathrooms: 1,
+        marketRent: '',
+        squareFeet: '',
+      });
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.unitId;
+        delete newErrors.newUnit;
+        return newErrors;
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to create unit';
+      setErrors({ newUnit: Array.isArray(message) ? message.join(', ') : message });
+    },
+  });
+
+  const handleCreateUnit = () => {
+    // Validate new unit
+    if (!newUnit.unitNumber.trim()) {
+      setErrors({ newUnit: 'Unit number is required' });
+      return;
+    }
+    if (!newUnit.marketRent || parseFloat(newUnit.marketRent) <= 0) {
+      setErrors({ newUnit: 'Market rent must be greater than 0' });
+      return;
+    }
+
+    createUnitMutation.mutate({
+      propertyId: formData.propertyId,
+      unit: newUnit,
+    });
+  };
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -361,12 +463,29 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                 </div>
               ) : !formData.propertyId ? (
                 <p className="text-gray-500 text-sm">Select a property first</p>
-              ) : vacantUnits.length === 0 ? (
-                <p className="text-yellow-600 text-sm">
-                  No vacant units available for this property
-                </p>
+              ) : vacantUnits.length === 0 && !showAddUnit ? (
+                <div className="text-center py-8 px-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border-2 border-dashed border-amber-200">
+                  <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Home className="w-8 h-8 text-amber-600" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    No vacant units available
+                  </h4>
+                  <p className="text-gray-600 text-sm mb-4">
+                    This property doesn't have any vacant units yet. Would you like to create one?
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => setShowAddUnit(true)}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Create New Unit
+                  </Button>
+                </div>
               ) : (
-                <div className="grid gap-3">
+                <div className="space-y-3">
+                  {/* Existing units */}
                   {vacantUnits.map((unit) => (
                     <div
                       key={unit.id}
@@ -380,7 +499,7 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                       }}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                         formData.unitId === unit.id
-                          ? 'border-indigo-500 bg-indigo-50'
+                          ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -397,6 +516,155 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                       </div>
                     </div>
                   ))}
+
+                  {/* Add Unit Button or Form */}
+                  {!showAddUnit ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddUnit(true)}
+                      className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>Add New Unit</span>
+                    </button>
+                  ) : (
+                    <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-purple-50/50">
+                      <CardContent className="pt-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-indigo-500" />
+                            Quick Add Unit
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddUnit(false);
+                              setErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors.newUnit;
+                                return newErrors;
+                              });
+                            }}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {errors.newUnit && (
+                          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-sm text-red-600">{errors.newUnit}</p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Unit Number *
+                            </label>
+                            <div className="relative">
+                              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <Input
+                                value={newUnit.unitNumber}
+                                onChange={(e) =>
+                                  setNewUnit((prev) => ({ ...prev, unitNumber: e.target.value }))
+                                }
+                                placeholder="e.g. 101, A, etc."
+                                className="pl-9"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Market Rent *
+                            </label>
+                            <div className="relative">
+                              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <Input
+                                type="number"
+                                min="0"
+                                value={newUnit.marketRent}
+                                onChange={(e) =>
+                                  setNewUnit((prev) => ({ ...prev, marketRent: e.target.value }))
+                                }
+                                placeholder="1500"
+                                className="pl-9"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Bedrooms
+                            </label>
+                            <div className="relative">
+                              <Bed className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <select
+                                value={newUnit.bedrooms}
+                                onChange={(e) =>
+                                  setNewUnit((prev) => ({
+                                    ...prev,
+                                    bedrooms: parseInt(e.target.value),
+                                  }))
+                                }
+                                className="w-full h-10 border rounded-md pl-9 pr-3 text-sm"
+                              >
+                                <option value="0">Studio</option>
+                                <option value="1">1 Bed</option>
+                                <option value="2">2 Bed</option>
+                                <option value="3">3 Bed</option>
+                                <option value="4">4+ Bed</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Bathrooms
+                            </label>
+                            <div className="relative">
+                              <Bath className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <select
+                                value={newUnit.bathrooms}
+                                onChange={(e) =>
+                                  setNewUnit((prev) => ({
+                                    ...prev,
+                                    bathrooms: parseFloat(e.target.value),
+                                  }))
+                                }
+                                className="w-full h-10 border rounded-md pl-9 pr-3 text-sm"
+                              >
+                                <option value="1">1 Bath</option>
+                                <option value="1.5">1.5 Bath</option>
+                                <option value="2">2 Bath</option>
+                                <option value="2.5">2.5 Bath</option>
+                                <option value="3">3+ Bath</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex justify-end">
+                          <Button
+                            type="button"
+                            onClick={handleCreateUnit}
+                            disabled={createUnitMutation.isPending}
+                            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                          >
+                            {createUnitMutation.isPending ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Creating...
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Unit & Select
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
               {errors.unitId && <p className="text-sm text-red-600 mt-1">{errors.unitId}</p>}
@@ -571,7 +839,9 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone *
+                      </label>
                       <Input
                         type="tel"
                         value={tenant.phone}
@@ -624,7 +894,8 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
                 </p>
                 <p>
                   <span className="font-medium">Unit:</span> {selectedUnit?.unitNumber} (
-                  {Number(selectedUnit?.bedrooms || 0)} bed / {Number(selectedUnit?.bathrooms || 0)} bath)
+                  {Number(selectedUnit?.bedrooms || 0)} bed / {Number(selectedUnit?.bathrooms || 0)}{' '}
+                  bath)
                 </p>
               </div>
             </div>
