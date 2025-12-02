@@ -225,7 +225,10 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
       return response.data.data;
     },
     onSuccess: (newUnit) => {
+      // Invalidate units for this property AND the properties list to update unit counts
       queryClient.invalidateQueries({ queryKey: ['units', formData.propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['units'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       // Auto-select the new unit
       setFormData((prev) => ({
         ...prev,
