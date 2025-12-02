@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   X,
   Building2,
@@ -8,9 +9,14 @@ import {
   DollarSign,
   Edit,
   ExternalLink,
+  Trash2,
+  XCircle,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { Button } from '../ui/button';
+import { useCancelWorkOrder, useDeleteWorkOrder } from '../../hooks/useWorkOrders';
 
 interface WorkOrderDetailDrawerProps {
   workOrder: any;
@@ -27,9 +33,51 @@ export function WorkOrderDetailDrawer({
   onEdit,
   onPropertyClick,
 }: WorkOrderDetailDrawerProps) {
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const cancelWorkOrder = useCancelWorkOrder();
+  const deleteWorkOrder = useDeleteWorkOrder();
+
   if (!open || !workOrder) {
     return null;
   }
+
+  const canCancel = !['COMPLETED', 'CANCELLED'].includes(workOrder.status);
+  const canDelete = ['DRAFT', 'CANCELLED'].includes(workOrder.status);
+
+  const handleCancel = async () => {
+    if (!cancelReason.trim()) {
+      setError('Please provide a reason for cancellation');
+      return;
+    }
+
+    try {
+      await cancelWorkOrder.mutateAsync({
+        id: workOrder.id,
+        reason: cancelReason.trim(),
+      });
+      setShowCancelConfirm(false);
+      setCancelReason('');
+      setError(null);
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to cancel work order');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteWorkOrder.mutateAsync(workOrder.id);
+      setShowDeleteConfirm(false);
+      setError(null);
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to delete work order');
+    }
+  };
 
   const statusColors: Record<string, string> = {
     COMPLETED: 'bg-green-100 text-green-700',
@@ -59,10 +107,32 @@ export function WorkOrderDetailDrawer({
             <p className="text-sm text-gray-500 mt-0.5">#{workOrder.id.slice(0, 8)}</p>
           </div>
           <div className="flex items-center gap-2">
-            {onEdit && (
+            {onEdit && workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED' && (
               <Button variant="outline" size="sm" onClick={onEdit}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
+              </Button>
+            )}
+            {canCancel && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCancelConfirm(true)}
+                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Cancel
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
               </Button>
             )}
             <button
@@ -304,6 +374,146 @@ export function WorkOrderDetailDrawer({
           )}
         </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      {showCancelConfirm && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 z-[60]"
+            onClick={() => {
+              setShowCancelConfirm(false);
+              setCancelReason('');
+              setError(null);
+            }}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl z-[70] w-[90%] max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Cancel Work Order</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for cancellation <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Explain why this work order is being cancelled..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCancelConfirm(false);
+                  setCancelReason('');
+                  setError(null);
+                }}
+                disabled={cancelWorkOrder.isPending}
+              >
+                Keep Open
+              </Button>
+              <Button
+                onClick={handleCancel}
+                disabled={cancelWorkOrder.isPending || !cancelReason.trim()}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                {cancelWorkOrder.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Cancel Work Order
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 z-[60]"
+            onClick={() => {
+              setShowDeleteConfirm(false);
+              setError(null);
+            }}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl z-[70] w-[90%] max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Work Order</h3>
+                <p className="text-sm text-gray-500">This will permanently delete the work order</p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete "<strong>{workOrder.title}</strong>"? This action
+              cannot be undone.
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setError(null);
+                }}
+                disabled={deleteWorkOrder.isPending}
+              >
+                Keep
+              </Button>
+              <Button
+                onClick={handleDelete}
+                disabled={deleteWorkOrder.isPending}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {deleteWorkOrder.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Permanently
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
