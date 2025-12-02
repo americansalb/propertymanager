@@ -457,12 +457,12 @@ export default function AddMarketplaceVendorModal({
         city: formData.city,
         state: formData.state,
         zipCode: formData.zipCode,
-        type: 'PROFESSIONAL_SERVICES', // Changed from 'LOCKSMITH' to valid enum value
-        status: 'ACTIVE',
+        type: 'PROFESSIONAL_SERVICES', // Locksmith category mapped to PROFESSIONAL_SERVICES
+        // status defaults to PENDING_APPROVAL in backend
         licenseNumber: formData.licenseNumber || undefined,
         insuranceExpiryDate: formData.insuranceExpiry || undefined,
-        // Note: Backend doesn't support insuranceProvider or insurancePolicyNumber fields
-        // These fields are collected but not stored in the current vendor schema
+        // Note: insuranceProvider and insurancePolicyNumber are collected but not yet stored
+        // These fields are part of the onboarding flow for future verification
       });
 
       const vendorId = vendorResponse.data.data.id;

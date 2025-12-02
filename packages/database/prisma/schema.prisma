@@ -663,9 +663,11 @@ enum VendorType {
 }
 
 enum VendorStatus {
+  PENDING_APPROVAL  // Awaiting admin review
   ACTIVE
   INACTIVE
   SUSPENDED
+  REJECTED          // Application rejected
 }
 
 model Vendor {
@@ -678,7 +680,7 @@ model Vendor {
   phone       String?
 
   type        VendorType
-  status      VendorStatus @default(ACTIVE)
+  status      VendorStatus @default(PENDING_APPROVAL)
 
   // Address
   address1    String?
@@ -700,6 +702,12 @@ model Vendor {
   insuranceCertUrl    String?
   licenseNumber       String?
   licenseExpiryDate   DateTime?
+
+  // Approval tracking
+  approvalNotes       String?  @db.Text  // Admin notes during review
+  approvedByUserId    String?            // User who approved/rejected
+  approvedAt          DateTime?          // When approved/rejected
+  rejectionReason     String?  @db.Text  // If rejected, why
 
   // Multi-tenant
   organizationId String

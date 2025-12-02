@@ -89,4 +89,47 @@ export class VendorsController {
     const result = await this.vendorsService.remove(id, organizationId);
     return { success: true, data: result };
   }
+
+  @Post(':id/approve')
+  @ApiOperation({ summary: 'Approve a pending vendor application' })
+  @ApiResponse({ status: 200, description: 'Vendor approved successfully' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  async approve(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: { notes?: string },
+  ) {
+    const vendor = await this.vendorsService.approveVendor(
+      id,
+      organizationId,
+      body.notes,
+    );
+    return { success: true, data: vendor };
+  }
+
+  @Post(':id/reject')
+  @ApiOperation({ summary: 'Reject a pending vendor application' })
+  @ApiResponse({ status: 200, description: 'Vendor rejected successfully' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  async reject(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: { reason: string; notes?: string },
+  ) {
+    const vendor = await this.vendorsService.rejectVendor(
+      id,
+      organizationId,
+      body.reason,
+      body.notes,
+    );
+    return { success: true, data: vendor };
+  }
+
+  @Get('pending')
+  @ApiOperation({ summary: 'Get all pending vendor applications' })
+  @ApiResponse({ status: 200, description: 'List of pending vendors' })
+  async findPending(@OrganizationId() organizationId: string) {
+    const vendors = await this.vendorsService.findPendingVendors(organizationId);
+    return { success: true, data: vendors };
+  }
 }

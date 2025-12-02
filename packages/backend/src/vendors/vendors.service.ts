@@ -193,4 +193,58 @@ export class VendorsService {
       },
     };
   }
+
+  async findPendingVendors(organizationId: string) {
+    return this.prisma.vendor.findMany({
+      where: {
+        organizationId,
+        status: 'PENDING_APPROVAL',
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        workOrders: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+      },
+    });
+  }
+
+  async approveVendor(id: string, organizationId: string, notes?: string) {
+    // First check if vendor exists and belongs to organization
+    await this.findOne(id, organizationId);
+
+    return this.prisma.vendor.update({
+      where: { id },
+      data: {
+        status: 'ACTIVE',
+        approvalNotes: notes,
+        approvedAt: new Date(),
+        // approvedByUserId: userId, // TODO: Get from request context
+      },
+    });
+  }
+
+  async rejectVendor(
+    id: string,
+    organizationId: string,
+    reason: string,
+    notes?: string,
+  ) {
+    // First check if vendor exists and belongs to organization
+    await this.findOne(id, organizationId);
+
+    return this.prisma.vendor.update({
+      where: { id },
+      data: {
+        status: 'REJECTED',
+        rejectionReason: reason,
+        approvalNotes: notes,
+        approvedAt: new Date(),
+        // approvedByUserId: userId, // TODO: Get from request context
+      },
+    });
+  }
 }

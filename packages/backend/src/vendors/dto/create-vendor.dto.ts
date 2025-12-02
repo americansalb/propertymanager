@@ -23,9 +23,11 @@ export enum VendorType {
 }
 
 export enum VendorStatus {
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
   SUSPENDED = 'SUSPENDED',
+  REJECTED = 'REJECTED',
 }
 
 export class CreateVendorDto {
