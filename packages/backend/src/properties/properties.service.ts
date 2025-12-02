@@ -140,9 +140,9 @@ export class PropertiesService {
         where: { propertyId: id },
       });
 
-      // Delete documents associated with this property
+      // Delete documents associated with this property (polymorphic relation)
       await tx.document.deleteMany({
-        where: { propertyId: id },
+        where: { entityType: 'Property', entityId: id },
       });
 
       // Delete the property (units, leases, accounts cascade automatically)
