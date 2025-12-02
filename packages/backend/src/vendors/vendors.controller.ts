@@ -28,11 +28,21 @@ export class VendorsController {
   async create(
     @Body() createVendorDto: CreateVendorDto & { organizationId?: string },
   ) {
-    // For public self-registration, use a default/public organization
-    // Or create vendor without organizationId requirement
-    const organizationId = createVendorDto.organizationId || 'public-marketplace';
-    const vendor = await this.vendorsService.create(organizationId, createVendorDto);
-    return { success: true, data: vendor };
+    try {
+      // For public self-registration, use a default/public organization
+      const organizationId = createVendorDto.organizationId || 'public-marketplace';
+      const vendor = await this.vendorsService.create(organizationId, createVendorDto);
+      return { success: true, data: vendor };
+    } catch (error) {
+      // Return detailed error for debugging
+      return {
+        success: false,
+        error: {
+          message: error.message || 'Failed to create vendor',
+          details: error,
+        },
+      };
+    }
   }
 
   @Get()
