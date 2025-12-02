@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
-import { type CreatePropertyDto, type UpdatePropertyDto, type FullPropertySetupDto, type SetupUnitDto } from './dto/property.dto';
+import {
+  type CreatePropertyDto,
+  type UpdatePropertyDto,
+  type FullPropertySetupDto,
+} from './dto/property.dto';
 
 @Injectable()
 export class PropertiesService {
@@ -160,12 +164,15 @@ export class PropertiesService {
         },
       });
 
-      this.logger.log({
-        message: 'property.fullSetup.created',
-        propertyId: property.id,
-        organizationId,
-        unitCount: dto.units.length,
-      }, PropertiesService.name);
+      this.logger.log(
+        {
+          message: 'property.fullSetup.created',
+          propertyId: property.id,
+          organizationId,
+          unitCount: dto.units.length,
+        },
+        PropertiesService.name,
+      );
 
       // 2. Create units and leases
       const createdUnits = [];
@@ -185,11 +192,14 @@ export class PropertiesService {
 
         if (existingUnit) {
           // Skip existing units - don't overwrite
-          this.logger.log({
-            message: 'property.fullSetup.unitExists',
-            propertyId: property.id,
-            unitNumber: unitDto.unitNumber,
-          }, PropertiesService.name);
+          this.logger.log(
+            {
+              message: 'property.fullSetup.unitExists',
+              propertyId: property.id,
+              unitNumber: unitDto.unitNumber,
+            },
+            PropertiesService.name,
+          );
           createdUnits.push(existingUnit);
           continue;
         }
@@ -246,8 +256,8 @@ export class PropertiesService {
       }
 
       // 4. Return comprehensive result
-      const occupiedCount = createdUnits.filter(u => u.status === 'OCCUPIED').length;
-      const vacantCount = createdUnits.filter(u => u.status === 'VACANT').length;
+      const occupiedCount = createdUnits.filter((u) => u.status === 'OCCUPIED').length;
+      const vacantCount = createdUnits.filter((u) => u.status === 'VACANT').length;
       const totalRent = createdLeases.reduce((sum, l) => sum + Number(l.monthlyRent), 0);
 
       return {
@@ -259,9 +269,8 @@ export class PropertiesService {
           totalUnits: createdUnits.length,
           occupiedUnits: occupiedCount,
           vacantUnits: vacantCount,
-          occupancyRate: createdUnits.length > 0
-            ? Math.round((occupiedCount / createdUnits.length) * 100)
-            : 0,
+          occupancyRate:
+            createdUnits.length > 0 ? Math.round((occupiedCount / createdUnits.length) * 100) : 0,
           monthlyRevenue: totalRent,
           setupComplete: true,
         },
