@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -17,6 +17,8 @@ import {
   ShieldCheck,
   ShieldX,
   ShieldAlert,
+  Store,
+  Star,
 } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -25,6 +27,7 @@ import VendorModal from '../components/vendors/VendorModal';
 
 export default function VendorsPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
 
@@ -37,6 +40,47 @@ export default function VendorsPage() {
     e.stopPropagation();
     setSelectedVendor(vendor);
     setIsModalOpen(true);
+  };
+
+  // Fetch marketplace profiles for all vendors
+  const { data: marketplaceProfiles } = useQuery({
+    queryKey: ['marketplace-vendor-profiles'],
+    queryFn: async () => {
+      const response = await api.get('/marketplace/vendors');
+      return response.data.data || [];
+    },
+  });
+
+  // Create marketplace profile mutation
+  const createMarketplaceProfile = useMutation({
+    mutationFn: async (vendorId: string) => {
+      const response = await api.post('/marketplace/vendors', { vendorId });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketplace-vendor-profiles'] });
+    },
+  });
+
+  // Check if a vendor has a marketplace profile
+  const hasMarketplaceProfile = (vendorId: string) => {
+    if (!marketplaceProfiles) {
+      return false;
+    }
+    return marketplaceProfiles.some((p: any) => p.vendorId === vendorId);
+  };
+
+  // Get marketplace profile for a vendor
+  const getMarketplaceProfile = (vendorId: string) => {
+    if (!marketplaceProfiles) {
+      return null;
+    }
+    return marketplaceProfiles.find((p: any) => p.vendorId === vendorId);
+  };
+
+  const handleEnableMarketplace = async (vendorId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await createMarketplaceProfile.mutateAsync(vendorId);
   };
 
   const { data: vendors, isLoading: isLoadingVendors } = useQuery({
@@ -207,10 +251,9 @@ export default function VendorsPage() {
       w9Status === 'missing',
     ].filter(Boolean).length;
 
-    const warnings = [
-      insuranceStatus === 'expiring',
-      licenseStatus === 'expiring',
-    ].filter(Boolean).length;
+    const warnings = [insuranceStatus === 'expiring', licenseStatus === 'expiring'].filter(
+      Boolean,
+    ).length;
 
     let overallStatus: 'compliant' | 'warning' | 'non-compliant' = 'compliant';
     if (issues > 0) {
@@ -224,7 +267,9 @@ export default function VendorsPage() {
 
   // Portfolio compliance summary
   const complianceStats = useMemo(() => {
-    if (!vendors) return { compliant: 0, warning: 0, nonCompliant: 0 };
+    if (!vendors) {
+      return { compliant: 0, warning: 0, nonCompliant: 0 };
+    }
 
     let compliant = 0;
     let warning = 0;
@@ -232,9 +277,13 @@ export default function VendorsPage() {
 
     vendors.forEach((vendor: any) => {
       const status = getComplianceStatus(vendor);
-      if (status.overallStatus === 'compliant') compliant++;
-      else if (status.overallStatus === 'warning') warning++;
-      else nonCompliant++;
+      if (status.overallStatus === 'compliant') {
+        compliant++;
+      } else if (status.overallStatus === 'warning') {
+        warning++;
+      } else {
+        nonCompliant++;
+      }
     });
 
     return { compliant, warning, nonCompliant };
@@ -362,17 +411,26 @@ export default function VendorsPage() {
                     <div className="flex items-center gap-2">
                       {/* Overall Compliance Badge */}
                       {compliance.overallStatus === 'compliant' && (
-                        <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-100 text-green-700" title="All compliance documents current">
+                        <span
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-100 text-green-700"
+                          title="All compliance documents current"
+                        >
                           <ShieldCheck className="w-3 h-3" />
                         </span>
                       )}
                       {compliance.overallStatus === 'warning' && (
-                        <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700" title="Documents expiring soon">
+                        <span
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700"
+                          title="Documents expiring soon"
+                        >
                           <ShieldAlert className="w-3 h-3" />
                         </span>
                       )}
                       {compliance.overallStatus === 'non-compliant' && (
-                        <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-100 text-red-700" title="Missing or expired documents">
+                        <span
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-100 text-red-700"
+                          title="Missing or expired documents"
+                        >
                           <ShieldX className="w-3 h-3" />
                         </span>
                       )}
@@ -501,7 +559,11 @@ export default function VendorsPage() {
                             ? 'bg-green-50 text-green-700 border border-green-200'
                             : 'bg-gray-50 text-gray-500 border border-gray-200'
                         }`}
-                        title={compliance.w9Status === 'valid' ? 'W9/Tax ID on file' : 'No W9/Tax ID on file'}
+                        title={
+                          compliance.w9Status === 'valid'
+                            ? 'W9/Tax ID on file'
+                            : 'No W9/Tax ID on file'
+                        }
                       >
                         <FileText className="w-3 h-3" />
                         {compliance.w9Status === 'valid' ? 'W9' : 'No W9'}
@@ -533,6 +595,38 @@ export default function VendorsPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Marketplace Status */}
+                    {hasMarketplaceProfile(vendor.id) ? (
+                      <div className="flex items-center justify-between p-2 bg-primary/5 rounded-lg border border-primary/20 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Store className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium text-primary">On Marketplace</span>
+                        </div>
+                        {(() => {
+                          const profile = getMarketplaceProfile(vendor.id);
+                          return profile?.averageRating ? (
+                            <div className="flex items-center gap-1 text-sm">
+                              <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                              <span>{Number(profile.averageRating).toFixed(1)}</span>
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mb-3 border-primary/30 text-primary hover:bg-primary/10"
+                        onClick={(e) => handleEnableMarketplace(vendor.id, e)}
+                        disabled={createMarketplaceProfile.isPending}
+                      >
+                        <Store className="w-4 h-4 mr-2" />
+                        {createMarketplaceProfile.isPending
+                          ? 'Enabling...'
+                          : 'Enable on Marketplace'}
+                      </Button>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex gap-2">
@@ -580,11 +674,7 @@ export default function VendorsPage() {
       )}
 
       {/* Vendor Modal */}
-      <VendorModal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        vendor={selectedVendor}
-      />
+      <VendorModal open={isModalOpen} onOpenChange={setIsModalOpen} vendor={selectedVendor} />
     </div>
   );
 }

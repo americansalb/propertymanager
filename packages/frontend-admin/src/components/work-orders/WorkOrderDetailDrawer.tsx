@@ -13,10 +13,12 @@ import {
   XCircle,
   AlertTriangle,
   Loader2,
+  Store,
 } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { Button } from '../ui/button';
 import { useCancelWorkOrder, useDeleteWorkOrder } from '../../hooks/useWorkOrders';
+import MarketplaceDispatchModal from '../marketplace/MarketplaceDispatchModal';
 
 interface WorkOrderDetailDrawerProps {
   workOrder: any;
@@ -35,11 +37,16 @@ export function WorkOrderDetailDrawer({
 }: WorkOrderDetailDrawerProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMarketplaceDispatch, setShowMarketplaceDispatch] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const cancelWorkOrder = useCancelWorkOrder();
   const deleteWorkOrder = useDeleteWorkOrder();
+
+  // Can dispatch to marketplace if work order is submitted or assigned but not to a vendor
+  const canDispatchToMarketplace =
+    ['SUBMITTED', 'ASSIGNED'].includes(workOrder?.status) && !workOrder?.vendor;
 
   if (!open || !workOrder) {
     return null;
@@ -111,6 +118,17 @@ export function WorkOrderDetailDrawer({
               <Button variant="outline" size="sm" onClick={onEdit}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
+              </Button>
+            )}
+            {canDispatchToMarketplace && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMarketplaceDispatch(true)}
+                className="text-primary hover:text-primary hover:bg-primary/10 border-primary/30"
+              >
+                <Store className="w-4 h-4 mr-2" />
+                Dispatch to Marketplace
               </Button>
             )}
             {canCancel && (
@@ -514,6 +532,13 @@ export function WorkOrderDetailDrawer({
           </div>
         </>
       )}
+
+      {/* Marketplace Dispatch Modal */}
+      <MarketplaceDispatchModal
+        open={showMarketplaceDispatch}
+        onOpenChange={setShowMarketplaceDispatch}
+        workOrder={workOrder}
+      />
     </>
   );
 }
