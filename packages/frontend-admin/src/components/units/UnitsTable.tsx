@@ -71,6 +71,8 @@ export default function UnitsTable({ propertyId, propertyName }: UnitsTableProps
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['units', propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['units'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       setDeleteDialogOpen(false);
       setUnitToDelete(null);
     },
@@ -82,6 +84,7 @@ export default function UnitsTable({ propertyId, propertyName }: UnitsTableProps
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['units', propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
     },
   });
 

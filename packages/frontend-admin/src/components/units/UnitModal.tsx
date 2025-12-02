@@ -118,6 +118,8 @@ export default function UnitModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['units', propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['units'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -237,7 +239,9 @@ export default function UnitModal({
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-800">Please fix the following errors:</p>
+                  <p className="text-sm font-medium text-red-800">
+                    Please fix the following errors:
+                  </p>
                   <ul className="mt-1 text-sm text-red-600 list-disc list-inside">
                     {Object.entries(errors).map(([field, message]) => (
                       <li key={field}>{message}</li>

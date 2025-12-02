@@ -80,6 +80,7 @@ export default function LeaseStatusActions({ lease, onActionComplete }: LeaseSta
     queryClient.invalidateQueries({ queryKey: ['leases'] });
     queryClient.invalidateQueries({ queryKey: ['lease', lease.id] });
     queryClient.invalidateQueries({ queryKey: ['units'] });
+    queryClient.invalidateQueries({ queryKey: ['properties'] });
   };
 
   // ACTIVATE mutation
