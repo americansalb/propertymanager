@@ -530,7 +530,7 @@ export default function AddMarketplaceVendorModal({
       case 'services':
         return 'Services & Coverage';
       case 'review':
-        return 'Review & Submit';
+        return 'Review & Submit for Approval';
     }
   };
 
@@ -547,7 +547,7 @@ export default function AddMarketplaceVendorModal({
       case 'services':
         return 'Services offered and service area';
       case 'review':
-        return 'Review all information before submitting';
+        return 'Submit your application for team review';
     }
   };
 
@@ -931,7 +931,7 @@ export default function AddMarketplaceVendorModal({
                         </p>
                         <p className="text-sm text-amber-700 mt-1">
                           A valid state license is required to operate as a locksmith in this state.
-                          We will verify your license with the state licensing board.
+                          Our team will review and verify your license information during the approval process.
                         </p>
                       </div>
                     </div>
@@ -1072,9 +1072,8 @@ export default function AddMarketplaceVendorModal({
                     </span>
                     <p className="text-sm text-indigo-700 mt-1">
                       I authorize PropertyMaster to conduct a background check on myself and/or my
-                      employees who will be performing locksmith services. I understand that all
-                      technicians must pass a background check before being dispatched to
-                      properties.
+                      employees who will be performing locksmith services. I understand that my application will be reviewed and that all
+                      technicians must pass a background check before being approved for dispatch.
                     </p>
                     {errors.backgroundCheckConsent && (
                       <p className="text-sm text-red-600 mt-2">{errors.backgroundCheckConsent}</p>
@@ -1382,14 +1381,13 @@ export default function AddMarketplaceVendorModal({
           {/* Review */}
           {step === 'review' && (
             <div className="space-y-6">
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <p className="font-medium text-green-900">Ready to Submit!</p>
-                    <p className="text-sm text-green-700 mt-1">
-                      Please review all information below before submitting. You can go back to any
-                      step to make changes.
+                    <p className="font-medium text-blue-900">Ready to Submit for Approval</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Please review all information below before submitting. Our team will review your application and verify your credentials. You&apos;ll be notified once approved. You can go back to any step to make changes.
                     </p>
                   </div>
                 </div>
@@ -1598,11 +1596,11 @@ export default function AddMarketplaceVendorModal({
             {step === 'review' && (
               <Button onClick={handleSubmit} disabled={createVendorMutation.isPending}>
                 {createVendorMutation.isPending ? (
-                  'Creating Vendor...'
+                  'Submitting Application...'
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Add to Marketplace
+                    Submit for Approval
                   </>
                 )}
               </Button>
