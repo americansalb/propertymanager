@@ -362,13 +362,16 @@ export default function MarketplacePage() {
                 className="pl-10"
               />
             </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select
+              value={categoryFilter || 'all'}
+              onValueChange={(v) => setCategoryFilter(v === 'all' ? '' : v)}
+            >
               <SelectTrigger className="w-full md:w-[200px]">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {SERVICE_CATEGORIES.map((cat) => (
                   <SelectItem key={cat.value} value={cat.value}>
                     {cat.label}
@@ -376,12 +379,15 @@ export default function MarketplacePage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={tierFilter} onValueChange={setTierFilter}>
+            <Select
+              value={tierFilter || 'all'}
+              onValueChange={(v) => setTierFilter(v === 'all' ? '' : v)}
+            >
               <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="All Tiers" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Tiers</SelectItem>
+                <SelectItem value="all">All Tiers</SelectItem>
                 <SelectItem value="PREMIUM">Premium</SelectItem>
                 <SelectItem value="VERIFIED_PRICING">Verified Pricing</SelectItem>
                 <SelectItem value="STANDARD">Standard</SelectItem>

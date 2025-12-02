@@ -544,11 +544,42 @@ export class MarketplaceService {
     const limit = query?.limit || 20;
     const skip = (page - 1) * limit;
 
+    // Build workOrderId filter based on organization and property
+    let workOrderIds: string[] | undefined;
+
+    if (organizationId || query?.propertyId) {
+      const workOrderWhere: any = {};
+      if (organizationId) {
+        workOrderWhere.organizationId = organizationId;
+      }
+      if (query?.propertyId) {
+        workOrderWhere.propertyId = query.propertyId;
+      }
+
+      const workOrders = await this.prisma.workOrder.findMany({
+        where: workOrderWhere,
+        select: { id: true },
+      });
+      workOrderIds = workOrders.map((wo) => wo.id);
+
+      // If no work orders found, return empty result
+      if (workOrderIds.length === 0) {
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+          },
+        };
+      }
+    }
+
     const where: any = {};
 
-    if (organizationId) {
-      // Only return jobs for work orders in this organization
-      where.workOrder = { organizationId };
+    if (workOrderIds) {
+      where.workOrderId = { in: workOrderIds };
     }
 
     if (query?.status) {
@@ -557,13 +588,6 @@ export class MarketplaceService {
 
     if (query?.vendorProfileId) {
       where.vendorProfileId = query.vendorProfileId;
-    }
-
-    if (query?.propertyId) {
-      where.workOrder = {
-        ...where.workOrder,
-        propertyId: query.propertyId,
-      };
     }
 
     const [jobs, total] = await Promise.all([

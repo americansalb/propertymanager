@@ -285,12 +285,15 @@ export default function MarketplaceDispatchModal({
                   className="pl-10"
                 />
               </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select
+                value={categoryFilter || 'all'}
+                onValueChange={(v) => setCategoryFilter(v === 'all' ? '' : v)}
+              >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="Filter by Service" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Services</SelectItem>
+                  <SelectItem value="all">All Services</SelectItem>
                   {SERVICE_CATEGORIES.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
