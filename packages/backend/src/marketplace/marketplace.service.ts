@@ -1305,35 +1305,53 @@ export class MarketplaceService {
   // ============================================================================
 
   async getMarketplaceStats(organizationId: string) {
+    // Get work order IDs for this organization first
+    const orgWorkOrders = await this.prisma.workOrder.findMany({
+      where: { organizationId },
+      select: { id: true },
+    });
+    const workOrderIds = orgWorkOrders.map((wo) => wo.id);
+
+    if (workOrderIds.length === 0) {
+      return {
+        totalJobs: 0,
+        activeJobs: 0,
+        completedJobs: 0,
+        totalSpend: 0,
+        avgJobValue: 0,
+        topVendors: [],
+      };
+    }
+
     const [totalJobs, activeJobs, completedJobs, totalSpend, avgJobValue, topVendors] =
       await Promise.all([
         this.prisma.marketplaceJob.count({
           where: {
-            workOrder: { organizationId },
+            workOrderId: { in: workOrderIds },
           },
         }),
         this.prisma.marketplaceJob.count({
           where: {
-            workOrder: { organizationId },
+            workOrderId: { in: workOrderIds },
             status: { in: ['PENDING_DISPATCH', 'DISPATCHED', 'ACCEPTED', 'IN_PROGRESS'] },
           },
         }),
         this.prisma.marketplaceJob.count({
           where: {
-            workOrder: { organizationId },
+            workOrderId: { in: workOrderIds },
             status: 'CONFIRMED',
           },
         }),
         this.prisma.marketplaceJob.aggregate({
           where: {
-            workOrder: { organizationId },
+            workOrderId: { in: workOrderIds },
             status: 'CONFIRMED',
           },
           _sum: { actualTotal: true },
         }),
         this.prisma.marketplaceJob.aggregate({
           where: {
-            workOrder: { organizationId },
+            workOrderId: { in: workOrderIds },
             status: 'CONFIRMED',
           },
           _avg: { actualTotal: true },
@@ -1342,7 +1360,7 @@ export class MarketplaceService {
           where: {
             marketplaceJobs: {
               some: {
-                workOrder: { organizationId },
+                workOrderId: { in: workOrderIds },
                 status: 'CONFIRMED',
               },
             },
@@ -1354,16 +1372,6 @@ export class MarketplaceService {
                 companyName: true,
               },
             },
-            _count: {
-              select: {
-                marketplaceJobs: {
-                  where: {
-                    workOrder: { organizationId },
-                    status: 'CONFIRMED',
-                  },
-                },
-              },
-            },
           },
           orderBy: {
             averageRating: 'desc',
@@ -1372,18 +1380,34 @@ export class MarketplaceService {
         }),
       ]);
 
+    // Count jobs per vendor separately
+    const vendorJobCounts = await Promise.all(
+      topVendors.map(async (v) => {
+        const count = await this.prisma.marketplaceJob.count({
+          where: {
+            vendorProfileId: v.id,
+            workOrderId: { in: workOrderIds },
+            status: 'CONFIRMED',
+          },
+        });
+        return { id: v.id, count };
+      }),
+    );
+
+    const jobCountMap = new Map(vendorJobCounts.map((vc) => [vc.id, vc.count]));
+
     return {
       totalJobs,
       activeJobs,
       completedJobs,
-      totalSpend: totalSpend._sum.actualTotal || 0,
-      avgJobValue: avgJobValue._avg.actualTotal || 0,
+      totalSpend: totalSpend._sum?.actualTotal || 0,
+      avgJobValue: avgJobValue._avg?.actualTotal || 0,
       topVendors: topVendors.map((v) => ({
         id: v.id,
         vendorId: v.vendor.id,
         companyName: v.vendor.companyName,
         averageRating: v.averageRating,
-        jobsCompleted: v._count.marketplaceJobs,
+        jobsCompleted: jobCountMap.get(v.id) || 0,
       })),
     };
   }
