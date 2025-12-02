@@ -7,12 +7,14 @@ import {
   Body,
   Param,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { VendorsService } from './vendors.service';
 import { CreateVendorDto, UpdateVendorDto } from './dto';
 import { OrganizationId } from '../common/decorators/organization.decorator';
+import { UserId } from '../common/decorators/user-id.decorator';
 
 @ApiTags('vendors')
 @Controller('vendors')
@@ -51,6 +53,17 @@ export class VendorsController {
   async findPending(@OrganizationId() organizationId: string) {
     const vendors = await this.vendorsService.findPendingVendors(organizationId);
     return { success: true, data: vendors };
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get logged-in vendor profile with marketplace info' })
+  @ApiResponse({ status: 200, description: 'Vendor profile with marketplace data' })
+  @ApiResponse({ status: 404, description: 'Vendor profile not found for this user' })
+  async getMyProfile(@UserId() userId: string, @OrganizationId() organizationId: string) {
+    const vendor = await this.vendorsService.findByUserId(userId, organizationId);
+    return { success: true, data: vendor };
   }
 
   @Get(':id')

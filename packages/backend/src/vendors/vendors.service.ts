@@ -217,6 +217,38 @@ export class VendorsService {
     });
   }
 
+  async findByUserId(userId: string, organizationId: string) {
+    const vendor = await this.prisma.vendor.findFirst({
+      where: {
+        userId,
+        organizationId,
+      },
+      include: {
+        workOrders: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+        marketplaceProfile: {
+          include: {
+            services: {
+              include: {
+                serviceCatalog: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException(`Vendor not found for user ID ${userId}`);
+    }
+
+    return vendor;
+  }
+
   async approveVendor(id: string, organizationId: string, notes?: string) {
     // First check if vendor exists and belongs to organization
     const vendor = await this.findOne(id, organizationId);
