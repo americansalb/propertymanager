@@ -676,12 +676,19 @@ model Vendor {
 
   // Basic info
   companyName String
+  dbaName     String?              // Doing Business As / Trade Name
   contactName String?
   email       String?
   phone       String?
+  website     String?
 
   type        VendorType
   status      VendorStatus @default(PENDING_APPROVAL)
+
+  // Business details
+  yearsInBusiness       String?    // "<1", "1-3", "3-5", "5-10", "10+"
+  numberOfTechnicians   String?
+  businessEntityType    String?    // "LLC", "Corporation", "Partnership", "Sole Proprietor"
 
   // Address
   address1    String?
@@ -698,11 +705,33 @@ model Vendor {
   paymentTerms String?   // "Net 30", etc.
   defaultPaymentMethod PaymentMethod?
 
-  // Insurance & compliance
-  insuranceExpiryDate DateTime?
-  insuranceCertUrl    String?
+  // Licensing
   licenseNumber       String?
+  licenseState        String?
+  licenseType         String?
   licenseExpiryDate   DateTime?
+
+  // Insurance & compliance
+  insuranceCarrier          String?
+  insurancePolicyNumber     String?
+  insuranceCoverageAmount   String?
+  insuranceExpiryDate       DateTime?
+  insuranceCertUrl          String?
+  insuranceAgentName        String?
+  insuranceAgentPhone       String?
+
+  // Trade-specific certifications
+  certificationNumber       String?    // ALOA for locksmiths, EPA for HVAC, etc.
+  bondCompany               String?
+  bondAmount                String?
+  bondExpiryDate            DateTime?
+
+  // Services & Coverage (marketplace-related)
+  servicesOffered           String[]   @default([])
+  serviceZipCodes           String[]   @default([])
+  serviceRadius             Int?       // Miles from base location
+  emergencyAvailable        Boolean    @default(false)
+  emergencyResponseTime     Int?       // Minutes
 
   // Approval tracking
   approvalNotes       String?  @db.Text  // Admin notes during review
