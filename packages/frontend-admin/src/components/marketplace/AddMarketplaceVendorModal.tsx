@@ -909,7 +909,7 @@ export default function AddMarketplaceVendorModal({
       case 'services':
         return 'Choose services and define your territory';
       case 'review':
-        return 'Review and submit - you're almost there!';
+        return 'Review and submit - you are almost there!';
     }
   };
 
