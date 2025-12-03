@@ -567,6 +567,7 @@ interface FormData {
   insurancePolicyNumber: string;
   insuranceCoverageAmount: string;
   insuranceExpiry: string;
+  additionalInsuredConfirm: boolean; // CRITICAL: PropertyMaster must be listed as additional insured
   workersCompCarrier: string;
   workersCompPolicyNumber: string;
   workersCompExpiry: string;
@@ -611,6 +612,7 @@ const initialFormData: FormData = {
   insurancePolicyNumber: '',
   insuranceCoverageAmount: '',
   insuranceExpiry: '',
+  additionalInsuredConfirm: false,
   workersCompCarrier: '',
   workersCompPolicyNumber: '',
   workersCompExpiry: '',
@@ -737,6 +739,9 @@ export default function AddMarketplaceVendorModal({
         if (!formData.insuranceExpiry) {
           newErrors.insuranceExpiry = 'Insurance expiry date is required';
         }
+        if (!formData.additionalInsuredConfirm) {
+          newErrors.additionalInsuredConfirm = 'You must agree to add PropertyMaster as additional insured';
+        }
         break;
 
       case 'services':
@@ -792,23 +797,59 @@ export default function AddMarketplaceVendorModal({
 
   const createVendorMutation = useMutation({
     mutationFn: async () => {
-      // First create the vendor
+      // Map vendorType to backend VendorType enum
+      const typeMapping: Record<string, string> = {
+        locksmith: 'LOCKSMITH',
+        plumber: 'PLUMBING',
+        electrician: 'ELECTRICAL',
+        hvac: 'HVAC',
+      };
+
+      // First create the vendor with ALL collected data
       const vendorResponse = await api.post('/vendors', {
+        // Basic info
         companyName: formData.companyName,
         contactName: `${formData.contactFirstName} ${formData.contactLastName}`,
         email: formData.email,
         phone: formData.phone,
+        website: formData.website || undefined,
+        type: typeMapping[formData.vendorType] || 'OTHER',
+        yearsInBusiness: formData.yearsInBusiness || undefined,
+        numberOfTechnicians: formData.numberOfTechnicians || undefined,
+
+        // Address
         address1: formData.address1,
         address2: formData.address2 || undefined,
         city: formData.city,
         state: formData.state,
         zipCode: formData.zipCode,
-        type: 'PROFESSIONAL_SERVICES', // Locksmith category mapped to PROFESSIONAL_SERVICES
-        // status defaults to PENDING_APPROVAL in backend
-        licenseNumber: formData.licenseNumber || undefined,
+
+        // Insurance (CRITICAL for liability)
+        insuranceCarrier: formData.insuranceCarrier || undefined,
+        insurancePolicyNumber: formData.insurancePolicyNumber || undefined,
+        insuranceCoverageAmount: formData.insuranceCoverageAmount || undefined,
         insuranceExpiryDate: formData.insuranceExpiry || undefined,
-        // Note: insuranceProvider and insurancePolicyNumber are collected but not yet stored
-        // These fields are part of the onboarding flow for future verification
+        additionalInsured: formData.additionalInsuredConfirm || undefined,
+
+        // License (CRITICAL)
+        licenseNumber: formData.licenseNumber || undefined,
+        licenseState: formData.state || undefined,
+        licenseExpiryDate: formData.licenseExpiry || undefined,
+
+        // Professional certifications (trade-specific)
+        certificationNumber: formData.alcaNumber || undefined,
+        bondCompany: formData.bondCompany || undefined,
+        bondAmount: formData.bondAmount || undefined,
+        bondExpiryDate: formData.bondExpiry || undefined,
+
+        // Background check
+        backgroundCheckConsent: formData.backgroundCheckConsent || undefined,
+
+        // Service details
+        servicesOffered: formData.selectedServices || [],
+        serviceRadius: parseInt(formData.serviceRadius) || undefined,
+        emergencyAvailable: formData.emergencyAvailable || undefined,
+        emergencyResponseTime: formData.emergencyResponseTime ? parseInt(formData.emergencyResponseTime) : undefined,
       });
 
       const vendorId = vendorResponse.data.data.id;
@@ -1809,8 +1850,8 @@ export default function AddMarketplaceVendorModal({
                       <SelectContent>
                         <SelectItem value="300000">$300,000</SelectItem>
                         <SelectItem value="500000">$500,000 (Recommended)</SelectItem>
-                        <SelectItem value="1000000">$1,000,000 ⭐</SelectItem>
-                        <SelectItem value="2000000">$2,000,000+ 🌟</SelectItem>
+                        <SelectItem value="1000000">$1,000,000</SelectItem>
+                        <SelectItem value="2000000">$2,000,000+</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.insuranceCoverageAmount && (
@@ -1831,6 +1872,29 @@ export default function AddMarketplaceVendorModal({
                     )}
                   </div>
                 </div>
+
+                {/* Additional Insured - CRITICAL for marketplace liability */}
+                <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={formData.additionalInsuredConfirm}
+                      onChange={(e) => updateField('additionalInsuredConfirm', e.target.checked)}
+                      className="mt-1 w-5 h-5 rounded border-amber-400 text-amber-600 focus:ring-amber-500 focus:ring-2"
+                    />
+                    <div>
+                      <span className="font-semibold text-amber-900 text-sm">
+                        PropertyMaster as Additional Insured *
+                      </span>
+                      <p className="text-xs text-amber-800 mt-1">
+                        I confirm that PropertyMaster LLC will be added as an additional insured on this policy. This is required for marketplace participation and protects all parties in case of claims.
+                      </p>
+                    </div>
+                  </label>
+                  {errors.additionalInsuredConfirm && (
+                    <p className="text-sm text-red-600 mt-2">{errors.additionalInsuredConfirm}</p>
+                  )}
+                </div>
               </div>
 
               {/* Workers Comp */}
@@ -1841,9 +1905,8 @@ export default function AddMarketplaceVendorModal({
                   </div>
                   Workers' Compensation Insurance
                 </h3>
-                <p className="text-sm text-gray-700 mb-4 bg-blue-100 p-3 rounded-lg">
-                  👷 Required if you have employees. Owner-operators without employees may be exempt in
-                  some states.
+                <p className="text-sm text-gray-600 mb-4">
+                  Required if you have employees. Owner-operators without employees may be exempt in some states.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
