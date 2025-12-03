@@ -10,6 +10,3 @@ ALTER TABLE "Vendor" ADD COLUMN IF NOT EXISTS "rejectionReason" TEXT;
 
 -- Add user account linkage for vendor portal access
 ALTER TABLE "Vendor" ADD COLUMN IF NOT EXISTS "userId" TEXT UNIQUE;
-
--- Change default status for new vendors to PENDING_APPROVAL
-ALTER TABLE "Vendor" ALTER COLUMN "status" SET DEFAULT 'PENDING_APPROVAL'::"VendorStatus";
