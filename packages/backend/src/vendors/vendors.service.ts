@@ -14,9 +14,6 @@ export class VendorsService {
     return this.prisma.vendor.create({
       data: {
         ...createVendorDto,
-        insuranceExpiryDate: createVendorDto.insuranceExpiryDate
-          ? new Date(createVendorDto.insuranceExpiryDate)
-          : null,
         organizationId,
       },
       include: {
@@ -88,9 +85,6 @@ export class VendorsService {
       where: { id },
       data: {
         ...updateVendorDto,
-        insuranceExpiryDate: updateVendorDto.insuranceExpiryDate
-          ? new Date(updateVendorDto.insuranceExpiryDate)
-          : undefined,
       },
       include: {
         workOrders: {
