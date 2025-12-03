@@ -54,9 +54,9 @@ type Step =
   | 'licensing'
   | 'insurance'
   | 'tax_payment'
-  | 'background_check'
   | 'services_coverage'
   | 'trust_experience'
+  | 'legal_terms'
   | 'review';
 
 type VendorSpecialty = 'locksmith' | 'plumber' | 'electrician' | 'hvac' | '';
@@ -209,6 +209,8 @@ interface FormData {
   stateOfIncorporation: string;
   businessRegistrationNumber: string;
   yearsInBusiness: string;
+  ownerFirstName: string;
+  ownerLastName: string;
 
   // Contact Information
   businessAddress1: string;
@@ -261,16 +263,12 @@ interface FormData {
   bankAccountNumber: string;
   bankAccountType: string;
 
-  // Background Check
-  ownerFirstName: string;
-  ownerMiddleName: string;
-  ownerLastName: string;
-  ownerDateOfBirth: string;
-  ownerSsnLast4: string;
-  ownerDriverLicenseNumber: string;
-  ownerDriverLicenseState: string;
-  backgroundCheckConsent: boolean;
-  technicianBackgroundCheckConsent: boolean;
+  // Legal Terms & Independent Contractor Acknowledgment
+  independentContractorAcknowledgment: boolean;
+  stateLicensingCompliance: boolean;
+  insuranceRequirementAcknowledgment: boolean;
+  indemnificationAgreement: boolean;
+  termsOfServiceAcceptance: boolean;
 
   // Services & Coverage
   selectedServices: string[];
@@ -304,6 +302,8 @@ const initialFormData: FormData = {
   stateOfIncorporation: '',
   businessRegistrationNumber: '',
   yearsInBusiness: '',
+  ownerFirstName: '',
+  ownerLastName: '',
   businessAddress1: '',
   businessAddress2: '',
   businessCity: '',
@@ -345,15 +345,11 @@ const initialFormData: FormData = {
   bankRoutingNumber: '',
   bankAccountNumber: '',
   bankAccountType: '',
-  ownerFirstName: '',
-  ownerMiddleName: '',
-  ownerLastName: '',
-  ownerDateOfBirth: '',
-  ownerSsnLast4: '',
-  ownerDriverLicenseNumber: '',
-  ownerDriverLicenseState: '',
-  backgroundCheckConsent: false,
-  technicianBackgroundCheckConsent: false,
+  independentContractorAcknowledgment: false,
+  stateLicensingCompliance: false,
+  insuranceRequirementAcknowledgment: false,
+  indemnificationAgreement: false,
+  termsOfServiceAcceptance: false,
   selectedServices: [],
   serviceRadius: '25',
   serviceZipCodes: '',
@@ -474,6 +470,8 @@ export default function AddMarketplaceVendorModal({
         }
         if (!formData.stateOfIncorporation) newErrors.stateOfIncorporation = 'Required';
         if (!formData.yearsInBusiness) newErrors.yearsInBusiness = 'Required';
+        if (!formData.ownerFirstName) newErrors.ownerFirstName = 'Required';
+        if (!formData.ownerLastName) newErrors.ownerLastName = 'Required';
         if (!formData.businessAddress1) newErrors.businessAddress1 = 'Required';
         if (!formData.businessCity) newErrors.businessCity = 'Required';
         if (!formData.businessState) newErrors.businessState = 'Required';
@@ -505,21 +503,21 @@ export default function AddMarketplaceVendorModal({
         }
         break;
 
-      case 'background_check':
-        if (!formData.ownerFirstName) newErrors.ownerFirstName = 'Required';
-        if (!formData.ownerLastName) newErrors.ownerLastName = 'Required';
-        if (!formData.ownerDateOfBirth) newErrors.ownerDateOfBirth = 'Required';
-        if (!formData.ownerSsnLast4) newErrors.ownerSsnLast4 = 'Required';
-        if (formData.ownerSsnLast4 && !/^\d{4}$/.test(formData.ownerSsnLast4)) {
-          newErrors.ownerSsnLast4 = 'Must be 4 digits';
+      case 'legal_terms':
+        if (!formData.independentContractorAcknowledgment) {
+          newErrors.independentContractorAcknowledgment = 'You must acknowledge independent contractor status';
         }
-        if (!formData.ownerDriverLicenseNumber) newErrors.ownerDriverLicenseNumber = 'Required';
-        if (!formData.ownerDriverLicenseState) newErrors.ownerDriverLicenseState = 'Required';
-        if (!formData.backgroundCheckConsent) {
-          newErrors.backgroundCheckConsent = 'You must authorize background check';
+        if (!formData.stateLicensingCompliance) {
+          newErrors.stateLicensingCompliance = 'You must acknowledge state licensing compliance';
         }
-        if (!formData.technicianBackgroundCheckConsent) {
-          newErrors.technicianBackgroundCheckConsent = 'You must ensure technician checks';
+        if (!formData.insuranceRequirementAcknowledgment) {
+          newErrors.insuranceRequirementAcknowledgment = 'You must acknowledge insurance requirements';
+        }
+        if (!formData.indemnificationAgreement) {
+          newErrors.indemnificationAgreement = 'You must agree to indemnification terms';
+        }
+        if (!formData.termsOfServiceAcceptance) {
+          newErrors.termsOfServiceAcceptance = 'You must accept Terms of Service';
         }
         break;
 
@@ -546,9 +544,9 @@ export default function AddMarketplaceVendorModal({
       'licensing',
       'insurance',
       'tax_payment',
-      'background_check',
       'services_coverage',
       'trust_experience',
+      'legal_terms',
       'review',
     ];
 
@@ -565,9 +563,9 @@ export default function AddMarketplaceVendorModal({
       'licensing',
       'insurance',
       'tax_payment',
-      'background_check',
       'services_coverage',
       'trust_experience',
+      'legal_terms',
       'review',
     ];
 
@@ -595,12 +593,12 @@ export default function AddMarketplaceVendorModal({
         return 'Insurance Coverage';
       case 'tax_payment':
         return 'Tax Information & Payment';
-      case 'background_check':
-        return 'Background Check Authorization';
       case 'services_coverage':
         return 'Services & Coverage';
       case 'trust_experience':
         return 'Build Your Credibility';
+      case 'legal_terms':
+        return 'Terms & Conditions';
       case 'review':
         return 'Application Review';
       default:
@@ -620,10 +618,10 @@ export default function AddMarketplaceVendorModal({
         return 'Upload your Certificate of Insurance - we will read it for you';
       case 'tax_payment':
         return 'For 1099 reporting and fast payouts';
-      case 'background_check':
-        return 'For platform safety, all vendors must authorize a background check';
       case 'services_coverage':
         return 'Define what you offer and where';
+      case 'legal_terms':
+        return 'Independent contractor agreement and terms';
       case 'trust_experience':
         return 'Optional but recommended - helps with approval';
       case 'review':
@@ -842,6 +840,38 @@ export default function AddMarketplaceVendorModal({
             <div className="text-xs text-gray-500 mt-1">
               We will cross-check with your state filing date
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="ownerFirstName">
+              Owner First Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ownerFirstName"
+              value={formData.ownerFirstName}
+              onChange={(e) => updateFormData('ownerFirstName', e.target.value)}
+              placeholder="First name"
+              className={errors.ownerFirstName ? 'border-red-500' : ''}
+            />
+            {errors.ownerFirstName && (
+              <div className="text-sm text-red-600 mt-1">{errors.ownerFirstName}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="ownerLastName">
+              Owner Last Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ownerLastName"
+              value={formData.ownerLastName}
+              onChange={(e) => updateFormData('ownerLastName', e.target.value)}
+              placeholder="Last name"
+              className={errors.ownerLastName ? 'border-red-500' : ''}
+            />
+            {errors.ownerLastName && (
+              <div className="text-sm text-red-600 mt-1">{errors.ownerLastName}</div>
+            )}
           </div>
         </div>
       </div>
@@ -1606,193 +1636,270 @@ export default function AddMarketplaceVendorModal({
     </div>
   );
 
-  const renderBackgroundCheck = () => (
-    <div className="space-y-6">
-      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="flex items-start gap-3">
-          <Shield className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-gray-700">
-            <p className="font-medium mb-2">For platform safety, all vendors must authorize a background check.</p>
-            <p className="mb-2">We use professional background check services to verify:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Criminal history (7 years)</li>
-              <li>Sex offender registry</li>
-              <li>SSN verification</li>
-            </ul>
-            <p className="mt-2">
-              This check will be run on you (business owner) and any technicians who will enter properties.
-            </p>
-          </div>
-        </div>
-      </div>
+  const renderLegalTerms = () => {
+    // Get state-specific licensing law information based on selected state
+    const getLicensingInfo = () => {
+      if (!formData.licenseState) return null;
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-gray-900 font-medium">
-          <User className="w-5 h-5" />
-          <span>Owner Information</span>
-        </div>
+      const stateLaws: Record<string, { law: string; requirement: string }> = {
+        CA: {
+          law: 'Business & Professions Code § 7068.1',
+          requirement: 'Contractor State License Board requires DOJ and FBI background check',
+        },
+        TX: {
+          law: 'Occupations Code § 1702.113',
+          requirement: 'DPS background check required for licensing',
+        },
+        FL: {
+          law: 'Florida Statute 489.119',
+          requirement: 'Level 2 background screening required for licensing',
+        },
+        NY: {
+          law: 'NYC Admin Code § 10-157',
+          requirement: 'Background check required for licensing (NYC)',
+        },
+      };
 
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <Label htmlFor="ownerFirstName">
-              Legal First Name <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="ownerFirstName"
-              value={formData.ownerFirstName}
-              onChange={(e) => updateFormData('ownerFirstName', e.target.value)}
-              placeholder="First name"
-              className={errors.ownerFirstName ? 'border-red-500' : ''}
-            />
-            {errors.ownerFirstName && (
-              <div className="text-sm text-red-600 mt-1">{errors.ownerFirstName}</div>
-            )}
-          </div>
+      return stateLaws[formData.licenseState] || {
+        law: 'State licensing statute',
+        requirement: 'State licensing board conducts background check',
+      };
+    };
 
-          <div>
-            <Label htmlFor="ownerMiddleName">Middle Name</Label>
-            <Input
-              id="ownerMiddleName"
-              value={formData.ownerMiddleName}
-              onChange={(e) => updateFormData('ownerMiddleName', e.target.value)}
-              placeholder="Optional"
-            />
-          </div>
+    const licensingInfo = getLicensingInfo();
 
-          <div>
-            <Label htmlFor="ownerLastName">
-              Legal Last Name <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="ownerLastName"
-              value={formData.ownerLastName}
-              onChange={(e) => updateFormData('ownerLastName', e.target.value)}
-              placeholder="Last name"
-              className={errors.ownerLastName ? 'border-red-500' : ''}
-            />
-            {errors.ownerLastName && (
-              <div className="text-sm text-red-600 mt-1">{errors.ownerLastName}</div>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="ownerDateOfBirth">
-              Date of Birth <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="ownerDateOfBirth"
-              type="date"
-              value={formData.ownerDateOfBirth}
-              onChange={(e) => updateFormData('ownerDateOfBirth', e.target.value)}
-              className={errors.ownerDateOfBirth ? 'border-red-500' : ''}
-            />
-            {errors.ownerDateOfBirth && (
-              <div className="text-sm text-red-600 mt-1">{errors.ownerDateOfBirth}</div>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="ownerSsnLast4">
-              SSN (Last 4) <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="ownerSsnLast4"
-              value={formData.ownerSsnLast4}
-              onChange={(e) => updateFormData('ownerSsnLast4', e.target.value)}
-              placeholder="1234"
-              maxLength={4}
-              className={errors.ownerSsnLast4 ? 'border-red-500' : ''}
-            />
-            {errors.ownerSsnLast4 && (
-              <div className="text-sm text-red-600 mt-1">{errors.ownerSsnLast4}</div>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="ownerDriverLicenseState">
-              Driver License State <span className="text-red-500">*</span>
-            </Label>
-            <Select
-              value={formData.ownerDriverLicenseState}
-              onValueChange={(value) => updateFormData('ownerDriverLicenseState', value)}
-            >
-              <SelectTrigger className={errors.ownerDriverLicenseState ? 'border-red-500' : ''}>
-                <SelectValue placeholder="State" />
-              </SelectTrigger>
-              <SelectContent>
-                {US_STATES.map((state) => (
-                  <SelectItem key={state.code} value={state.code}>
-                    {state.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.ownerDriverLicenseState && (
-              <div className="text-sm text-red-600 mt-1">{errors.ownerDriverLicenseState}</div>
-            )}
-          </div>
-
-          <div className="col-span-3">
-            <Label htmlFor="ownerDriverLicenseNumber">
-              Driver License Number <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="ownerDriverLicenseNumber"
-              value={formData.ownerDriverLicenseNumber}
-              onChange={(e) => updateFormData('ownerDriverLicenseNumber', e.target.value)}
-              placeholder="License number"
-              className={errors.ownerDriverLicenseNumber ? 'border-red-500' : ''}
-            />
-            {errors.ownerDriverLicenseNumber && (
-              <div className="text-sm text-red-600 mt-1">{errors.ownerDriverLicenseNumber}</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4 pt-4">
-        <div className="space-y-3">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.backgroundCheckConsent}
-              onChange={(e) => updateFormData('backgroundCheckConsent', e.target.checked)}
-              className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <div className="flex-1">
-              <span className="text-sm text-gray-900">
-                I authorize PropertyMaster to conduct a background check as described above{' '}
-                <span className="text-red-500">*</span>
-              </span>
-              {errors.backgroundCheckConsent && (
-                <div className="text-sm text-red-600 mt-1">{errors.backgroundCheckConsent}</div>
-              )}
+    return (
+      <div className="space-y-6">
+        {/* Independent Contractor Status */}
+        <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-gray-700">
+              <p className="font-semibold text-gray-900 mb-2">
+                Independent Contractor Marketplace
+              </p>
+              <p className="mb-2">
+                PropertyMaster is a marketplace platform connecting property managers with
+                independent contractors. You are NOT an employee of PropertyMaster.
+              </p>
+              <p>
+                Property managers are solely responsible for vendor selection, supervision,
+                and payment. PropertyMaster verifies your state licensing and insurance only.
+              </p>
             </div>
-          </label>
+          </div>
+        </div>
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.technicianBackgroundCheckConsent}
-              onChange={(e) => updateFormData('technicianBackgroundCheckConsent', e.target.checked)}
-              className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <div className="flex-1">
-              <span className="text-sm text-gray-900">
-                I will ensure all technicians pass background checks before they perform services{' '}
-                <span className="text-red-500">*</span>
-              </span>
-              {errors.technicianBackgroundCheckConsent && (
-                <div className="text-sm text-red-600 mt-1">
-                  {errors.technicianBackgroundCheckConsent}
-                </div>
-              )}
+        {/* State Licensing Verification */}
+        {licensingInfo && (
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-start gap-3">
+              <FileCheck className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-gray-700">
+                <p className="font-semibold text-gray-900 mb-2">
+                  State Licensing Verification
+                </p>
+                <p className="mb-2">
+                  We verify that your {formData.licenseState || 'state'} contractor license
+                  is active and in good standing with the state licensing board.
+                </p>
+                {formData.licenseState && (
+                  <div className="mt-3 p-3 bg-white rounded border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-1">
+                      <strong>Legal Reference:</strong> {licensingInfo.law}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {licensingInfo.requirement}
+                    </p>
+                  </div>
+                )}
+                <p className="mt-3 text-xs text-gray-600">
+                  State licensing boards conduct background checks, fingerprinting, and
+                  criminal history review as part of licensing. We verify your license
+                  status - the state board determines qualification.
+                </p>
+              </div>
             </div>
-          </label>
+          </div>
+        )}
+
+        {/* Legal Acknowledgments */}
+        <div className="space-y-4">
+          <div className="text-sm font-medium text-gray-900">
+            Required Acknowledgments
+          </div>
+
+          <div className="space-y-4">
+            {/* Independent Contractor */}
+            <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.independentContractorAcknowledgment}
+                onChange={(e) =>
+                  updateFormData('independentContractorAcknowledgment', e.target.checked)
+                }
+                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  Independent Contractor Status <span className="text-red-500">*</span>
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  I acknowledge that I am an independent contractor, not an employee of
+                  PropertyMaster. I am solely responsible for the quality and safety of my
+                  work. PropertyMaster does not supervise my work or guarantee my services.
+                </p>
+                {errors.independentContractorAcknowledgment && (
+                  <div className="text-xs text-red-600 mt-2">
+                    {errors.independentContractorAcknowledgment}
+                  </div>
+                )}
+              </div>
+            </label>
+
+            {/* State Licensing Compliance */}
+            <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.stateLicensingCompliance}
+                onChange={(e) =>
+                  updateFormData('stateLicensingCompliance', e.target.checked)
+                }
+                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  State Licensing Compliance <span className="text-red-500">*</span>
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  I acknowledge that I maintain all required state and local licenses for the
+                  services I perform. I understand that PropertyMaster verifies my license is
+                  active and in good standing, and that my state licensing board conducted
+                  background checks as part of licensing.
+                </p>
+                {errors.stateLicensingCompliance && (
+                  <div className="text-xs text-red-600 mt-2">
+                    {errors.stateLicensingCompliance}
+                  </div>
+                )}
+              </div>
+            </label>
+
+            {/* Insurance Requirement */}
+            <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.insuranceRequirementAcknowledgment}
+                onChange={(e) =>
+                  updateFormData('insuranceRequirementAcknowledgment', e.target.checked)
+                }
+                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  Insurance Requirement <span className="text-red-500">*</span>
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  I acknowledge that I maintain adequate insurance coverage (minimum $500k
+                  general liability) and will keep coverage current. I understand that
+                  PropertyMaster verifies my insurance is active, and that my insurance
+                  carrier assumes liability for covered incidents.
+                </p>
+                {errors.insuranceRequirementAcknowledgment && (
+                  <div className="text-xs text-red-600 mt-2">
+                    {errors.insuranceRequirementAcknowledgment}
+                  </div>
+                )}
+              </div>
+            </label>
+
+            {/* Indemnification */}
+            <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.indemnificationAgreement}
+                onChange={(e) =>
+                  updateFormData('indemnificationAgreement', e.target.checked)
+                }
+                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  Indemnification Agreement <span className="text-red-500">*</span>
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  I agree to indemnify and hold harmless PropertyMaster from any claims,
+                  damages, or liabilities arising from my work, my employees, or my
+                  subcontractors. I acknowledge that property managers, not PropertyMaster,
+                  are responsible for vendor selection and supervision.
+                </p>
+                {errors.indemnificationAgreement && (
+                  <div className="text-xs text-red-600 mt-2">
+                    {errors.indemnificationAgreement}
+                  </div>
+                )}
+              </div>
+            </label>
+
+            {/* Terms of Service */}
+            <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.termsOfServiceAcceptance}
+                onChange={(e) =>
+                  updateFormData('termsOfServiceAcceptance', e.target.checked)
+                }
+                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  Terms of Service <span className="text-red-500">*</span>
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  I have read and agree to PropertyMaster's{' '}
+                  <a href="#" className="text-indigo-600 hover:underline">
+                    Terms of Service
+                  </a>{' '}
+                  and{' '}
+                  <a href="#" className="text-indigo-600 hover:underline">
+                    Privacy Policy
+                  </a>
+                  . I understand that PropertyMaster is a marketplace platform and that
+                  property managers are my clients, not PropertyMaster.
+                </p>
+                {errors.termsOfServiceAcceptance && (
+                  <div className="text-xs text-red-600 mt-2">
+                    {errors.termsOfServiceAcceptance}
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Summary Box */}
+        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-gray-700">
+              <p className="font-semibold text-gray-900 mb-1">What PropertyMaster Verifies:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>State contractor license is active and in good standing</li>
+                <li>Insurance coverage is current and adequate</li>
+                <li>Business is registered with state</li>
+                <li>No disciplinary actions or license suspensions</li>
+              </ul>
+              <p className="mt-3 text-xs text-gray-600">
+                <strong>Note:</strong> Your state licensing board already conducted background
+                checks as part of licensing. We verify your license status, not run
+                independent background checks.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderServicesCoverage = () => {
     const services = formData.specialty ? SPECIALTY_SERVICES[formData.specialty] : [];
@@ -2128,17 +2235,17 @@ export default function AddMarketplaceVendorModal({
           </div>
 
           <div className="flex items-start gap-3">
-            {formData.backgroundCheckConsent ? (
-              <div className="flex items-center gap-2 text-amber-600">
-                <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">Background Check Pending</div>
-                  <div className="text-sm">Will be completed within 48 hours</div>
-                </div>
-              </div>
+            {formData.termsOfServiceAcceptance && formData.independentContractorAcknowledgment ? (
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
             ) : (
               <AlertCircle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
             )}
+            <div className="flex-1">
+              <div className="text-sm font-medium text-gray-900">Terms & Agreements</div>
+              {formData.termsOfServiceAcceptance && (
+                <div className="text-sm text-gray-600">All agreements accepted</div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-start gap-3">
@@ -2186,12 +2293,12 @@ export default function AddMarketplaceVendorModal({
         return renderInsurance();
       case 'tax_payment':
         return renderTaxPayment();
-      case 'background_check':
-        return renderBackgroundCheck();
       case 'services_coverage':
         return renderServicesCoverage();
       case 'trust_experience':
         return renderTrustExperience();
+      case 'legal_terms':
+        return renderLegalTerms();
       case 'review':
         return renderReview();
       default:
