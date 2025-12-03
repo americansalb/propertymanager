@@ -562,12 +562,13 @@ interface FormData {
   bondExpiry: string;
   backgroundCheckConsent: boolean;
 
-  // Insurance
+  // Insurance (for verification - THEIR coverage, not ours)
   insuranceCarrier: string;
   insurancePolicyNumber: string;
   insuranceCoverageAmount: string;
   insuranceExpiry: string;
-  additionalInsuredConfirm: boolean; // CRITICAL: PropertyMaster must be listed as additional insured
+  insuranceAgentName: string; // For manual verification if API fails
+  insuranceAgentPhone: string;
   workersCompCarrier: string;
   workersCompPolicyNumber: string;
   workersCompExpiry: string;
@@ -612,7 +613,8 @@ const initialFormData: FormData = {
   insurancePolicyNumber: '',
   insuranceCoverageAmount: '',
   insuranceExpiry: '',
-  additionalInsuredConfirm: false,
+  insuranceAgentName: '',
+  insuranceAgentPhone: '',
   workersCompCarrier: '',
   workersCompPolicyNumber: '',
   workersCompExpiry: '',
@@ -739,8 +741,12 @@ export default function AddMarketplaceVendorModal({
         if (!formData.insuranceExpiry) {
           newErrors.insuranceExpiry = 'Insurance expiry date is required';
         }
-        if (!formData.additionalInsuredConfirm) {
-          newErrors.additionalInsuredConfirm = 'You must agree to add PropertyMaster as additional insured';
+        // Insurance agent contact (for manual verification if needed)
+        if (!formData.insuranceAgentName.trim()) {
+          newErrors.insuranceAgentName = 'Insurance agent name is required';
+        }
+        if (!formData.insuranceAgentPhone.trim()) {
+          newErrors.insuranceAgentPhone = 'Insurance agent phone is required';
         }
         break;
 
@@ -824,12 +830,13 @@ export default function AddMarketplaceVendorModal({
         state: formData.state,
         zipCode: formData.zipCode,
 
-        // Insurance (CRITICAL for liability)
+        // Insurance (for verification - THEIR coverage)
         insuranceCarrier: formData.insuranceCarrier || undefined,
         insurancePolicyNumber: formData.insurancePolicyNumber || undefined,
         insuranceCoverageAmount: formData.insuranceCoverageAmount || undefined,
         insuranceExpiryDate: formData.insuranceExpiry || undefined,
-        additionalInsured: formData.additionalInsuredConfirm || undefined,
+        insuranceAgentName: formData.insuranceAgentName || undefined,
+        insuranceAgentPhone: formData.insuranceAgentPhone || undefined,
 
         // License (CRITICAL)
         licenseNumber: formData.licenseNumber || undefined,
@@ -1873,27 +1880,40 @@ export default function AddMarketplaceVendorModal({
                   </div>
                 </div>
 
-                {/* Additional Insured - CRITICAL for marketplace liability */}
-                <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={formData.additionalInsuredConfirm}
-                      onChange={(e) => updateField('additionalInsuredConfirm', e.target.checked)}
-                      className="mt-1 w-5 h-5 rounded border-amber-400 text-amber-600 focus:ring-amber-500 focus:ring-2"
-                    />
+                {/* Insurance Agent Contact - For Verification */}
+                <div className="mt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Insurance Agent Contact</h4>
+                  <p className="text-xs text-gray-600 mb-3">
+                    We may contact your insurance agent to verify coverage details
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <span className="font-semibold text-amber-900 text-sm">
-                        PropertyMaster as Additional Insured *
-                      </span>
-                      <p className="text-xs text-amber-800 mt-1">
-                        I confirm that PropertyMaster LLC will be added as an additional insured on this policy. This is required for marketplace participation and protects all parties in case of claims.
-                      </p>
+                      <Label htmlFor="insuranceAgentName" className="text-gray-700 font-semibold mb-2">Agent Name *</Label>
+                      <Input
+                        id="insuranceAgentName"
+                        value={formData.insuranceAgentName}
+                        onChange={(e) => updateField('insuranceAgentName', e.target.value)}
+                        placeholder="e.g., John Smith"
+                        className={errors.insuranceAgentName ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
+                      />
+                      {errors.insuranceAgentName && (
+                        <p className="text-sm text-red-600 mt-1">{errors.insuranceAgentName}</p>
+                      )}
                     </div>
-                  </label>
-                  {errors.additionalInsuredConfirm && (
-                    <p className="text-sm text-red-600 mt-2">{errors.additionalInsuredConfirm}</p>
-                  )}
+                    <div>
+                      <Label htmlFor="insuranceAgentPhone" className="text-gray-700 font-semibold mb-2">Agent Phone *</Label>
+                      <Input
+                        id="insuranceAgentPhone"
+                        value={formData.insuranceAgentPhone}
+                        onChange={(e) => updateField('insuranceAgentPhone', e.target.value)}
+                        placeholder="(555) 123-4567"
+                        className={errors.insuranceAgentPhone ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
+                      />
+                      {errors.insuranceAgentPhone && (
+                        <p className="text-sm text-red-600 mt-1">{errors.insuranceAgentPhone}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

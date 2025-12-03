@@ -168,10 +168,15 @@ export class CreateVendorDto {
   @IsString()
   insuranceCertUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Additional insured confirmation' })
+  @ApiPropertyOptional({ description: 'Insurance agent name (for verification)' })
   @IsOptional()
-  @IsBoolean()
-  additionalInsured?: boolean;
+  @IsString()
+  insuranceAgentName?: string;
+
+  @ApiPropertyOptional({ description: 'Insurance agent phone (for verification)' })
+  @IsOptional()
+  @IsString()
+  insuranceAgentPhone?: string;
 
   // License (CRITICAL)
   @ApiPropertyOptional({ description: 'License number' })
