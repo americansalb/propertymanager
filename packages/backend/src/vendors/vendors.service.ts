@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateVendorDto, UpdateVendorDto } from './dto';
 import { UserRole } from '@propertymaster/database';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class VendorsService {
