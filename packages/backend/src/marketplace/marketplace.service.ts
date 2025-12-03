@@ -1435,4 +1435,377 @@ export class MarketplaceService {
       })),
     };
   }
+
+  // ============================================================================
+  // MULTI-VENDOR DISPATCH & MATCHING
+  // ============================================================================
+
+  /**
+   * Dispatch job to multiple vendors simultaneously (first to accept wins)
+   */
+  async dispatchJobToMultipleVendors(
+    jobId: string,
+    vendorProfileIds: string[],
+    organizationId: string,
+    userId: string,
+    responseDeadlineMinutes: number = 30,
+  ) {
+    const job = await this.findOneMarketplaceJob(jobId, organizationId);
+
+    if (!['PENDING_DISPATCH', 'QUOTE_DECLINED'].includes(job.status)) {
+      throw new BadRequestException(`Cannot dispatch job with status ${job.status}`);
+    }
+
+    // Verify all vendors exist and are active
+    const vendors = await this.prisma.vendorMarketplaceProfile.findMany({
+      where: {
+        id: { in: vendorProfileIds },
+        isMarketplaceActive: true,
+        acceptingJobs: true,
+      },
+      include: { vendor: true },
+    });
+
+    if (vendors.length === 0) {
+      throw new BadRequestException('No active vendors found from the provided IDs');
+    }
+
+    const responseDeadline = new Date(Date.now() + responseDeadlineMinutes * 60 * 1000);
+
+    // Create dispatch records for all vendors
+    const dispatches = await Promise.all(
+      vendors.map((vendor) =>
+        this.prisma.jobDispatch.create({
+          data: {
+            marketplaceJobId: jobId,
+            vendorProfileId: vendor.id,
+            status: 'PENDING',
+            responseDeadline,
+          },
+        }),
+      ),
+    );
+
+    // Update job status to DISPATCHED
+    const updatedJob = await this.prisma.marketplaceJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'DISPATCHED',
+      },
+      include: {
+        serviceCatalog: true,
+        dispatches: {
+          where: { status: 'PENDING' },
+          include: {
+            vendorProfile: {
+              include: { vendor: true },
+            },
+          },
+        },
+      },
+    });
+
+    this.logger.log('info', 'marketplace_job.multi_dispatched', {
+      jobId,
+      vendorCount: vendors.length,
+      vendorNames: vendors.map((v) => v.vendor.companyName),
+      organizationId,
+      userId,
+    });
+
+    return {
+      job: updatedJob,
+      dispatches,
+      vendorsNotified: vendors.length,
+    };
+  }
+
+  /**
+   * Auto-match and dispatch to best vendors based on service type, location, and rating
+   */
+  async autoMatchAndDispatchVendors(
+    jobId: string,
+    organizationId: string,
+    userId: string,
+    maxVendors: number = 3,
+  ) {
+    const job = await this.findOneMarketplaceJob(jobId, organizationId);
+
+    if (!['PENDING_DISPATCH', 'QUOTE_DECLINED'].includes(job.status)) {
+      throw new BadRequestException(`Cannot dispatch job with status ${job.status}`);
+    }
+
+    // Get work order details for location matching
+    const workOrder = await this.prisma.workOrder.findUnique({
+      where: { id: job.workOrderId },
+      include: {
+        property: {
+          select: {
+            zipCode: true,
+            city: true,
+            state: true,
+          },
+        },
+      },
+    });
+
+    if (!workOrder) {
+      throw new NotFoundException('Work order not found');
+    }
+
+    // Find matching vendors
+    const matchedVendors = await this.findMatchingVendors(
+      job.serviceCatalogId,
+      workOrder.property.zipCode,
+      maxVendors,
+    );
+
+    if (matchedVendors.length === 0) {
+      throw new BadRequestException(
+        'No matching vendors found. Try expanding search criteria or manually select vendors.',
+      );
+    }
+
+    // Dispatch to matched vendors
+    return this.dispatchJobToMultipleVendors(
+      jobId,
+      matchedVendors.map((v) => v.id),
+      organizationId,
+      userId,
+    );
+  }
+
+  /**
+   * Find matching vendors based on service type and location
+   */
+  private async findMatchingVendors(
+    serviceCatalogId: string | null,
+    propertyZipCode: string,
+    limit: number = 5,
+  ) {
+    const where: any = {
+      isMarketplaceActive: true,
+      acceptingJobs: true,
+    };
+
+    // Match by service catalog if provided
+    if (serviceCatalogId) {
+      where.services = {
+        some: {
+          serviceCatalogId,
+          isActive: true,
+        },
+      };
+    }
+
+    // Match by service area (zip code)
+    where.serviceZipCodes = {
+      has: propertyZipCode,
+    };
+
+    // Fetch vendors and sort by rating and availability
+    const vendors = await this.prisma.vendorMarketplaceProfile.findMany({
+      where,
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            companyName: true,
+            phone: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: [
+        { tier: 'desc' }, // PREMIUM > VERIFIED_PRICING > STANDARD
+        { averageRating: 'desc' },
+        { averageResponseMinutes: 'asc' },
+      ],
+      take: limit,
+    });
+
+    return vendors;
+  }
+
+  /**
+   * Get available jobs for a specific vendor (jobs dispatched to them)
+   */
+  async getAvailableJobsForVendor(vendorProfileId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    // Find pending dispatches for this vendor
+    const dispatches = await this.prisma.jobDispatch.findMany({
+      where: {
+        vendorProfileId,
+        status: 'PENDING',
+        responseDeadline: { gt: new Date() }, // Not expired
+      },
+      include: {
+        marketplaceJob: {
+          include: {
+            serviceCatalog: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    });
+
+    const total = await this.prisma.jobDispatch.count({
+      where: {
+        vendorProfileId,
+        status: 'PENDING',
+        responseDeadline: { gt: new Date() },
+      },
+    });
+
+    // Fetch work order details for each job
+    const jobsWithDetails = await Promise.all(
+      dispatches.map(async (dispatch) => {
+        const workOrder = await this.prisma.workOrder.findUnique({
+          where: { id: dispatch.marketplaceJob.workOrderId },
+          include: {
+            property: {
+              select: {
+                id: true,
+                name: true,
+                address1: true,
+                city: true,
+                state: true,
+                zipCode: true,
+              },
+            },
+            unit: {
+              select: {
+                id: true,
+                unitNumber: true,
+              },
+            },
+          },
+        });
+
+        return {
+          dispatch,
+          job: dispatch.marketplaceJob,
+          workOrder,
+        };
+      }),
+    );
+
+    return {
+      data: jobsWithDetails,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get vendor's active jobs (accepted/in progress)
+   */
+  async getVendorActiveJobs(vendorProfileId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    const [jobs, total] = await Promise.all([
+      this.prisma.marketplaceJob.findMany({
+        where: {
+          vendorProfileId,
+          status: { in: ['ACCEPTED', 'IN_PROGRESS', 'QUOTE_SUBMITTED', 'QUOTE_APPROVED'] },
+        },
+        include: {
+          serviceCatalog: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.marketplaceJob.count({
+        where: {
+          vendorProfileId,
+          status: { in: ['ACCEPTED', 'IN_PROGRESS', 'QUOTE_SUBMITTED', 'QUOTE_APPROVED'] },
+        },
+      }),
+    ]);
+
+    // Fetch work order details
+    const jobsWithDetails = await Promise.all(
+      jobs.map(async (job) => {
+        const workOrder = await this.prisma.workOrder.findUnique({
+          where: { id: job.workOrderId },
+          include: {
+            property: {
+              select: {
+                id: true,
+                name: true,
+                address1: true,
+                city: true,
+                state: true,
+              },
+            },
+            unit: {
+              select: {
+                id: true,
+                unitNumber: true,
+              },
+            },
+          },
+        });
+
+        return { ...job, workOrder };
+      }),
+    );
+
+    return {
+      data: jobsWithDetails,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get vendor's completed jobs
+   */
+  async getVendorCompletedJobs(vendorProfileId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    const [jobs, total] = await Promise.all([
+      this.prisma.marketplaceJob.findMany({
+        where: {
+          vendorProfileId,
+          status: { in: ['COMPLETED', 'CONFIRMED'] },
+        },
+        include: {
+          serviceCatalog: true,
+          rating: true,
+        },
+        orderBy: { completedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.marketplaceJob.count({
+        where: {
+          vendorProfileId,
+          status: { in: ['COMPLETED', 'CONFIRMED'] },
+        },
+      }),
+    ]);
+
+    return {
+      data: jobs,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 }

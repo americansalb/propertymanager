@@ -42,8 +42,6 @@ import {
 
 @ApiTags('marketplace')
 @Controller('marketplace')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
 export class MarketplaceController {
   constructor(private marketplaceService: MarketplaceService) {}
 
@@ -52,8 +50,9 @@ export class MarketplaceController {
   // ============================================================================
 
   @Post('services')
-  @UseGuards(RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ORGANIZATION_ADMIN', 'SUPER_ADMIN')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a service catalog entry' })
   @ApiResponse({ status: 201, description: 'Service created successfully' })
   async createService(@Body() dto: CreateServiceCatalogDto) {
@@ -62,7 +61,7 @@ export class MarketplaceController {
   }
 
   @Get('services')
-  @ApiOperation({ summary: 'Get all services in the catalog' })
+  @ApiOperation({ summary: 'Get all services in the catalog (public)' })
   @ApiResponse({ status: 200, description: 'List of services' })
   async findAllServices(@Query() query: ServiceCatalogQueryDto) {
     const services = await this.marketplaceService.findAllServiceCatalog(query);
@@ -106,12 +105,13 @@ export class MarketplaceController {
   // ============================================================================
 
   @Post('vendors')
-  @ApiOperation({ summary: 'Create a vendor marketplace profile' })
+  @ApiOperation({ summary: 'Create a vendor marketplace profile (public for self-registration)' })
   @ApiResponse({ status: 201, description: 'Profile created successfully' })
   async createVendorProfile(
-    @OrganizationId() organizationId: string,
-    @Body() dto: CreateVendorMarketplaceProfileDto,
+    @Body() dto: CreateVendorMarketplaceProfileDto & { organizationId?: string },
   ) {
+    // For public self-registration, use a default organization
+    const organizationId = dto.organizationId || 'public-marketplace';
     const profile = await this.marketplaceService.createVendorMarketplaceProfile(
       dto,
       organizationId,
@@ -120,7 +120,9 @@ export class MarketplaceController {
   }
 
   @Get('vendors')
-  @ApiOperation({ summary: 'Get all vendor marketplace profiles' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all vendor marketplace profiles (authenticated)' })
   @ApiResponse({ status: 200, description: 'List of vendor profiles' })
   async findAllVendorProfiles(
     @OrganizationId() organizationId: string,
@@ -134,7 +136,7 @@ export class MarketplaceController {
   }
 
   @Get('vendors/browse')
-  @ApiOperation({ summary: 'Browse marketplace vendors (all organizations)' })
+  @ApiOperation({ summary: 'Browse marketplace vendors (public - all organizations)' })
   @ApiResponse({ status: 200, description: 'List of marketplace vendors' })
   async browseVendors(@Query() query: VendorMarketplaceQueryDto) {
     const result = await this.marketplaceService.findAllVendorMarketplaceProfiles(query);
@@ -272,6 +274,45 @@ export class MarketplaceController {
   ) {
     const job = await this.marketplaceService.dispatchJob(id, dto, organizationId, userId);
     return { success: true, data: job };
+  }
+
+  @Post('jobs/:id/dispatch-multi')
+  @ApiOperation({ summary: 'Dispatch a job to multiple vendors (first to accept wins)' })
+  @ApiParam({ name: 'id', description: 'Marketplace job ID' })
+  @ApiResponse({ status: 200, description: 'Job dispatched to multiple vendors' })
+  async dispatchJobToMultipleVendors(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+    @Body() body: { vendorProfileIds: string[]; responseDeadlineMinutes?: number },
+  ) {
+    const result = await this.marketplaceService.dispatchJobToMultipleVendors(
+      id,
+      body.vendorProfileIds,
+      organizationId,
+      userId,
+      body.responseDeadlineMinutes,
+    );
+    return { success: true, data: result };
+  }
+
+  @Post('jobs/:id/auto-dispatch')
+  @ApiOperation({ summary: 'Auto-match and dispatch to best vendors based on service, location, and rating' })
+  @ApiParam({ name: 'id', description: 'Marketplace job ID' })
+  @ApiResponse({ status: 200, description: 'Job auto-dispatched to matched vendors' })
+  async autoDispatchJob(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+    @Body() body?: { maxVendors?: number },
+  ) {
+    const result = await this.marketplaceService.autoMatchAndDispatchVendors(
+      id,
+      organizationId,
+      userId,
+      body?.maxVendors,
+    );
+    return { success: true, data: result };
   }
 
   @Post('jobs/:id/accept')
@@ -461,5 +502,56 @@ export class MarketplaceController {
   async getStats(@OrganizationId() organizationId: string) {
     const stats = await this.marketplaceService.getMarketplaceStats(organizationId);
     return { success: true, data: stats };
+  }
+
+  // ============================================================================
+  // VENDOR-SPECIFIC ENDPOINTS
+  // ============================================================================
+
+  @Get('vendor/:vendorProfileId/available-jobs')
+  @ApiOperation({ summary: 'Get available jobs for a vendor (jobs dispatched to them)' })
+  @ApiParam({ name: 'vendorProfileId', description: 'Vendor marketplace profile ID' })
+  @ApiResponse({ status: 200, description: 'List of available jobs for the vendor' })
+  async getVendorAvailableJobs(
+    @Param('vendorProfileId') vendorProfileId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.marketplaceService.getAvailableJobsForVendor(
+      vendorProfileId,
+      page,
+      limit,
+    );
+    return { success: true, ...result };
+  }
+
+  @Get('vendor/:vendorProfileId/active-jobs')
+  @ApiOperation({ summary: 'Get active jobs for a vendor (accepted/in progress)' })
+  @ApiParam({ name: 'vendorProfileId', description: 'Vendor marketplace profile ID' })
+  @ApiResponse({ status: 200, description: 'List of active jobs for the vendor' })
+  async getVendorActiveJobs(
+    @Param('vendorProfileId') vendorProfileId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.marketplaceService.getVendorActiveJobs(vendorProfileId, page, limit);
+    return { success: true, ...result };
+  }
+
+  @Get('vendor/:vendorProfileId/completed-jobs')
+  @ApiOperation({ summary: 'Get completed jobs for a vendor' })
+  @ApiParam({ name: 'vendorProfileId', description: 'Vendor marketplace profile ID' })
+  @ApiResponse({ status: 200, description: 'List of completed jobs for the vendor' })
+  async getVendorCompletedJobs(
+    @Param('vendorProfileId') vendorProfileId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.marketplaceService.getVendorCompletedJobs(
+      vendorProfileId,
+      page,
+      limit,
+    );
+    return { success: true, ...result };
   }
 }

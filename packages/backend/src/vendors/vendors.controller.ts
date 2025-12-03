@@ -7,42 +7,79 @@ import {
   Body,
   Param,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { VendorsService } from './vendors.service';
 import { CreateVendorDto, UpdateVendorDto } from './dto';
 import { OrganizationId } from '../common/decorators/organization.decorator';
+import { UserId } from '../common/decorators/user-id.decorator';
 
 @ApiTags('vendors')
 @Controller('vendors')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
 export class VendorsController {
   constructor(private vendorsService: VendorsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new vendor' })
+  @ApiOperation({ summary: 'Create a new vendor (public endpoint for self-registration)' })
   @ApiResponse({ status: 201, description: 'Vendor created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   async create(
-    @OrganizationId() organizationId: string,
-    @Body() createVendorDto: CreateVendorDto,
+    @Body() createVendorDto: CreateVendorDto & { organizationId?: string },
   ) {
-    const vendor = await this.vendorsService.create(organizationId, createVendorDto);
-    return { success: true, data: vendor };
+    try {
+      // For public self-registration, use a default/public organization
+      const organizationId = createVendorDto.organizationId || 'public-marketplace';
+      const vendor = await this.vendorsService.create(organizationId, createVendorDto);
+      return { success: true, data: vendor };
+    } catch (error) {
+      // Return detailed error for debugging
+      return {
+        success: false,
+        error: {
+          message: error.message || 'Failed to create vendor',
+          details: error,
+        },
+      };
+    }
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all vendors' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all vendors (authenticated)' })
   @ApiResponse({ status: 200, description: 'List of vendors' })
   async findAll(@OrganizationId() organizationId: string) {
     const vendors = await this.vendorsService.findAll(organizationId);
     return { success: true, data: vendors };
   }
 
+  @Get('pending')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all pending vendor applications (authenticated)' })
+  @ApiResponse({ status: 200, description: 'List of pending vendors' })
+  async findPending(@OrganizationId() organizationId: string) {
+    const vendors = await this.vendorsService.findPendingVendors(organizationId);
+    return { success: true, data: vendors };
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get logged-in vendor profile with marketplace info' })
+  @ApiResponse({ status: 200, description: 'Vendor profile with marketplace data' })
+  @ApiResponse({ status: 404, description: 'Vendor profile not found for this user' })
+  async getMyProfile(@UserId() userId: string, @OrganizationId() organizationId: string) {
+    const vendor = await this.vendorsService.findByUserId(userId, organizationId);
+    return { success: true, data: vendor };
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Get vendor by ID' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor by ID (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor details' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async findOne(
@@ -54,7 +91,9 @@ export class VendorsController {
   }
 
   @Get(':id/stats')
-  @ApiOperation({ summary: 'Get vendor statistics' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor statistics (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor statistics' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async getVendorStats(
@@ -66,7 +105,9 @@ export class VendorsController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update vendor' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update vendor (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor updated successfully' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async update(
@@ -79,7 +120,9 @@ export class VendorsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete vendor' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete vendor (authenticated)' })
   @ApiResponse({ status: 200, description: 'Vendor deleted successfully' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   async remove(
@@ -88,5 +131,44 @@ export class VendorsController {
   ) {
     const result = await this.vendorsService.remove(id, organizationId);
     return { success: true, data: result };
+  }
+
+  @Post(':id/approve')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve a pending vendor application (authenticated)' })
+  @ApiResponse({ status: 200, description: 'Vendor approved successfully' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  async approve(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: { notes?: string },
+  ) {
+    const vendor = await this.vendorsService.approveVendor(
+      id,
+      organizationId,
+      body.notes,
+    );
+    return { success: true, data: vendor };
+  }
+
+  @Post(':id/reject')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reject a pending vendor application (authenticated)' })
+  @ApiResponse({ status: 200, description: 'Vendor rejected successfully' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  async reject(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: { reason: string; notes?: string },
+  ) {
+    const vendor = await this.vendorsService.rejectVendor(
+      id,
+      organizationId,
+      body.reason,
+      body.notes,
+    );
+    return { success: true, data: vendor };
   }
 }

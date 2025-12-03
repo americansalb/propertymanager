@@ -24,6 +24,7 @@ import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import VendorModal from '../components/vendors/VendorModal';
+import PendingVendorsSection from '../components/vendors/PendingVendorsSection';
 
 export default function VendorsPage() {
   const navigate = useNavigate();
@@ -389,6 +390,9 @@ export default function VendorsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pending Vendor Approvals Section */}
+      <PendingVendorsSection />
 
       {/* Vendor Cards with Performance */}
       {vendors && vendors.length > 0 ? (

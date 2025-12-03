@@ -44,6 +44,26 @@ async function main() {
 
   console.log('✅ Created/updated organization:', organization.name);
 
+  // Create public marketplace organization for vendor self-registration
+  const publicMarketplace = await prisma.organization.upsert({
+    where: { slug: 'public-marketplace' },
+    update: {
+      name: 'Public Marketplace',
+      type: OrganizationType.PROPERTY_MANAGER,
+      plan: SubscriptionPlan.TRIAL,
+    },
+    create: {
+      id: 'public-marketplace', // Use fixed ID for easy reference
+      name: 'Public Marketplace',
+      slug: 'public-marketplace',
+      type: OrganizationType.PROPERTY_MANAGER,
+      plan: SubscriptionPlan.TRIAL,
+      settings: {},
+    },
+  });
+
+  console.log('✅ Created/updated public marketplace organization:', publicMarketplace.name);
+
   // Upsert admin user - always ensures correct password
   const passwordHash = await bcrypt.hash('winner', 10);
   const adminUser = await prisma.user.upsert({
