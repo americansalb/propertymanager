@@ -709,13 +709,13 @@ model Vendor {
   licenseNumber       String?
   licenseState        String?
   licenseType         String?
-  licenseExpiryDate   DateTime?
+  licenseExpiryDate   String?
 
   // Insurance & compliance
   insuranceCarrier          String?
   insurancePolicyNumber     String?
   insuranceCoverageAmount   String?
-  insuranceExpiryDate       DateTime?
+  insuranceExpiryDate       String?
   insuranceCertUrl          String?
   insuranceAgentName        String?
   insuranceAgentPhone       String?
@@ -724,7 +724,7 @@ model Vendor {
   certificationNumber       String?    // ALOA for locksmiths, EPA for HVAC, etc.
   bondCompany               String?
   bondAmount                String?
-  bondExpiryDate            DateTime?
+  bondExpiryDate            String?
 
   // Services & Coverage (marketplace-related)
   servicesOffered           String[]   @default([])
