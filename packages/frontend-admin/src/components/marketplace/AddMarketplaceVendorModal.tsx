@@ -1505,157 +1505,308 @@ export default function AddMarketplaceVendorModal({
           {/* Credentials */}
           {step === 'credentials' && (
             <div className="space-y-6 animate-slide-in">
-              {/* License Info */}
-              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 border-2 border-indigo-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-indigo-500 rounded-xl">
-                    <FileCheck className="w-6 h-6 text-white" />
-                  </div>
-                  State Licensing
-                </h3>
+              {/* Locksmith-Specific Credentials */}
+              {formData.vendorType === 'locksmith' && (
+                <>
+                  {/* License Info */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 border-2 border-indigo-200 shadow-lg">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                      <div className="p-2 bg-indigo-500 rounded-xl">
+                        <FileCheck className="w-6 h-6 text-white" />
+                      </div>
+                      State Licensing
+                    </h3>
 
-                {requiresLicense ? (
-                  <div className="bg-amber-100 border-2 border-amber-300 rounded-xl p-4 mb-4 animate-pulse">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-6 h-6 text-amber-600 mt-0.5" />
+                    {requiresLicense ? (
+                      <div className="bg-amber-100 border-2 border-amber-300 rounded-xl p-4 mb-4 animate-pulse">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="w-6 h-6 text-amber-600 mt-0.5" />
+                          <div>
+                            <p className="font-bold text-amber-900">
+                              ⚠️ {US_STATES.find((s) => s.code === formData.state)?.name} requires
+                              locksmith licensing
+                            </p>
+                            <p className="text-sm text-amber-800 mt-2">
+                              A valid state license is required to operate as a locksmith in this state.
+                              Our team will review and verify your license information during the approval process.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : formData.state ? (
+                      <div className="bg-green-100 border-2 border-green-300 rounded-xl p-4 mb-4">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+                          <div>
+                            <p className="font-bold text-green-900">
+                              ✅ {US_STATES.find((s) => s.code === formData.state)?.name} does not require
+                              state licensing
+                            </p>
+                            <p className="text-sm text-green-800 mt-2">
+                              While not required, you may still enter any certifications or local
+                              permits.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <p className="font-bold text-amber-900">
-                          ⚠️ {US_STATES.find((s) => s.code === formData.state)?.name} requires
-                          locksmith licensing
-                        </p>
-                        <p className="text-sm text-amber-800 mt-2">
-                          A valid state license is required to operate as a locksmith in this state.
-                          Our team will review and verify your license information during the approval process.
-                        </p>
+                        <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">License Number {requiresLicense && '*'}</Label>
+                        <Input
+                          id="licenseNumber"
+                          value={formData.licenseNumber}
+                          onChange={(e) => updateField('licenseNumber', e.target.value)}
+                          placeholder="e.g., LK-123456"
+                          className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-indigo-500'}
+                        />
+                        {errors.licenseNumber && (
+                          <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">
+                          License Expiration {requiresLicense && '*'}
+                        </Label>
+                        <Input
+                          id="licenseExpiry"
+                          type="date"
+                          value={formData.licenseExpiry}
+                          onChange={(e) => updateField('licenseExpiry', e.target.value)}
+                          className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-indigo-500'}
+                        />
+                        {errors.licenseExpiry && (
+                          <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
+                        )}
                       </div>
                     </div>
                   </div>
-                ) : formData.state ? (
-                  <div className="bg-green-100 border-2 border-green-300 rounded-xl p-4 mb-4">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+
+                  {/* Professional Certifications */}
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 shadow-lg">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                      <div className="p-2 bg-purple-500 rounded-xl">
+                        <Award className="w-6 h-6 text-white" />
+                      </div>
+                      Professional Certifications
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4 bg-purple-100 p-3 rounded-lg">
+                      🏆 <span className="font-semibold">Pro Tip:</span> ALOA certification isn't required, but it <span className="font-bold">boosts your credibility</span> and may qualify you for <span className="font-bold text-purple-700">premium vendor status</span> with higher pay rates!
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <p className="font-bold text-green-900">
-                          ✅ {US_STATES.find((s) => s.code === formData.state)?.name} does not require
-                          state licensing
-                        </p>
-                        <p className="text-sm text-green-800 mt-2">
-                          While not required, you may still enter any certifications or local
-                          permits.
-                        </p>
+                        <Label htmlFor="alcaNumber" className="text-gray-700 font-semibold mb-2">ALOA Member Number</Label>
+                        <Input
+                          id="alcaNumber"
+                          value={formData.alcaNumber}
+                          onChange={(e) => updateField('alcaNumber', e.target.value)}
+                          placeholder="e.g., 12345"
+                          className="focus:ring-2 focus:ring-purple-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Leave blank if not an ALOA member</p>
                       </div>
                     </div>
                   </div>
-                ) : null}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">License Number {requiresLicense && '*'}</Label>
-                    <Input
-                      id="licenseNumber"
-                      value={formData.licenseNumber}
-                      onChange={(e) => updateField('licenseNumber', e.target.value)}
-                      placeholder="e.g., LK-123456"
-                      className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-indigo-500'}
-                    />
-                    {errors.licenseNumber && (
-                      <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">
-                      License Expiration {requiresLicense && '*'}
-                    </Label>
-                    <Input
-                      id="licenseExpiry"
-                      type="date"
-                      value={formData.licenseExpiry}
-                      onChange={(e) => updateField('licenseExpiry', e.target.value)}
-                      className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-indigo-500'}
-                    />
-                    {errors.licenseExpiry && (
-                      <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Professional Certifications */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-purple-500 rounded-xl">
-                    <Award className="w-6 h-6 text-white" />
-                  </div>
-                  Professional Certifications
-                </h3>
-                <p className="text-sm text-gray-700 mb-4 bg-purple-100 p-3 rounded-lg">
-                  🏆 <span className="font-semibold">Pro Tip:</span> ALOA certification isn't required, but it <span className="font-bold">boosts your credibility</span> and may qualify you for <span className="font-bold text-purple-700">premium vendor status</span> with higher pay rates!
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <Label htmlFor="alcaNumber" className="text-gray-700 font-semibold mb-2">ALOA Member Number</Label>
-                    <Input
-                      id="alcaNumber"
-                      value={formData.alcaNumber}
-                      onChange={(e) => updateField('alcaNumber', e.target.value)}
-                      placeholder="e.g., 12345"
-                      className="focus:ring-2 focus:ring-purple-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Leave blank if not an ALOA member</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bonding */}
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-xl">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  Surety Bond
-                </h3>
-                <p className="text-sm text-gray-700 mb-4 bg-blue-100 p-3 rounded-lg">
-                  🛡️ A surety bond provides protection for your customers. While not always required,
-                  <span className="font-bold"> bonded locksmiths are more trusted</span> by property managers and command higher rates!
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div>
-                    <Label htmlFor="bondCompany" className="text-gray-700 font-semibold mb-2">Bond Company</Label>
-                    <Input
-                      id="bondCompany"
-                      value={formData.bondCompany}
-                      onChange={(e) => updateField('bondCompany', e.target.value)}
-                      placeholder="e.g., Surety One"
-                      className="focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bondAmount" className="text-gray-700 font-semibold mb-2">Bond Amount</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
-                      <Input
-                        id="bondAmount"
-                        value={formData.bondAmount}
-                        onChange={(e) => updateField('bondAmount', e.target.value)}
-                        placeholder="10,000"
-                        className="pl-11 focus:ring-2 focus:ring-blue-500"
-                      />
+                  {/* Bonding */}
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                      <div className="p-2 bg-blue-500 rounded-xl">
+                        <Shield className="w-6 h-6 text-white" />
+                      </div>
+                      Surety Bond
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4 bg-blue-100 p-3 rounded-lg">
+                      🛡️ A surety bond provides protection for your customers. While not always required,
+                      <span className="font-bold"> bonded locksmiths are more trusted</span> by property managers and command higher rates!
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div>
+                        <Label htmlFor="bondCompany" className="text-gray-700 font-semibold mb-2">Bond Company</Label>
+                        <Input
+                          id="bondCompany"
+                          value={formData.bondCompany}
+                          onChange={(e) => updateField('bondCompany', e.target.value)}
+                          placeholder="e.g., Surety One"
+                          className="focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="bondAmount" className="text-gray-700 font-semibold mb-2">Bond Amount</Label>
+                        <div className="relative">
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                          <Input
+                            id="bondAmount"
+                            value={formData.bondAmount}
+                            onChange={(e) => updateField('bondAmount', e.target.value)}
+                            placeholder="10,000"
+                            className="pl-11 focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="bondExpiry" className="text-gray-700 font-semibold mb-2">Bond Expiration</Label>
+                        <Input
+                          id="bondExpiry"
+                          type="date"
+                          value={formData.bondExpiry}
+                          onChange={(e) => updateField('bondExpiry', e.target.value)}
+                          className="focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="bondExpiry" className="text-gray-700 font-semibold mb-2">Bond Expiration</Label>
-                    <Input
-                      id="bondExpiry"
-                      type="date"
-                      value={formData.bondExpiry}
-                      onChange={(e) => updateField('bondExpiry', e.target.value)}
-                      className="focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
 
-              {/* Background Check Consent */}
+              {/* Plumber-Specific Credentials */}
+              {formData.vendorType === 'plumber' && (
+                <>
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                      <div className="p-2 bg-blue-500 rounded-xl">
+                        <FileCheck className="w-6 h-6 text-white" />
+                      </div>
+                      Plumbing License *
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4 bg-blue-100 p-3 rounded-lg">
+                      💧 <span className="font-semibold">Required:</span> A valid state plumbing license (Journeyman or Master) is required for all plumbing work.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">License Number *</Label>
+                        <Input
+                          id="licenseNumber"
+                          value={formData.licenseNumber}
+                          onChange={(e) => updateField('licenseNumber', e.target.value)}
+                          placeholder="e.g., PL-123456"
+                          className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-blue-500'}
+                        />
+                        {errors.licenseNumber && (
+                          <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">License Expiration *</Label>
+                        <Input
+                          id="licenseExpiry"
+                          type="date"
+                          value={formData.licenseExpiry}
+                          onChange={(e) => updateField('licenseExpiry', e.target.value)}
+                          className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-blue-500'}
+                        />
+                        {errors.licenseExpiry && (
+                          <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Electrician-Specific Credentials */}
+              {formData.vendorType === 'electrician' && (
+                <>
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 border-amber-200 shadow-lg">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                      <div className="p-2 bg-amber-500 rounded-xl">
+                        <FileCheck className="w-6 h-6 text-white" />
+                      </div>
+                      Electrical License *
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4 bg-amber-100 p-3 rounded-lg">
+                      ⚡ <span className="font-semibold">Required:</span> A valid state electrical license (Journeyman or Master) is required for all electrical work.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">License Number *</Label>
+                        <Input
+                          id="licenseNumber"
+                          value={formData.licenseNumber}
+                          onChange={(e) => updateField('licenseNumber', e.target.value)}
+                          placeholder="e.g., EL-123456"
+                          className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-amber-500'}
+                        />
+                        {errors.licenseNumber && (
+                          <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">License Expiration *</Label>
+                        <Input
+                          id="licenseExpiry"
+                          type="date"
+                          value={formData.licenseExpiry}
+                          onChange={(e) => updateField('licenseExpiry', e.target.value)}
+                          className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-amber-500'}
+                        />
+                        {errors.licenseExpiry && (
+                          <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* HVAC-Specific Credentials */}
+              {formData.vendorType === 'hvac' && (
+                <>
+                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                      <div className="p-2 bg-slate-500 rounded-xl">
+                        <FileCheck className="w-6 h-6 text-white" />
+                      </div>
+                      HVAC License & EPA Certification *
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4 bg-slate-100 p-3 rounded-lg">
+                      ❄️ <span className="font-semibold">Required:</span> Valid HVAC license and EPA Section 608 certification for refrigerant handling.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">HVAC License Number *</Label>
+                        <Input
+                          id="licenseNumber"
+                          value={formData.licenseNumber}
+                          onChange={(e) => updateField('licenseNumber', e.target.value)}
+                          placeholder="e.g., HV-123456"
+                          className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-slate-500'}
+                        />
+                        {errors.licenseNumber && (
+                          <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">License Expiration *</Label>
+                        <Input
+                          id="licenseExpiry"
+                          type="date"
+                          value={formData.licenseExpiry}
+                          onChange={(e) => updateField('licenseExpiry', e.target.value)}
+                          className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-slate-500'}
+                        />
+                        {errors.licenseExpiry && (
+                          <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="alcaNumber" className="text-gray-700 font-semibold mb-2">EPA Certification Number *</Label>
+                        <Input
+                          id="alcaNumber"
+                          value={formData.alcaNumber}
+                          onChange={(e) => updateField('alcaNumber', e.target.value)}
+                          placeholder="e.g., EPA-123456"
+                          className="focus:ring-2 focus:ring-slate-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Section 608 certification required</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Background Check Consent - All vendor types */}
               <div
                 className={`rounded-2xl p-6 border-2 ${errors.backgroundCheckConsent ? 'bg-red-50 border-red-300 animate-pulse' : 'bg-gradient-to-r from-indigo-100 to-purple-100 border-indigo-300'} shadow-lg`}
               >
@@ -1672,7 +1823,7 @@ export default function AddMarketplaceVendorModal({
                     </span>
                     <p className="text-sm text-indigo-800 mt-2 leading-relaxed">
                       I authorize PropertyMaster to conduct a background check on myself and/or my
-                      employees who will be performing locksmith services. I understand that my application will be reviewed and that all
+                      employees who will be performing {formData.vendorType} services. I understand that my application will be reviewed and that all
                       technicians must pass a background check before being approved for dispatch.
                     </p>
                     {errors.backgroundCheckConsent && (
