@@ -882,17 +882,17 @@ export default function AddMarketplaceVendorModal({
   const getStepTitle = () => {
     switch (step) {
       case 'category':
-        return '🎯 Choose Your Path';
+        return 'Select Specialty';
       case 'business':
-        return '🏢 Tell Us About Your Business';
+        return 'Business Information';
       case 'credentials':
-        return '🏆 Show Your Credentials';
+        return 'Credentials & Licensing';
       case 'insurance':
-        return '🛡️ Protection & Coverage';
+        return 'Insurance Coverage';
       case 'services':
-        return '⚡ Your Services & Reach';
+        return 'Services & Coverage Area';
       case 'review':
-        return '🚀 Ready to Launch!';
+        return 'Review & Submit';
     }
   };
 
@@ -1059,61 +1059,38 @@ export default function AddMarketplaceVendorModal({
           {/* Category Selection */}
           {step === 'category' && (
             <div className="space-y-8 animate-fade-in">
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-full mb-4">
-                  <Sparkles className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm font-semibold text-orange-700">Join Our Marketplace</span>
-                </div>
-                <h3 className="text-3xl font-bold text-gray-900 mb-3">
-                  What's Your Superpower?
+              <div className="text-center mb-10">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+                  Select your specialty
                 </h3>
-                <p className="text-lg text-gray-600">
-                  Select your specialty and let's get you earning in no time! 💪
+                <p className="text-sm text-gray-600">
+                  Choose the service category that best describes your business
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Locksmith */}
                 <button
                   onClick={() => {
                     updateField('vendorType', 'locksmith');
                     setStep('business');
                   }}
-                  className="group relative p-8 border-3 border-transparent bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-left overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                  className="group p-6 border-2 border-gray-200 hover:border-indigo-500 rounded-lg text-left transition-all duration-200 hover:shadow-md bg-white"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative">
-                    <div className="flex items-start gap-6">
-                      <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                        <Key className="w-12 h-12 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-2xl font-bold text-white">🔐 Locksmith</span>
-                          <span className="px-3 py-1 bg-green-400 text-green-900 rounded-full text-xs font-bold animate-pulse">
-                            High Demand
-                          </span>
-                        </div>
-                        <p className="text-indigo-100 mb-4 text-sm">
-                          Emergency services, commercial & residential locksmith work
-                        </p>
-                        <ul className="space-y-2 text-sm text-white/90">
-                          <li className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-yellow-300" /> Emergency lockouts (24/7 calls)
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-green-300" /> Average $100-300 per job
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Star className="w-4 h-4 text-yellow-300" /> Build your reputation fast
-                          </li>
-                        </ul>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                      <Key className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-1">Locksmith</h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Emergency lockouts, rekeying, lock installation
+                      </p>
+                      <div className="text-xs text-gray-500">
+                        Typical range: $75-300 per job
                       </div>
                     </div>
-                    <div className="mt-6 flex items-center justify-between">
-                      <span className="text-white/80 text-sm font-medium">Get Started →</span>
-                      <ChevronRight className="w-6 h-6 text-white group-hover:translate-x-2 transition-transform duration-300" />
-                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
                   </div>
                 </button>
 
@@ -1123,41 +1100,22 @@ export default function AddMarketplaceVendorModal({
                     updateField('vendorType', 'plumber');
                     setStep('business');
                   }}
-                  className="group relative p-8 border-3 border-transparent bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl text-left overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                  className="group p-6 border-2 border-gray-200 hover:border-blue-500 rounded-lg text-left transition-all duration-200 hover:shadow-md bg-white"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative">
-                    <div className="flex items-start gap-6">
-                      <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                        <Droplet className="w-12 h-12 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-2xl font-bold text-white">💧 Plumber</span>
-                          <span className="px-3 py-1 bg-green-400 text-green-900 rounded-full text-xs font-bold animate-pulse">
-                            High Demand
-                          </span>
-                        </div>
-                        <p className="text-blue-100 mb-4 text-sm">
-                          Emergency repairs, installations, and water heater services
-                        </p>
-                        <ul className="space-y-2 text-sm text-white/90">
-                          <li className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-yellow-300" /> Emergency leaks & bursts
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-green-300" /> Average $200-500 per job
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Star className="w-4 h-4 text-yellow-300" /> Year-round demand
-                          </li>
-                        </ul>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                      <Droplet className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-1">Plumber</h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Emergency repairs, installations, water heater services
+                      </p>
+                      <div className="text-xs text-gray-500">
+                        Typical range: $150-500 per job
                       </div>
                     </div>
-                    <div className="mt-6 flex items-center justify-between">
-                      <span className="text-white/80 text-sm font-medium">Get Started →</span>
-                      <ChevronRight className="w-6 h-6 text-white group-hover:translate-x-2 transition-transform duration-300" />
-                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
                   </div>
                 </button>
 
@@ -1167,41 +1125,22 @@ export default function AddMarketplaceVendorModal({
                     updateField('vendorType', 'electrician');
                     setStep('business');
                   }}
-                  className="group relative p-8 border-3 border-transparent bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl text-left overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                  className="group p-6 border-2 border-gray-200 hover:border-amber-500 rounded-lg text-left transition-all duration-200 hover:shadow-md bg-white"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative">
-                    <div className="flex items-start gap-6">
-                      <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                        <Zap className="w-12 h-12 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-2xl font-bold text-white">⚡ Electrician</span>
-                          <span className="px-3 py-1 bg-green-400 text-green-900 rounded-full text-xs font-bold animate-pulse">
-                            High Demand
-                          </span>
-                        </div>
-                        <p className="text-amber-100 mb-4 text-sm">
-                          Emergency repairs, panel upgrades, and safety inspections
-                        </p>
-                        <ul className="space-y-2 text-sm text-white/90">
-                          <li className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-yellow-300" /> Power outage emergencies
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-green-300" /> Average $200-600 per job
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Star className="w-4 h-4 text-yellow-300" /> Safety-critical work
-                          </li>
-                        </ul>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition-colors">
+                      <Zap className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-1">Electrician</h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Electrical repairs, panel upgrades, safety inspections
+                      </p>
+                      <div className="text-xs text-gray-500">
+                        Typical range: $150-600 per job
                       </div>
                     </div>
-                    <div className="mt-6 flex items-center justify-between">
-                      <span className="text-white/80 text-sm font-medium">Get Started →</span>
-                      <ChevronRight className="w-6 h-6 text-white group-hover:translate-x-2 transition-transform duration-300" />
-                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
                   </div>
                 </button>
 
@@ -1211,41 +1150,22 @@ export default function AddMarketplaceVendorModal({
                     updateField('vendorType', 'hvac');
                     setStep('business');
                   }}
-                  className="group relative p-8 border-3 border-transparent bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl text-left overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                  className="group p-6 border-2 border-gray-200 hover:border-slate-500 rounded-lg text-left transition-all duration-200 hover:shadow-md bg-white"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative">
-                    <div className="flex items-start gap-6">
-                      <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                        <Wind className="w-12 h-12 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-2xl font-bold text-white">❄️ HVAC</span>
-                          <span className="px-3 py-1 bg-green-400 text-green-900 rounded-full text-xs font-bold animate-pulse">
-                            High Demand
-                          </span>
-                        </div>
-                        <p className="text-red-100 mb-4 text-sm">
-                          Heating, cooling emergencies, and seasonal maintenance
-                        </p>
-                        <ul className="space-y-2 text-sm text-white/90">
-                          <li className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-yellow-300" /> No heat/AC emergencies
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-green-300" /> Average $300-800 per job
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Star className="w-4 h-4 text-yellow-300" /> Recurring contracts
-                          </li>
-                        </ul>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-slate-50 rounded-lg group-hover:bg-slate-100 transition-colors">
+                      <Wind className="w-6 h-6 text-slate-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-1">HVAC</h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Heating, cooling emergencies, seasonal maintenance
+                      </p>
+                      <div className="text-xs text-gray-500">
+                        Typical range: $200-800 per job
                       </div>
                     </div>
-                    <div className="mt-6 flex items-center justify-between">
-                      <span className="text-white/80 text-sm font-medium">Get Started →</span>
-                      <ChevronRight className="w-6 h-6 text-white group-hover:translate-x-2 transition-transform duration-300" />
-                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
                   </div>
                 </button>
               </div>
@@ -1256,11 +1176,9 @@ export default function AddMarketplaceVendorModal({
           {step === 'business' && (
             <div className="space-y-6 animate-slide-in">
               {/* Company Info */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-indigo-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-indigo-500 rounded-xl">
-                    <Building2 className="w-6 h-6 text-white" />
-                  </div>
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-gray-600" />
                   Company Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1293,7 +1211,7 @@ export default function AddMarketplaceVendorModal({
                         <SelectItem value="1-3">1-3 years</SelectItem>
                         <SelectItem value="3-5">3-5 years</SelectItem>
                         <SelectItem value="5-10">5-10 years</SelectItem>
-                        <SelectItem value="10+">10+ years ⭐</SelectItem>
+                        <SelectItem value="10+">10+ years</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.yearsInBusiness && (
@@ -1591,8 +1509,8 @@ export default function AddMarketplaceVendorModal({
                       </div>
                       Professional Certifications
                     </h3>
-                    <p className="text-sm text-gray-700 mb-4 bg-purple-100 p-3 rounded-lg">
-                      🏆 <span className="font-semibold">Pro Tip:</span> ALOA certification isn't required, but it <span className="font-bold">boosts your credibility</span> and may qualify you for <span className="font-bold text-purple-700">premium vendor status</span> with higher pay rates!
+                    <p className="text-sm text-gray-600 mb-4">
+                      ALOA (Associated Locksmiths of America) certification is not required but helps establish credibility and may qualify you for premium vendor status.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
@@ -1617,9 +1535,8 @@ export default function AddMarketplaceVendorModal({
                       </div>
                       Surety Bond
                     </h3>
-                    <p className="text-sm text-gray-700 mb-4 bg-blue-100 p-3 rounded-lg">
-                      🛡️ A surety bond provides protection for your customers. While not always required,
-                      <span className="font-bold"> bonded locksmiths are more trusted</span> by property managers and command higher rates!
+                    <p className="text-sm text-gray-600 mb-4">
+                      A surety bond provides protection for your customers. While not always required, bonded locksmiths are more trusted by property managers.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <div>
@@ -1670,8 +1587,8 @@ export default function AddMarketplaceVendorModal({
                       </div>
                       Plumbing License *
                     </h3>
-                    <p className="text-sm text-gray-700 mb-4 bg-blue-100 p-3 rounded-lg">
-                      💧 <span className="font-semibold">Required:</span> A valid state plumbing license (Journeyman or Master) is required for all plumbing work.
+                    <p className="text-sm text-gray-600 mb-4">
+                      A valid state plumbing license (Journeyman or Master) is required for all plumbing work.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
@@ -1715,8 +1632,8 @@ export default function AddMarketplaceVendorModal({
                       </div>
                       Electrical License *
                     </h3>
-                    <p className="text-sm text-gray-700 mb-4 bg-amber-100 p-3 rounded-lg">
-                      ⚡ <span className="font-semibold">Required:</span> A valid state electrical license (Journeyman or Master) is required for all electrical work.
+                    <p className="text-sm text-gray-600 mb-4">
+                      A valid state electrical license (Journeyman or Master) is required for all electrical work.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
@@ -1760,8 +1677,8 @@ export default function AddMarketplaceVendorModal({
                       </div>
                       HVAC License & EPA Certification *
                     </h3>
-                    <p className="text-sm text-gray-700 mb-4 bg-slate-100 p-3 rounded-lg">
-                      ❄️ <span className="font-semibold">Required:</span> Valid HVAC license and EPA Section 608 certification for refrigerant handling.
+                    <p className="text-sm text-gray-600 mb-4">
+                      Valid HVAC license and EPA Section 608 certification for refrigerant handling are required.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
@@ -1848,9 +1765,8 @@ export default function AddMarketplaceVendorModal({
                   </div>
                   General Liability Insurance *
                 </h3>
-                <p className="text-sm text-gray-700 mb-4 bg-green-100 p-3 rounded-lg">
-                  🛡️ General liability insurance is <span className="font-bold">required</span> to operate on the marketplace. Minimum
-                  coverage of <span className="font-bold text-green-700">$500,000</span> is recommended for property management work.
+                <p className="text-sm text-gray-600 mb-4">
+                  General liability insurance is required to operate on the marketplace. Minimum coverage of $500,000 is recommended for property management work.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
@@ -2011,8 +1927,8 @@ export default function AddMarketplaceVendorModal({
                   </div>
                   Services Offered *
                 </h3>
-                <p className="text-sm text-gray-700 mb-4 bg-indigo-100 p-3 rounded-lg">
-                  ⚡ Select all services you can provide. More services = more job opportunities! Each service card shows typical pricing and demand level.
+                <p className="text-sm text-gray-600 mb-4">
+                  Select all services you can provide. More services means more job opportunities.
                 </p>
                 {errors.selectedServices && (
                   <p className="text-sm text-red-600 mb-4 font-semibold flex items-center gap-1">
@@ -2166,15 +2082,15 @@ export default function AddMarketplaceVendorModal({
                         <SelectValue placeholder="Select response time" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="15">Under 15 minutes ⚡</SelectItem>
-                        <SelectItem value="30">15-30 minutes 🏃</SelectItem>
+                        <SelectItem value="15">Under 15 minutes</SelectItem>
+                        <SelectItem value="30">15-30 minutes</SelectItem>
                         <SelectItem value="60">30-60 minutes</SelectItem>
                         <SelectItem value="120">1-2 hours</SelectItem>
                         <SelectItem value="240">Same day</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500 mt-2 bg-orange-100 p-2 rounded">
-                      ⏱️ <span className="font-semibold">Faster response time</span> = priority in dispatch queue!
+                    <p className="text-xs text-gray-500 mt-2">
+                      Faster response times receive priority in the dispatch queue.
                     </p>
                   </div>
                 </div>
@@ -2245,7 +2161,7 @@ export default function AddMarketplaceVendorModal({
                   </div>
                   <div>
                     <p className="text-gray-500 font-semibold">24/7 Emergency</p>
-                    <p className="font-bold text-gray-900">{formData.emergencyAvailable ? '✅ Yes' : '❌ No'}</p>
+                    <p className="font-bold text-gray-900">{formData.emergencyAvailable ? 'Yes' : 'No'}</p>
                   </div>
                 </div>
               </div>
@@ -2278,7 +2194,7 @@ export default function AddMarketplaceVendorModal({
                   </div>
                   <div>
                     <p className="text-gray-500 font-semibold">Background Check</p>
-                    <p className="font-bold text-green-600">✅ Authorized</p>
+                    <p className="font-bold text-green-600">Authorized</p>
                   </div>
                 </div>
               </div>
