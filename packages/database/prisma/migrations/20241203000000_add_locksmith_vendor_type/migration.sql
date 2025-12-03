@@ -1,0 +1,2 @@
+-- Add LOCKSMITH to VendorType enum
+ALTER TYPE "VendorType" ADD VALUE IF NOT EXISTS 'LOCKSMITH';
