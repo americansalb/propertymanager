@@ -1,41 +1,40 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Store,
   Building2,
   User,
+  Users,
   Phone,
   Mail,
   MapPin,
   Shield,
   FileCheck,
   Award,
-  Key,
   CheckCircle,
   AlertCircle,
   ChevronRight,
   ChevronLeft,
   X,
-  Clock,
-  DollarSign,
-  Users,
-  Globe,
-  Lock,
-  Car,
+  Upload,
+  FileText,
+  AlertTriangle,
   Home,
   Building,
+  Car,
+  Key,
+  Lock,
   Wrench,
-  Sparkles,
-  TrendingUp,
-  Zap,
-  Star,
   Droplet,
   Flame,
-  Wind,
-  Pipette,
-  Plug,
-  Lightbulb,
+  Zap,
   Snowflake,
+  Wind,
+  Lightbulb,
+  Plug,
+  Pipette,
+  DollarSign,
+  Star,
+  Clock,
 } from 'lucide-react';
 import api from '../../services/api';
 import { Dialog, DialogContent } from '../ui/dialog';
@@ -49,435 +48,79 @@ interface AddMarketplaceVendorModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = 'category' | 'business' | 'credentials' | 'insurance' | 'services' | 'review';
+type Step =
+  | 'specialty'
+  | 'business_identity'
+  | 'licensing'
+  | 'insurance'
+  | 'tax_payment'
+  | 'background_check'
+  | 'services_coverage'
+  | 'trust_experience'
+  | 'review';
 
-// Locksmith-specific services
-const LOCKSMITH_SERVICES = [
-  {
-    id: 'residential_lockout',
-    name: 'Residential Lockout',
-    category: 'Emergency',
-    icon: Home,
-    typical: '$75-150',
-    earnings: 'High demand',
-  },
-  {
-    id: 'commercial_lockout',
-    name: 'Commercial Lockout',
-    category: 'Emergency',
-    icon: Building,
-    typical: '$100-200',
-    earnings: 'High demand',
-  },
-  {
-    id: 'automotive_lockout',
-    name: 'Automotive Lockout',
-    category: 'Emergency',
-    icon: Car,
-    typical: '$75-175',
-    earnings: 'High demand',
-  },
-  {
-    id: 'rekey_locks',
-    name: 'Rekey Locks',
-    category: 'Residential',
-    icon: Key,
-    typical: '$20-30/lock',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'lock_replacement',
-    name: 'Lock Replacement',
-    category: 'Residential',
-    icon: Lock,
-    typical: '$75-250',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'deadbolt_install',
-    name: 'Deadbolt Installation',
-    category: 'Residential',
-    icon: Shield,
-    typical: '$100-200',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'high_security_locks',
-    name: 'High Security Locks',
-    category: 'Commercial',
-    icon: Shield,
-    typical: '$150-400',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'master_key_system',
-    name: 'Master Key System',
-    category: 'Commercial',
-    icon: Key,
-    typical: '$200-500+',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'access_control',
-    name: 'Access Control Systems',
-    category: 'Commercial',
-    icon: Lock,
-    typical: '$500-2000+',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'key_duplication',
-    name: 'Key Duplication',
-    category: 'General',
-    icon: Key,
-    typical: '$3-25/key',
-    earnings: 'Quick jobs',
-  },
-  {
-    id: 'safe_opening',
-    name: 'Safe Opening/Repair',
-    category: 'Specialty',
-    icon: Lock,
-    typical: '$150-400',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'ignition_repair',
-    name: 'Ignition Repair/Replace',
-    category: 'Automotive',
-    icon: Car,
-    typical: '$150-350',
-    earnings: 'High demand',
-  },
-  {
-    id: 'transponder_keys',
-    name: 'Transponder Key Programming',
-    category: 'Automotive',
-    icon: Car,
-    typical: '$100-300',
-    earnings: 'High demand',
-  },
-];
+type VendorSpecialty = 'locksmith' | 'plumber' | 'electrician' | 'hvac' | '';
 
-// Plumber services
-const PLUMBER_SERVICES = [
-  {
-    id: 'emergency_leak',
-    name: 'Emergency Leak Repair',
-    category: 'Emergency',
-    icon: Droplet,
-    typical: '$150-400',
-    earnings: 'High demand',
-  },
-  {
-    id: 'burst_pipe',
-    name: 'Burst Pipe Repair',
-    category: 'Emergency',
-    icon: Droplet,
-    typical: '$200-600',
-    earnings: 'High demand',
-  },
-  {
-    id: 'clogged_drain',
-    name: 'Clogged Drain/Toilet',
-    category: 'Emergency',
-    icon: Pipette,
-    typical: '$100-300',
-    earnings: 'High demand',
-  },
-  {
-    id: 'water_heater_repair',
-    name: 'Water Heater Repair',
-    category: 'Repair',
-    icon: Flame,
-    typical: '$200-500',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'water_heater_install',
-    name: 'Water Heater Installation',
-    category: 'Installation',
-    icon: Flame,
-    typical: '$800-2000',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'faucet_repair',
-    name: 'Faucet Repair/Replacement',
-    category: 'Repair',
-    icon: Droplet,
-    typical: '$150-350',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'toilet_repair',
-    name: 'Toilet Repair/Replacement',
-    category: 'Repair',
-    icon: Home,
-    typical: '$150-400',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'garbage_disposal',
-    name: 'Garbage Disposal Repair',
-    category: 'Repair',
-    icon: Wrench,
-    typical: '$100-300',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'sewer_line',
-    name: 'Sewer Line Repair',
-    category: 'Major',
-    icon: Pipette,
-    typical: '$500-3000',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'pipe_replacement',
-    name: 'Pipe Replacement',
-    category: 'Major',
-    icon: Pipette,
-    typical: '$300-1500',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'sump_pump',
-    name: 'Sump Pump Install/Repair',
-    category: 'Installation',
-    icon: Droplet,
-    typical: '$400-1200',
-    earnings: 'Seasonal demand',
-  },
-  {
-    id: 'backflow_prevention',
-    name: 'Backflow Prevention',
-    category: 'Commercial',
-    icon: Shield,
-    typical: '$300-800',
-    earnings: 'Steady work',
-  },
-];
-
-// Electrician services
-const ELECTRICIAN_SERVICES = [
-  {
-    id: 'power_outage',
-    name: 'Power Outage Emergency',
-    category: 'Emergency',
-    icon: Zap,
-    typical: '$150-500',
-    earnings: 'High demand',
-  },
-  {
-    id: 'electrical_fire_hazard',
-    name: 'Electrical Fire Hazard',
-    category: 'Emergency',
-    icon: Flame,
-    typical: '$200-600',
-    earnings: 'High demand',
-  },
-  {
-    id: 'circuit_breaker_trip',
-    name: 'Circuit Breaker Issues',
-    category: 'Emergency',
-    icon: Zap,
-    typical: '$100-350',
-    earnings: 'High demand',
-  },
-  {
-    id: 'outlet_repair',
-    name: 'Outlet Repair/Replacement',
-    category: 'Repair',
-    icon: Plug,
-    typical: '$75-200',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'light_fixture',
-    name: 'Light Fixture Installation',
-    category: 'Installation',
-    icon: Lightbulb,
-    typical: '$100-300',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'ceiling_fan',
-    name: 'Ceiling Fan Installation',
-    category: 'Installation',
-    icon: Wind,
-    typical: '$150-400',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'panel_upgrade',
-    name: 'Electrical Panel Upgrade',
-    category: 'Major',
-    icon: Building,
-    typical: '$1000-3000',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'rewiring',
-    name: 'Home/Unit Rewiring',
-    category: 'Major',
-    icon: Zap,
-    typical: '$1500-6000',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'smoke_detector',
-    name: 'Smoke Detector Install',
-    category: 'Safety',
-    icon: Shield,
-    typical: '$50-150',
-    earnings: 'Quick jobs',
-  },
-  {
-    id: 'gfci_outlet',
-    name: 'GFCI Outlet Installation',
-    category: 'Safety',
-    icon: Plug,
-    typical: '$100-250',
-    earnings: 'Steady work',
-  },
-  {
-    id: 'ev_charger',
-    name: 'EV Charger Installation',
-    category: 'Installation',
-    icon: Plug,
-    typical: '$500-1500',
-    earnings: 'Growing demand',
-  },
-  {
-    id: 'generator_install',
-    name: 'Generator Installation',
-    category: 'Installation',
-    icon: Zap,
-    typical: '$2000-5000',
-    earnings: 'Premium pricing',
-  },
-];
-
-// HVAC services
-const HVAC_SERVICES = [
-  {
-    id: 'no_heat_emergency',
-    name: 'No Heat Emergency',
-    category: 'Emergency',
-    icon: Flame,
-    typical: '$150-500',
-    earnings: 'High demand',
-  },
-  {
-    id: 'no_cooling_emergency',
-    name: 'No A/C Emergency',
-    category: 'Emergency',
-    icon: Snowflake,
-    typical: '$150-500',
-    earnings: 'High demand',
-  },
-  {
-    id: 'gas_leak',
-    name: 'Gas Leak Emergency',
-    category: 'Emergency',
-    icon: Flame,
-    typical: '$200-600',
-    earnings: 'High demand',
-  },
-  {
-    id: 'ac_repair',
-    name: 'A/C Repair',
-    category: 'Repair',
-    icon: Snowflake,
-    typical: '$200-800',
-    earnings: 'Seasonal demand',
-  },
-  {
-    id: 'furnace_repair',
-    name: 'Furnace Repair',
-    category: 'Repair',
-    icon: Flame,
-    typical: '$200-800',
-    earnings: 'Seasonal demand',
-  },
-  {
-    id: 'ac_install',
-    name: 'A/C Installation',
-    category: 'Installation',
-    icon: Snowflake,
-    typical: '$2500-7000',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'furnace_install',
-    name: 'Furnace Installation',
-    category: 'Installation',
-    icon: Flame,
-    typical: '$2500-6000',
-    earnings: 'Premium pricing',
-  },
-  {
-    id: 'hvac_maintenance',
-    name: 'HVAC Maintenance',
-    category: 'Maintenance',
-    icon: Wrench,
-    typical: '$100-300',
-    earnings: 'Recurring work',
-  },
-  {
-    id: 'duct_cleaning',
-    name: 'Duct Cleaning',
-    category: 'Maintenance',
-    icon: Wind,
-    typical: '$300-500',
-    earnings: 'Seasonal demand',
-  },
-  {
-    id: 'thermostat_install',
-    name: 'Thermostat Installation',
-    category: 'Installation',
-    icon: DollarSign,
-    typical: '$100-300',
-    earnings: 'Quick jobs',
-  },
-  {
-    id: 'air_quality',
-    name: 'Air Quality Systems',
-    category: 'Installation',
-    icon: Wind,
-    typical: '$500-2000',
-    earnings: 'Growing demand',
-  },
-  {
-    id: 'heat_pump',
-    name: 'Heat Pump Install/Repair',
-    category: 'Major',
-    icon: Flame,
-    typical: '$3000-8000',
-    earnings: 'Premium pricing',
-  },
-];
-
-type VendorType = 'locksmith' | 'plumber' | 'electrician' | 'hvac';
-
-// States that require locksmith licensing
-const LICENSED_STATES = [
-  'AL',
-  'CA',
-  'CT',
-  'IL',
-  'LA',
-  'MD',
-  'NC',
-  'NJ',
-  'NV',
-  'OK',
-  'OR',
-  'TN',
-  'TX',
-  'VA',
-];
+// Service definitions by specialty
+const SPECIALTY_SERVICES = {
+  locksmith: [
+    { id: 'residential_lockout', name: 'Residential Lockout', category: 'Emergency', typical: '$75-150' },
+    { id: 'commercial_lockout', name: 'Commercial Lockout', category: 'Emergency', typical: '$100-200' },
+    { id: 'automotive_lockout', name: 'Automotive Lockout', category: 'Emergency', typical: '$75-175' },
+    { id: 'rekey_locks', name: 'Rekey Locks', category: 'Residential', typical: '$20-30/lock' },
+    { id: 'lock_replacement', name: 'Lock Replacement', category: 'Residential', typical: '$75-250' },
+    { id: 'deadbolt_install', name: 'Deadbolt Installation', category: 'Residential', typical: '$100-200' },
+    { id: 'high_security_locks', name: 'High Security Locks', category: 'Commercial', typical: '$150-400' },
+    { id: 'master_key_system', name: 'Master Key System', category: 'Commercial', typical: '$200-500+' },
+    { id: 'access_control', name: 'Access Control Systems', category: 'Commercial', typical: '$500-2000+' },
+    { id: 'key_duplication', name: 'Key Duplication', category: 'General', typical: '$3-25/key' },
+    { id: 'safe_opening', name: 'Safe Opening/Repair', category: 'Specialty', typical: '$150-400' },
+    { id: 'ignition_repair', name: 'Ignition Repair/Replace', category: 'Automotive', typical: '$150-350' },
+    { id: 'transponder_keys', name: 'Transponder Key Programming', category: 'Automotive', typical: '$100-300' },
+  ],
+  plumber: [
+    { id: 'emergency_leak', name: 'Emergency Leak Repair', category: 'Emergency', typical: '$150-400' },
+    { id: 'burst_pipe', name: 'Burst Pipe Repair', category: 'Emergency', typical: '$200-600' },
+    { id: 'clogged_drain', name: 'Clogged Drain/Toilet', category: 'Emergency', typical: '$100-300' },
+    { id: 'water_heater_repair', name: 'Water Heater Repair', category: 'Repair', typical: '$200-500' },
+    { id: 'water_heater_install', name: 'Water Heater Installation', category: 'Installation', typical: '$800-2500' },
+    { id: 'faucet_repair', name: 'Faucet Repair/Replace', category: 'Repair', typical: '$100-300' },
+    { id: 'toilet_repair', name: 'Toilet Repair/Replace', category: 'Repair', typical: '$150-500' },
+    { id: 'drain_cleaning', name: 'Professional Drain Cleaning', category: 'Maintenance', typical: '$150-400' },
+    { id: 'sewer_line', name: 'Sewer Line Repair', category: 'Major', typical: '$1500-5000' },
+    { id: 'repiping', name: 'Repiping', category: 'Major', typical: '$2000-10000' },
+    { id: 'water_line', name: 'Water Line Repair', category: 'Major', typical: '$500-3000' },
+    { id: 'sump_pump', name: 'Sump Pump Install/Repair', category: 'Installation', typical: '$500-1500' },
+  ],
+  electrician: [
+    { id: 'power_outage', name: 'Power Outage Emergency', category: 'Emergency', typical: '$150-500' },
+    { id: 'sparking_outlet', name: 'Sparking Outlet Emergency', category: 'Emergency', typical: '$100-300' },
+    { id: 'breaker_trip', name: 'Circuit Breaker Repair', category: 'Repair', typical: '$100-400' },
+    { id: 'outlet_install', name: 'Outlet Installation', category: 'Installation', typical: '$75-200' },
+    { id: 'light_fixture', name: 'Light Fixture Installation', category: 'Installation', typical: '$100-300' },
+    { id: 'ceiling_fan', name: 'Ceiling Fan Installation', category: 'Installation', typical: '$150-400' },
+    { id: 'panel_upgrade', name: 'Electrical Panel Upgrade', category: 'Major', typical: '$1000-3000' },
+    { id: 'rewiring', name: 'Home/Unit Rewiring', category: 'Major', typical: '$1500-6000' },
+    { id: 'smoke_detector', name: 'Smoke Detector Install', category: 'Safety', typical: '$50-150' },
+    { id: 'gfci_outlet', name: 'GFCI Outlet Installation', category: 'Safety', typical: '$100-250' },
+    { id: 'ev_charger', name: 'EV Charger Installation', category: 'Installation', typical: '$500-1500' },
+    { id: 'generator_install', name: 'Generator Installation', category: 'Installation', typical: '$2000-5000' },
+  ],
+  hvac: [
+    { id: 'no_heat_emergency', name: 'No Heat Emergency', category: 'Emergency', typical: '$150-500' },
+    { id: 'no_cooling_emergency', name: 'No A/C Emergency', category: 'Emergency', typical: '$150-500' },
+    { id: 'gas_leak', name: 'Gas Leak Emergency', category: 'Emergency', typical: '$200-600' },
+    { id: 'ac_repair', name: 'A/C Repair', category: 'Repair', typical: '$200-800' },
+    { id: 'furnace_repair', name: 'Furnace Repair', category: 'Repair', typical: '$200-800' },
+    { id: 'ac_install', name: 'A/C Installation', category: 'Installation', typical: '$2500-7000' },
+    { id: 'furnace_install', name: 'Furnace Installation', category: 'Installation', typical: '$2500-6000' },
+    { id: 'hvac_maintenance', name: 'HVAC Maintenance', category: 'Maintenance', typical: '$100-300' },
+    { id: 'duct_cleaning', name: 'Duct Cleaning', category: 'Maintenance', typical: '$300-500' },
+    { id: 'thermostat_install', name: 'Thermostat Installation', category: 'Installation', typical: '$100-300' },
+    { id: 'air_quality', name: 'Air Quality Systems', category: 'Installation', typical: '$500-2000' },
+    { id: 'heat_pump', name: 'Heat Pump Install/Repair', category: 'Major', typical: '$3000-8000' },
+  ],
+};
 
 const US_STATES = [
   { code: 'AL', name: 'Alabama' },
@@ -532,99 +175,198 @@ const US_STATES = [
   { code: 'WY', name: 'Wyoming' },
 ];
 
+const BUSINESS_ENTITY_TYPES = [
+  'LLC',
+  'Corporation',
+  'Partnership',
+  'Sole Proprietor',
+  'Other',
+];
+
+const INSURANCE_CARRIERS = [
+  'State Farm',
+  'Allstate',
+  'Progressive',
+  'Geico',
+  'Liberty Mutual',
+  'Travelers',
+  'Hartford',
+  'Nationwide',
+  'CNA',
+  'Zurich',
+  'Other',
+];
+
 interface FormData {
-  // Vendor Type
-  vendorType: VendorType | '';
+  // Specialty
+  specialty: VendorSpecialty;
 
-  // Business Info
-  companyName: string;
-  contactFirstName: string;
-  contactLastName: string;
-  email: string;
-  phone: string;
-  address1: string;
-  address2: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  website: string;
+  // Business Identity
+  legalBusinessName: string;
+  dbaName: string;
+  businessEntityType: string;
+  ein: string;
+  stateOfIncorporation: string;
+  businessRegistrationNumber: string;
   yearsInBusiness: string;
-  numberOfTechnicians: string;
-  emergencyAvailable: boolean;
 
-  // Credentials
-  licenseNumber: string;
+  // Contact Information
+  businessAddress1: string;
+  businessAddress2: string;
+  businessCity: string;
+  businessState: string;
+  businessZipCode: string;
+  businessPhone: string;
+  email: string;
+  website: string;
+
+  // Licensing
   licenseState: string;
-  licenseExpiry: string;
-  alcaNumber: string; // Associated Locksmiths of America
-  bondAmount: string;
-  bondCompany: string;
-  bondExpiry: string;
-  backgroundCheckConsent: boolean;
+  licenseNumber: string;
+  licenseType: string;
+  licenseClassification: string;
+  licenseHolderName: string;
+  licenseExpiryDate: string;
+  licensePhotoUrl: string;
 
-  // Insurance (for verification - THEIR coverage, not ours)
+  // Trade-specific certifications
+  aloaMemberNumber: string;  // Locksmith
+  bondCompany: string;
+  bondAmount: string;
+  bondExpiryDate: string;
+  epaCertificationNumber: string;  // HVAC
+
+  // Insurance
+  coiUrl: string;
   insuranceCarrier: string;
   insurancePolicyNumber: string;
   insuranceCoverageAmount: string;
-  insuranceExpiry: string;
-  insuranceAgentName: string; // For manual verification if API fails
+  insuranceExpiryDate: string;
+  insuranceAgentName: string;
   insuranceAgentPhone: string;
+  hasEmployees: boolean;
   workersCompCarrier: string;
   workersCompPolicyNumber: string;
-  workersCompExpiry: string;
+  workersCompExpiryDate: string;
 
-  // Services
+  // Tax & Payment
+  w9Url: string;
+  taxLegalName: string;
+  taxEin: string;
+  taxEntityType: string;
+  taxMailingAddress: string;
+  bankVerificationMethod: 'plaid' | 'manual' | '';
+  bankName: string;
+  bankRoutingNumber: string;
+  bankAccountNumber: string;
+  bankAccountType: string;
+
+  // Background Check
+  ownerFirstName: string;
+  ownerMiddleName: string;
+  ownerLastName: string;
+  ownerDateOfBirth: string;
+  ownerSsnLast4: string;
+  ownerDriverLicenseNumber: string;
+  ownerDriverLicenseState: string;
+  backgroundCheckConsent: boolean;
+  technicianBackgroundCheckConsent: boolean;
+
+  // Services & Coverage
   selectedServices: string[];
   serviceRadius: string;
   serviceZipCodes: string;
-  responseTime: string;
+  emergencyAvailable: boolean;
+  standardResponseTime: string;
 
-  // Pricing
-  servicePricing: Record<string, { min: string; max: string }>;
+  // Trust & Experience
+  aloaMemberNumber: string;
+  phccMemberNumber: string;
+  necaMemberNumber: string;
+  accaMemberNumber: string;
+  bbbProfileUrl: string;
+  googleBusinessUrl: string;
+  references: Array<{
+    company: string;
+    contact: string;
+    phone: string;
+    email: string;
+  }>;
+  portfolioUrls: string[];
 }
 
 const initialFormData: FormData = {
-  vendorType: '',
-  companyName: '',
-  contactFirstName: '',
-  contactLastName: '',
-  email: '',
-  phone: '',
-  address1: '',
-  address2: '',
-  city: '',
-  state: '',
-  zipCode: '',
-  website: '',
+  specialty: '',
+  legalBusinessName: '',
+  dbaName: '',
+  businessEntityType: '',
+  ein: '',
+  stateOfIncorporation: '',
+  businessRegistrationNumber: '',
   yearsInBusiness: '',
-  numberOfTechnicians: '1',
-  emergencyAvailable: true,
-
-  licenseNumber: '',
+  businessAddress1: '',
+  businessAddress2: '',
+  businessCity: '',
+  businessState: '',
+  businessZipCode: '',
+  businessPhone: '',
+  email: '',
+  website: '',
   licenseState: '',
-  licenseExpiry: '',
-  alcaNumber: '',
-  bondAmount: '',
+  licenseNumber: '',
+  licenseType: '',
+  licenseClassification: '',
+  licenseHolderName: '',
+  licenseExpiryDate: '',
+  licensePhotoUrl: '',
+  aloaMemberNumber: '',
   bondCompany: '',
-  bondExpiry: '',
-  backgroundCheckConsent: false,
-
+  bondAmount: '',
+  bondExpiryDate: '',
+  epaCertificationNumber: '',
+  coiUrl: '',
   insuranceCarrier: '',
   insurancePolicyNumber: '',
   insuranceCoverageAmount: '',
-  insuranceExpiry: '',
+  insuranceExpiryDate: '',
   insuranceAgentName: '',
   insuranceAgentPhone: '',
+  hasEmployees: false,
   workersCompCarrier: '',
   workersCompPolicyNumber: '',
-  workersCompExpiry: '',
-
+  workersCompExpiryDate: '',
+  w9Url: '',
+  taxLegalName: '',
+  taxEin: '',
+  taxEntityType: '',
+  taxMailingAddress: '',
+  bankVerificationMethod: '',
+  bankName: '',
+  bankRoutingNumber: '',
+  bankAccountNumber: '',
+  bankAccountType: '',
+  ownerFirstName: '',
+  ownerMiddleName: '',
+  ownerLastName: '',
+  ownerDateOfBirth: '',
+  ownerSsnLast4: '',
+  ownerDriverLicenseNumber: '',
+  ownerDriverLicenseState: '',
+  backgroundCheckConsent: false,
+  technicianBackgroundCheckConsent: false,
   selectedServices: [],
   serviceRadius: '25',
   serviceZipCodes: '',
-  responseTime: '60',
-
-  servicePricing: {},
+  emergencyAvailable: true,
+  standardResponseTime: '60',
+  aloaMemberNumber: '',
+  phccMemberNumber: '',
+  necaMemberNumber: '',
+  accaMemberNumber: '',
+  bbbProfileUrl: '',
+  googleBusinessUrl: '',
+  references: [],
+  portfolioUrls: [],
 };
 
 export default function AddMarketplaceVendorModal({
@@ -632,15 +374,79 @@ export default function AddMarketplaceVendorModal({
   onOpenChange,
 }: AddMarketplaceVendorModalProps) {
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<Step>('category');
+  const [currentStep, setCurrentStep] = useState<Step>('specialty');
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showConfetti, setShowConfetti] = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const requiresLicense = LICENSED_STATES.includes(formData.state);
+  const createVendorMutation = useMutation({
+    mutationFn: async (data: FormData) => {
+      // Map frontend specialty to backend VendorType enum
+      const typeMapping: Record<string, string> = {
+        locksmith: 'LOCKSMITH',
+        plumber: 'PLUMBING',
+        electrician: 'ELECTRICAL',
+        hvac: 'HVAC',
+      };
 
-  const updateField = (field: keyof FormData, value: any) => {
+      const payload = {
+        companyName: data.legalBusinessName,
+        dbaName: data.dbaName,
+        contactName: `${data.ownerFirstName} ${data.ownerLastName}`.trim(),
+        email: data.email,
+        phone: data.businessPhone,
+        website: data.website,
+        type: typeMapping[data.specialty] || 'OTHER',
+        status: 'PENDING_APPROVAL',
+        yearsInBusiness: data.yearsInBusiness,
+        numberOfTechnicians: '1',
+        address1: data.businessAddress1,
+        address2: data.businessAddress2,
+        city: data.businessCity,
+        state: data.businessState,
+        zipCode: data.businessZipCode,
+        businessEntityType: data.businessEntityType,
+        taxId: data.ein,
+        w9Url: data.w9Url,
+        insuranceCarrier: data.insuranceCarrier,
+        insurancePolicyNumber: data.insurancePolicyNumber,
+        insuranceCoverageAmount: data.insuranceCoverageAmount,
+        insuranceExpiryDate: data.insuranceExpiryDate,
+        insuranceCertUrl: data.coiUrl,
+        insuranceAgentName: data.insuranceAgentName,
+        insuranceAgentPhone: data.insuranceAgentPhone,
+        licenseNumber: data.licenseNumber,
+        licenseState: data.licenseState,
+        licenseType: data.licenseType,
+        licenseExpiryDate: data.licenseExpiryDate,
+        certificationNumber: data.aloaMemberNumber || data.epaCertificationNumber,
+        bondCompany: data.bondCompany,
+        bondAmount: data.bondAmount,
+        bondExpiryDate: data.bondExpiryDate,
+        backgroundCheckConsent: data.backgroundCheckConsent,
+        servicesOffered: data.selectedServices,
+        serviceZipCodes: data.serviceZipCodes.split(',').map((z) => z.trim()).filter(Boolean),
+        serviceRadius: parseInt(data.serviceRadius) || 25,
+        emergencyAvailable: data.emergencyAvailable,
+        emergencyResponseTime: parseInt(data.standardResponseTime) || 60,
+      };
+
+      const response = await api.post('/vendors', payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      setFormData(initialFormData);
+      setCurrentStep('specialty');
+      onOpenChange(false);
+    },
+    onError: (error: any) => {
+      console.error('Error creating vendor:', error);
+      alert(`Error creating vendor: ${error.response?.data?.message || error.message}`);
+    },
+  });
+
+  const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -651,112 +457,77 @@ export default function AddMarketplaceVendorModal({
     }
   };
 
-  const toggleService = (serviceId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedServices: prev.selectedServices.includes(serviceId)
-        ? prev.selectedServices.filter((id) => id !== serviceId)
-        : [...prev.selectedServices, serviceId],
-    }));
-  };
-
-  const getCurrentServices = () => {
-    switch (formData.vendorType) {
-      case 'locksmith':
-        return LOCKSMITH_SERVICES;
-      case 'plumber':
-        return PLUMBER_SERVICES;
-      case 'electrician':
-        return ELECTRICIAN_SERVICES;
-      case 'hvac':
-        return HVAC_SERVICES;
-      default:
-        return LOCKSMITH_SERVICES;
-    }
-  };
-
-  const validateStep = (): boolean => {
+  const validateStep = (step: Step): boolean => {
     const newErrors: Record<string, string> = {};
 
     switch (step) {
-      case 'business':
-        if (!formData.companyName.trim()) {
-          newErrors.companyName = 'Company name is required';
+      case 'specialty':
+        if (!formData.specialty) newErrors.specialty = 'Please select a specialty';
+        break;
+
+      case 'business_identity':
+        if (!formData.legalBusinessName) newErrors.legalBusinessName = 'Required';
+        if (!formData.businessEntityType) newErrors.businessEntityType = 'Required';
+        if (!formData.ein) newErrors.ein = 'Required';
+        if (formData.ein && !/^\d{2}-?\d{7}$/.test(formData.ein)) {
+          newErrors.ein = 'Invalid EIN format (XX-XXXXXXX)';
         }
-        if (!formData.contactFirstName.trim()) {
-          newErrors.contactFirstName = 'First name is required';
-        }
-        if (!formData.contactLastName.trim()) {
-          newErrors.contactLastName = 'Last name is required';
-        }
-        if (!formData.email.trim()) {
-          newErrors.email = 'Email is required';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        if (!formData.stateOfIncorporation) newErrors.stateOfIncorporation = 'Required';
+        if (!formData.yearsInBusiness) newErrors.yearsInBusiness = 'Required';
+        if (!formData.businessAddress1) newErrors.businessAddress1 = 'Required';
+        if (!formData.businessCity) newErrors.businessCity = 'Required';
+        if (!formData.businessState) newErrors.businessState = 'Required';
+        if (!formData.businessZipCode) newErrors.businessZipCode = 'Required';
+        if (!formData.businessPhone) newErrors.businessPhone = 'Required';
+        if (!formData.email) newErrors.email = 'Required';
+        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
           newErrors.email = 'Invalid email format';
-        }
-        if (!formData.phone.trim()) {
-          newErrors.phone = 'Phone is required';
-        }
-        if (!formData.address1.trim()) {
-          newErrors.address1 = 'Address is required';
-        }
-        if (!formData.city.trim()) {
-          newErrors.city = 'City is required';
-        }
-        if (!formData.state) {
-          newErrors.state = 'State is required';
-        }
-        if (!formData.zipCode.trim()) {
-          newErrors.zipCode = 'ZIP code is required';
-        }
-        if (!formData.yearsInBusiness) {
-          newErrors.yearsInBusiness = 'Years in business is required';
         }
         break;
 
-      case 'credentials':
-        if (requiresLicense) {
-          if (!formData.licenseNumber.trim()) {
-            newErrors.licenseNumber = 'License number is required in your state';
-          }
-          if (!formData.licenseExpiry) {
-            newErrors.licenseExpiry = 'License expiry date is required';
-          }
-        }
-        if (!formData.backgroundCheckConsent) {
-          newErrors.backgroundCheckConsent = 'Background check consent is required';
-        }
+      case 'licensing':
+        if (!formData.licenseState) newErrors.licenseState = 'Required';
+        if (!formData.licenseNumber) newErrors.licenseNumber = 'Required';
+        if (!formData.licenseType) newErrors.licenseType = 'Required';
+        if (!formData.licenseHolderName) newErrors.licenseHolderName = 'Required';
+        if (!formData.licenseExpiryDate) newErrors.licenseExpiryDate = 'Required';
         break;
 
       case 'insurance':
-        if (!formData.insuranceCarrier.trim()) {
-          newErrors.insuranceCarrier = 'Insurance carrier is required';
-        }
-        if (!formData.insurancePolicyNumber.trim()) {
-          newErrors.insurancePolicyNumber = 'Policy number is required';
-        }
-        if (!formData.insuranceCoverageAmount.trim()) {
-          newErrors.insuranceCoverageAmount = 'Coverage amount is required';
-        }
-        if (!formData.insuranceExpiry) {
-          newErrors.insuranceExpiry = 'Insurance expiry date is required';
-        }
-        // Insurance agent contact (for manual verification if needed)
-        if (!formData.insuranceAgentName.trim()) {
-          newErrors.insuranceAgentName = 'Insurance agent name is required';
-        }
-        if (!formData.insuranceAgentPhone.trim()) {
-          newErrors.insuranceAgentPhone = 'Insurance agent phone is required';
+        if (!formData.insuranceCarrier) newErrors.insuranceCarrier = 'Required';
+        if (!formData.insurancePolicyNumber) newErrors.insurancePolicyNumber = 'Required';
+        if (!formData.insuranceCoverageAmount) newErrors.insuranceCoverageAmount = 'Required';
+        if (!formData.insuranceExpiryDate) newErrors.insuranceExpiryDate = 'Required';
+        if (formData.hasEmployees) {
+          if (!formData.workersCompCarrier) newErrors.workersCompCarrier = 'Required for employees';
+          if (!formData.workersCompPolicyNumber) newErrors.workersCompPolicyNumber = 'Required';
+          if (!formData.workersCompExpiryDate) newErrors.workersCompExpiryDate = 'Required';
         }
         break;
 
-      case 'services':
-        if (formData.selectedServices.length === 0) {
-          newErrors.selectedServices = 'Please select at least one service';
+      case 'background_check':
+        if (!formData.ownerFirstName) newErrors.ownerFirstName = 'Required';
+        if (!formData.ownerLastName) newErrors.ownerLastName = 'Required';
+        if (!formData.ownerDateOfBirth) newErrors.ownerDateOfBirth = 'Required';
+        if (!formData.ownerSsnLast4) newErrors.ownerSsnLast4 = 'Required';
+        if (formData.ownerSsnLast4 && !/^\d{4}$/.test(formData.ownerSsnLast4)) {
+          newErrors.ownerSsnLast4 = 'Must be 4 digits';
         }
-        if (!formData.serviceRadius && !formData.serviceZipCodes.trim()) {
-          newErrors.serviceArea = 'Please specify service radius or ZIP codes';
+        if (!formData.ownerDriverLicenseNumber) newErrors.ownerDriverLicenseNumber = 'Required';
+        if (!formData.ownerDriverLicenseState) newErrors.ownerDriverLicenseState = 'Required';
+        if (!formData.backgroundCheckConsent) {
+          newErrors.backgroundCheckConsent = 'You must authorize background check';
         }
+        if (!formData.technicianBackgroundCheckConsent) {
+          newErrors.technicianBackgroundCheckConsent = 'You must ensure technician checks';
+        }
+        break;
+
+      case 'services_coverage':
+        if (formData.selectedServices.length < 3) {
+          newErrors.selectedServices = 'Please select at least 3 services';
+        }
+        if (!formData.standardResponseTime) newErrors.standardResponseTime = 'Required';
         break;
     }
 
@@ -765,1671 +536,1718 @@ export default function AddMarketplaceVendorModal({
   };
 
   const handleNext = () => {
-    if (!validateStep()) {
-      formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!validateStep(currentStep)) {
       return;
     }
 
-    const steps: Step[] = [
-      'category',
-      'business',
-      'credentials',
+    const stepOrder: Step[] = [
+      'specialty',
+      'business_identity',
+      'licensing',
       'insurance',
-      'services',
+      'tax_payment',
+      'background_check',
+      'services_coverage',
+      'trust_experience',
       'review',
     ];
-    const currentIndex = steps.indexOf(step);
-    if (currentIndex < steps.length - 1) {
-      setStep(steps[currentIndex + 1]);
-      formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const currentIndex = stepOrder.indexOf(currentStep);
+    if (currentIndex < stepOrder.length - 1) {
+      setCurrentStep(stepOrder[currentIndex + 1]);
     }
   };
 
   const handleBack = () => {
-    const steps: Step[] = [
-      'category',
-      'business',
-      'credentials',
+    const stepOrder: Step[] = [
+      'specialty',
+      'business_identity',
+      'licensing',
       'insurance',
-      'services',
+      'tax_payment',
+      'background_check',
+      'services_coverage',
+      'trust_experience',
       'review',
     ];
-    const currentIndex = steps.indexOf(step);
+
+    const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
-      setStep(steps[currentIndex - 1]);
-      formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      setCurrentStep(stepOrder[currentIndex - 1]);
     }
   };
-
-  const createVendorMutation = useMutation({
-    mutationFn: async () => {
-      // Map vendorType to backend VendorType enum
-      const typeMapping: Record<string, string> = {
-        locksmith: 'LOCKSMITH',
-        plumber: 'PLUMBING',
-        electrician: 'ELECTRICAL',
-        hvac: 'HVAC',
-      };
-
-      // First create the vendor with ALL collected data
-      const vendorResponse = await api.post('/vendors', {
-        // Basic info
-        companyName: formData.companyName,
-        contactName: `${formData.contactFirstName} ${formData.contactLastName}`,
-        email: formData.email,
-        phone: formData.phone,
-        website: formData.website || undefined,
-        type: typeMapping[formData.vendorType] || 'OTHER',
-        yearsInBusiness: formData.yearsInBusiness || undefined,
-        numberOfTechnicians: formData.numberOfTechnicians || undefined,
-
-        // Address
-        address1: formData.address1,
-        address2: formData.address2 || undefined,
-        city: formData.city,
-        state: formData.state,
-        zipCode: formData.zipCode,
-
-        // Insurance (for verification - THEIR coverage)
-        insuranceCarrier: formData.insuranceCarrier || undefined,
-        insurancePolicyNumber: formData.insurancePolicyNumber || undefined,
-        insuranceCoverageAmount: formData.insuranceCoverageAmount || undefined,
-        insuranceExpiryDate: formData.insuranceExpiry || undefined,
-        insuranceAgentName: formData.insuranceAgentName || undefined,
-        insuranceAgentPhone: formData.insuranceAgentPhone || undefined,
-
-        // License (CRITICAL)
-        licenseNumber: formData.licenseNumber || undefined,
-        licenseState: formData.state || undefined,
-        licenseExpiryDate: formData.licenseExpiry || undefined,
-
-        // Professional certifications (trade-specific)
-        certificationNumber: formData.alcaNumber || undefined,
-        bondCompany: formData.bondCompany || undefined,
-        bondAmount: formData.bondAmount || undefined,
-        bondExpiryDate: formData.bondExpiry || undefined,
-
-        // Background check
-        backgroundCheckConsent: formData.backgroundCheckConsent || undefined,
-
-        // Service details
-        servicesOffered: formData.selectedServices || [],
-        serviceRadius: parseInt(formData.serviceRadius) || undefined,
-        emergencyAvailable: formData.emergencyAvailable || undefined,
-        emergencyResponseTime: formData.emergencyResponseTime ? parseInt(formData.emergencyResponseTime) : undefined,
-      });
-
-      const vendorId = vendorResponse.data.data.id;
-
-      // Then create marketplace profile
-      const profileResponse = await api.post('/marketplace/vendors', {
-        vendorId,
-        tier: 'STANDARD',
-        isMarketplaceActive: true,
-        acceptingJobs: true,
-        serviceRadius: parseInt(formData.serviceRadius) || 25,
-        serviceZipCodes: formData.serviceZipCodes
-          ? formData.serviceZipCodes.split(',').map((z) => z.trim())
-          : [],
-        maxConcurrentJobs: 5,
-      });
-
-      return { vendor: vendorResponse.data, profile: profileResponse.data };
-    },
-    onSuccess: () => {
-      setShowConfetti(true);
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['vendors'] });
-        queryClient.invalidateQueries({ queryKey: ['marketplace-vendors'] });
-        queryClient.invalidateQueries({ queryKey: ['marketplace-vendor-profiles'] });
-        handleClose();
-      }, 3000);
-    },
-  });
 
   const handleSubmit = () => {
-    if (!validateStep()) {
-      return;
+    if (validateStep('review')) {
+      createVendorMutation.mutate(formData);
     }
-    createVendorMutation.mutate();
   };
 
-  const handleClose = () => {
-    setStep('category');
-    setFormData(initialFormData);
-    setErrors({});
-    setShowConfetti(false);
-    onOpenChange(false);
-  };
-
-  const getProgress = () => {
-    const steps: Step[] = [
-      'category',
-      'business',
-      'credentials',
-      'insurance',
-      'services',
-      'review',
-    ];
-    const currentIndex = steps.indexOf(step);
-    return ((currentIndex + 1) / steps.length) * 100;
-  };
-
-  const getStepNumber = () => {
-    const steps: Step[] = [
-      'category',
-      'business',
-      'credentials',
-      'insurance',
-      'services',
-      'review',
-    ];
-    return steps.indexOf(step) + 1;
-  };
-
-  const getStepTitle = () => {
+  const getStepTitle = (step: Step): string => {
     switch (step) {
-      case 'category':
+      case 'specialty':
         return 'Select Specialty';
-      case 'business':
-        return 'Business Information';
-      case 'credentials':
-        return 'Credentials & Licensing';
+      case 'business_identity':
+        return 'Business Identity';
+      case 'licensing':
+        return 'Contractor License';
       case 'insurance':
         return 'Insurance Coverage';
-      case 'services':
-        return 'Services & Coverage Area';
+      case 'tax_payment':
+        return 'Tax Information & Payment';
+      case 'background_check':
+        return 'Background Check Authorization';
+      case 'services_coverage':
+        return 'Services & Coverage';
+      case 'trust_experience':
+        return 'Build Your Credibility';
       case 'review':
-        return 'Review & Submit';
+        return 'Application Review';
+      default:
+        return '';
     }
   };
 
-  const getStepDescription = () => {
+  const getStepDescription = (step: Step): string => {
     switch (step) {
-      case 'category':
-        return 'Select your specialty to get started';
-      case 'business':
-        return "Let's get to know your company";
-      case 'credentials':
-        return 'Build trust with verified credentials';
+      case 'specialty':
+        return 'Choose your primary service specialty';
+      case 'business_identity':
+        return 'We will verify your business with government databases';
+      case 'licensing':
+        return 'We verify all licenses with state contractor boards';
       case 'insurance':
-        return 'Protect yourself and your clients';
-      case 'services':
-        return 'Choose services and define your territory';
+        return 'Upload your Certificate of Insurance - we will read it for you';
+      case 'tax_payment':
+        return 'For 1099 reporting and fast payouts';
+      case 'background_check':
+        return 'For platform safety, all vendors must authorize a background check';
+      case 'services_coverage':
+        return 'Define what you offer and where';
+      case 'trust_experience':
+        return 'Optional but recommended - helps with approval';
       case 'review':
-        return 'Review and submit - you are almost there!';
+        return 'Review your application and verification status';
+      default:
+        return '';
     }
   };
 
-  const calculatePotentialEarnings = () => {
-    let minEarnings = 0;
-    let maxEarnings = 0;
-    const currentServices = getCurrentServices();
+  const renderSpecialtySelection = () => {
+    const specialties = [
+      {
+        id: 'locksmith',
+        name: 'Locksmith',
+        icon: Key,
+        description: 'Residential, commercial & automotive locksmith services',
+      },
+      {
+        id: 'plumber',
+        name: 'Plumbing',
+        icon: Droplet,
+        description: 'Plumbing repairs, installations & emergency services',
+      },
+      {
+        id: 'electrician',
+        name: 'Electrical',
+        icon: Zap,
+        description: 'Electrical repairs, installations & panel upgrades',
+      },
+      {
+        id: 'hvac',
+        name: 'HVAC',
+        icon: Snowflake,
+        description: 'Heating, cooling & ventilation services',
+      },
+    ];
 
-    formData.selectedServices.forEach((serviceId) => {
-      const service = currentServices.find((s) => s.id === serviceId);
-      if (service) {
-        // Parse typical pricing (e.g., "$75-150" or "$20-30/lock")
-        const match = service.typical.match(/\$(\d+)-(\d+)/);
-        if (match) {
-          minEarnings += parseInt(match[1]);
-          maxEarnings += parseInt(match[2]);
-        }
-      }
-    });
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          {specialties.map((specialty) => {
+            const Icon = specialty.icon;
+            const isSelected = formData.specialty === specialty.id;
 
-    return { min: minEarnings, max: maxEarnings };
-  };
-
-  const earnings = calculatePotentialEarnings();
-
-  // Confetti effect
-  useEffect(() => {
-    if (showConfetti) {
-      const timer = setTimeout(() => setShowConfetti(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showConfetti]);
-
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0 bg-gradient-to-br from-slate-50 via-white to-indigo-50">
-        {/* Confetti Overlay */}
-        {showConfetti && (
-          <div className="absolute inset-0 z-50 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 via-pink-400/20 to-purple-400/20 animate-pulse" />
-            {[...Array(50)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute animate-bounce"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 2}s`,
-                  animationDuration: `${1 + Math.random() * 2}s`,
-                }}
+            return (
+              <button
+                key={specialty.id}
+                type="button"
+                onClick={() => updateFormData('specialty', specialty.id)}
+                className={`
+                  flex flex-col items-center gap-3 p-6 rounded-lg border-2 transition-all
+                  ${
+                    isSelected
+                      ? 'border-indigo-600 bg-indigo-50'
+                      : 'border-gray-200 bg-white hover:border-indigo-300'
+                  }
+                `}
               >
-                <Sparkles
-                  className="w-6 h-6"
-                  style={{
-                    color: ['#fbbf24', '#ec4899', '#8b5cf6', '#3b82f6'][Math.floor(Math.random() * 4)],
-                  }}
+                <div
+                  className={`
+                  p-3 rounded-lg
+                  ${isSelected ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}
+                `}
+                >
+                  <Icon className="w-8 h-8" />
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold text-gray-900">{specialty.name}</div>
+                  <div className="text-sm text-gray-600 mt-1">{specialty.description}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {errors.specialty && <div className="text-sm text-red-600">{errors.specialty}</div>}
+      </div>
+    );
+  };
+
+  const renderBusinessIdentity = () => (
+    <div className="space-y-6">
+      {/* Legal Information Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <Building2 className="w-5 h-5" />
+          <span>Legal Information</span>
+        </div>
+        <p className="text-sm text-gray-600">
+          Must match your state registration exactly
+        </p>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <Label htmlFor="legalBusinessName">
+              Legal Business Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="legalBusinessName"
+              value={formData.legalBusinessName}
+              onChange={(e) => updateFormData('legalBusinessName', e.target.value)}
+              placeholder="ABC Locksmith LLC"
+              className={errors.legalBusinessName ? 'border-red-500' : ''}
+            />
+            {errors.legalBusinessName && (
+              <div className="text-sm text-red-600 mt-1">{errors.legalBusinessName}</div>
+            )}
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="dbaName">DBA/Trade Name (if different)</Label>
+            <Input
+              id="dbaName"
+              value={formData.dbaName}
+              onChange={(e) => updateFormData('dbaName', e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="businessEntityType">
+              Business Entity Type <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.businessEntityType}
+              onValueChange={(value) => updateFormData('businessEntityType', value)}
+            >
+              <SelectTrigger className={errors.businessEntityType ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select entity type" />
+              </SelectTrigger>
+              <SelectContent>
+                {BUSINESS_ENTITY_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.businessEntityType && (
+              <div className="text-sm text-red-600 mt-1">{errors.businessEntityType}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="ein">
+              EIN (Employer ID Number) <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ein"
+              value={formData.ein}
+              onChange={(e) => updateFormData('ein', e.target.value)}
+              placeholder="12-3456789"
+              maxLength={10}
+              className={errors.ein ? 'border-red-500' : ''}
+            />
+            {errors.ein && <div className="text-sm text-red-600 mt-1">{errors.ein}</div>}
+            <div className="text-xs text-gray-500 mt-1">9 digits (XX-XXXXXXX)</div>
+          </div>
+
+          <div>
+            <Label htmlFor="stateOfIncorporation">
+              State of Incorporation <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.stateOfIncorporation}
+              onValueChange={(value) => updateFormData('stateOfIncorporation', value)}
+            >
+              <SelectTrigger className={errors.stateOfIncorporation ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent>
+                {US_STATES.map((state) => (
+                  <SelectItem key={state.code} value={state.code}>
+                    {state.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.stateOfIncorporation && (
+              <div className="text-sm text-red-600 mt-1">{errors.stateOfIncorporation}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="businessRegistrationNumber">State Business Registration Number</Label>
+            <Input
+              id="businessRegistrationNumber"
+              value={formData.businessRegistrationNumber}
+              onChange={(e) => updateFormData('businessRegistrationNumber', e.target.value)}
+              placeholder="e.g., CA SOS# C1234567"
+            />
+            <div className="text-xs text-gray-500 mt-1">Optional but helpful for verification</div>
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="yearsInBusiness">
+              Years in Business <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.yearsInBusiness}
+              onValueChange={(value) => updateFormData('yearsInBusiness', value)}
+            >
+              <SelectTrigger className={errors.yearsInBusiness ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="<1">Less than 1 year</SelectItem>
+                <SelectItem value="1-3">1-3 years</SelectItem>
+                <SelectItem value="3-5">3-5 years</SelectItem>
+                <SelectItem value="5-10">5-10 years</SelectItem>
+                <SelectItem value="10+">10+ years</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.yearsInBusiness && (
+              <div className="text-sm text-red-600 mt-1">{errors.yearsInBusiness}</div>
+            )}
+            <div className="text-xs text-gray-500 mt-1">
+              We will cross-check with your state filing date
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Information Section */}
+      <div className="space-y-4 pt-6 border-t">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <Phone className="w-5 h-5" />
+          <span>Contact Information</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <Label htmlFor="businessAddress1">
+              Business Address <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="businessAddress1"
+              value={formData.businessAddress1}
+              onChange={(e) => updateFormData('businessAddress1', e.target.value)}
+              placeholder="Street address"
+              className={errors.businessAddress1 ? 'border-red-500' : ''}
+            />
+            {errors.businessAddress1 && (
+              <div className="text-sm text-red-600 mt-1">{errors.businessAddress1}</div>
+            )}
+            <div className="flex items-center gap-2 text-xs text-amber-600 mt-1">
+              <AlertTriangle className="w-3 h-3" />
+              <span>Cannot use PO Box - physical address required</span>
+            </div>
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="businessAddress2">Address Line 2</Label>
+            <Input
+              id="businessAddress2"
+              value={formData.businessAddress2}
+              onChange={(e) => updateFormData('businessAddress2', e.target.value)}
+              placeholder="Suite, unit, etc. (optional)"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="businessCity">
+              City <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="businessCity"
+              value={formData.businessCity}
+              onChange={(e) => updateFormData('businessCity', e.target.value)}
+              placeholder="City"
+              className={errors.businessCity ? 'border-red-500' : ''}
+            />
+            {errors.businessCity && (
+              <div className="text-sm text-red-600 mt-1">{errors.businessCity}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="businessState">
+              State <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.businessState}
+              onValueChange={(value) => updateFormData('businessState', value)}
+            >
+              <SelectTrigger className={errors.businessState ? 'border-red-500' : ''}>
+                <SelectValue placeholder="State" />
+              </SelectTrigger>
+              <SelectContent>
+                {US_STATES.map((state) => (
+                  <SelectItem key={state.code} value={state.code}>
+                    {state.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.businessState && (
+              <div className="text-sm text-red-600 mt-1">{errors.businessState}</div>
+            )}
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="businessZipCode">
+              ZIP Code <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="businessZipCode"
+              value={formData.businessZipCode}
+              onChange={(e) => updateFormData('businessZipCode', e.target.value)}
+              placeholder="ZIP code"
+              maxLength={10}
+              className={errors.businessZipCode ? 'border-red-500' : ''}
+            />
+            {errors.businessZipCode && (
+              <div className="text-sm text-red-600 mt-1">{errors.businessZipCode}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="businessPhone">
+              Business Phone <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="businessPhone"
+              value={formData.businessPhone}
+              onChange={(e) => updateFormData('businessPhone', e.target.value)}
+              placeholder="(555) 123-4567"
+              type="tel"
+              className={errors.businessPhone ? 'border-red-500' : ''}
+            />
+            {errors.businessPhone && (
+              <div className="text-sm text-red-600 mt-1">{errors.businessPhone}</div>
+            )}
+            <div className="text-xs text-gray-500 mt-1">Landline preferred</div>
+          </div>
+
+          <div>
+            <Label htmlFor="email">
+              Email <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="email"
+              value={formData.email}
+              onChange={(e) => updateFormData('email', e.target.value)}
+              placeholder="contact@company.com"
+              type="email"
+              className={errors.email ? 'border-red-500' : ''}
+            />
+            {errors.email && <div className="text-sm text-red-600 mt-1">{errors.email}</div>}
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="website">Website</Label>
+            <Input
+              id="website"
+              value={formData.website}
+              onChange={(e) => updateFormData('website', e.target.value)}
+              placeholder="https://www.yourcompany.com"
+              type="url"
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              Optional but helps verify legitimacy
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderLicensing = () => (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <Award className="w-5 h-5" />
+          <span>Contractor License</span>
+        </div>
+        <p className="text-sm text-gray-600">
+          We verify all licenses with state contractor boards
+        </p>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="licenseState">
+              License State <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.licenseState}
+              onValueChange={(value) => updateFormData('licenseState', value)}
+            >
+              <SelectTrigger className={errors.licenseState ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent>
+                {US_STATES.map((state) => (
+                  <SelectItem key={state.code} value={state.code}>
+                    {state.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.licenseState && (
+              <div className="text-sm text-red-600 mt-1">{errors.licenseState}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="licenseNumber">
+              License Number <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="licenseNumber"
+              value={formData.licenseNumber}
+              onChange={(e) => updateFormData('licenseNumber', e.target.value)}
+              placeholder="Enter exactly as shown on license"
+              className={errors.licenseNumber ? 'border-red-500' : ''}
+            />
+            {errors.licenseNumber && (
+              <div className="text-sm text-red-600 mt-1">{errors.licenseNumber}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="licenseType">
+              License Type <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.licenseType}
+              onValueChange={(value) => updateFormData('licenseType', value)}
+            >
+              <SelectTrigger className={errors.licenseType ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Master">Master</SelectItem>
+                <SelectItem value="Journeyman">Journeyman</SelectItem>
+                <SelectItem value="Apprentice">Apprentice</SelectItem>
+                <SelectItem value="Registered">Registered</SelectItem>
+                <SelectItem value="Certified">Certified</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.licenseType && (
+              <div className="text-sm text-red-600 mt-1">{errors.licenseType}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="licenseClassification">License Classification</Label>
+            <Input
+              id="licenseClassification"
+              value={formData.licenseClassification}
+              onChange={(e) => updateFormData('licenseClassification', e.target.value)}
+              placeholder="e.g., C-10 Electrical (CA)"
+            />
+            <div className="text-xs text-gray-500 mt-1">Varies by state</div>
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="licenseHolderName">
+              License Holder Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="licenseHolderName"
+              value={formData.licenseHolderName}
+              onChange={(e) => updateFormData('licenseHolderName', e.target.value)}
+              placeholder="Must match business owner or designated supervisor"
+              className={errors.licenseHolderName ? 'border-red-500' : ''}
+            />
+            {errors.licenseHolderName && (
+              <div className="text-sm text-red-600 mt-1">{errors.licenseHolderName}</div>
+            )}
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="licenseExpiryDate">
+              Expiration Date <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="licenseExpiryDate"
+              type="date"
+              value={formData.licenseExpiryDate}
+              onChange={(e) => updateFormData('licenseExpiryDate', e.target.value)}
+              className={errors.licenseExpiryDate ? 'border-red-500' : ''}
+            />
+            {errors.licenseExpiryDate && (
+              <div className="text-sm text-red-600 mt-1">{errors.licenseExpiryDate}</div>
+            )}
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="licensePhoto">Upload License Photo</Label>
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  // In real implementation, this would trigger file upload
+                  alert('File upload would be implemented here');
+                }}
+                className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-400 transition-colors"
+              >
+                <Upload className="w-5 h-5 text-gray-400" />
+                <span className="text-sm text-gray-600">Click to upload license photo</span>
+              </button>
+              <div className="text-xs text-gray-500 mt-1">
+                We will extract the number using OCR
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trade-specific certifications */}
+      {formData.specialty === 'locksmith' && (
+        <div className="space-y-4 pt-6 border-t">
+          <div className="flex items-center gap-2 text-gray-900 font-medium">
+            <Shield className="w-5 h-5" />
+            <span>Locksmith Certifications</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label htmlFor="aloaMemberNumber">ALOA Member Number</Label>
+              <Input
+                id="aloaMemberNumber"
+                value={formData.aloaMemberNumber}
+                onChange={(e) => updateFormData('aloaMemberNumber', e.target.value)}
+                placeholder="Optional - we will verify with ALOA"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="bondCompany">Surety Bond Company</Label>
+              <Input
+                id="bondCompany"
+                value={formData.bondCompany}
+                onChange={(e) => updateFormData('bondCompany', e.target.value)}
+                placeholder="Optional but recommended"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="bondAmount">Bond Amount</Label>
+              <Input
+                id="bondAmount"
+                value={formData.bondAmount}
+                onChange={(e) => updateFormData('bondAmount', e.target.value)}
+                placeholder="$10,000"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <Label htmlFor="bondExpiryDate">Bond Expiration Date</Label>
+              <Input
+                id="bondExpiryDate"
+                type="date"
+                value={formData.bondExpiryDate}
+                onChange={(e) => updateFormData('bondExpiryDate', e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {formData.specialty === 'hvac' && (
+        <div className="space-y-4 pt-6 border-t">
+          <div className="flex items-center gap-2 text-gray-900 font-medium">
+            <Snowflake className="w-5 h-5" />
+            <span>EPA Certification</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <Label htmlFor="epaCertificationNumber">
+                EPA Section 608 Certification Number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="epaCertificationNumber"
+                value={formData.epaCertificationNumber}
+                onChange={(e) => updateFormData('epaCertificationNumber', e.target.value)}
+                placeholder="Required for refrigerant handling"
+              />
+              <div className="text-xs text-gray-500 mt-1">We will verify with EPA database</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderInsurance = () => (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <Shield className="w-5 h-5" />
+          <span>Insurance Coverage</span>
+        </div>
+        <p className="text-sm text-gray-600">
+          Upload your Certificate of Insurance - we will read it for you
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <Label>Certificate of Insurance (COI)</Label>
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  alert('COI upload would be implemented here with OCR parsing');
+                }}
+                className="flex items-center gap-3 w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-400 transition-colors"
+              >
+                <Upload className="w-6 h-6 text-gray-400" />
+                <div className="text-left">
+                  <div className="text-sm font-medium text-gray-700">
+                    Drag & Drop or Click to Upload PDF
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    We will auto-extract carrier, policy #, dates, and coverage
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="insuranceCarrier">
+                Insurance Carrier <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.insuranceCarrier}
+                onValueChange={(value) => updateFormData('insuranceCarrier', value)}
+              >
+                <SelectTrigger className={errors.insuranceCarrier ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select carrier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {INSURANCE_CARRIERS.map((carrier) => (
+                    <SelectItem key={carrier} value={carrier}>
+                      {carrier}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.insuranceCarrier && (
+                <div className="text-sm text-red-600 mt-1">{errors.insuranceCarrier}</div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="insurancePolicyNumber">
+                Policy Number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="insurancePolicyNumber"
+                value={formData.insurancePolicyNumber}
+                onChange={(e) => updateFormData('insurancePolicyNumber', e.target.value)}
+                placeholder="GL-987654321"
+                className={errors.insurancePolicyNumber ? 'border-red-500' : ''}
+              />
+              {errors.insurancePolicyNumber && (
+                <div className="text-sm text-red-600 mt-1">{errors.insurancePolicyNumber}</div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="insuranceCoverageAmount">
+                Coverage Amount <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.insuranceCoverageAmount}
+                onValueChange={(value) => updateFormData('insuranceCoverageAmount', value)}
+              >
+                <SelectTrigger className={errors.insuranceCoverageAmount ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select amount" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="$300,000">$300,000</SelectItem>
+                  <SelectItem value="$500,000">$500,000</SelectItem>
+                  <SelectItem value="$1,000,000">$1,000,000</SelectItem>
+                  <SelectItem value="$2,000,000+">$2,000,000+</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.insuranceCoverageAmount && (
+                <div className="text-sm text-red-600 mt-1">{errors.insuranceCoverageAmount}</div>
+              )}
+              <div className="flex items-center gap-2 text-xs text-amber-600 mt-1">
+                <AlertTriangle className="w-3 h-3" />
+                <span>Minimum $500k required for platform</span>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="insuranceExpiryDate">
+                Expiration Date <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="insuranceExpiryDate"
+                type="date"
+                value={formData.insuranceExpiryDate}
+                onChange={(e) => updateFormData('insuranceExpiryDate', e.target.value)}
+                className={errors.insuranceExpiryDate ? 'border-red-500' : ''}
+              />
+              {errors.insuranceExpiryDate && (
+                <div className="text-sm text-red-600 mt-1">{errors.insuranceExpiryDate}</div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="insuranceAgentName">Insurance Agent Name</Label>
+              <Input
+                id="insuranceAgentName"
+                value={formData.insuranceAgentName}
+                onChange={(e) => updateFormData('insuranceAgentName', e.target.value)}
+                placeholder="For verification"
+              />
+              <div className="text-xs text-gray-500 mt-1">We may call to verify if needed</div>
+            </div>
+
+            <div>
+              <Label htmlFor="insuranceAgentPhone">Insurance Agent Phone</Label>
+              <Input
+                id="insuranceAgentPhone"
+                type="tel"
+                value={formData.insuranceAgentPhone}
+                onChange={(e) => updateFormData('insuranceAgentPhone', e.target.value)}
+                placeholder="(555) 123-4567"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Workers Comp Section */}
+      <div className="space-y-4 pt-6 border-t">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <Users className="w-5 h-5" />
+          <span>Workers Compensation Insurance</span>
+        </div>
+        <p className="text-sm text-gray-600">Required if you have employees</p>
+
+        <div className="space-y-4">
+          <div>
+            <Label>Do you have employees?</Label>
+            <div className="flex gap-4 mt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="hasEmployees"
+                  checked={formData.hasEmployees === true}
+                  onChange={() => updateFormData('hasEmployees', true)}
+                  className="w-4 h-4 text-indigo-600"
                 />
+                <span className="text-sm text-gray-700">Yes, I have W-2 employees</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="hasEmployees"
+                  checked={formData.hasEmployees === false}
+                  onChange={() => updateFormData('hasEmployees', false)}
+                  className="w-4 h-4 text-indigo-600"
+                />
+                <span className="text-sm text-gray-700">No, owner-operator only</span>
+              </label>
+            </div>
+          </div>
+
+          {formData.hasEmployees && (
+            <div className="grid grid-cols-2 gap-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="col-span-2">
+                <div className="flex items-center gap-2 text-sm text-amber-800 mb-3">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="font-medium">Workers Comp coverage required</span>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="workersCompCarrier">
+                  Workers Comp Carrier <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="workersCompCarrier"
+                  value={formData.workersCompCarrier}
+                  onChange={(e) => updateFormData('workersCompCarrier', e.target.value)}
+                  placeholder="Carrier name"
+                  className={errors.workersCompCarrier ? 'border-red-500' : ''}
+                />
+                {errors.workersCompCarrier && (
+                  <div className="text-sm text-red-600 mt-1">{errors.workersCompCarrier}</div>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="workersCompPolicyNumber">
+                  Policy Number <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="workersCompPolicyNumber"
+                  value={formData.workersCompPolicyNumber}
+                  onChange={(e) => updateFormData('workersCompPolicyNumber', e.target.value)}
+                  placeholder="Policy number"
+                  className={errors.workersCompPolicyNumber ? 'border-red-500' : ''}
+                />
+                {errors.workersCompPolicyNumber && (
+                  <div className="text-sm text-red-600 mt-1">{errors.workersCompPolicyNumber}</div>
+                )}
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="workersCompExpiryDate">
+                  Expiration Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="workersCompExpiryDate"
+                  type="date"
+                  value={formData.workersCompExpiryDate}
+                  onChange={(e) => updateFormData('workersCompExpiryDate', e.target.value)}
+                  className={errors.workersCompExpiryDate ? 'border-red-500' : ''}
+                />
+                {errors.workersCompExpiryDate && (
+                  <div className="text-sm text-red-600 mt-1">{errors.workersCompExpiryDate}</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTaxPayment = () => (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <FileText className="w-5 h-5" />
+          <span>Tax Information</span>
+        </div>
+        <p className="text-sm text-gray-600">For 1099 reporting</p>
+
+        <div className="space-y-4">
+          <div>
+            <Label>Upload W-9 Form</Label>
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  alert('W-9 upload would be implemented here with parsing');
+                }}
+                className="flex items-center gap-3 w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-400 transition-colors"
+              >
+                <Upload className="w-6 h-6 text-gray-400" />
+                <div className="text-left">
+                  <div className="text-sm font-medium text-gray-700">
+                    Drag & Drop or Click to Upload PDF
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    We will auto-extract legal name, EIN, entity type, and address
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-6 border-t">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <DollarSign className="w-5 h-5" />
+          <span>Payment Setup</span>
+        </div>
+        <p className="text-sm text-gray-600">For fast payouts</p>
+
+        <div className="space-y-4">
+          <div>
+            <Label>How would you like to receive payment?</Label>
+            <div className="mt-3 space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  alert('Plaid bank connection would be implemented here');
+                  updateFormData('bankVerificationMethod', 'plaid');
+                }}
+                className="flex items-center gap-3 w-full p-4 border-2 border-indigo-200 bg-indigo-50 rounded-lg hover:border-indigo-300 transition-colors"
+              >
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-gray-900">
+                    Instant Verification (Recommended)
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    Connect Bank Account with Plaid
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex items-center gap-1 text-xs text-green-700">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Instant verification</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-green-700">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Faster payouts</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-green-700">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Most secure</span>
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </button>
+
+              <div className="text-center text-sm text-gray-500">or</div>
+
+              <div className="p-4 border-2 border-gray-200 rounded-lg">
+                <div className="font-medium text-gray-900 mb-3">Manual Entry</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <Label htmlFor="bankName">Bank Name</Label>
+                    <Input
+                      id="bankName"
+                      value={formData.bankName}
+                      onChange={(e) => {
+                        updateFormData('bankName', e.target.value);
+                        updateFormData('bankVerificationMethod', 'manual');
+                      }}
+                      placeholder="Your bank name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bankRoutingNumber">Routing Number</Label>
+                    <Input
+                      id="bankRoutingNumber"
+                      value={formData.bankRoutingNumber}
+                      onChange={(e) => {
+                        updateFormData('bankRoutingNumber', e.target.value);
+                        updateFormData('bankVerificationMethod', 'manual');
+                      }}
+                      placeholder="9 digits"
+                      maxLength={9}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bankAccountNumber">Account Number</Label>
+                    <Input
+                      id="bankAccountNumber"
+                      type="password"
+                      value={formData.bankAccountNumber}
+                      onChange={(e) => {
+                        updateFormData('bankAccountNumber', e.target.value);
+                        updateFormData('bankVerificationMethod', 'manual');
+                      }}
+                      placeholder="Account number"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="bankAccountType">Account Type</Label>
+                    <Select
+                      value={formData.bankAccountType}
+                      onValueChange={(value) => {
+                        updateFormData('bankAccountType', value);
+                        updateFormData('bankVerificationMethod', 'manual');
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Checking">Checking</SelectItem>
+                        <SelectItem value="Savings">Savings</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-amber-600 mt-3">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>Requires micro-deposit verification (2-3 days)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBackgroundCheck = () => (
+    <div className="space-y-6">
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-start gap-3">
+          <Shield className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-gray-700">
+            <p className="font-medium mb-2">For platform safety, all vendors must authorize a background check.</p>
+            <p className="mb-2">We use professional background check services to verify:</p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>Criminal history (7 years)</li>
+              <li>Sex offender registry</li>
+              <li>SSN verification</li>
+            </ul>
+            <p className="mt-2">
+              This check will be run on you (business owner) and any technicians who will enter properties.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <User className="w-5 h-5" />
+          <span>Owner Information</span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="ownerFirstName">
+              Legal First Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ownerFirstName"
+              value={formData.ownerFirstName}
+              onChange={(e) => updateFormData('ownerFirstName', e.target.value)}
+              placeholder="First name"
+              className={errors.ownerFirstName ? 'border-red-500' : ''}
+            />
+            {errors.ownerFirstName && (
+              <div className="text-sm text-red-600 mt-1">{errors.ownerFirstName}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="ownerMiddleName">Middle Name</Label>
+            <Input
+              id="ownerMiddleName"
+              value={formData.ownerMiddleName}
+              onChange={(e) => updateFormData('ownerMiddleName', e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="ownerLastName">
+              Legal Last Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ownerLastName"
+              value={formData.ownerLastName}
+              onChange={(e) => updateFormData('ownerLastName', e.target.value)}
+              placeholder="Last name"
+              className={errors.ownerLastName ? 'border-red-500' : ''}
+            />
+            {errors.ownerLastName && (
+              <div className="text-sm text-red-600 mt-1">{errors.ownerLastName}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="ownerDateOfBirth">
+              Date of Birth <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ownerDateOfBirth"
+              type="date"
+              value={formData.ownerDateOfBirth}
+              onChange={(e) => updateFormData('ownerDateOfBirth', e.target.value)}
+              className={errors.ownerDateOfBirth ? 'border-red-500' : ''}
+            />
+            {errors.ownerDateOfBirth && (
+              <div className="text-sm text-red-600 mt-1">{errors.ownerDateOfBirth}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="ownerSsnLast4">
+              SSN (Last 4) <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ownerSsnLast4"
+              value={formData.ownerSsnLast4}
+              onChange={(e) => updateFormData('ownerSsnLast4', e.target.value)}
+              placeholder="1234"
+              maxLength={4}
+              className={errors.ownerSsnLast4 ? 'border-red-500' : ''}
+            />
+            {errors.ownerSsnLast4 && (
+              <div className="text-sm text-red-600 mt-1">{errors.ownerSsnLast4}</div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="ownerDriverLicenseState">
+              Driver License State <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.ownerDriverLicenseState}
+              onValueChange={(value) => updateFormData('ownerDriverLicenseState', value)}
+            >
+              <SelectTrigger className={errors.ownerDriverLicenseState ? 'border-red-500' : ''}>
+                <SelectValue placeholder="State" />
+              </SelectTrigger>
+              <SelectContent>
+                {US_STATES.map((state) => (
+                  <SelectItem key={state.code} value={state.code}>
+                    {state.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.ownerDriverLicenseState && (
+              <div className="text-sm text-red-600 mt-1">{errors.ownerDriverLicenseState}</div>
+            )}
+          </div>
+
+          <div className="col-span-3">
+            <Label htmlFor="ownerDriverLicenseNumber">
+              Driver License Number <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ownerDriverLicenseNumber"
+              value={formData.ownerDriverLicenseNumber}
+              onChange={(e) => updateFormData('ownerDriverLicenseNumber', e.target.value)}
+              placeholder="License number"
+              className={errors.ownerDriverLicenseNumber ? 'border-red-500' : ''}
+            />
+            {errors.ownerDriverLicenseNumber && (
+              <div className="text-sm text-red-600 mt-1">{errors.ownerDriverLicenseNumber}</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-4">
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.backgroundCheckConsent}
+              onChange={(e) => updateFormData('backgroundCheckConsent', e.target.checked)}
+              className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <div className="flex-1">
+              <span className="text-sm text-gray-900">
+                I authorize PropertyMaster to conduct a background check as described above{' '}
+                <span className="text-red-500">*</span>
+              </span>
+              {errors.backgroundCheckConsent && (
+                <div className="text-sm text-red-600 mt-1">{errors.backgroundCheckConsent}</div>
+              )}
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.technicianBackgroundCheckConsent}
+              onChange={(e) => updateFormData('technicianBackgroundCheckConsent', e.target.checked)}
+              className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <div className="flex-1">
+              <span className="text-sm text-gray-900">
+                I will ensure all technicians pass background checks before they perform services{' '}
+                <span className="text-red-500">*</span>
+              </span>
+              {errors.technicianBackgroundCheckConsent && (
+                <div className="text-sm text-red-600 mt-1">
+                  {errors.technicianBackgroundCheckConsent}
+                </div>
+              )}
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderServicesCoverage = () => {
+    const services = formData.specialty ? SPECIALTY_SERVICES[formData.specialty] : [];
+
+    // Group services by category
+    const servicesByCategory = services.reduce((acc: Record<string, typeof services>, service) => {
+      if (!acc[service.category]) {
+        acc[service.category] = [];
+      }
+      acc[service.category].push(service);
+      return acc;
+    }, {});
+
+    return (
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-gray-900 font-medium">
+            <Wrench className="w-5 h-5" />
+            <span>Services You Offer</span>
+          </div>
+          <p className="text-sm text-gray-600">Select all services you can provide (minimum 3)</p>
+
+          <div className="space-y-4">
+            {Object.entries(servicesByCategory).map(([category, categoryServices]) => (
+              <div key={category} className="space-y-2">
+                <div className="text-sm font-medium text-gray-700 uppercase tracking-wide">
+                  {category}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {categoryServices.map((service) => {
+                    const isSelected = formData.selectedServices.includes(service.id);
+                    return (
+                      <label
+                        key={service.id}
+                        className={`
+                          flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all
+                          ${
+                            isSelected
+                              ? 'border-indigo-600 bg-indigo-50'
+                              : 'border-gray-200 hover:border-indigo-300'
+                          }
+                        `}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              updateFormData('selectedServices', [
+                                ...formData.selectedServices,
+                                service.id,
+                              ]);
+                            } else {
+                              updateFormData(
+                                'selectedServices',
+                                formData.selectedServices.filter((id) => id !== service.id),
+                              );
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 text-indigo-600"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {service.name}
+                          </div>
+                          <div className="text-xs text-gray-500">{service.typical}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>
-        )}
 
-        {/* Animated Header with Step Indicators */}
-        <div className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-6">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+          {errors.selectedServices && (
+            <div className="flex items-center gap-2 text-sm text-red-600 mt-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>{errors.selectedServices}</span>
+            </div>
+          )}
+        </div>
 
-          <div className="relative flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-xl animate-pulse">
-                <Store className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  {getStepTitle()}
-                </h2>
-                <p className="text-indigo-100 text-sm mt-1">{getStepDescription()}</p>
+        <div className="space-y-4 pt-6 border-t">
+          <div className="flex items-center gap-2 text-gray-900 font-medium">
+            <MapPin className="w-5 h-5" />
+            <span>Service Area</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label htmlFor="serviceRadius">Service Radius (miles)</Label>
+              <Input
+                id="serviceRadius"
+                type="number"
+                value={formData.serviceRadius}
+                onChange={(e) => updateFormData('serviceRadius', e.target.value)}
+                placeholder="25"
+                min="1"
+                max="100"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                How far from your base location will you travel?
               </div>
             </div>
-            <button
-              onClick={handleClose}
-              className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 hover:scale-110"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
+
+            <div className="col-span-2">
+              <Label htmlFor="serviceZipCodes">Service ZIP Codes (optional)</Label>
+              <Input
+                id="serviceZipCodes"
+                value={formData.serviceZipCodes}
+                onChange={(e) => updateFormData('serviceZipCodes', e.target.value)}
+                placeholder="90210, 90211, 90212"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                Comma-separated list of ZIP codes you serve
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 pt-6 border-t">
+          <div className="flex items-center gap-2 text-gray-900 font-medium">
+            <Clock className="w-5 h-5" />
+            <span>Availability</span>
           </div>
 
-          {/* Step Progress Indicators */}
-          <div className="relative flex items-center justify-between mb-4">
-            {['category', 'business', 'credentials', 'insurance', 'services', 'review'].map(
-              (s, index) => {
-                const steps: Step[] = [
-                  'category',
-                  'business',
-                  'credentials',
-                  'insurance',
-                  'services',
-                  'review',
-                ];
-                const currentIndex = steps.indexOf(step);
-                const isCompleted = index < currentIndex;
-                const isCurrent = index === currentIndex;
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.emergencyAvailable}
+                onChange={(e) => updateFormData('emergencyAvailable', e.target.checked)}
+                className="w-5 h-5 rounded border-gray-300 text-indigo-600"
+              />
+              <span className="text-sm text-gray-900">Available 24/7 for emergencies</span>
+            </label>
 
-                return (
-                  <div key={s} className="flex items-center flex-1">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-                          isCompleted
-                            ? 'bg-green-400 text-white scale-110 shadow-lg'
-                            : isCurrent
-                              ? 'bg-white text-indigo-600 scale-125 shadow-2xl ring-4 ring-white/50'
-                              : 'bg-white/30 text-white/70'
-                        }`}
-                      >
-                        {isCompleted ? <CheckCircle className="w-6 h-6" /> : index + 1}
-                      </div>
-                      <span className="text-xs text-white/80 mt-1 hidden md:block">
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </span>
-                    </div>
-                    {index < 5 && (
-                      <div className="flex-1 h-1 mx-2 bg-white/30 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-500 ${
-                            isCompleted ? 'bg-green-400 w-full' : 'bg-transparent w-0'
-                          }`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              },
-            )}
+            <div>
+              <Label htmlFor="standardResponseTime">
+                Typical Response Time for Emergencies <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.standardResponseTime}
+                onValueChange={(value) => updateFormData('standardResponseTime', value)}
+              >
+                <SelectTrigger className={errors.standardResponseTime ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select response time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">Less than 30 minutes</SelectItem>
+                  <SelectItem value="60">30-60 minutes</SelectItem>
+                  <SelectItem value="120">1-2 hours</SelectItem>
+                  <SelectItem value="240">Same day</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.standardResponseTime && (
+                <div className="text-sm text-red-600 mt-1">{errors.standardResponseTime}</div>
+              )}
+            </div>
           </div>
+        </div>
+      </div>
+    );
+  };
 
-          {/* Animated Progress Bar */}
-          <div className="h-2 bg-white/20 backdrop-blur-sm rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 transition-all duration-500 ease-out shadow-lg"
-              style={{ width: `${getProgress()}%` }}
+  const renderTrustExperience = () => (
+    <div className="space-y-6">
+      <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+        <div className="flex items-start gap-3">
+          <Star className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-gray-700">
+            <p className="font-medium mb-1">Optional but Recommended</p>
+            <p>
+              Providing professional associations, reviews, and references helps build credibility
+              and speeds up approval.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <Award className="w-5 h-5" />
+          <span>Professional Associations</span>
+        </div>
+        <p className="text-sm text-gray-600">We verify all memberships</p>
+
+        <div className="grid grid-cols-2 gap-4">
+          {formData.specialty === 'locksmith' && (
+            <div>
+              <Label htmlFor="aloaMemberNumber">ALOA Member Number</Label>
+              <Input
+                id="aloaMemberNumber"
+                value={formData.aloaMemberNumber}
+                onChange={(e) => updateFormData('aloaMemberNumber', e.target.value)}
+                placeholder="Associated Locksmiths of America"
+              />
+            </div>
+          )}
+          {formData.specialty === 'plumber' && (
+            <div>
+              <Label htmlFor="phccMemberNumber">PHCC Member Number</Label>
+              <Input
+                id="phccMemberNumber"
+                value={formData.phccMemberNumber}
+                onChange={(e) => updateFormData('phccMemberNumber', e.target.value)}
+                placeholder="Plumbing-Heating-Cooling Contractors"
+              />
+            </div>
+          )}
+          {formData.specialty === 'electrician' && (
+            <div>
+              <Label htmlFor="necaMemberNumber">NECA Member Number</Label>
+              <Input
+                id="necaMemberNumber"
+                value={formData.necaMemberNumber}
+                onChange={(e) => updateFormData('necaMemberNumber', e.target.value)}
+                placeholder="National Electrical Contractors Association"
+              />
+            </div>
+          )}
+          {formData.specialty === 'hvac' && (
+            <div>
+              <Label htmlFor="accaMemberNumber">ACCA Member Number</Label>
+              <Input
+                id="accaMemberNumber"
+                value={formData.accaMemberNumber}
+                onChange={(e) => updateFormData('accaMemberNumber', e.target.value)}
+                placeholder="Air Conditioning Contractors of America"
+              />
+            </div>
+          )}
+
+          <div className="col-span-2">
+            <Label htmlFor="bbbProfileUrl">Better Business Bureau Profile URL</Label>
+            <Input
+              id="bbbProfileUrl"
+              value={formData.bbbProfileUrl}
+              onChange={(e) => updateFormData('bbbProfileUrl', e.target.value)}
+              placeholder="https://www.bbb.org/..."
+              type="url"
             />
+            <div className="text-xs text-gray-500 mt-1">
+              We will pull your BBB rating automatically
+            </div>
+          </div>
+
+          <div className="col-span-2">
+            <Label htmlFor="googleBusinessUrl">Google Business Profile URL</Label>
+            <Input
+              id="googleBusinessUrl"
+              value={formData.googleBusinessUrl}
+              onChange={(e) => updateFormData('googleBusinessUrl', e.target.value)}
+              placeholder="https://g.page/..."
+              type="url"
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              We will pull your reviews and rating
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Content */}
-        <div ref={formRef} className="p-8 overflow-y-auto max-h-[calc(95vh-280px)]">
-          {/* Category Selection */}
-          {step === 'category' && (
-            <div className="space-y-8 animate-fade-in">
-              <div className="text-center mb-10">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-2">
-                  Select your specialty
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Choose the service category that best describes your business
-                </p>
-              </div>
+      <div className="space-y-4 pt-6 border-t">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <Building className="w-5 h-5" />
+          <span>Property Manager References</span>
+        </div>
+        <p className="text-sm text-gray-600">
+          Provide 2-3 references from property management companies (optional)
+        </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Locksmith */}
-                <button
-                  onClick={() => {
-                    updateField('vendorType', 'locksmith');
-                    setStep('business');
-                  }}
-                  className="group p-6 border-2 border-gray-200 hover:border-indigo-500 rounded-lg text-left transition-all duration-200 hover:shadow-md bg-white"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                      <Key className="w-6 h-6 text-indigo-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-1">Locksmith</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Emergency lockouts, rekeying, lock installation
-                      </p>
-                      <div className="text-xs text-gray-500">
-                        Typical range: $75-300 per job
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
-                  </div>
-                </button>
+        <div className="text-sm text-gray-500">
+          Reference management would be implemented here with dynamic add/remove functionality
+        </div>
+      </div>
+    </div>
+  );
 
-                {/* Plumber */}
-                <button
-                  onClick={() => {
-                    updateField('vendorType', 'plumber');
-                    setStep('business');
-                  }}
-                  className="group p-6 border-2 border-gray-200 hover:border-blue-500 rounded-lg text-left transition-all duration-200 hover:shadow-md bg-white"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                      <Droplet className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-1">Plumber</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Emergency repairs, installations, water heater services
-                      </p>
-                      <div className="text-xs text-gray-500">
-                        Typical range: $150-500 per job
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
-                  </div>
-                </button>
+  const renderReview = () => (
+    <div className="space-y-6">
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <div className="text-sm font-medium text-gray-900 mb-3">Verification Status</div>
 
-                {/* Electrician */}
-                <button
-                  onClick={() => {
-                    updateField('vendorType', 'electrician');
-                    setStep('business');
-                  }}
-                  className="group p-6 border-2 border-gray-200 hover:border-amber-500 rounded-lg text-left transition-all duration-200 hover:shadow-md bg-white"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition-colors">
-                      <Zap className="w-6 h-6 text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-1">Electrician</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Electrical repairs, panel upgrades, safety inspections
-                      </p>
-                      <div className="text-xs text-gray-500">
-                        Typical range: $150-600 per job
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
-                  </div>
-                </button>
-
-                {/* HVAC */}
-                <button
-                  onClick={() => {
-                    updateField('vendorType', 'hvac');
-                    setStep('business');
-                  }}
-                  className="group p-6 border-2 border-gray-200 hover:border-slate-500 rounded-lg text-left transition-all duration-200 hover:shadow-md bg-white"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-slate-50 rounded-lg group-hover:bg-slate-100 transition-colors">
-                      <Wind className="w-6 h-6 text-slate-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-1">HVAC</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Heating, cooling emergencies, seasonal maintenance
-                      </p>
-                      <div className="text-xs text-gray-500">
-                        Typical range: $200-800 per job
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Business Information */}
-          {step === 'business' && (
-            <div className="space-y-6 animate-slide-in">
-              {/* Company Info */}
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-gray-600" />
-                  Company Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="md:col-span-2">
-                    <Label htmlFor="companyName" className="text-gray-700 font-semibold mb-2">Company Name *</Label>
-                    <Input
-                      id="companyName"
-                      value={formData.companyName}
-                      onChange={(e) => updateField('companyName', e.target.value)}
-                      placeholder="ABC Locksmith Services"
-                      className={`transition-all duration-200 ${errors.companyName ? 'border-red-500 shake' : 'focus:ring-2 focus:ring-indigo-500'}`}
-                    />
-                    {errors.companyName && (
-                      <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" /> {errors.companyName}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="yearsInBusiness" className="text-gray-700 font-semibold mb-2">Years in Business *</Label>
-                    <Select
-                      value={formData.yearsInBusiness}
-                      onValueChange={(v) => updateField('yearsInBusiness', v)}
-                    >
-                      <SelectTrigger className={errors.yearsInBusiness ? 'border-red-500' : 'focus:ring-2 focus:ring-indigo-500'}>
-                        <SelectValue placeholder="Select..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0-1">Less than 1 year</SelectItem>
-                        <SelectItem value="1-3">1-3 years</SelectItem>
-                        <SelectItem value="3-5">3-5 years</SelectItem>
-                        <SelectItem value="5-10">5-10 years</SelectItem>
-                        <SelectItem value="10+">10+ years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.yearsInBusiness && (
-                      <p className="text-sm text-red-600 mt-1">{errors.yearsInBusiness}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="numberOfTechnicians" className="text-gray-700 font-semibold mb-2">Number of Technicians</Label>
-                    <Select
-                      value={formData.numberOfTechnicians}
-                      onValueChange={(v) => updateField('numberOfTechnicians', v)}
-                    >
-                      <SelectTrigger className="focus:ring-2 focus:ring-indigo-500">
-                        <SelectValue placeholder="Select..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 (Owner-operator)</SelectItem>
-                        <SelectItem value="2-5">2-5</SelectItem>
-                        <SelectItem value="6-10">6-10</SelectItem>
-                        <SelectItem value="11-25">11-25</SelectItem>
-                        <SelectItem value="25+">25+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            {formData.legalBusinessName && formData.ein ? (
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+            )}
+            <div className="flex-1">
+              <div className="text-sm font-medium text-gray-900">Business Identity</div>
+              {formData.legalBusinessName && (
+                <div className="text-sm text-gray-600">
+                  {formData.legalBusinessName} - {formData.businessState}
                 </div>
-              </div>
-
-              {/* Contact Info */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-purple-500 rounded-xl">
-                    <User className="w-6 h-6 text-white" />
-                  </div>
-                  Primary Contact
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <Label htmlFor="contactFirstName" className="text-gray-700 font-semibold mb-2">First Name *</Label>
-                    <Input
-                      id="contactFirstName"
-                      value={formData.contactFirstName}
-                      onChange={(e) => updateField('contactFirstName', e.target.value)}
-                      placeholder="John"
-                      className={errors.contactFirstName ? 'border-red-500' : 'focus:ring-2 focus:ring-purple-500'}
-                    />
-                    {errors.contactFirstName && (
-                      <p className="text-sm text-red-600 mt-1">{errors.contactFirstName}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="contactLastName" className="text-gray-700 font-semibold mb-2">Last Name *</Label>
-                    <Input
-                      id="contactLastName"
-                      value={formData.contactLastName}
-                      onChange={(e) => updateField('contactLastName', e.target.value)}
-                      placeholder="Smith"
-                      className={errors.contactLastName ? 'border-red-500' : 'focus:ring-2 focus:ring-purple-500'}
-                    />
-                    {errors.contactLastName && (
-                      <p className="text-sm text-red-600 mt-1">{errors.contactLastName}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="email" className="text-gray-700 font-semibold mb-2">Email Address *</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => updateField('email', e.target.value)}
-                        placeholder="john@abclocksmith.com"
-                        className={`pl-11 ${errors.email ? 'border-red-500' : 'focus:ring-2 focus:ring-purple-500'}`}
-                      />
-                    </div>
-                    {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
-                  </div>
-                  <div>
-                    <Label htmlFor="phone" className="text-gray-700 font-semibold mb-2">Phone Number *</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => updateField('phone', e.target.value)}
-                        placeholder="(555) 123-4567"
-                        className={`pl-11 ${errors.phone ? 'border-red-500' : 'focus:ring-2 focus:ring-purple-500'}`}
-                      />
-                    </div>
-                    {errors.phone && <p className="text-sm text-red-600 mt-1">{errors.phone}</p>}
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="website" className="text-gray-700 font-semibold mb-2">Website (Optional)</Label>
-                    <div className="relative">
-                      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
-                      <Input
-                        id="website"
-                        value={formData.website}
-                        onChange={(e) => updateField('website', e.target.value)}
-                        placeholder="https://www.abclocksmith.com"
-                        className="pl-11 focus:ring-2 focus:ring-purple-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-green-500 rounded-xl">
-                    <MapPin className="w-6 h-6 text-white" />
-                  </div>
-                  Business Address
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="md:col-span-2">
-                    <Label htmlFor="address1" className="text-gray-700 font-semibold mb-2">Street Address *</Label>
-                    <Input
-                      id="address1"
-                      value={formData.address1}
-                      onChange={(e) => updateField('address1', e.target.value)}
-                      placeholder="123 Main Street"
-                      className={errors.address1 ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                    />
-                    {errors.address1 && (
-                      <p className="text-sm text-red-600 mt-1">{errors.address1}</p>
-                    )}
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="address2" className="text-gray-700 font-semibold mb-2">Suite/Unit (Optional)</Label>
-                    <Input
-                      id="address2"
-                      value={formData.address2}
-                      onChange={(e) => updateField('address2', e.target.value)}
-                      placeholder="Suite 100"
-                      className="focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="city" className="text-gray-700 font-semibold mb-2">City *</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) => updateField('city', e.target.value)}
-                      placeholder="Chicago"
-                      className={errors.city ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                    />
-                    {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city}</p>}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="state" className="text-gray-700 font-semibold mb-2">State *</Label>
-                      <Select value={formData.state} onValueChange={(v) => updateField('state', v)}>
-                        <SelectTrigger className={errors.state ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}>
-                          <SelectValue placeholder="Select..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {US_STATES.map((state) => (
-                            <SelectItem key={state.code} value={state.code}>
-                              {state.code} - {state.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.state && <p className="text-sm text-red-600 mt-1">{errors.state}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="zipCode" className="text-gray-700 font-semibold mb-2">ZIP Code *</Label>
-                      <Input
-                        id="zipCode"
-                        value={formData.zipCode}
-                        onChange={(e) => updateField('zipCode', e.target.value)}
-                        placeholder="60601"
-                        className={errors.zipCode ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                      />
-                      {errors.zipCode && (
-                        <p className="text-sm text-red-600 mt-1">{errors.zipCode}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Emergency Availability */}
-              <div className="bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-300 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <label className="flex items-start gap-4 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={formData.emergencyAvailable}
-                    onChange={(e) => updateField('emergencyAvailable', e.target.checked)}
-                    className="mt-1 w-6 h-6 rounded-lg border-amber-400 text-amber-600 focus:ring-amber-500 focus:ring-2 transition-all duration-200"
-                  />
-                  <div>
-                    <span className="font-bold text-amber-900 flex items-center gap-2 text-lg">
-                      <Zap className="w-5 h-5 text-yellow-600" />
-                      24/7 Emergency Service Available
-                    </span>
-                    <p className="text-sm text-amber-800 mt-2 leading-relaxed">
-                      🔥 Boost your earnings! Emergency vendors earn <span className="font-bold">2-3x more</span> and get prioritized for urgent dispatches. Stand out from the competition!
-                    </p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* Credentials */}
-          {step === 'credentials' && (
-            <div className="space-y-6 animate-slide-in">
-              {/* Locksmith-Specific Credentials */}
-              {formData.vendorType === 'locksmith' && (
-                <>
-                  {/* License Info */}
-                  <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 border-2 border-indigo-200 shadow-lg">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                      <div className="p-2 bg-indigo-500 rounded-xl">
-                        <FileCheck className="w-6 h-6 text-white" />
-                      </div>
-                      State Licensing
-                    </h3>
-
-                    {requiresLicense ? (
-                      <div className="bg-amber-100 border-2 border-amber-300 rounded-xl p-4 mb-4 animate-pulse">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="w-6 h-6 text-amber-600 mt-0.5" />
-                          <div>
-                            <p className="font-bold text-amber-900">
-                              ⚠️ {US_STATES.find((s) => s.code === formData.state)?.name} requires
-                              locksmith licensing
-                            </p>
-                            <p className="text-sm text-amber-800 mt-2">
-                              A valid state license is required to operate as a locksmith in this state.
-                              Our team will review and verify your license information during the approval process.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : formData.state ? (
-                      <div className="bg-green-100 border-2 border-green-300 rounded-xl p-4 mb-4">
-                        <div className="flex items-start gap-3">
-                          <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
-                          <div>
-                            <p className="font-bold text-green-900">
-                              ✅ {US_STATES.find((s) => s.code === formData.state)?.name} does not require
-                              state licensing
-                            </p>
-                            <p className="text-sm text-green-800 mt-2">
-                              While not required, you may still enter any certifications or local
-                              permits.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">License Number {requiresLicense && '*'}</Label>
-                        <Input
-                          id="licenseNumber"
-                          value={formData.licenseNumber}
-                          onChange={(e) => updateField('licenseNumber', e.target.value)}
-                          placeholder="e.g., LK-123456"
-                          className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-indigo-500'}
-                        />
-                        {errors.licenseNumber && (
-                          <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">
-                          License Expiration {requiresLicense && '*'}
-                        </Label>
-                        <Input
-                          id="licenseExpiry"
-                          type="date"
-                          value={formData.licenseExpiry}
-                          onChange={(e) => updateField('licenseExpiry', e.target.value)}
-                          className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-indigo-500'}
-                        />
-                        {errors.licenseExpiry && (
-                          <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Professional Certifications */}
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 shadow-lg">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                      <div className="p-2 bg-purple-500 rounded-xl">
-                        <Award className="w-6 h-6 text-white" />
-                      </div>
-                      Professional Certifications
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      ALOA (Associated Locksmiths of America) certification is not required but helps establish credibility and may qualify you for premium vendor status.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <Label htmlFor="alcaNumber" className="text-gray-700 font-semibold mb-2">ALOA Member Number</Label>
-                        <Input
-                          id="alcaNumber"
-                          value={formData.alcaNumber}
-                          onChange={(e) => updateField('alcaNumber', e.target.value)}
-                          placeholder="e.g., 12345"
-                          className="focus:ring-2 focus:ring-purple-500"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Leave blank if not an ALOA member</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bonding */}
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                      <div className="p-2 bg-blue-500 rounded-xl">
-                        <Shield className="w-6 h-6 text-white" />
-                      </div>
-                      Surety Bond
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      A surety bond provides protection for your customers. While not always required, bonded locksmiths are more trusted by property managers.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                      <div>
-                        <Label htmlFor="bondCompany" className="text-gray-700 font-semibold mb-2">Bond Company</Label>
-                        <Input
-                          id="bondCompany"
-                          value={formData.bondCompany}
-                          onChange={(e) => updateField('bondCompany', e.target.value)}
-                          placeholder="e.g., Surety One"
-                          className="focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="bondAmount" className="text-gray-700 font-semibold mb-2">Bond Amount</Label>
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
-                          <Input
-                            id="bondAmount"
-                            value={formData.bondAmount}
-                            onChange={(e) => updateField('bondAmount', e.target.value)}
-                            placeholder="10,000"
-                            className="pl-11 focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="bondExpiry" className="text-gray-700 font-semibold mb-2">Bond Expiration</Label>
-                        <Input
-                          id="bondExpiry"
-                          type="date"
-                          value={formData.bondExpiry}
-                          onChange={(e) => updateField('bondExpiry', e.target.value)}
-                          className="focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </>
               )}
-
-              {/* Plumber-Specific Credentials */}
-              {formData.vendorType === 'plumber' && (
-                <>
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                      <div className="p-2 bg-blue-500 rounded-xl">
-                        <FileCheck className="w-6 h-6 text-white" />
-                      </div>
-                      Plumbing License *
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      A valid state plumbing license (Journeyman or Master) is required for all plumbing work.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">License Number *</Label>
-                        <Input
-                          id="licenseNumber"
-                          value={formData.licenseNumber}
-                          onChange={(e) => updateField('licenseNumber', e.target.value)}
-                          placeholder="e.g., PL-123456"
-                          className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-blue-500'}
-                        />
-                        {errors.licenseNumber && (
-                          <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">License Expiration *</Label>
-                        <Input
-                          id="licenseExpiry"
-                          type="date"
-                          value={formData.licenseExpiry}
-                          onChange={(e) => updateField('licenseExpiry', e.target.value)}
-                          className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-blue-500'}
-                        />
-                        {errors.licenseExpiry && (
-                          <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Electrician-Specific Credentials */}
-              {formData.vendorType === 'electrician' && (
-                <>
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 border-amber-200 shadow-lg">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                      <div className="p-2 bg-amber-500 rounded-xl">
-                        <FileCheck className="w-6 h-6 text-white" />
-                      </div>
-                      Electrical License *
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      A valid state electrical license (Journeyman or Master) is required for all electrical work.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">License Number *</Label>
-                        <Input
-                          id="licenseNumber"
-                          value={formData.licenseNumber}
-                          onChange={(e) => updateField('licenseNumber', e.target.value)}
-                          placeholder="e.g., EL-123456"
-                          className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-amber-500'}
-                        />
-                        {errors.licenseNumber && (
-                          <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">License Expiration *</Label>
-                        <Input
-                          id="licenseExpiry"
-                          type="date"
-                          value={formData.licenseExpiry}
-                          onChange={(e) => updateField('licenseExpiry', e.target.value)}
-                          className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-amber-500'}
-                        />
-                        {errors.licenseExpiry && (
-                          <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* HVAC-Specific Credentials */}
-              {formData.vendorType === 'hvac' && (
-                <>
-                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                      <div className="p-2 bg-slate-500 rounded-xl">
-                        <FileCheck className="w-6 h-6 text-white" />
-                      </div>
-                      HVAC License & EPA Certification *
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Valid HVAC license and EPA Section 608 certification for refrigerant handling are required.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <Label htmlFor="licenseNumber" className="text-gray-700 font-semibold mb-2">HVAC License Number *</Label>
-                        <Input
-                          id="licenseNumber"
-                          value={formData.licenseNumber}
-                          onChange={(e) => updateField('licenseNumber', e.target.value)}
-                          placeholder="e.g., HV-123456"
-                          className={errors.licenseNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-slate-500'}
-                        />
-                        {errors.licenseNumber && (
-                          <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="licenseExpiry" className="text-gray-700 font-semibold mb-2">License Expiration *</Label>
-                        <Input
-                          id="licenseExpiry"
-                          type="date"
-                          value={formData.licenseExpiry}
-                          onChange={(e) => updateField('licenseExpiry', e.target.value)}
-                          className={errors.licenseExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-slate-500'}
-                        />
-                        {errors.licenseExpiry && (
-                          <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="alcaNumber" className="text-gray-700 font-semibold mb-2">EPA Certification Number *</Label>
-                        <Input
-                          id="alcaNumber"
-                          value={formData.alcaNumber}
-                          onChange={(e) => updateField('alcaNumber', e.target.value)}
-                          placeholder="e.g., EPA-123456"
-                          className="focus:ring-2 focus:ring-slate-500"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Section 608 certification required</p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Background Check Consent - All vendor types */}
-              <div
-                className={`rounded-2xl p-6 border-2 ${errors.backgroundCheckConsent ? 'bg-red-50 border-red-300 animate-pulse' : 'bg-gradient-to-r from-indigo-100 to-purple-100 border-indigo-300'} shadow-lg`}
-              >
-                <label className="flex items-start gap-4 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={formData.backgroundCheckConsent}
-                    onChange={(e) => updateField('backgroundCheckConsent', e.target.checked)}
-                    className="mt-1 w-6 h-6 rounded-lg border-indigo-400 text-indigo-600 focus:ring-indigo-500 focus:ring-2"
-                  />
-                  <div>
-                    <span className="font-bold text-indigo-900 flex items-center gap-2 text-lg">
-                      Background Check Authorization *
-                    </span>
-                    <p className="text-sm text-indigo-800 mt-2 leading-relaxed">
-                      I authorize PropertyMaster to conduct a background check on myself and/or my
-                      employees who will be performing {formData.vendorType} services. I understand that my application will be reviewed and that all
-                      technicians must pass a background check before being approved for dispatch.
-                    </p>
-                    {errors.backgroundCheckConsent && (
-                      <p className="text-sm text-red-600 mt-2 font-semibold flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" /> {errors.backgroundCheckConsent}
-                      </p>
-                    )}
-                  </div>
-                </label>
-              </div>
             </div>
-          )}
+          </div>
 
-          {/* Insurance */}
-          {step === 'insurance' && (
-            <div className="space-y-6 animate-slide-in">
-              {/* General Liability */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-green-500 rounded-xl">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  General Liability Insurance *
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  General liability insurance is required to operate on the marketplace. Minimum coverage of $500,000 is recommended for property management work.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <Label htmlFor="insuranceCarrier" className="text-gray-700 font-semibold mb-2">Insurance Carrier *</Label>
-                    <Input
-                      id="insuranceCarrier"
-                      value={formData.insuranceCarrier}
-                      onChange={(e) => updateField('insuranceCarrier', e.target.value)}
-                      placeholder="e.g., State Farm, Progressive"
-                      className={errors.insuranceCarrier ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                    />
-                    {errors.insuranceCarrier && (
-                      <p className="text-sm text-red-600 mt-1">{errors.insuranceCarrier}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="insurancePolicyNumber" className="text-gray-700 font-semibold mb-2">Policy Number *</Label>
-                    <Input
-                      id="insurancePolicyNumber"
-                      value={formData.insurancePolicyNumber}
-                      onChange={(e) => updateField('insurancePolicyNumber', e.target.value)}
-                      placeholder="e.g., GL-123456789"
-                      className={errors.insurancePolicyNumber ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                    />
-                    {errors.insurancePolicyNumber && (
-                      <p className="text-sm text-red-600 mt-1">{errors.insurancePolicyNumber}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="insuranceCoverageAmount" className="text-gray-700 font-semibold mb-2">Coverage Amount *</Label>
-                    <Select
-                      value={formData.insuranceCoverageAmount}
-                      onValueChange={(v) => updateField('insuranceCoverageAmount', v)}
-                    >
-                      <SelectTrigger
-                        className={errors.insuranceCoverageAmount ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                      >
-                        <SelectValue placeholder="Select coverage amount" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="300000">$300,000</SelectItem>
-                        <SelectItem value="500000">$500,000 (Recommended)</SelectItem>
-                        <SelectItem value="1000000">$1,000,000</SelectItem>
-                        <SelectItem value="2000000">$2,000,000+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.insuranceCoverageAmount && (
-                      <p className="text-sm text-red-600 mt-1">{errors.insuranceCoverageAmount}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="insuranceExpiry" className="text-gray-700 font-semibold mb-2">Policy Expiration Date *</Label>
-                    <Input
-                      id="insuranceExpiry"
-                      type="date"
-                      value={formData.insuranceExpiry}
-                      onChange={(e) => updateField('insuranceExpiry', e.target.value)}
-                      className={errors.insuranceExpiry ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                    />
-                    {errors.insuranceExpiry && (
-                      <p className="text-sm text-red-600 mt-1">{errors.insuranceExpiry}</p>
-                    )}
-                  </div>
+          <div className="flex items-start gap-3">
+            {formData.licenseNumber ? (
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+            )}
+            <div className="flex-1">
+              <div className="text-sm font-medium text-gray-900">License</div>
+              {formData.licenseNumber && (
+                <div className="text-sm text-gray-600">
+                  {formData.licenseState} License {formData.licenseNumber}
                 </div>
-
-                {/* Insurance Agent Contact - For Verification */}
-                <div className="mt-4">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Insurance Agent Contact</h4>
-                  <p className="text-xs text-gray-600 mb-3">
-                    We may contact your insurance agent to verify coverage details
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="insuranceAgentName" className="text-gray-700 font-semibold mb-2">Agent Name *</Label>
-                      <Input
-                        id="insuranceAgentName"
-                        value={formData.insuranceAgentName}
-                        onChange={(e) => updateField('insuranceAgentName', e.target.value)}
-                        placeholder="e.g., John Smith"
-                        className={errors.insuranceAgentName ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                      />
-                      {errors.insuranceAgentName && (
-                        <p className="text-sm text-red-600 mt-1">{errors.insuranceAgentName}</p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="insuranceAgentPhone" className="text-gray-700 font-semibold mb-2">Agent Phone *</Label>
-                      <Input
-                        id="insuranceAgentPhone"
-                        value={formData.insuranceAgentPhone}
-                        onChange={(e) => updateField('insuranceAgentPhone', e.target.value)}
-                        placeholder="(555) 123-4567"
-                        className={errors.insuranceAgentPhone ? 'border-red-500' : 'focus:ring-2 focus:ring-green-500'}
-                      />
-                      {errors.insuranceAgentPhone && (
-                        <p className="text-sm text-red-600 mt-1">{errors.insuranceAgentPhone}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Workers Comp */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-xl">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  Workers' Compensation Insurance
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Required if you have employees. Owner-operators without employees may be exempt in some states.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div>
-                    <Label htmlFor="workersCompCarrier" className="text-gray-700 font-semibold mb-2">Insurance Carrier</Label>
-                    <Input
-                      id="workersCompCarrier"
-                      value={formData.workersCompCarrier}
-                      onChange={(e) => updateField('workersCompCarrier', e.target.value)}
-                      placeholder="e.g., The Hartford"
-                      className="focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="workersCompPolicyNumber" className="text-gray-700 font-semibold mb-2">Policy Number</Label>
-                    <Input
-                      id="workersCompPolicyNumber"
-                      value={formData.workersCompPolicyNumber}
-                      onChange={(e) => updateField('workersCompPolicyNumber', e.target.value)}
-                      placeholder="e.g., WC-123456789"
-                      className="focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="workersCompExpiry" className="text-gray-700 font-semibold mb-2">Expiration Date</Label>
-                    <Input
-                      id="workersCompExpiry"
-                      type="date"
-                      value={formData.workersCompExpiry}
-                      onChange={(e) => updateField('workersCompExpiry', e.target.value)}
-                      className="focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Insurance Info */}
-              <div className="bg-gradient-to-r from-cyan-100 to-blue-100 border-2 border-cyan-300 rounded-2xl p-5 shadow-lg">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-cyan-500 rounded-xl">
-                    <AlertCircle className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-cyan-900 text-lg">What Happens Next?</p>
-                    <p className="text-sm text-cyan-800 mt-2 leading-relaxed">
-                      After approval, we'll request a <span className="font-bold">Certificate of Insurance (COI)</span> naming
-                      PropertyMaster as an additional insured. This protects both parties during
-                      service calls and ensures you're covered for all marketplace jobs! 🤝
-                    </p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
 
-          {/* Services */}
-          {step === 'services' && (
-            <div className="space-y-6 animate-slide-in">
-              {/* Earnings Potential Banner */}
+          <div className="flex items-start gap-3">
+            {formData.insuranceCarrier && formData.insuranceCoverageAmount ? (
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+            )}
+            <div className="flex-1">
+              <div className="text-sm font-medium text-gray-900">Insurance</div>
+              {formData.insuranceCoverageAmount && (
+                <div className="text-sm text-gray-600">
+                  {formData.insuranceCoverageAmount} General Liability
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            {formData.backgroundCheckConsent ? (
+              <div className="flex items-center gap-2 text-amber-600">
+                <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium">Background Check Pending</div>
+                  <div className="text-sm">Will be completed within 48 hours</div>
+                </div>
+              </div>
+            ) : (
+              <AlertCircle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+            )}
+          </div>
+
+          <div className="flex items-start gap-3">
+            {formData.selectedServices.length >= 3 ? (
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+            )}
+            <div className="flex-1">
+              <div className="text-sm font-medium text-gray-900">Services</div>
               {formData.selectedServices.length > 0 && (
-                <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-2xl animate-pulse">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold opacity-90">💰 Your Potential Per-Job Earnings</p>
-                      <p className="text-4xl font-bold mt-2">
-                        ${earnings.min} - ${earnings.max}
-                      </p>
-                      <p className="text-sm opacity-90 mt-1">Based on {formData.selectedServices.length} selected services</p>
-                    </div>
-                    <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl">
-                      <TrendingUp className="w-16 h-16" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Service Selection */}
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border-2 border-indigo-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-indigo-500 rounded-xl">
-                    <Wrench className="w-6 h-6 text-white" />
-                  </div>
-                  Services Offered *
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Select all services you can provide. More services means more job opportunities.
-                </p>
-                {errors.selectedServices && (
-                  <p className="text-sm text-red-600 mb-4 font-semibold flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" /> {errors.selectedServices}
-                  </p>
-                )}
-
-                <div className="space-y-6">
-                  {(() => {
-                    const currentServices = getCurrentServices();
-                    const categories = [...new Set(currentServices.map((s) => s.category))];
-
-                    return categories.map((category) => {
-                      const categoryServices = currentServices.filter(
-                        (s) => s.category === category,
-                      );
-                      if (categoryServices.length === 0) {
-                        return null;
-                      }
-
-                      return (
-                        <div key={category}>
-                          <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
-                            {category === 'Emergency' && '🚨'}
-                            {category === 'Residential' && '🏠'}
-                            {category === 'Commercial' && '🏢'}
-                            {category === 'Automotive' && '🚗'}
-                            {category === 'Specialty' && '⭐'}
-                            {category === 'General' && '🔧'}
-                            {category === 'Repair' && '🔧'}
-                            {category === 'Installation' && '⚙️'}
-                            {category === 'Major' && '🏗️'}
-                            {category === 'Maintenance' && '🛠️'}
-                            {category === 'Safety' && '🛡️'}
-                            {category}
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {categoryServices.map((service) => {
-                              const Icon = service.icon;
-                              const isSelected = formData.selectedServices.includes(service.id);
-                              return (
-                                <button
-                                  key={service.id}
-                                  type="button"
-                                  onClick={() => toggleService(service.id)}
-                                  className={`group relative flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-300 transform ${
-                                    isSelected
-                                      ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 scale-105 shadow-xl'
-                                      : 'border-gray-200 hover:border-indigo-300 hover:bg-gradient-to-br hover:from-gray-50 hover:to-indigo-50 hover:scale-102 hover:shadow-lg'
-                                  }`}
-                                >
-                                  <div
-                                    className={`p-3 rounded-xl transition-all duration-300 ${isSelected ? 'bg-indigo-500 shadow-lg' : 'bg-gray-100 group-hover:bg-indigo-100'}`}
-                                  >
-                                    <Icon
-                                      className={`w-6 h-6 transition-colors duration-300 ${isSelected ? 'text-white' : 'text-gray-500 group-hover:text-indigo-600'}`}
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p
-                                      className={`font-bold text-sm ${isSelected ? 'text-indigo-900' : 'text-gray-900'}`}
-                                    >
-                                      {service.name}
-                                    </p>
-                                    <p className="text-xs text-gray-600 mt-0.5">
-                                      💵 {service.typical}
-                                    </p>
-                                    <p className={`text-xs mt-0.5 font-medium ${isSelected ? 'text-indigo-600' : 'text-gray-500'}`}>
-                                      {service.earnings}
-                                    </p>
-                                  </div>
-                                  {isSelected && (
-                                    <div className="absolute -top-2 -right-2 p-1 bg-green-500 rounded-full shadow-lg animate-bounce">
-                                      <CheckCircle className="w-5 h-5 text-white" />
-                                    </div>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-
-              {/* Service Area */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-green-500 rounded-xl">
-                    <MapPin className="w-6 h-6 text-white" />
-                  </div>
-                  Service Area *
-                </h3>
-                {errors.serviceArea && (
-                  <p className="text-sm text-red-600 mb-4">{errors.serviceArea}</p>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="serviceRadius" className="text-gray-700 font-semibold mb-2">Service Radius (miles)</Label>
-                    <Select
-                      value={formData.serviceRadius}
-                      onValueChange={(v) => updateField('serviceRadius', v)}
-                    >
-                      <SelectTrigger className="focus:ring-2 focus:ring-green-500">
-                        <SelectValue placeholder="Select radius" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10 miles</SelectItem>
-                        <SelectItem value="15">15 miles</SelectItem>
-                        <SelectItem value="25">25 miles (Recommended)</SelectItem>
-                        <SelectItem value="50">50 miles 📍</SelectItem>
-                        <SelectItem value="100">100 miles 🌎</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-gray-500 mt-2 bg-green-100 p-2 rounded">
-                      💡 <span className="font-semibold">Pro tip:</span> Larger radius = more job opportunities!
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="serviceZipCodes" className="text-gray-700 font-semibold mb-2">Or Specific ZIP Codes</Label>
-                    <Input
-                      id="serviceZipCodes"
-                      value={formData.serviceZipCodes}
-                      onChange={(e) => updateField('serviceZipCodes', e.target.value)}
-                      placeholder="60601, 60602, 60603..."
-                      className="focus:ring-2 focus:ring-green-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">Comma-separated list of ZIP codes</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Response Time */}
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 border-orange-200 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                  <div className="p-2 bg-orange-500 rounded-xl">
-                    <Clock className="w-6 h-6 text-white" />
-                  </div>
-                  Average Response Time
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="responseTime" className="text-gray-700 font-semibold mb-2">Typical Response Time</Label>
-                    <Select
-                      value={formData.responseTime}
-                      onValueChange={(v) => updateField('responseTime', v)}
-                    >
-                      <SelectTrigger className="focus:ring-2 focus:ring-orange-500">
-                        <SelectValue placeholder="Select response time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="15">Under 15 minutes</SelectItem>
-                        <SelectItem value="30">15-30 minutes</SelectItem>
-                        <SelectItem value="60">30-60 minutes</SelectItem>
-                        <SelectItem value="120">1-2 hours</SelectItem>
-                        <SelectItem value="240">Same day</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Faster response times receive priority in the dispatch queue.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Review */}
-          {step === 'review' && (
-            <div className="space-y-6 animate-slide-in">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 border-2 border-blue-400 rounded-2xl p-6 mb-6 text-white shadow-2xl">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                    <Sparkles className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-2xl mb-2">🎉 You're Almost There!</p>
-                    <p className="text-blue-100 leading-relaxed">
-                      Review all information below before submitting. Our team will review your application and verify your credentials within <span className="font-bold">24-48 hours</span>. Once approved, you'll start receiving job opportunities right away! 🚀
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Business Summary */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-indigo-200 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500 rounded-xl">
-                      <Building2 className="w-6 h-6 text-white" />
-                    </div>
-                    Business Information
-                  </h3>
-                  <Button variant="outline" size="sm" onClick={() => setStep('business')} className="hover:bg-indigo-100">
-                    Edit
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-5 text-sm">
-                  <div>
-                    <p className="text-gray-500 font-semibold">Company Name</p>
-                    <p className="font-bold text-gray-900">{formData.companyName}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Contact</p>
-                    <p className="font-bold text-gray-900">
-                      {formData.contactFirstName} {formData.contactLastName}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Email</p>
-                    <p className="font-bold text-gray-900">{formData.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Phone</p>
-                    <p className="font-bold text-gray-900">{formData.phone}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-gray-500 font-semibold">Address</p>
-                    <p className="font-bold text-gray-900">
-                      {formData.address1}
-                      {formData.address2 && `, ${formData.address2}`}, {formData.city},{' '}
-                      {formData.state} {formData.zipCode}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Years in Business</p>
-                    <p className="font-bold text-gray-900">{formData.yearsInBusiness}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">24/7 Emergency</p>
-                    <p className="font-bold text-gray-900">{formData.emergencyAvailable ? 'Yes' : 'No'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Credentials Summary */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                    <div className="p-2 bg-purple-500 rounded-xl">
-                      <FileCheck className="w-6 h-6 text-white" />
-                    </div>
-                    Licensing & Credentials
-                  </h3>
-                  <Button variant="outline" size="sm" onClick={() => setStep('credentials')} className="hover:bg-purple-100">
-                    Edit
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-5 text-sm">
-                  <div>
-                    <p className="text-gray-500 font-semibold">State License</p>
-                    <p className="font-bold text-gray-900">{formData.licenseNumber || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">License Expiry</p>
-                    <p className="font-bold text-gray-900">{formData.licenseExpiry || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">ALOA Member</p>
-                    <p className="font-bold text-gray-900">{formData.alcaNumber || 'No'}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Background Check</p>
-                    <p className="font-bold text-green-600">Authorized</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Insurance Summary */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                    <div className="p-2 bg-green-500 rounded-xl">
-                      <Shield className="w-6 h-6 text-white" />
-                    </div>
-                    Insurance
-                  </h3>
-                  <Button variant="outline" size="sm" onClick={() => setStep('insurance')} className="hover:bg-green-100">
-                    Edit
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-5 text-sm">
-                  <div>
-                    <p className="text-gray-500 font-semibold">Carrier</p>
-                    <p className="font-bold text-gray-900">{formData.insuranceCarrier}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Coverage</p>
-                    <p className="font-bold text-gray-900">
-                      ${parseInt(formData.insuranceCoverageAmount).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Policy Number</p>
-                    <p className="font-bold text-gray-900">{formData.insurancePolicyNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Expires</p>
-                    <p className="font-bold text-gray-900">{formData.insuranceExpiry}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Services Summary */}
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 border-orange-200 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                    <div className="p-2 bg-orange-500 rounded-xl">
-                      <Wrench className="w-6 h-6 text-white" />
-                    </div>
-                    Services & Coverage
-                  </h3>
-                  <Button variant="outline" size="sm" onClick={() => setStep('services')} className="hover:bg-orange-100">
-                    Edit
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-5 text-sm mb-4">
-                  <div>
-                    <p className="text-gray-500 font-semibold">Service Radius</p>
-                    <p className="font-bold text-gray-900">{formData.serviceRadius} miles 📍</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 font-semibold">Response Time</p>
-                    <p className="font-bold text-gray-900">{formData.responseTime} minutes ⏱️</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-gray-500 mb-2 font-semibold">
-                    Services ({formData.selectedServices.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.selectedServices.map((serviceId) => {
-                      const currentServices = getCurrentServices();
-                      const service = currentServices.find((s) => s.id === serviceId);
-                      return service ? (
-                        <span
-                          key={serviceId}
-                          className="px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs font-semibold shadow-lg"
-                        >
-                          {service.name}
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {createVendorMutation.error && (
-                <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 shadow-lg animate-pulse">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-6 h-6 text-red-600 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-red-900 text-lg">Error Creating Vendor</p>
-                      <p className="text-sm text-red-700 mt-1">
-                        {(createVendorMutation.error as any)?.response?.data?.message ||
-                          'An error occurred. Please try again.'}
-                      </p>
-                    </div>
-                  </div>
+                <div className="text-sm text-gray-600">
+                  {formData.selectedServices.length} services selected
                 </div>
               )}
             </div>
-          )}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-gray-700">
+            <p className="font-medium mb-1">Next Steps</p>
+            <p>
+              Once submitted, we will review your application within 24-48 hours. You will receive
+              an email when approved.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 'specialty':
+        return renderSpecialtySelection();
+      case 'business_identity':
+        return renderBusinessIdentity();
+      case 'licensing':
+        return renderLicensing();
+      case 'insurance':
+        return renderInsurance();
+      case 'tax_payment':
+        return renderTaxPayment();
+      case 'background_check':
+        return renderBackgroundCheck();
+      case 'services_coverage':
+        return renderServicesCoverage();
+      case 'trust_experience':
+        return renderTrustExperience();
+      case 'review':
+        return renderReview();
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-4 border-b">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">{getStepTitle(currentStep)}</h2>
+            <p className="text-sm text-gray-600 mt-1">{getStepDescription(currentStep)}</p>
+          </div>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-8 py-5 border-t-2 bg-gradient-to-r from-gray-50 to-slate-50">
-          <div>
-            {step !== 'category' && (
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                disabled={createVendorMutation.isPending}
-                className="hover:bg-gray-100 transition-all duration-200"
-              >
-                <ChevronLeft className="w-5 h-5 mr-2" />
-                Back
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-3">
+        <div className="py-6">{renderStepContent()}</div>
+
+        <div className="flex items-center justify-between pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            disabled={currentStep === 'specialty'}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </Button>
+
+          {currentStep === 'review' ? (
             <Button
-              variant="outline"
-              onClick={handleClose}
+              type="button"
+              onClick={handleSubmit}
               disabled={createVendorMutation.isPending}
-              className="hover:bg-gray-100 transition-all duration-200"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
-              Cancel
+              {createVendorMutation.isPending ? 'Submitting...' : 'Submit for Approval'}
             </Button>
-            {step !== 'category' && step !== 'review' && (
-              <Button onClick={handleNext} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-lg transition-all duration-200 hover:scale-105">
-                Continue
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </Button>
-            )}
-            {step === 'review' && (
-              <Button
-                onClick={handleSubmit}
-                disabled={createVendorMutation.isPending}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold shadow-2xl transition-all duration-200 hover:scale-110 px-8"
-              >
-                {createVendorMutation.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Submitting Application...
-                  </span>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Submit for Approval
-                    <ChevronRight className="w-5 h-5 ml-2" />
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button
+              type="button"
+              onClick={handleNext}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Continue
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
