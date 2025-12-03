@@ -29,6 +29,13 @@ import {
   TrendingUp,
   Zap,
   Star,
+  Droplet,
+  Flame,
+  Wind,
+  Pipette,
+  Plug,
+  Lightbulb,
+  Snowflake,
 } from 'lucide-react';
 import api from '../../services/api';
 import { Dialog, DialogContent } from '../ui/dialog';
@@ -152,6 +159,308 @@ const LOCKSMITH_SERVICES = [
   },
 ];
 
+// Plumber services
+const PLUMBER_SERVICES = [
+  {
+    id: 'emergency_leak',
+    name: 'Emergency Leak Repair',
+    category: 'Emergency',
+    icon: Droplet,
+    typical: '$150-400',
+    earnings: 'High demand',
+  },
+  {
+    id: 'burst_pipe',
+    name: 'Burst Pipe Repair',
+    category: 'Emergency',
+    icon: Droplet,
+    typical: '$200-600',
+    earnings: 'High demand',
+  },
+  {
+    id: 'clogged_drain',
+    name: 'Clogged Drain/Toilet',
+    category: 'Emergency',
+    icon: Pipette,
+    typical: '$100-300',
+    earnings: 'High demand',
+  },
+  {
+    id: 'water_heater_repair',
+    name: 'Water Heater Repair',
+    category: 'Repair',
+    icon: Flame,
+    typical: '$200-500',
+    earnings: 'Steady work',
+  },
+  {
+    id: 'water_heater_install',
+    name: 'Water Heater Installation',
+    category: 'Installation',
+    icon: Flame,
+    typical: '$800-2000',
+    earnings: 'Premium pricing',
+  },
+  {
+    id: 'faucet_repair',
+    name: 'Faucet Repair/Replacement',
+    category: 'Repair',
+    icon: Droplet,
+    typical: '$150-350',
+    earnings: 'Steady work',
+  },
+  {
+    id: 'toilet_repair',
+    name: 'Toilet Repair/Replacement',
+    category: 'Repair',
+    icon: Home,
+    typical: '$150-400',
+    earnings: 'Steady work',
+  },
+  {
+    id: 'garbage_disposal',
+    name: 'Garbage Disposal Repair',
+    category: 'Repair',
+    icon: Wrench,
+    typical: '$100-300',
+    earnings: 'Steady work',
+  },
+  {
+    id: 'sewer_line',
+    name: 'Sewer Line Repair',
+    category: 'Major',
+    icon: Pipette,
+    typical: '$500-3000',
+    earnings: 'Premium pricing',
+  },
+  {
+    id: 'pipe_replacement',
+    name: 'Pipe Replacement',
+    category: 'Major',
+    icon: Pipette,
+    typical: '$300-1500',
+    earnings: 'Premium pricing',
+  },
+  {
+    id: 'sump_pump',
+    name: 'Sump Pump Install/Repair',
+    category: 'Installation',
+    icon: Droplet,
+    typical: '$400-1200',
+    earnings: 'Seasonal demand',
+  },
+  {
+    id: 'backflow_prevention',
+    name: 'Backflow Prevention',
+    category: 'Commercial',
+    icon: Shield,
+    typical: '$300-800',
+    earnings: 'Steady work',
+  },
+];
+
+// Electrician services
+const ELECTRICIAN_SERVICES = [
+  {
+    id: 'power_outage',
+    name: 'Power Outage Emergency',
+    category: 'Emergency',
+    icon: Zap,
+    typical: '$150-500',
+    earnings: 'High demand',
+  },
+  {
+    id: 'electrical_fire_hazard',
+    name: 'Electrical Fire Hazard',
+    category: 'Emergency',
+    icon: Flame,
+    typical: '$200-600',
+    earnings: 'High demand',
+  },
+  {
+    id: 'circuit_breaker_trip',
+    name: 'Circuit Breaker Issues',
+    category: 'Emergency',
+    icon: Zap,
+    typical: '$100-350',
+    earnings: 'High demand',
+  },
+  {
+    id: 'outlet_repair',
+    name: 'Outlet Repair/Replacement',
+    category: 'Repair',
+    icon: Plug,
+    typical: '$75-200',
+    earnings: 'Steady work',
+  },
+  {
+    id: 'light_fixture',
+    name: 'Light Fixture Installation',
+    category: 'Installation',
+    icon: Lightbulb,
+    typical: '$100-300',
+    earnings: 'Steady work',
+  },
+  {
+    id: 'ceiling_fan',
+    name: 'Ceiling Fan Installation',
+    category: 'Installation',
+    icon: Wind,
+    typical: '$150-400',
+    earnings: 'Steady work',
+  },
+  {
+    id: 'panel_upgrade',
+    name: 'Electrical Panel Upgrade',
+    category: 'Major',
+    icon: Building,
+    typical: '$1000-3000',
+    earnings: 'Premium pricing',
+  },
+  {
+    id: 'rewiring',
+    name: 'Home/Unit Rewiring',
+    category: 'Major',
+    icon: Zap,
+    typical: '$1500-6000',
+    earnings: 'Premium pricing',
+  },
+  {
+    id: 'smoke_detector',
+    name: 'Smoke Detector Install',
+    category: 'Safety',
+    icon: Shield,
+    typical: '$50-150',
+    earnings: 'Quick jobs',
+  },
+  {
+    id: 'gfci_outlet',
+    name: 'GFCI Outlet Installation',
+    category: 'Safety',
+    icon: Plug,
+    typical: '$100-250',
+    earnings: 'Steady work',
+  },
+  {
+    id: 'ev_charger',
+    name: 'EV Charger Installation',
+    category: 'Installation',
+    icon: Plug,
+    typical: '$500-1500',
+    earnings: 'Growing demand',
+  },
+  {
+    id: 'generator_install',
+    name: 'Generator Installation',
+    category: 'Installation',
+    icon: Zap,
+    typical: '$2000-5000',
+    earnings: 'Premium pricing',
+  },
+];
+
+// HVAC services
+const HVAC_SERVICES = [
+  {
+    id: 'no_heat_emergency',
+    name: 'No Heat Emergency',
+    category: 'Emergency',
+    icon: Flame,
+    typical: '$150-500',
+    earnings: 'High demand',
+  },
+  {
+    id: 'no_cooling_emergency',
+    name: 'No A/C Emergency',
+    category: 'Emergency',
+    icon: Snowflake,
+    typical: '$150-500',
+    earnings: 'High demand',
+  },
+  {
+    id: 'gas_leak',
+    name: 'Gas Leak Emergency',
+    category: 'Emergency',
+    icon: Flame,
+    typical: '$200-600',
+    earnings: 'High demand',
+  },
+  {
+    id: 'ac_repair',
+    name: 'A/C Repair',
+    category: 'Repair',
+    icon: Snowflake,
+    typical: '$200-800',
+    earnings: 'Seasonal demand',
+  },
+  {
+    id: 'furnace_repair',
+    name: 'Furnace Repair',
+    category: 'Repair',
+    icon: Flame,
+    typical: '$200-800',
+    earnings: 'Seasonal demand',
+  },
+  {
+    id: 'ac_install',
+    name: 'A/C Installation',
+    category: 'Installation',
+    icon: Snowflake,
+    typical: '$2500-7000',
+    earnings: 'Premium pricing',
+  },
+  {
+    id: 'furnace_install',
+    name: 'Furnace Installation',
+    category: 'Installation',
+    icon: Flame,
+    typical: '$2500-6000',
+    earnings: 'Premium pricing',
+  },
+  {
+    id: 'hvac_maintenance',
+    name: 'HVAC Maintenance',
+    category: 'Maintenance',
+    icon: Wrench,
+    typical: '$100-300',
+    earnings: 'Recurring work',
+  },
+  {
+    id: 'duct_cleaning',
+    name: 'Duct Cleaning',
+    category: 'Maintenance',
+    icon: Wind,
+    typical: '$300-500',
+    earnings: 'Seasonal demand',
+  },
+  {
+    id: 'thermostat_install',
+    name: 'Thermostat Installation',
+    category: 'Installation',
+    icon: DollarSign,
+    typical: '$100-300',
+    earnings: 'Quick jobs',
+  },
+  {
+    id: 'air_quality',
+    name: 'Air Quality Systems',
+    category: 'Installation',
+    icon: Wind,
+    typical: '$500-2000',
+    earnings: 'Growing demand',
+  },
+  {
+    id: 'heat_pump',
+    name: 'Heat Pump Install/Repair',
+    category: 'Major',
+    icon: Flame,
+    typical: '$3000-8000',
+    earnings: 'Premium pricing',
+  },
+];
+
+type VendorType = 'locksmith' | 'plumber' | 'electrician' | 'hvac';
+
 // States that require locksmith licensing
 const LICENSED_STATES = [
   'AL',
@@ -224,6 +533,9 @@ const US_STATES = [
 ];
 
 interface FormData {
+  // Vendor Type
+  vendorType: VendorType | '';
+
   // Business Info
   companyName: string;
   contactFirstName: string;
@@ -270,6 +582,7 @@ interface FormData {
 }
 
 const initialFormData: FormData = {
+  vendorType: '',
   companyName: '',
   contactFirstName: '',
   contactLastName: '',
@@ -341,6 +654,21 @@ export default function AddMarketplaceVendorModal({
         ? prev.selectedServices.filter((id) => id !== serviceId)
         : [...prev.selectedServices, serviceId],
     }));
+  };
+
+  const getCurrentServices = () => {
+    switch (formData.vendorType) {
+      case 'locksmith':
+        return LOCKSMITH_SERVICES;
+      case 'plumber':
+        return PLUMBER_SERVICES;
+      case 'electrician':
+        return ELECTRICIAN_SERVICES;
+      case 'hvac':
+        return HVAC_SERVICES;
+      default:
+        return LOCKSMITH_SERVICES;
+    }
   };
 
   const validateStep = (): boolean => {
@@ -588,9 +916,10 @@ export default function AddMarketplaceVendorModal({
   const calculatePotentialEarnings = () => {
     let minEarnings = 0;
     let maxEarnings = 0;
+    const currentServices = getCurrentServices();
 
     formData.selectedServices.forEach((serviceId) => {
-      const service = LOCKSMITH_SERVICES.find((s) => s.id === serviceId);
+      const service = currentServices.find((s) => s.id === serviceId);
       if (service) {
         // Parse typical pricing (e.g., "$75-150" or "$20-30/lock")
         const match = service.typical.match(/\$(\d+)-(\d+)/);
@@ -744,8 +1073,12 @@ export default function AddMarketplaceVendorModal({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Locksmith */}
                 <button
-                  onClick={() => setStep('business')}
+                  onClick={() => {
+                    updateField('vendorType', 'locksmith');
+                    setStep('business');
+                  }}
                   className="group relative p-8 border-3 border-transparent bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-left overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -784,39 +1117,137 @@ export default function AddMarketplaceVendorModal({
                   </div>
                 </button>
 
-                {/* Coming Soon Categories */}
-                {[
-                  { name: '🔧 Plumber', icon: Wrench, desc: 'Plumbing repairs and installations', avg: '$150-400' },
-                  {
-                    name: '⚡ Electrician',
-                    icon: Wrench,
-                    desc: 'Electrical repairs and installations',
-                    avg: '$200-500',
-                  },
-                  { name: '❄️ HVAC', icon: Wrench, desc: 'Heating and cooling services', avg: '$300-800' },
-                ].map((cat) => (
-                  <div
-                    key={cat.name}
-                    className="relative p-8 border-2 border-dashed border-gray-300 rounded-2xl text-left opacity-60 overflow-hidden"
-                  >
-                    <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-full text-xs font-bold">
-                      Coming Soon
-                    </div>
+                {/* Plumber */}
+                <button
+                  onClick={() => {
+                    updateField('vendorType', 'plumber');
+                    setStep('business');
+                  }}
+                  className="group relative p-8 border-3 border-transparent bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl text-left overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative">
                     <div className="flex items-start gap-6">
-                      <div className="p-4 bg-gray-100 rounded-2xl">
-                        <cat.icon className="w-12 h-12 text-gray-400" />
+                      <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                        <Droplet className="w-12 h-12 text-white" />
                       </div>
                       <div className="flex-1">
-                        <span className="text-2xl font-bold text-gray-500 block mb-2">{cat.name}</span>
-                        <p className="text-gray-400 text-sm mb-3">{cat.desc}</p>
-                        <div className="flex items-center gap-2 text-gray-500 text-sm">
-                          <DollarSign className="w-4 h-4" />
-                          <span>Avg: {cat.avg} per job</span>
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-2xl font-bold text-white">💧 Plumber</span>
+                          <span className="px-3 py-1 bg-green-400 text-green-900 rounded-full text-xs font-bold animate-pulse">
+                            High Demand
+                          </span>
                         </div>
+                        <p className="text-blue-100 mb-4 text-sm">
+                          Emergency repairs, installations, and water heater services
+                        </p>
+                        <ul className="space-y-2 text-sm text-white/90">
+                          <li className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-yellow-300" /> Emergency leaks & bursts
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-green-300" /> Average $200-500 per job
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Star className="w-4 h-4 text-yellow-300" /> Year-round demand
+                          </li>
+                        </ul>
                       </div>
                     </div>
+                    <div className="mt-6 flex items-center justify-between">
+                      <span className="text-white/80 text-sm font-medium">Get Started →</span>
+                      <ChevronRight className="w-6 h-6 text-white group-hover:translate-x-2 transition-transform duration-300" />
+                    </div>
                   </div>
-                ))}
+                </button>
+
+                {/* Electrician */}
+                <button
+                  onClick={() => {
+                    updateField('vendorType', 'electrician');
+                    setStep('business');
+                  }}
+                  className="group relative p-8 border-3 border-transparent bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl text-left overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative">
+                    <div className="flex items-start gap-6">
+                      <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                        <Zap className="w-12 h-12 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-2xl font-bold text-white">⚡ Electrician</span>
+                          <span className="px-3 py-1 bg-green-400 text-green-900 rounded-full text-xs font-bold animate-pulse">
+                            High Demand
+                          </span>
+                        </div>
+                        <p className="text-amber-100 mb-4 text-sm">
+                          Emergency repairs, panel upgrades, and safety inspections
+                        </p>
+                        <ul className="space-y-2 text-sm text-white/90">
+                          <li className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-yellow-300" /> Power outage emergencies
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-green-300" /> Average $200-600 per job
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Star className="w-4 h-4 text-yellow-300" /> Safety-critical work
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="mt-6 flex items-center justify-between">
+                      <span className="text-white/80 text-sm font-medium">Get Started →</span>
+                      <ChevronRight className="w-6 h-6 text-white group-hover:translate-x-2 transition-transform duration-300" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* HVAC */}
+                <button
+                  onClick={() => {
+                    updateField('vendorType', 'hvac');
+                    setStep('business');
+                  }}
+                  className="group relative p-8 border-3 border-transparent bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl text-left overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative">
+                    <div className="flex items-start gap-6">
+                      <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                        <Wind className="w-12 h-12 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-2xl font-bold text-white">❄️ HVAC</span>
+                          <span className="px-3 py-1 bg-green-400 text-green-900 rounded-full text-xs font-bold animate-pulse">
+                            High Demand
+                          </span>
+                        </div>
+                        <p className="text-red-100 mb-4 text-sm">
+                          Heating, cooling emergencies, and seasonal maintenance
+                        </p>
+                        <ul className="space-y-2 text-sm text-white/90">
+                          <li className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-yellow-300" /> No heat/AC emergencies
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-green-300" /> Average $300-800 per job
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Star className="w-4 h-4 text-yellow-300" /> Recurring contracts
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="mt-6 flex items-center justify-between">
+                      <span className="text-white/80 text-sm font-medium">Get Started →</span>
+                      <ChevronRight className="w-6 h-6 text-white group-hover:translate-x-2 transition-transform duration-300" />
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
           )}
@@ -1439,79 +1870,82 @@ export default function AddMarketplaceVendorModal({
                 )}
 
                 <div className="space-y-6">
-                  {[
-                    'Emergency',
-                    'Residential',
-                    'Commercial',
-                    'Automotive',
-                    'Specialty',
-                    'General',
-                  ].map((category) => {
-                    const categoryServices = LOCKSMITH_SERVICES.filter(
-                      (s) => s.category === category,
-                    );
-                    if (categoryServices.length === 0) {
-                      return null;
-                    }
+                  {(() => {
+                    const currentServices = getCurrentServices();
+                    const categories = [...new Set(currentServices.map((s) => s.category))];
 
-                    return (
-                      <div key={category}>
-                        <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
-                          {category === 'Emergency' && '🚨'}
-                          {category === 'Residential' && '🏠'}
-                          {category === 'Commercial' && '🏢'}
-                          {category === 'Automotive' && '🚗'}
-                          {category === 'Specialty' && '⭐'}
-                          {category === 'General' && '🔧'}
-                          {category}
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {categoryServices.map((service) => {
-                            const Icon = service.icon;
-                            const isSelected = formData.selectedServices.includes(service.id);
-                            return (
-                              <button
-                                key={service.id}
-                                type="button"
-                                onClick={() => toggleService(service.id)}
-                                className={`group relative flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-300 transform ${
-                                  isSelected
-                                    ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 scale-105 shadow-xl'
-                                    : 'border-gray-200 hover:border-indigo-300 hover:bg-gradient-to-br hover:from-gray-50 hover:to-indigo-50 hover:scale-102 hover:shadow-lg'
-                                }`}
-                              >
-                                <div
-                                  className={`p-3 rounded-xl transition-all duration-300 ${isSelected ? 'bg-indigo-500 shadow-lg' : 'bg-gray-100 group-hover:bg-indigo-100'}`}
+                    return categories.map((category) => {
+                      const categoryServices = currentServices.filter(
+                        (s) => s.category === category,
+                      );
+                      if (categoryServices.length === 0) {
+                        return null;
+                      }
+
+                      return (
+                        <div key={category}>
+                          <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                            {category === 'Emergency' && '🚨'}
+                            {category === 'Residential' && '🏠'}
+                            {category === 'Commercial' && '🏢'}
+                            {category === 'Automotive' && '🚗'}
+                            {category === 'Specialty' && '⭐'}
+                            {category === 'General' && '🔧'}
+                            {category === 'Repair' && '🔧'}
+                            {category === 'Installation' && '⚙️'}
+                            {category === 'Major' && '🏗️'}
+                            {category === 'Maintenance' && '🛠️'}
+                            {category === 'Safety' && '🛡️'}
+                            {category}
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {categoryServices.map((service) => {
+                              const Icon = service.icon;
+                              const isSelected = formData.selectedServices.includes(service.id);
+                              return (
+                                <button
+                                  key={service.id}
+                                  type="button"
+                                  onClick={() => toggleService(service.id)}
+                                  className={`group relative flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-300 transform ${
+                                    isSelected
+                                      ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 scale-105 shadow-xl'
+                                      : 'border-gray-200 hover:border-indigo-300 hover:bg-gradient-to-br hover:from-gray-50 hover:to-indigo-50 hover:scale-102 hover:shadow-lg'
+                                  }`}
                                 >
-                                  <Icon
-                                    className={`w-6 h-6 transition-colors duration-300 ${isSelected ? 'text-white' : 'text-gray-500 group-hover:text-indigo-600'}`}
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p
-                                    className={`font-bold text-sm ${isSelected ? 'text-indigo-900' : 'text-gray-900'}`}
+                                  <div
+                                    className={`p-3 rounded-xl transition-all duration-300 ${isSelected ? 'bg-indigo-500 shadow-lg' : 'bg-gray-100 group-hover:bg-indigo-100'}`}
                                   >
-                                    {service.name}
-                                  </p>
-                                  <p className="text-xs text-gray-600 mt-0.5">
-                                    💵 {service.typical}
-                                  </p>
-                                  <p className={`text-xs mt-0.5 font-medium ${isSelected ? 'text-indigo-600' : 'text-gray-500'}`}>
-                                    {service.earnings}
-                                  </p>
-                                </div>
-                                {isSelected && (
-                                  <div className="absolute -top-2 -right-2 p-1 bg-green-500 rounded-full shadow-lg animate-bounce">
-                                    <CheckCircle className="w-5 h-5 text-white" />
+                                    <Icon
+                                      className={`w-6 h-6 transition-colors duration-300 ${isSelected ? 'text-white' : 'text-gray-500 group-hover:text-indigo-600'}`}
+                                    />
                                   </div>
-                                )}
-                              </button>
-                            );
-                          })}
+                                  <div className="flex-1 min-w-0">
+                                    <p
+                                      className={`font-bold text-sm ${isSelected ? 'text-indigo-900' : 'text-gray-900'}`}
+                                    >
+                                      {service.name}
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                      💵 {service.typical}
+                                    </p>
+                                    <p className={`text-xs mt-0.5 font-medium ${isSelected ? 'text-indigo-600' : 'text-gray-500'}`}>
+                                      {service.earnings}
+                                    </p>
+                                  </div>
+                                  {isSelected && (
+                                    <div className="absolute -top-2 -right-2 p-1 bg-green-500 rounded-full shadow-lg animate-bounce">
+                                      <CheckCircle className="w-5 h-5 text-white" />
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
@@ -1762,7 +2196,8 @@ export default function AddMarketplaceVendorModal({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {formData.selectedServices.map((serviceId) => {
-                      const service = LOCKSMITH_SERVICES.find((s) => s.id === serviceId);
+                      const currentServices = getCurrentServices();
+                      const service = currentServices.find((s) => s.id === serviceId);
                       return service ? (
                         <span
                           key={serviceId}
