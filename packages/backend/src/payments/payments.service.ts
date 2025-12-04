@@ -185,7 +185,7 @@ export class PaymentsService {
       property: {
         id: property?.id,
         name: property?.name,
-        address: property?.address,
+        address: property?.address1,
         city: property?.city,
         state: property?.state,
         zipCode: property?.zipCode,
