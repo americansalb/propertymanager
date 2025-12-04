@@ -54,7 +54,7 @@ export class ApiKeysController {
   @Post()
   @ApiOperation({ summary: 'Create a new API key' })
   async create(@Req() req: AuthenticatedRequest, @Body() data: CreateApiKeyDto) {
-    return this.apiKeyService.create(data, req.user.organizationId, req.user.id);
+    return this.apiKeyService.create(data, req.user.organizationId, req.user.sub);
   }
 
   @Put(':id')
@@ -70,7 +70,7 @@ export class ApiKeysController {
   @Post(':id/regenerate')
   @ApiOperation({ summary: 'Regenerate API key' })
   async regenerate(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.apiKeyService.regenerate(id, req.user.organizationId, req.user.id);
+    return this.apiKeyService.regenerate(id, req.user.organizationId, req.user.sub);
   }
 
   @Post(':id/revoke')

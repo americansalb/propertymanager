@@ -339,7 +339,8 @@ export class MarketplaceController {
   ) {
     // In a real implementation, we'd get the vendor profile ID from the authenticated vendor user
     // For now, require it in the request body or extract from user context
-    const vendorProfileId = req.body.vendorProfileId || req.user?.vendorProfileId;
+    const vendorProfileId =
+      (req.body.vendorProfileId as string | undefined) || req.user?.vendorProfileId;
     if (!vendorProfileId) {
       return { success: false, error: { message: 'Vendor profile ID required' } };
     }

@@ -32,7 +32,7 @@ export class DevicesController {
   @Get('my')
   @ApiOperation({ summary: 'Get current user devices' })
   async getMyDevices(@Req() req: AuthenticatedRequest) {
-    return this.deviceService.findByUserId(req.user.id);
+    return this.deviceService.findByUserId(req.user.sub);
   }
 
   @Get('stats')
@@ -50,7 +50,7 @@ export class DevicesController {
   @Post('register')
   @ApiOperation({ summary: 'Register a device for push notifications' })
   async register(@Req() req: AuthenticatedRequest, @Body() data: RegisterDeviceDto) {
-    return this.deviceService.register(data, req.user.id);
+    return this.deviceService.register(data, req.user.sub);
   }
 
   @Post('push')

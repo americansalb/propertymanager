@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Query, UseGuards, Req, Headers } from '@ne
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { type Request } from 'express';
-import { type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from './device.service';
 import { RefreshTokenService } from './refresh-token.service';
@@ -41,7 +40,7 @@ export class MobileController {
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Logout from all devices' })
   async logoutAll(@Req() req: AuthenticatedRequest) {
-    return this.refreshTokenService.revokeAllUserTokens(req.user.id);
+    return this.refreshTokenService.revokeAllUserTokens(req.user.sub);
   }
 
   @Get('sessions')
@@ -49,7 +48,7 @@ export class MobileController {
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get active sessions' })
   async getSessions(@Req() req: AuthenticatedRequest) {
-    return this.refreshTokenService.getUserTokens(req.user.id);
+    return this.refreshTokenService.getUserTokens(req.user.sub);
   }
 
   @Get('dashboard')
@@ -156,12 +155,16 @@ export class MobileController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
-    const where: Prisma.WorkOrderWhereInput = { organizationId: req.user.organizationId };
+    const where: {
+      organizationId: string;
+      status?: string;
+      priority?: string;
+    } = { organizationId: req.user.organizationId };
     if (status) {
       where.status = status;
     }
     if (priority) {
-      where.priority = priority as Prisma.EnumWorkOrderPriorityFilter;
+      where.priority = priority;
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -219,7 +222,8 @@ export class MobileController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
-    const where: Prisma.TenantWhereInput = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {
       lease: { unit: { property: { organizationId: req.user.organizationId } } },
     };
 
@@ -302,7 +306,7 @@ export class MobileController {
     const workOrderNotifications = await this.prisma.workOrder.findMany({
       where: {
         organizationId,
-        OR: [{ assignedToId: req.user.id }],
+        OR: [{ assignedToId: req.user.sub }],
         status: { in: ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS'] },
       },
       select: {
