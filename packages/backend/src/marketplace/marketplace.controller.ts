@@ -30,7 +30,7 @@ import {
   ConfirmJobDto,
   DisputeJobDto,
   MarketplaceJobQueryDto,
-  CreateVendorMarketplaceProfileDto,
+  type CreateVendorMarketplaceProfileDto,
   UpdateVendorMarketplaceProfileDto,
   AddVendorServiceDto,
   UpdateVendorServiceDto,
@@ -297,7 +297,9 @@ export class MarketplaceController {
   }
 
   @Post('jobs/:id/auto-dispatch')
-  @ApiOperation({ summary: 'Auto-match and dispatch to best vendors based on service, location, and rating' })
+  @ApiOperation({
+    summary: 'Auto-match and dispatch to best vendors based on service, location, and rating',
+  })
   @ApiParam({ name: 'id', description: 'Marketplace job ID' })
   @ApiResponse({ status: 200, description: 'Job auto-dispatched to matched vendors' })
   async autoDispatchJob(
@@ -505,7 +507,86 @@ export class MarketplaceController {
   }
 
   // ============================================================================
-  // VENDOR-SPECIFIC ENDPOINTS
+  // VENDOR-SPECIFIC ENDPOINTS (AUTHENTICATED VENDOR USER)
+  // ============================================================================
+
+  @Get('jobs/available')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get available jobs for the logged-in vendor user' })
+  @ApiResponse({ status: 200, description: 'List of available jobs for the vendor' })
+  @ApiResponse({ status: 404, description: 'Vendor profile not found for this user' })
+  async getMyAvailableJobs(
+    @UserId() userId: string,
+    @OrganizationId() organizationId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const vendorProfile = await this.marketplaceService.getVendorProfileByUserId(
+      userId,
+      organizationId,
+    );
+    if (!vendorProfile) {
+      return { success: true, data: [], total: 0, message: 'No vendor profile found' };
+    }
+    const result = await this.marketplaceService.getAvailableJobsForVendor(
+      vendorProfile.id,
+      page,
+      limit,
+    );
+    return { success: true, ...result };
+  }
+
+  @Get('jobs/my-active')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get active jobs for the logged-in vendor user' })
+  @ApiResponse({ status: 200, description: 'List of active jobs' })
+  async getMyActiveJobs(
+    @UserId() userId: string,
+    @OrganizationId() organizationId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const vendorProfile = await this.marketplaceService.getVendorProfileByUserId(
+      userId,
+      organizationId,
+    );
+    if (!vendorProfile) {
+      return { success: true, data: [], total: 0, message: 'No vendor profile found' };
+    }
+    const result = await this.marketplaceService.getVendorActiveJobs(vendorProfile.id, page, limit);
+    return { success: true, ...result };
+  }
+
+  @Get('jobs/my-completed')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get completed jobs for the logged-in vendor user' })
+  @ApiResponse({ status: 200, description: 'List of completed jobs' })
+  async getMyCompletedJobs(
+    @UserId() userId: string,
+    @OrganizationId() organizationId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const vendorProfile = await this.marketplaceService.getVendorProfileByUserId(
+      userId,
+      organizationId,
+    );
+    if (!vendorProfile) {
+      return { success: true, data: [], total: 0, message: 'No vendor profile found' };
+    }
+    const result = await this.marketplaceService.getVendorCompletedJobs(
+      vendorProfile.id,
+      page,
+      limit,
+    );
+    return { success: true, ...result };
+  }
+
+  // ============================================================================
+  // VENDOR-SPECIFIC ENDPOINTS (BY PROFILE ID)
   // ============================================================================
 
   @Get('vendor/:vendorProfileId/available-jobs')

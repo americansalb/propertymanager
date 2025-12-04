@@ -117,6 +117,98 @@ export class PaymentsService {
   }
 
   /**
+   * Get payment receipt data for display or PDF generation
+   */
+  async getPaymentReceipt(id: string, organizationId: string) {
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        id,
+        tenant: {
+          lease: {
+            unit: {
+              property: {
+                organizationId,
+              },
+            },
+          },
+        },
+      },
+      include: {
+        tenant: {
+          include: {
+            lease: {
+              include: {
+                unit: {
+                  include: {
+                    property: {
+                      include: {
+                        organization: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        allocations: {
+          include: {
+            charge: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException(`Payment with ID ${id} not found`);
+    }
+
+    const property = payment.tenant?.lease?.unit?.property;
+    const unit = payment.tenant?.lease?.unit;
+    const organization = property?.organization;
+
+    return {
+      receiptNumber: `RCP-${payment.id.slice(0, 8).toUpperCase()}`,
+      paymentId: payment.id,
+      paymentDate: payment.paymentDate,
+      amount: payment.amount,
+      method: payment.method,
+      status: payment.status,
+      checkNumber: payment.checkNumber,
+      memo: payment.memo,
+      tenant: {
+        id: payment.tenant?.id,
+        firstName: payment.tenant?.firstName,
+        lastName: payment.tenant?.lastName,
+        email: payment.tenant?.email,
+      },
+      property: {
+        id: property?.id,
+        name: property?.name,
+        address: property?.address,
+        city: property?.city,
+        state: property?.state,
+        zipCode: property?.zipCode,
+      },
+      unit: {
+        id: unit?.id,
+        unitNumber: unit?.unitNumber,
+      },
+      organization: {
+        id: organization?.id,
+        name: organization?.name,
+      },
+      allocations: payment.allocations.map((alloc) => ({
+        chargeId: alloc.chargeId,
+        amount: alloc.amount,
+        chargeType: alloc.charge?.type,
+        chargeDescription: alloc.charge?.description,
+      })),
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
    * Record a manual payment (cash, check, money order, etc.)
    */
   async recordPayment(dto: RecordPaymentDto, organizationId: string, userId?: string) {
@@ -643,11 +735,7 @@ export class PaymentsService {
     }
 
     const fullName = `${tenant.firstName} ${tenant.lastName}`;
-    const customer = await this.stripeService.getOrCreateCustomer(
-      tenantId,
-      tenant.email,
-      fullName,
-    );
+    const customer = await this.stripeService.getOrCreateCustomer(tenantId, tenant.email, fullName);
 
     this.logger.log({
       message: 'stripe.customer_retrieved',
