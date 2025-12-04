@@ -98,7 +98,7 @@ export default function EditLeaseModal({ open, onOpenChange, lease }: EditLeaseM
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to update lease';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },

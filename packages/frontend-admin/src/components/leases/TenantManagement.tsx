@@ -117,7 +117,7 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       setFormData(initialFormData);
       setErrors({});
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to add tenant';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },
@@ -138,7 +138,7 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       setDeleteDialogOpen(false);
       setSelectedTenant(null);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to remove tenant';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
       setDeleteDialogOpen(false);
@@ -156,7 +156,7 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       setSetPrimaryDialogOpen(false);
       setSelectedTenant(null);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to set primary tenant';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
       setSetPrimaryDialogOpen(false);

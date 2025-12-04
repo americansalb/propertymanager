@@ -201,7 +201,7 @@ export default function WorkOrdersPage() {
         id: workOrderId,
         data: { status: newStatus },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update work order status:', error);
       const errorMessage =
         error?.response?.data?.message || 'Failed to update status. Please try again.';
@@ -410,7 +410,7 @@ export default function WorkOrdersPage() {
         }
 
         clearSelection();
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
@@ -470,7 +470,7 @@ export default function WorkOrdersPage() {
         }
 
         clearSelection();
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||

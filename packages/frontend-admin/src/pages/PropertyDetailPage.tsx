@@ -1,7 +1,18 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Building2, MapPin, Edit, Calendar, Ruler, Hash, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Building2,
+  MapPin,
+  Edit,
+  Calendar,
+  Ruler,
+  Hash,
+  Loader2,
+  Trash2,
+  AlertTriangle,
+} from 'lucide-react';
 import api from '../services/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -69,7 +80,7 @@ export default function PropertyDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       navigate('/properties');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to delete property';
       setDeleteError(Array.isArray(message) ? message.join(', ') : message);
     },

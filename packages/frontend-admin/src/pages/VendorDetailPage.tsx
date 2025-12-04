@@ -11,7 +11,6 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  TrendingUp,
   Wrench,
   FileText,
   Shield,
@@ -20,7 +19,6 @@ import {
   ShieldAlert,
   Edit,
   Trash2,
-  ExternalLink,
   DollarSign,
   Star,
   BarChart3,
@@ -140,9 +138,15 @@ export default function VendorDetailPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'work-orders' | 'compliance' | 'performance'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'work-orders' | 'compliance' | 'performance'
+  >('overview');
 
-  const { data: vendorData, isLoading, error } = useQuery({
+  const {
+    data: vendorData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['vendor', id],
     queryFn: async () => {
       const response = await api.get(`/vendors/${id}/stats`);
@@ -159,7 +163,7 @@ export default function VendorDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
       navigate('/vendors');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to delete vendor';
       setDeleteError(Array.isArray(message) ? message.join(', ') : message);
     },
@@ -170,7 +174,9 @@ export default function VendorDetailPage() {
 
   // Compliance calculations
   const complianceStatus = useMemo(() => {
-    if (!vendor) return null;
+    if (!vendor) {
+      return null;
+    }
 
     const now = new Date();
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -217,10 +223,9 @@ export default function VendorDetailPage() {
       w9Status === 'missing',
     ].filter(Boolean).length;
 
-    const warnings = [
-      insuranceStatus === 'expiring',
-      licenseStatus === 'expiring',
-    ].filter(Boolean).length;
+    const warnings = [insuranceStatus === 'expiring', licenseStatus === 'expiring'].filter(
+      Boolean,
+    ).length;
 
     let overallStatus: 'compliant' | 'warning' | 'non-compliant' = 'compliant';
     if (issues > 0) {
@@ -243,25 +248,30 @@ export default function VendorDetailPage() {
 
   // Performance metrics
   const performanceMetrics = useMemo(() => {
-    if (!vendor?.workOrders || !stats) return null;
+    if (!vendor?.workOrders || !stats) {
+      return null;
+    }
 
-    const completedOrders = vendor.workOrders.filter(wo => wo.status === 'COMPLETED');
+    const completedOrders = vendor.workOrders.filter((wo) => wo.status === 'COMPLETED');
     const totalCost = completedOrders.reduce((sum, wo) => sum + (Number(wo.actualCost) || 0), 0);
     const avgCost = completedOrders.length > 0 ? totalCost / completedOrders.length : 0;
 
     // Calculate on-time completion rate (completed within 7 days of request)
-    const onTimeCount = completedOrders.filter(wo => {
-      if (!wo.completedDate || !wo.requestedDate) return false;
+    const onTimeCount = completedOrders.filter((wo) => {
+      if (!wo.completedDate || !wo.requestedDate) {
+        return false;
+      }
       const requested = new Date(wo.requestedDate);
       const completed = new Date(wo.completedDate);
       const days = Math.ceil((completed.getTime() - requested.getTime()) / (1000 * 60 * 60 * 24));
       return days <= 7;
     }).length;
-    const onTimeRate = completedOrders.length > 0 ? (onTimeCount / completedOrders.length) * 100 : 0;
+    const onTimeRate =
+      completedOrders.length > 0 ? (onTimeCount / completedOrders.length) * 100 : 0;
 
     // Work order types breakdown
     const typeBreakdown: Record<string, number> = {};
-    vendor.workOrders.forEach(wo => {
+    vendor.workOrders.forEach((wo) => {
       typeBreakdown[wo.type] = (typeBreakdown[wo.type] || 0) + 1;
     });
 
@@ -271,7 +281,7 @@ export default function VendorDetailPage() {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
       const monthKey = date.toLocaleString('default', { month: 'short', year: '2-digit' });
-      const count = vendor.workOrders.filter(wo => {
+      const count = vendor.workOrders.filter((wo) => {
         const woDate = new Date(wo.createdAt);
         return woDate.getMonth() === date.getMonth() && woDate.getFullYear() === date.getFullYear();
       }).length;
@@ -358,7 +368,9 @@ export default function VendorDetailPage() {
                   )}
                 </>
               )}
-              <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[vendor.status] || 'bg-gray-100 text-gray-700'}`}>
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[vendor.status] || 'bg-gray-100 text-gray-700'}`}
+              >
                 {vendor.status}
               </span>
             </div>
@@ -431,12 +443,16 @@ export default function VendorDetailPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Overdue</CardTitle>
-            <div className={`p-2 rounded-lg ${stats?.overdueCount ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
+            <div
+              className={`p-2 rounded-lg ${stats?.overdueCount ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}
+            >
               <AlertTriangle className="w-4 h-4" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${stats?.overdueCount ? 'text-red-700' : 'text-gray-700'}`}>
+            <div
+              className={`text-2xl font-bold ${stats?.overdueCount ? 'text-red-700' : 'text-gray-700'}`}
+            >
               {stats?.overdueCount || 0}
             </div>
             <p className="text-xs text-gray-500 mt-1">Jobs overdue (&gt;7 days)</p>
@@ -507,7 +523,10 @@ export default function VendorDetailPage() {
                   <Mail className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
-                    <a href={`mailto:${vendor.email}`} className="font-medium text-blue-600 hover:underline">
+                    <a
+                      href={`mailto:${vendor.email}`}
+                      className="font-medium text-blue-600 hover:underline"
+                    >
                       {vendor.email}
                     </a>
                   </div>
@@ -518,7 +537,10 @@ export default function VendorDetailPage() {
                   <Phone className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Phone</p>
-                    <a href={`tel:${vendor.phone}`} className="font-medium text-blue-600 hover:underline">
+                    <a
+                      href={`tel:${vendor.phone}`}
+                      className="font-medium text-blue-600 hover:underline"
+                    >
                       {vendor.phone}
                     </a>
                   </div>
@@ -532,7 +554,12 @@ export default function VendorDetailPage() {
                     <p className="font-medium">
                       {vendor.address1}
                       {vendor.address2 && <>, {vendor.address2}</>}
-                      {vendor.city && <><br />{vendor.city}, {vendor.state} {vendor.zipCode}</>}
+                      {vendor.city && (
+                        <>
+                          <br />
+                          {vendor.city}, {vendor.state} {vendor.zipCode}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -616,7 +643,9 @@ export default function VendorDetailPage() {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-3 px-4 font-medium text-gray-700">Title</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Property / Unit</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">
+                        Property / Unit
+                      </th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">Priority</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">Cost</th>
@@ -625,7 +654,11 @@ export default function VendorDetailPage() {
                   </thead>
                   <tbody>
                     {vendor.workOrders.map((wo) => (
-                      <tr key={wo.id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/work-orders/${wo.id}`)}>
+                      <tr
+                        key={wo.id}
+                        className="border-b hover:bg-gray-50 cursor-pointer"
+                        onClick={() => navigate(`/work-orders/${wo.id}`)}
+                      >
                         <td className="py-3 px-4">
                           <p className="font-medium">{wo.title}</p>
                           <p className="text-sm text-gray-500">{wo.type}</p>
@@ -642,20 +675,28 @@ export default function VendorDetailPage() {
                           )}
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`text-xs px-2 py-1 rounded-full ${PRIORITY_COLORS[wo.priority] || 'bg-gray-100 text-gray-700'}`}>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${PRIORITY_COLORS[wo.priority] || 'bg-gray-100 text-gray-700'}`}
+                          >
                             {wo.priority}
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`text-xs px-2 py-1 rounded-full ${WORK_ORDER_STATUS_COLORS[wo.status] || 'bg-gray-100 text-gray-700'}`}>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${WORK_ORDER_STATUS_COLORS[wo.status] || 'bg-gray-100 text-gray-700'}`}
+                          >
                             {wo.status.replace('_', ' ')}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-sm">
                           {wo.actualCost ? (
-                            <span className="font-medium">${Number(wo.actualCost).toLocaleString()}</span>
+                            <span className="font-medium">
+                              ${Number(wo.actualCost).toLocaleString()}
+                            </span>
                           ) : wo.estimatedCost ? (
-                            <span className="text-gray-500">~${Number(wo.estimatedCost).toLocaleString()}</span>
+                            <span className="text-gray-500">
+                              ~${Number(wo.estimatedCost).toLocaleString()}
+                            </span>
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}
@@ -718,12 +759,16 @@ export default function VendorDetailPage() {
                 <>
                   <div>
                     <p className="text-sm text-gray-500">Expiration Date</p>
-                    <p className="font-medium">{new Date(vendor.insuranceExpiryDate).toLocaleDateString()}</p>
+                    <p className="font-medium">
+                      {new Date(vendor.insuranceExpiryDate).toLocaleDateString()}
+                    </p>
                   </div>
                   {complianceStatus.insuranceStatus !== 'expired' && (
                     <div>
                       <p className="text-sm text-gray-500">Days Remaining</p>
-                      <p className={`font-medium ${complianceStatus.insuranceDaysLeft <= 30 ? 'text-amber-600' : 'text-green-600'}`}>
+                      <p
+                        className={`font-medium ${complianceStatus.insuranceDaysLeft <= 30 ? 'text-amber-600' : 'text-green-600'}`}
+                      >
                         {complianceStatus.insuranceDaysLeft} days
                       </p>
                     </div>
@@ -788,19 +833,26 @@ export default function VendorDetailPage() {
                 <>
                   <div>
                     <p className="text-sm text-gray-500">Expiration Date</p>
-                    <p className="font-medium">{new Date(vendor.licenseExpiryDate).toLocaleDateString()}</p>
+                    <p className="font-medium">
+                      {new Date(vendor.licenseExpiryDate).toLocaleDateString()}
+                    </p>
                   </div>
-                  {complianceStatus.licenseStatus !== 'expired' && complianceStatus.licenseDaysLeft > 0 && (
-                    <div>
-                      <p className="text-sm text-gray-500">Days Remaining</p>
-                      <p className={`font-medium ${complianceStatus.licenseDaysLeft <= 30 ? 'text-amber-600' : 'text-green-600'}`}>
-                        {complianceStatus.licenseDaysLeft} days
-                      </p>
-                    </div>
-                  )}
+                  {complianceStatus.licenseStatus !== 'expired' &&
+                    complianceStatus.licenseDaysLeft > 0 && (
+                      <div>
+                        <p className="text-sm text-gray-500">Days Remaining</p>
+                        <p
+                          className={`font-medium ${complianceStatus.licenseDaysLeft <= 30 ? 'text-amber-600' : 'text-green-600'}`}
+                        >
+                          {complianceStatus.licenseDaysLeft} days
+                        </p>
+                      </div>
+                    )}
                 </>
-              ) : !vendor.licenseNumber && (
-                <p className="text-gray-500">No license information on file.</p>
+              ) : (
+                !vendor.licenseNumber && (
+                  <p className="text-gray-500">No license information on file.</p>
+                )
               )}
               <Button variant="outline" size="sm" className="w-full">
                 <Upload className="w-4 h-4 mr-2" />
@@ -885,13 +937,20 @@ export default function VendorDetailPage() {
                 {complianceStatus.issues > 0 && (
                   <div className="p-3 rounded-lg bg-red-50 border border-red-200">
                     <p className="text-sm font-medium text-red-800">
-                      {complianceStatus.issues} issue{complianceStatus.issues > 1 ? 's' : ''} require attention
+                      {complianceStatus.issues} issue{complianceStatus.issues > 1 ? 's' : ''}{' '}
+                      require attention
                     </p>
                     <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
-                      {complianceStatus.insuranceStatus === 'expired' && <li>Insurance has expired</li>}
-                      {complianceStatus.insuranceStatus === 'missing' && <li>Insurance certificate missing</li>}
+                      {complianceStatus.insuranceStatus === 'expired' && (
+                        <li>Insurance has expired</li>
+                      )}
+                      {complianceStatus.insuranceStatus === 'missing' && (
+                        <li>Insurance certificate missing</li>
+                      )}
                       {complianceStatus.licenseStatus === 'expired' && <li>License has expired</li>}
-                      {complianceStatus.licenseStatus === 'missing' && <li>License information missing</li>}
+                      {complianceStatus.licenseStatus === 'missing' && (
+                        <li>License information missing</li>
+                      )}
                       {complianceStatus.w9Status === 'missing' && <li>W9/Tax ID missing</li>}
                     </ul>
                   </div>
@@ -900,7 +959,8 @@ export default function VendorDetailPage() {
                 {complianceStatus.warnings > 0 && (
                   <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
                     <p className="text-sm font-medium text-amber-800">
-                      {complianceStatus.warnings} item{complianceStatus.warnings > 1 ? 's' : ''} expiring soon
+                      {complianceStatus.warnings} item{complianceStatus.warnings > 1 ? 's' : ''}{' '}
+                      expiring soon
                     </p>
                     <ul className="mt-2 text-sm text-amber-700 list-disc list-inside">
                       {complianceStatus.insuranceStatus === 'expiring' && (
@@ -931,7 +991,9 @@ export default function VendorDetailPage() {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-gray-600">Completion Rate</span>
-                    <span className="text-sm font-bold">{performanceMetrics.completionRate.toFixed(1)}%</span>
+                    <span className="text-sm font-bold">
+                      {performanceMetrics.completionRate.toFixed(1)}%
+                    </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -945,7 +1007,9 @@ export default function VendorDetailPage() {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-gray-600">On-Time Completion</span>
-                    <span className="text-sm font-bold">{performanceMetrics.onTimeRate.toFixed(1)}%</span>
+                    <span className="text-sm font-bold">
+                      {performanceMetrics.onTimeRate.toFixed(1)}%
+                    </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -959,11 +1023,18 @@ export default function VendorDetailPage() {
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                   <div>
                     <p className="text-sm text-gray-500">Avg. Completion Time</p>
-                    <p className="text-2xl font-bold">{performanceMetrics.avgCompletionDays} days</p>
+                    <p className="text-2xl font-bold">
+                      {performanceMetrics.avgCompletionDays} days
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Avg. Job Cost</p>
-                    <p className="text-2xl font-bold">${performanceMetrics.avgCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                    <p className="text-2xl font-bold">
+                      $
+                      {performanceMetrics.avgCost.toLocaleString(undefined, {
+                        maximumFractionDigits: 0,
+                      })}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1003,12 +1074,18 @@ export default function VendorDetailPage() {
             <CardContent>
               <div className="flex items-end justify-between h-40 gap-2">
                 {performanceMetrics.monthlyActivity.map((month, index) => {
-                  const maxCount = Math.max(...performanceMetrics.monthlyActivity.map(m => m.count), 1);
+                  const maxCount = Math.max(
+                    ...performanceMetrics.monthlyActivity.map((m) => m.count),
+                    1,
+                  );
                   const height = (month.count / maxCount) * 100;
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center gap-2">
                       <span className="text-sm font-medium">{month.count}</span>
-                      <div className="w-full bg-gray-100 rounded-t relative" style={{ height: '120px' }}>
+                      <div
+                        className="w-full bg-gray-100 rounded-t relative"
+                        style={{ height: '120px' }}
+                      >
                         <div
                           className="absolute bottom-0 w-full bg-blue-500 rounded-t transition-all"
                           style={{ height: `${height}%` }}
@@ -1041,10 +1118,13 @@ export default function VendorDetailPage() {
                   ))}
                 </div>
                 <span className="text-2xl font-bold">4.0</span>
-                <span className="text-gray-500">Based on {stats?.completedCount || 0} completed work orders</span>
+                <span className="text-gray-500">
+                  Based on {stats?.completedCount || 0} completed work orders
+                </span>
               </div>
               <p className="text-sm text-gray-500 mt-4">
-                Rating is automatically calculated based on completion time, cost accuracy, and work order outcomes.
+                Rating is automatically calculated based on completion time, cost accuracy, and work
+                order outcomes.
               </p>
             </CardContent>
           </Card>
@@ -1052,11 +1132,7 @@ export default function VendorDetailPage() {
       )}
 
       {/* Edit Modal */}
-      <VendorModal
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        vendor={vendor}
-      />
+      <VendorModal open={editModalOpen} onOpenChange={setEditModalOpen} vendor={vendor} />
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -1073,8 +1149,8 @@ export default function VendorDetailPage() {
                 Are you sure you want to delete <strong>{vendor.companyName}</strong>?
                 {stats && stats.activeCount > 0 ? (
                   <span className="block mt-2 text-red-600">
-                    This vendor has {stats.activeCount} active work order{stats.activeCount > 1 ? 's' : ''}.
-                    Please reassign them before deleting.
+                    This vendor has {stats.activeCount} active work order
+                    {stats.activeCount > 1 ? 's' : ''}. Please reassign them before deleting.
                   </span>
                 ) : (
                   ' This action cannot be undone.'

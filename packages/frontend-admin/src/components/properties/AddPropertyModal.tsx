@@ -189,7 +189,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
         setSuggestions(response.data.data || []);
         setShowSuggestions((response.data.data || []).length > 0);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSearchError(error.message || 'Search failed');
       setSuggestions([]);
     } finally {
@@ -388,7 +388,7 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setErrors({ submit: error.response?.data?.message || 'Failed to create property' });
     },
   });

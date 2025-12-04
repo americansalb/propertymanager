@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           const message =
             error.response?.data?.message || 'Login failed. Please check your credentials.';
           set({
@@ -80,7 +80,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           await api.post('/tenant-auth/forgot-password', { email });
           set({ isLoading: false });
-        } catch (error: any) {
+        } catch (error: unknown) {
           const message = error.response?.data?.message || 'Failed to send reset email.';
           set({
             isLoading: false,
@@ -95,7 +95,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           await api.post('/tenant-auth/reset-password', { token, password });
           set({ isLoading: false });
-        } catch (error: any) {
+        } catch (error: unknown) {
           const message = error.response?.data?.message || 'Failed to reset password.';
           set({
             isLoading: false,
@@ -115,7 +115,7 @@ export const useAuthStore = create<AuthState>()(
             tenant: updatedTenant,
             isLoading: false,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           const message = error.response?.data?.message || 'Failed to update profile.';
           set({
             isLoading: false,

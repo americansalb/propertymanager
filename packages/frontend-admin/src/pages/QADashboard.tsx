@@ -107,7 +107,7 @@ export function QADashboard() {
         timing,
         statusCode,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setHealthCheck({
         status: 'error',
         message: `❌ Health check failed: ${error.message}`,
@@ -132,7 +132,7 @@ export function QADashboard() {
         timing,
         statusCode,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setPropertiesList({
         status: 'error',
         message: `❌ Failed to load properties: ${error.message}`,
@@ -181,7 +181,7 @@ export function QADashboard() {
         timing,
         statusCode,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setPropertyUpdate({
         status: 'error',
         message: `❌ Update failed: ${error.message}`,
@@ -215,7 +215,7 @@ export function QADashboard() {
         timing,
         statusCode,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setEventTracking({
         status: 'error',
         message: `❌ Event tracking failed: ${error.message}`,
@@ -237,7 +237,7 @@ export function QADashboard() {
         timing,
         statusCode,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setWorkOrdersList({
         status: 'error',
         message: `❌ Failed to load work orders: ${error.message}`,
@@ -283,7 +283,7 @@ export function QADashboard() {
       });
 
       return workOrder;
-    } catch (error: any) {
+    } catch (error: unknown) {
       setWorkOrderCreate({
         status: 'error',
         message: `❌ Create failed: ${error.message}`,
@@ -326,7 +326,7 @@ export function QADashboard() {
         timing,
         statusCode,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setWorkOrderUpdate({
         status: 'error',
         message: `❌ Update failed: ${error.message}`,

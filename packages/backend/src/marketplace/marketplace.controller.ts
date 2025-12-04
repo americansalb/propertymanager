@@ -12,11 +12,13 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { type Request as ExpressRequest } from 'express';
 import { MarketplaceService } from './marketplace.service';
 import { OrganizationId } from '../common/decorators/organization.decorator';
 import { UserId } from '../common/decorators/user-id.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
+
 import {
   CreateServiceCatalogDto,
   UpdateServiceCatalogDto,
@@ -39,6 +41,15 @@ import {
   UpdateVendorRatingDto,
   VendorRatingQueryDto,
 } from './dto';
+
+interface MarketplaceRequest extends ExpressRequest {
+  user?: {
+    vendorProfileId?: string;
+    firstName?: string;
+    lastName?: string;
+  };
+  body: Record<string, unknown>;
+}
 
 @ApiTags('marketplace')
 @Controller('marketplace')
@@ -321,7 +332,11 @@ export class MarketplaceController {
   @ApiOperation({ summary: 'Accept a dispatched job (vendor endpoint)' })
   @ApiParam({ name: 'id', description: 'Marketplace job ID' })
   @ApiResponse({ status: 200, description: 'Job accepted successfully' })
-  async acceptJob(@Param('id') id: string, @Body() dto: AcceptJobDto, @Request() req: any) {
+  async acceptJob(
+    @Param('id') id: string,
+    @Body() dto: AcceptJobDto,
+    @Request() req: MarketplaceRequest,
+  ) {
     // In a real implementation, we'd get the vendor profile ID from the authenticated vendor user
     // For now, require it in the request body or extract from user context
     const vendorProfileId = req.body.vendorProfileId || req.user?.vendorProfileId;
@@ -454,7 +469,7 @@ export class MarketplaceController {
   async createRating(
     @OrganizationId() organizationId: string,
     @UserId() userId: string,
-    @Request() req: any,
+    @Request() req: MarketplaceRequest,
     @Body() dto: CreateVendorRatingDto,
   ) {
     const userName = req.user?.firstName

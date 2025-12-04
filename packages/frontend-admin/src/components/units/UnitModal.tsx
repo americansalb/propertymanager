@@ -105,7 +105,7 @@ export default function UnitModal({
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to create unit';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },
@@ -122,7 +122,7 @@ export default function UnitModal({
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to update unit';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },

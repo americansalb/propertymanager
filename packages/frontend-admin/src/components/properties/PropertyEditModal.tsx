@@ -250,7 +250,7 @@ export default function PropertyEditModal({
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Failed to create property:', error);
 
       let errorMessage = 'Failed to create property';
@@ -283,7 +283,7 @@ export default function PropertyEditModal({
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Failed to update property:', error);
 
       let errorMessage = 'Failed to update property';
