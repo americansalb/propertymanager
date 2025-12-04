@@ -34,6 +34,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ScheduledTasksModule } from './scheduled/scheduled-tasks.module';
 import { TenantAuthModule } from './tenant-auth/tenant-auth.module';
 import { TenantPortalModule } from './tenant-portal/tenant-portal.module';
+import { TenantsModule } from './tenants/tenants.module';
 import { EmailModule } from './email/email.module';
 import { MobileModule } from './mobile/mobile.module';
 import { StorageModule } from './storage/storage.module';
@@ -83,6 +84,7 @@ import { RequestLoggerMiddleware } from './monitoring/request-logger.middleware'
     ScheduledTasksModule,
     TenantAuthModule,
     TenantPortalModule,
+    TenantsModule,
     MobileModule,
     DocumentsModule,
     HealthModule,

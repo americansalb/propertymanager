@@ -1,0 +1,137 @@
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { TenantsService } from './tenants.service';
+import { OrganizationId } from '../common/decorators/organization.decorator';
+import { IsString, IsOptional, IsEmail } from 'class-validator';
+
+class UpdateTenantDto {
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  emergencyContact?: string;
+
+  @IsOptional()
+  @IsString()
+  emergencyPhone?: string;
+}
+
+@ApiTags('tenants')
+@Controller('tenants')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+export class TenantsController {
+  constructor(private tenantsService: TenantsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all tenants for the organization' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by name, email, or phone' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by lease status' })
+  @ApiResponse({ status: 200, description: 'List of tenants' })
+  async findAll(
+    @OrganizationId() organizationId: string,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+  ) {
+    const tenants = await this.tenantsService.findAll(organizationId, { search, status });
+    return { success: true, data: tenants };
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get tenant statistics' })
+  @ApiResponse({ status: 200, description: 'Tenant statistics' })
+  async getStats(@OrganizationId() organizationId: string) {
+    const stats = await this.tenantsService.getStats(organizationId);
+    return { success: true, data: stats };
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get tenant details' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Tenant details' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  async findOne(@Param('id') id: string, @OrganizationId() organizationId: string) {
+    const tenant = await this.tenantsService.findOne(id, organizationId);
+    return { success: true, data: tenant };
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update tenant information' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Tenant updated successfully' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateTenantDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    const tenant = await this.tenantsService.update(id, dto, organizationId);
+    return { success: true, data: tenant };
+  }
+
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Get tenant lease history' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Tenant lease history' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  async getHistory(@Param('id') id: string, @OrganizationId() organizationId: string) {
+    const tenant = await this.tenantsService.findOne(id, organizationId);
+    const history = await this.tenantsService.getLeaseHistory(tenant.email, organizationId);
+    return { success: true, data: history };
+  }
+
+  @Post(':id/enable-portal')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Enable tenant portal access' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Portal access enabled' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  async enablePortal(@Param('id') id: string, @OrganizationId() organizationId: string) {
+    const tenant = await this.tenantsService.enablePortalAccess(id, organizationId);
+    return { success: true, data: tenant, message: 'Portal access enabled' };
+  }
+
+  @Post(':id/disable-portal')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Disable tenant portal access' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Portal access disabled' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  async disablePortal(@Param('id') id: string, @OrganizationId() organizationId: string) {
+    const tenant = await this.tenantsService.disablePortalAccess(id, organizationId);
+    return { success: true, data: tenant, message: 'Portal access disabled' };
+  }
+}

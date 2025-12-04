@@ -8,13 +8,10 @@ import {
   Phone,
   Mail,
   Shield,
-  Clock,
-  DollarSign,
   Search,
   Filter,
   CheckCircle,
   Award,
-  TrendingUp,
 } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -167,8 +164,7 @@ export default function MarketplaceBrowsePage() {
                   key={profile.id}
                   className="hover:shadow-lg transition-shadow cursor-pointer"
                   onClick={() => {
-                    // Could navigate to vendor detail page
-                    console.log('Vendor clicked:', vendor);
+                    // TODO: Navigate to vendor detail page
                   }}
                 >
                   <CardHeader className="pb-3">

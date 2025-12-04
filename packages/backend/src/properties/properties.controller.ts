@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Logger,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -12,6 +24,8 @@ import { CreatePropertyDto, UpdatePropertyDto, FullPropertySetupDto } from './dt
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth()
 export class PropertiesController {
+  private readonly logger = new Logger(PropertiesController.name);
+
   constructor(
     private propertiesService: PropertiesService,
     private eventsService: EventsService,
@@ -27,7 +41,7 @@ export class PropertiesController {
   @Get('address/search')
   @ApiOperation({ summary: 'Search for addresses using Google Places Autocomplete' })
   async searchAddress(@Query('q') query: string) {
-    console.log('[Address Search] Query received:', query);
+    this.logger.debug(`Address search query: ${query}`);
 
     if (!query || query.length < 3) {
       return { success: true, data: [], message: 'Query too short' };
@@ -35,7 +49,7 @@ export class PropertiesController {
 
     const apiKey = process.env.GOOGLE_PLACES_API_KEY;
     if (!apiKey) {
-      console.error('[Address Search] GOOGLE_PLACES_API_KEY not configured');
+      this.logger.error('GOOGLE_PLACES_API_KEY not configured');
       return { success: false, data: [], error: 'Geocoding service not configured' };
     }
 
@@ -49,20 +63,21 @@ export class PropertiesController {
       });
 
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params}`;
-      console.log('[Address Search] Fetching Google Places');
 
       const response = await fetch(url);
 
       if (!response.ok) {
-        console.error('[Address Search] Google error:', response.status);
+        this.logger.error(`Google Places API error: ${response.status}`);
         return { success: false, data: [], error: `Geocoding service returned ${response.status}` };
       }
 
       const result = await response.json();
-      console.log('[Address Search] Status:', result.status, 'Results:', result.predictions?.length || 0);
+      this.logger.debug(
+        `Address search status: ${result.status}, results: ${result.predictions?.length || 0}`,
+      );
 
       if (result.status !== 'OK' && result.status !== 'ZERO_RESULTS') {
-        console.error('[Address Search] Google API error:', result.status, result.error_message);
+        this.logger.error(`Google API error: ${result.status} - ${result.error_message}`);
         return { success: false, data: [], error: result.error_message || result.status };
       }
 
@@ -123,7 +138,10 @@ export class PropertiesController {
           address: {
             house_number: getComponent('street_number'),
             road: getComponent('route'),
-            city: getComponent('locality') || getComponent('sublocality') || getComponent('neighborhood'),
+            city:
+              getComponent('locality') ||
+              getComponent('sublocality') ||
+              getComponent('neighborhood'),
             state: getShortComponent('administrative_area_level_1'),
             postcode: getComponent('postal_code'),
             country: getComponent('country'),
@@ -153,7 +171,10 @@ export class PropertiesController {
   }
 
   @Post('setup')
-  @ApiOperation({ summary: 'Full property setup - creates property, units, leases, and tenants in one transaction' })
+  @ApiOperation({
+    summary:
+      'Full property setup - creates property, units, leases, and tenants in one transaction',
+  })
   async fullSetup(@Body() data: FullPropertySetupDto, @OrganizationId() organizationId: string) {
     const result = await this.propertiesService.fullSetup(data, organizationId);
     return { success: true, data: result };
