@@ -155,11 +155,8 @@ export class MobileController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
-    const where: {
-      organizationId: string;
-      status?: string;
-      priority?: string;
-    } = { organizationId: req.user.organizationId };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = { organizationId: req.user.organizationId };
     if (status) {
       where.status = status;
     }
@@ -192,7 +189,8 @@ export class MobileController {
     ]);
 
     return {
-      data: workOrders.map((wo) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: workOrders.map((wo: any) => ({
         id: wo.id,
         title: wo.title,
         description: wo.description?.substring(0, 100),
