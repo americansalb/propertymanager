@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateVendorDto, UpdateVendorDto } from './dto';
 import { UserRole } from '@propertymaster/database';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class VendorsService {
@@ -15,9 +14,6 @@ export class VendorsService {
     return this.prisma.vendor.create({
       data: {
         ...createVendorDto,
-        insuranceExpiryDate: createVendorDto.insuranceExpiryDate
-          ? new Date(createVendorDto.insuranceExpiryDate)
-          : null,
         organizationId,
       },
       include: {
@@ -89,9 +85,6 @@ export class VendorsService {
       where: { id },
       data: {
         ...updateVendorDto,
-        insuranceExpiryDate: updateVendorDto.insuranceExpiryDate
-          ? new Date(updateVendorDto.insuranceExpiryDate)
-          : undefined,
       },
       include: {
         workOrders: {
@@ -202,7 +195,10 @@ export class VendorsService {
   async findPendingVendors(organizationId: string) {
     return this.prisma.vendor.findMany({
       where: {
-        organizationId,
+        OR: [
+          { organizationId },
+          { organizationId: 'public-marketplace' },
+        ],
         status: 'PENDING_APPROVAL',
       },
       orderBy: { createdAt: 'desc' },
@@ -250,8 +246,20 @@ export class VendorsService {
   }
 
   async approveVendor(id: string, organizationId: string, notes?: string) {
-    // First check if vendor exists and belongs to organization
-    const vendor = await this.findOne(id, organizationId);
+    // First check if vendor exists in organization OR public marketplace
+    const vendor = await this.prisma.vendor.findFirst({
+      where: {
+        id,
+        OR: [
+          { organizationId },
+          { organizationId: 'public-marketplace' },
+        ],
+      },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException(`Vendor with ID ${id} not found`);
+    }
 
     // Check if vendor already has a user account
     if (vendor.userId) {
@@ -262,6 +270,8 @@ export class VendorsService {
           status: 'ACTIVE',
           approvalNotes: notes,
           approvedAt: new Date(),
+          // Claim vendor for this organization if they were in public marketplace
+          organizationId: vendor.organizationId === 'public-marketplace' ? organizationId : vendor.organizationId,
         },
       });
     }
@@ -300,6 +310,8 @@ export class VendorsService {
           approvalNotes: notes,
           approvedAt: new Date(),
           userId: user.id,
+          // Claim vendor for this organization if they were in public marketplace
+          organizationId: vendor.organizationId === 'public-marketplace' ? organizationId : vendor.organizationId,
         },
       });
 
@@ -354,8 +366,20 @@ export class VendorsService {
     reason: string,
     notes?: string,
   ) {
-    // First check if vendor exists and belongs to organization
-    await this.findOne(id, organizationId);
+    // First check if vendor exists in organization OR public marketplace
+    const vendor = await this.prisma.vendor.findFirst({
+      where: {
+        id,
+        OR: [
+          { organizationId },
+          { organizationId: 'public-marketplace' },
+        ],
+      },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException(`Vendor with ID ${id} not found`);
+    }
 
     return this.prisma.vendor.update({
       where: { id },

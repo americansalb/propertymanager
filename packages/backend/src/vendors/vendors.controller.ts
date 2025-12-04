@@ -7,7 +7,6 @@ import {
   Body,
   Param,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -38,7 +37,7 @@ export class VendorsController {
       return {
         success: false,
         error: {
-          message: error.message || 'Failed to create vendor',
+          message: error instanceof Error ? error.message : 'Failed to create vendor',
           details: error,
         },
       };

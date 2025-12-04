@@ -14,7 +14,7 @@ export enum MarketplaceJobSource {
 export class CreateMarketplaceJobDto {
   @ApiProperty({ description: 'Work order ID to convert to marketplace job' })
   @IsString()
-  workOrderId: string;
+  workOrderId!: string;
 
   @ApiPropertyOptional({ description: 'Service catalog ID if using standardized service' })
   @IsOptional()
@@ -48,7 +48,7 @@ export class CreateMarketplaceJobDto {
 export class DispatchToVendorsDto {
   @ApiProperty({ description: 'List of vendor profile IDs to dispatch to' })
   @IsString({ each: true })
-  vendorProfileIds: string[];
+  vendorProfileIds!: string[];
 
   @ApiPropertyOptional({ description: 'Response deadline in minutes (default: 30)' })
   @IsOptional()
