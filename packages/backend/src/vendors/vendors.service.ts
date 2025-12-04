@@ -328,8 +328,9 @@ export class VendorsService {
     //   baseUrl
     // );
 
+    // SECURITY: Never log passwords. Email integration required before production launch.
     this.logger.warn(
-      `TEMP PASSWORD for ${result.user.email}: ${result.tempPassword} (TODO: Send via email)`,
+      `Vendor account created for ${result.user.email} - email delivery not yet implemented. Manual credential reset required.`,
     );
 
     return result.vendor;
