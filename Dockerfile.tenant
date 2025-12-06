@@ -30,15 +30,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3002
 
 # Copy standalone build
 COPY --from=build /app/packages/frontend-tenant/.next/standalone ./
 COPY --from=build /app/packages/frontend-tenant/.next/static ./packages/frontend-tenant/.next/static
 COPY --from=build /app/packages/frontend-tenant/public ./packages/frontend-tenant/public
 
-# Expose port
-EXPOSE 3002
+# Render provides PORT env var at runtime (usually 10000)
+EXPOSE 10000
 
-# Start application using the standalone server
+# Start application - Next.js standalone reads PORT env var automatically
 CMD ["node", "packages/frontend-tenant/server.js"]
