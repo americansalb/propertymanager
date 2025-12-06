@@ -1,4 +1,4 @@
-# Multi-stage build for production NestJS backend
+# Multi-stage build for production NestJS backend with frontends
 FROM node:20-alpine AS base
 RUN npm install -g pnpm@8
 WORKDIR /app
@@ -9,6 +9,8 @@ COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
 COPY packages/backend/package.json ./packages/backend/
 COPY packages/database/package.json ./packages/database/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/frontend-admin/package.json ./packages/frontend-admin/
+COPY packages/frontend-tenant/package.json ./packages/frontend-tenant/
 RUN pnpm install --frozen-lockfile
 
 # Build stage
@@ -25,6 +27,12 @@ RUN cd packages/shared && pnpm build
 
 # Build backend
 RUN cd packages/backend && pnpm build
+
+# Build admin frontend
+RUN cd packages/frontend-admin && pnpm build
+
+# Build tenant frontend (static export)
+RUN cd packages/frontend-tenant && pnpm build
 
 # Production stage
 FROM node:20-alpine AS production
@@ -47,6 +55,10 @@ COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/database/dist ./packages/database/dist
 COPY --from=build /app/packages/database/prisma ./packages/database/prisma
 COPY --from=build /app/packages/database/node_modules/.prisma ./packages/database/node_modules/.prisma
+
+# Copy built frontends for static serving
+COPY --from=build /app/packages/frontend-admin/dist ./public
+COPY --from=build /app/packages/frontend-tenant/out ./public/tenant
 
 # Expose port
 EXPOSE 3001

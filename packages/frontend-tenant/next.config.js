@@ -2,8 +2,13 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  output: 'export',
+  basePath: '/tenant',
+  trailingSlash: true,
   transpilePackages: ['@propertymaster/shared'],
+  images: {
+    unoptimized: true,
+  },
   webpack: (config) => {
     config.resolve.alias['@'] = path.resolve(__dirname, 'src');
     return config;

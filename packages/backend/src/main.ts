@@ -88,8 +88,15 @@ async function bootstrap() {
   }
 
   // Serve static files from frontend builds
-  const adminDistPath = join(__dirname, '..', '..', 'frontend-admin', 'dist');
-  const tenantDistPath = join(__dirname, '..', '..', 'frontend-tenant', 'out');
+  // In Docker, frontends are copied to /app/public and /app/public/tenant
+  // In development, they're in the workspace packages
+  const isDocker = process.env.NODE_ENV === 'production';
+  const adminDistPath = isDocker
+    ? join(process.cwd(), 'public')
+    : join(__dirname, '..', '..', 'frontend-admin', 'dist');
+  const tenantDistPath = isDocker
+    ? join(process.cwd(), 'public', 'tenant')
+    : join(__dirname, '..', '..', 'frontend-tenant', 'out');
 
   // Serve tenant portal static files at /tenant
   app.useStaticAssets(tenantDistPath, { prefix: '/tenant' });

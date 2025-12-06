@@ -1,6 +1,7 @@
 services:
+  # Single service that serves API + Admin Frontend + Tenant Frontend
   - type: web
-    name: propertymanager-1-api
+    name: propertymanager-1
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
     plan: starter
@@ -24,36 +25,10 @@ services:
           type: redis
           name: propertymanager-1-redis
           property: connectionString
-      - key: FRONTEND_ADMIN_URL
-        value: 'https://propertymanager-1.onrender.com'
-      - key: FRONTEND_TENANT_URL
-        value: 'https://propertymanager-1-tenant.onrender.com'
       - key: ALLOWED_ORIGINS
-        value: 'https://propertymanager-1.onrender.com,https://propertymanager-1-tenant.onrender.com'
+        value: 'https://propertymanager-1.onrender.com'
       - key: COOKIE_DOMAIN
         value: '.onrender.com'
-
-  - type: web
-    name: propertymanager-1
-    runtime: docker
-    dockerfilePath: ./Dockerfile.admin
-    plan: starter
-    autoDeploy: true
-    envVars:
-      - key: NODE_ENV
-        value: production
-
-  - type: web
-    name: propertymanager-1-tenant
-    runtime: docker
-    dockerfilePath: ./Dockerfile.tenant
-    plan: starter
-    autoDeploy: true
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_API_URL
-        value: 'https://propertymanager-1-api.onrender.com'
 
   - type: redis
     name: propertymanager-1-redis
@@ -63,7 +38,7 @@ services:
 
 databases:
   - name: propertymanager-1-db
-    databaseName: propertymanager
-    user: propertymanager
+    databaseName: propertymaster
+    user: propertymaster
     plan: starter
     postgresMajorVersion: 15

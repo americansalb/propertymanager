@@ -4,32 +4,6 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 
 export default function LandingPage() {
-  // Get tenant portal URL from environment or derive from current hostname
-  const getTenantPortalUrl = () => {
-    // First check for explicit env var
-    if (import.meta.env.VITE_TENANT_PORTAL_URL) {
-      return import.meta.env.VITE_TENANT_PORTAL_URL;
-    }
-
-    // In production (Render), derive tenant URL from current hostname
-    const hostname = window.location.hostname;
-
-    // If we're on localhost, use localhost with tenant port
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:3002';
-    }
-
-    // For Render: propertymaster-1.onrender.com -> propertymaster-1-tenant.onrender.com
-    const parts = hostname.split('.');
-    if (parts.length >= 2) {
-      // Insert '-tenant' before .onrender.com
-      parts[0] = `${parts[0]}-tenant`;
-    }
-    return `${window.location.protocol}//${parts.join('.')}`;
-  };
-
-  const tenantPortalUrl = getTenantPortalUrl();
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Hero Section */}
@@ -94,7 +68,7 @@ export default function LandingPage() {
                     Message your property manager
                   </li>
                 </ul>
-                <a href={`${tenantPortalUrl}/login`} className="block">
+                <a href="/tenant/login/" className="block">
                   <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg">
                     Tenant Login
                   </Button>
