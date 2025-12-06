@@ -1,5 +1,6 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe, ExecutionContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { AuthGuard } from '@nestjs/passport';
 import * as request from 'supertest';
 
 import { AppModule } from '../app.module';
@@ -18,6 +19,15 @@ const TEST_USER: TestUser = {
   email: 'test@example.com',
 };
 
+// Mock AuthGuard that injects TEST_USER into the request
+class MockAuthGuard {
+  canActivate(context: ExecutionContext): boolean {
+    const req = context.switchToHttp().getRequest();
+    req.user = TEST_USER;
+    return true;
+  }
+}
+
 describe('PUT /properties/:id (integration)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -26,7 +36,10 @@ describe('PUT /properties/:id (integration)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard('jwt'))
+      .useClass(MockAuthGuard)
+      .compile();
 
     app = moduleRef.createNestApplication();
 
@@ -70,12 +83,6 @@ describe('PUT /properties/:id (integration)', () => {
     });
 
     propertyId = seeded.id;
-
-    // TODO: For now, we'll skip auth. In a follow-up:
-    // - Create a test user
-    // - Generate a real JWT token
-    // - Pass it in Authorization header
-    // For this test, we need to temporarily bypass the AuthGuard
   });
 
   afterAll(async () => {
@@ -89,9 +96,7 @@ describe('PUT /properties/:id (integration)', () => {
     await app.close();
   });
 
-  // NOTE: This test will fail with 401 Unauthorized because we have AuthGuard('jwt')
-  // This is expected! We're documenting the current state.
-  it.skip('updates a property and returns the updated entity (SKIPPED: auth not configured)', async () => {
+  it('updates a property and returns the updated entity', async () => {
     const payload = {
       name: 'New Name',
       addressLine1: '456 New Ave',
@@ -106,7 +111,6 @@ describe('PUT /properties/:id (integration)', () => {
 
     const res = await request(app.getHttpServer())
       .put(`/properties/${propertyId}`)
-      // .set('Authorization', `Bearer ${authToken}`) // TODO: Add when auth is configured
       .send(payload)
       .expect(200);
 
@@ -133,10 +137,9 @@ describe('PUT /properties/:id (integration)', () => {
     expect(inDb!.status).toBe('INACTIVE');
   });
 
-  it.skip('returns 404 when property does not exist (SKIPPED: auth not configured)', async () => {
+  it('returns 404 when property does not exist', async () => {
     await request(app.getHttpServer())
       .put('/properties/non-existent-id')
-      // .set('Authorization', `Bearer ${authToken}`) // TODO: Add when auth is configured
       .send({
         name: 'Whatever',
         addressLine1: '123',

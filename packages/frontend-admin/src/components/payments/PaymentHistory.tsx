@@ -1,5 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { CreditCard, DollarSign, Calendar, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
+import {
+  CreditCard,
+  DollarSign,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Download,
+} from 'lucide-react';
 import api from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -73,9 +81,15 @@ export default function PaymentHistory({
     queryFn: async () => {
       let url = '/payments';
       const params = new URLSearchParams();
-      if (leaseId) params.append('leaseId', leaseId);
-      if (tenantId) params.append('tenantId', tenantId);
-      if (params.toString()) url += `?${params.toString()}`;
+      if (leaseId) {
+        params.append('leaseId', leaseId);
+      }
+      if (tenantId) {
+        params.append('tenantId', tenantId);
+      }
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
 
       const response = await api.get(url);
       return response.data.data;
@@ -85,7 +99,9 @@ export default function PaymentHistory({
   const { data: leasePaymentHistory } = useQuery({
     queryKey: ['lease-payment-history', leaseId],
     queryFn: async () => {
-      if (!leaseId) return null;
+      if (!leaseId) {
+        return null;
+      }
       const response = await api.get(`/payments/lease/${leaseId}/history`);
       return response.data.data;
     },
@@ -93,14 +109,85 @@ export default function PaymentHistory({
   });
 
   const filteredPayments = payments?.filter((p) => {
-    if (statusFilter === 'all') return true;
+    if (statusFilter === 'all') {
+      return true;
+    }
     return p.status === statusFilter;
   });
 
   const displayPayments = filteredPayments?.slice(0, limit);
 
-  const handleDownloadReceipt = (_paymentId: string) => {
-    // TODO: Implement receipt download with real API
+  const handleDownloadReceipt = async (paymentId: string) => {
+    try {
+      const response = await api.get(`/payments/${paymentId}/receipt`);
+      const receipt = response.data.data;
+
+      // Create a printable receipt HTML
+      const receiptHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Payment Receipt - ${receipt.receiptNumber}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; }
+            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #333; }
+            .header p { margin: 5px 0; color: #666; }
+            .section { margin-bottom: 20px; }
+            .section h3 { margin: 0 0 10px 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+            .row { display: flex; justify-content: space-between; padding: 5px 0; }
+            .label { color: #666; }
+            .value { font-weight: bold; }
+            .amount { font-size: 24px; color: #22c55e; text-align: center; padding: 20px; background: #f0fdf4; border-radius: 8px; }
+            .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${receipt.organization?.name || 'PropertyMaster'}</h1>
+            <p>Payment Receipt</p>
+            <p><strong>${receipt.receiptNumber}</strong></p>
+          </div>
+
+          <div class="amount">
+            <div style="font-size: 14px; color: #666;">Amount Paid</div>
+            <div>$${Number(receipt.amount).toFixed(2)}</div>
+          </div>
+
+          <div class="section">
+            <h3>Payment Details</h3>
+            <div class="row"><span class="label">Date:</span><span class="value">${new Date(receipt.paymentDate).toLocaleDateString()}</span></div>
+            <div class="row"><span class="label">Method:</span><span class="value">${receipt.method}</span></div>
+            <div class="row"><span class="label">Status:</span><span class="value">${receipt.status}</span></div>
+            ${receipt.checkNumber ? `<div class="row"><span class="label">Check #:</span><span class="value">${receipt.checkNumber}</span></div>` : ''}
+          </div>
+
+          <div class="section">
+            <h3>Tenant Information</h3>
+            <div class="row"><span class="label">Name:</span><span class="value">${receipt.tenant?.firstName || ''} ${receipt.tenant?.lastName || ''}</span></div>
+            <div class="row"><span class="label">Property:</span><span class="value">${receipt.property?.name || ''}</span></div>
+            <div class="row"><span class="label">Unit:</span><span class="value">${receipt.unit?.unitNumber || ''}</span></div>
+            <div class="row"><span class="label">Address:</span><span class="value">${receipt.property?.address || ''}, ${receipt.property?.city || ''}, ${receipt.property?.state || ''} ${receipt.property?.zipCode || ''}</span></div>
+          </div>
+
+          <div class="footer">
+            <p>Thank you for your payment!</p>
+            <p>Generated on ${new Date().toLocaleString()}</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Open in a new window for printing
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(receiptHtml);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('Failed to download receipt:', error);
+    }
   };
 
   if (isLoading) {
@@ -179,10 +266,10 @@ export default function PaymentHistory({
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-lg">
-                          {formatCurrency(payment.amount)}
-                        </p>
-                        <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${statusInfo.bgColor} ${statusInfo.color}`}>
+                        <p className="font-semibold text-lg">{formatCurrency(payment.amount)}</p>
+                        <span
+                          className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${statusInfo.bgColor} ${statusInfo.color}`}
+                        >
                           <StatusIcon className="w-3 h-3" />
                           {payment.status}
                         </span>
@@ -230,9 +317,7 @@ export default function PaymentHistory({
           <div className="text-center py-12">
             <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">No payments found</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Payments will appear here once recorded
-            </p>
+            <p className="text-sm text-gray-400 mt-1">Payments will appear here once recorded</p>
           </div>
         )}
 

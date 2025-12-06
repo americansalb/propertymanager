@@ -170,7 +170,7 @@ export default function SettingsPage() {
       setSaveError(null);
       setTimeout(() => setSaveSuccess(false), 3000);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setSaveError(error.response?.data?.message || 'Failed to update profile');
       setTimeout(() => setSaveError(null), 5000);
     },
@@ -189,7 +189,7 @@ export default function SettingsPage() {
       setSaveError(null);
       setTimeout(() => setSaveSuccess(false), 3000);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setSaveError(error.response?.data?.message || 'Failed to update notification preferences');
       setTimeout(() => setSaveError(null), 5000);
     },
@@ -207,7 +207,7 @@ export default function SettingsPage() {
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setTimeout(() => setSaveSuccess(false), 3000);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setSaveError(error.response?.data?.message || 'Failed to change password');
       setTimeout(() => setSaveError(null), 5000);
     },
@@ -227,7 +227,7 @@ export default function SettingsPage() {
       setSaveError(null);
       setTimeout(() => setSaveSuccess(false), 3000);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setSaveError(error.response?.data?.message || 'Failed to update organization');
       setTimeout(() => setSaveError(null), 5000);
     },
@@ -325,11 +325,7 @@ export default function SettingsPage() {
             </span>
           )}
           <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-            {isSaving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Changes
           </Button>
         </div>
@@ -528,7 +524,11 @@ export default function SettingsPage() {
                         <h4 className="font-medium text-gray-900">Password</h4>
                         <p className="text-sm text-gray-500">Change your account password</p>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => setShowPasswordModal(true)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPasswordModal(true)}
+                      >
                         Change Password
                       </Button>
                     </div>

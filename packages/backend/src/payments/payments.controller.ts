@@ -102,6 +102,16 @@ export class PaymentsController {
     return { success: true, data: payment };
   }
 
+  @Get(':id/receipt')
+  @ApiOperation({ summary: 'Get payment receipt data' })
+  @ApiParam({ name: 'id', description: 'Payment ID' })
+  @ApiResponse({ status: 200, description: 'Payment receipt data' })
+  @ApiResponse({ status: 404, description: 'Payment not found' })
+  async getReceipt(@Param('id') id: string, @OrganizationId() organizationId: string) {
+    const receipt = await this.paymentsService.getPaymentReceipt(id, organizationId);
+    return { success: true, data: receipt };
+  }
+
   @Post('record')
   @ApiOperation({ summary: 'Record a manual payment (cash, check, etc.)' })
   @ApiResponse({ status: 201, description: 'Payment recorded successfully' })
@@ -228,10 +238,7 @@ export class PaymentsController {
     @Param('tenantId') tenantId: string,
     @OrganizationId() organizationId: string,
   ) {
-    const customer = await this.paymentsService.getOrCreateStripeCustomer(
-      tenantId,
-      organizationId,
-    );
+    const customer = await this.paymentsService.getOrCreateStripeCustomer(tenantId, organizationId);
     const methods = await this.stripeService.listAllPaymentMethods(customer.id);
     const defaultMethod = await this.stripeService.getDefaultPaymentMethod(customer.id);
 
@@ -267,10 +274,7 @@ export class PaymentsController {
     @Body() dto: AttachPaymentMethodDto,
     @OrganizationId() organizationId: string,
   ) {
-    const customer = await this.paymentsService.getOrCreateStripeCustomer(
-      tenantId,
-      organizationId,
-    );
+    const customer = await this.paymentsService.getOrCreateStripeCustomer(tenantId, organizationId);
     const paymentMethod = await this.stripeService.attachPaymentMethod(
       customer.id,
       dto.paymentMethodId,
@@ -327,10 +331,7 @@ export class PaymentsController {
     @Body() dto: SetDefaultPaymentMethodDto,
     @OrganizationId() organizationId: string,
   ) {
-    const customer = await this.paymentsService.getOrCreateStripeCustomer(
-      tenantId,
-      organizationId,
-    );
+    const customer = await this.paymentsService.getOrCreateStripeCustomer(tenantId, organizationId);
     await this.stripeService.setDefaultPaymentMethod(customer.id, dto.paymentMethodId);
 
     return {
@@ -349,10 +350,7 @@ export class PaymentsController {
     @Body() dto: ChargeWithSavedMethodDto,
     @OrganizationId() organizationId: string,
   ) {
-    const customer = await this.paymentsService.getOrCreateStripeCustomer(
-      tenantId,
-      organizationId,
-    );
+    const customer = await this.paymentsService.getOrCreateStripeCustomer(tenantId, organizationId);
 
     const paymentIntent = await this.stripeService.chargeWithSavedMethod(
       customer.id,
@@ -385,10 +383,7 @@ export class PaymentsController {
     @Query('limit') limit: string = '10',
     @OrganizationId() organizationId: string,
   ) {
-    const customer = await this.paymentsService.getOrCreateStripeCustomer(
-      tenantId,
-      organizationId,
-    );
+    const customer = await this.paymentsService.getOrCreateStripeCustomer(tenantId, organizationId);
     const invoices = await this.stripeService.listInvoices(customer.id, parseInt(limit, 10));
 
     return {

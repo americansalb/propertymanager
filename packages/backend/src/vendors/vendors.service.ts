@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateVendorDto, UpdateVendorDto } from './dto';
+import { EmailService } from '../email/email.service';
+import { type CreateVendorDto, type UpdateVendorDto } from './dto';
 import { UserRole } from '@propertymaster/database';
 import * as bcrypt from 'bcryptjs';
 
@@ -8,7 +10,11 @@ import * as bcrypt from 'bcryptjs';
 export class VendorsService {
   private readonly logger = new Logger(VendorsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+    private configService: ConfigService,
+  ) {}
 
   async create(organizationId: string, createVendorDto: CreateVendorDto) {
     return this.prisma.vendor.create({
@@ -148,8 +154,8 @@ export class VendorsService {
       },
     });
 
-    const activeCount = workOrders.filter(
-      (wo) => ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS'].includes(wo.status),
+    const activeCount = workOrders.filter((wo) =>
+      ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS'].includes(wo.status),
     ).length;
 
     const completedWorkOrders = workOrders.filter((wo) => wo.status === 'COMPLETED');
@@ -161,9 +167,7 @@ export class VendorsService {
       const totalDays = completedWorkOrders.reduce((sum, wo) => {
         const created = new Date(wo.createdAt);
         const completed = new Date(wo.updatedAt);
-        const days = Math.ceil(
-          (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
-        );
+        const days = Math.ceil((completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
         return sum + days;
       }, 0);
       avgCompletionDays = Math.round(totalDays / completedCount);
@@ -172,7 +176,9 @@ export class VendorsService {
     // Count overdue (active work orders older than 7 days)
     const now = new Date();
     const overdueCount = workOrders.filter((wo) => {
-      if (!['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS'].includes(wo.status)) return false;
+      if (!['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS'].includes(wo.status)) {
+        return false;
+      }
       const created = new Date(wo.createdAt);
       const daysSinceCreated = Math.floor(
         (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
@@ -195,10 +201,7 @@ export class VendorsService {
   async findPendingVendors(organizationId: string) {
     return this.prisma.vendor.findMany({
       where: {
-        OR: [
-          { organizationId },
-          { organizationId: 'public-marketplace' },
-        ],
+        OR: [{ organizationId }, { organizationId: 'public-marketplace' }],
         status: 'PENDING_APPROVAL',
       },
       orderBy: { createdAt: 'desc' },
@@ -250,10 +253,7 @@ export class VendorsService {
     const vendor = await this.prisma.vendor.findFirst({
       where: {
         id,
-        OR: [
-          { organizationId },
-          { organizationId: 'public-marketplace' },
-        ],
+        OR: [{ organizationId }, { organizationId: 'public-marketplace' }],
       },
     });
 
@@ -271,7 +271,8 @@ export class VendorsService {
           approvalNotes: notes,
           approvedAt: new Date(),
           // Claim vendor for this organization if they were in public marketplace
-          organizationId: vendor.organizationId === 'public-marketplace' ? organizationId : vendor.organizationId,
+          organizationId:
+            vendor.organizationId === 'public-marketplace' ? organizationId : vendor.organizationId,
         },
       });
     }
@@ -280,6 +281,9 @@ export class VendorsService {
     if (!vendor.email) {
       throw new NotFoundException('Vendor must have an email address to create a user account');
     }
+
+    // Capture email after null check for type safety
+    const vendorEmail = vendor.email;
 
     // Generate a temporary password
     const tempPassword = this.generateTempPassword();
@@ -290,7 +294,7 @@ export class VendorsService {
       // Create user account for vendor
       const user = await tx.user.create({
         data: {
-          email: vendor.email!,
+          email: vendorEmail,
           passwordHash,
           firstName: vendor.contactName?.split(' ')[0] || vendor.companyName,
           lastName: vendor.contactName?.split(' ').slice(1).join(' ') || 'Vendor',
@@ -311,7 +315,8 @@ export class VendorsService {
           approvedAt: new Date(),
           userId: user.id,
           // Claim vendor for this organization if they were in public marketplace
-          organizationId: vendor.organizationId === 'public-marketplace' ? organizationId : vendor.organizationId,
+          organizationId:
+            vendor.organizationId === 'public-marketplace' ? organizationId : vendor.organizationId,
         },
       });
 
@@ -320,17 +325,26 @@ export class VendorsService {
 
     this.logger.log(`Created user account for vendor ${id}: ${result.user.email}`);
 
-    // TODO: Send email with login credentials
-    // await this.emailService.sendVendorApprovalEmail(
-    //   result.user.email,
-    //   result.user.firstName,
-    //   result.tempPassword,
-    //   baseUrl
-    // );
-
-    this.logger.warn(
-      `TEMP PASSWORD for ${result.user.email}: ${result.tempPassword} (TODO: Send via email)`,
+    // Send email with login credentials
+    const loginUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'https://app.propertymaster.io';
+    const emailResult = await this.emailService.sendVendorApprovalEmail(
+      result.user.email,
+      result.user.firstName || result.vendor.companyName,
+      result.tempPassword,
+      `${loginUrl}/login`,
     );
+
+    if (emailResult.success) {
+      this.logger.log(`Vendor approval email sent to ${result.user.email}`);
+    } else {
+      // Log the failure but don't expose the password - admin will need to trigger password reset
+      this.logger.error({
+        message: 'vendor.approval_email_failed',
+        email: result.user.email,
+        error: emailResult.error,
+      });
+    }
 
     return result.vendor;
   }
@@ -360,20 +374,12 @@ export class VendorsService {
     return password.sort(() => Math.random() - 0.5).join('');
   }
 
-  async rejectVendor(
-    id: string,
-    organizationId: string,
-    reason: string,
-    notes?: string,
-  ) {
+  async rejectVendor(id: string, organizationId: string, reason: string, notes?: string) {
     // First check if vendor exists in organization OR public marketplace
     const vendor = await this.prisma.vendor.findFirst({
       where: {
         id,
-        OR: [
-          { organizationId },
-          { organizationId: 'public-marketplace' },
-        ],
+        OR: [{ organizationId }, { organizationId: 'public-marketplace' }],
       },
     });
 

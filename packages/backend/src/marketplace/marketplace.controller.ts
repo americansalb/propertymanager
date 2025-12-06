@@ -12,11 +12,13 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { type Request as ExpressRequest } from 'express';
 import { MarketplaceService } from './marketplace.service';
 import { OrganizationId } from '../common/decorators/organization.decorator';
 import { UserId } from '../common/decorators/user-id.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
+
 import {
   CreateServiceCatalogDto,
   UpdateServiceCatalogDto,
@@ -30,7 +32,7 @@ import {
   ConfirmJobDto,
   DisputeJobDto,
   MarketplaceJobQueryDto,
-  CreateVendorMarketplaceProfileDto,
+  type CreateVendorMarketplaceProfileDto,
   UpdateVendorMarketplaceProfileDto,
   AddVendorServiceDto,
   UpdateVendorServiceDto,
@@ -39,6 +41,15 @@ import {
   UpdateVendorRatingDto,
   VendorRatingQueryDto,
 } from './dto';
+
+interface MarketplaceRequest extends ExpressRequest {
+  user?: {
+    vendorProfileId?: string;
+    firstName?: string;
+    lastName?: string;
+  };
+  body: Record<string, unknown>;
+}
 
 @ApiTags('marketplace')
 @Controller('marketplace')
@@ -297,7 +308,9 @@ export class MarketplaceController {
   }
 
   @Post('jobs/:id/auto-dispatch')
-  @ApiOperation({ summary: 'Auto-match and dispatch to best vendors based on service, location, and rating' })
+  @ApiOperation({
+    summary: 'Auto-match and dispatch to best vendors based on service, location, and rating',
+  })
   @ApiParam({ name: 'id', description: 'Marketplace job ID' })
   @ApiResponse({ status: 200, description: 'Job auto-dispatched to matched vendors' })
   async autoDispatchJob(
@@ -319,10 +332,15 @@ export class MarketplaceController {
   @ApiOperation({ summary: 'Accept a dispatched job (vendor endpoint)' })
   @ApiParam({ name: 'id', description: 'Marketplace job ID' })
   @ApiResponse({ status: 200, description: 'Job accepted successfully' })
-  async acceptJob(@Param('id') id: string, @Body() dto: AcceptJobDto, @Request() req: any) {
+  async acceptJob(
+    @Param('id') id: string,
+    @Body() dto: AcceptJobDto,
+    @Request() req: MarketplaceRequest,
+  ) {
     // In a real implementation, we'd get the vendor profile ID from the authenticated vendor user
     // For now, require it in the request body or extract from user context
-    const vendorProfileId = req.body.vendorProfileId || req.user?.vendorProfileId;
+    const vendorProfileId =
+      (req.body.vendorProfileId as string | undefined) || req.user?.vendorProfileId;
     if (!vendorProfileId) {
       return { success: false, error: { message: 'Vendor profile ID required' } };
     }
@@ -452,7 +470,7 @@ export class MarketplaceController {
   async createRating(
     @OrganizationId() organizationId: string,
     @UserId() userId: string,
-    @Request() req: any,
+    @Request() req: MarketplaceRequest,
     @Body() dto: CreateVendorRatingDto,
   ) {
     const userName = req.user?.firstName
@@ -505,7 +523,86 @@ export class MarketplaceController {
   }
 
   // ============================================================================
-  // VENDOR-SPECIFIC ENDPOINTS
+  // VENDOR-SPECIFIC ENDPOINTS (AUTHENTICATED VENDOR USER)
+  // ============================================================================
+
+  @Get('jobs/available')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get available jobs for the logged-in vendor user' })
+  @ApiResponse({ status: 200, description: 'List of available jobs for the vendor' })
+  @ApiResponse({ status: 404, description: 'Vendor profile not found for this user' })
+  async getMyAvailableJobs(
+    @UserId() userId: string,
+    @OrganizationId() organizationId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const vendorProfile = await this.marketplaceService.getVendorProfileByUserId(
+      userId,
+      organizationId,
+    );
+    if (!vendorProfile) {
+      return { success: true, data: [], total: 0, message: 'No vendor profile found' };
+    }
+    const result = await this.marketplaceService.getAvailableJobsForVendor(
+      vendorProfile.id,
+      page,
+      limit,
+    );
+    return { success: true, ...result };
+  }
+
+  @Get('jobs/my-active')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get active jobs for the logged-in vendor user' })
+  @ApiResponse({ status: 200, description: 'List of active jobs' })
+  async getMyActiveJobs(
+    @UserId() userId: string,
+    @OrganizationId() organizationId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const vendorProfile = await this.marketplaceService.getVendorProfileByUserId(
+      userId,
+      organizationId,
+    );
+    if (!vendorProfile) {
+      return { success: true, data: [], total: 0, message: 'No vendor profile found' };
+    }
+    const result = await this.marketplaceService.getVendorActiveJobs(vendorProfile.id, page, limit);
+    return { success: true, ...result };
+  }
+
+  @Get('jobs/my-completed')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get completed jobs for the logged-in vendor user' })
+  @ApiResponse({ status: 200, description: 'List of completed jobs' })
+  async getMyCompletedJobs(
+    @UserId() userId: string,
+    @OrganizationId() organizationId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const vendorProfile = await this.marketplaceService.getVendorProfileByUserId(
+      userId,
+      organizationId,
+    );
+    if (!vendorProfile) {
+      return { success: true, data: [], total: 0, message: 'No vendor profile found' };
+    }
+    const result = await this.marketplaceService.getVendorCompletedJobs(
+      vendorProfile.id,
+      page,
+      limit,
+    );
+    return { success: true, ...result };
+  }
+
+  // ============================================================================
+  // VENDOR-SPECIFIC ENDPOINTS (BY PROFILE ID)
   // ============================================================================
 
   @Get('vendor/:vendorProfileId/available-jobs')

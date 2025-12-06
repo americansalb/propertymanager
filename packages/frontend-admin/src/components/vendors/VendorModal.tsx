@@ -52,18 +52,59 @@ const VENDOR_STATUSES = [
 ];
 
 const US_STATES = [
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+  'AL',
+  'AK',
+  'AZ',
+  'AR',
+  'CA',
+  'CO',
+  'CT',
+  'DE',
+  'FL',
+  'GA',
+  'HI',
+  'ID',
+  'IL',
+  'IN',
+  'IA',
+  'KS',
+  'KY',
+  'LA',
+  'ME',
+  'MD',
+  'MA',
+  'MI',
+  'MN',
+  'MS',
+  'MO',
+  'MT',
+  'NE',
+  'NV',
+  'NH',
+  'NJ',
+  'NM',
+  'NY',
+  'NC',
+  'ND',
+  'OH',
+  'OK',
+  'OR',
+  'PA',
+  'RI',
+  'SC',
+  'SD',
+  'TN',
+  'TX',
+  'UT',
+  'VT',
+  'VA',
+  'WA',
+  'WV',
+  'WI',
+  'WY',
 ];
 
-export default function VendorModal({
-  open,
-  onOpenChange,
-  vendor,
-}: VendorModalProps) {
+export default function VendorModal({ open, onOpenChange, vendor }: VendorModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     companyName: '',
@@ -136,7 +177,7 @@ export default function VendorModal({
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to create vendor';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },
@@ -151,7 +192,7 @@ export default function VendorModal({
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to update vendor';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },
@@ -183,18 +224,42 @@ export default function VendorModal({
     };
 
     // Add optional fields if they have values
-    if (formData.contactName.trim()) submitData.contactName = formData.contactName.trim();
-    if (formData.email.trim()) submitData.email = formData.email.trim();
-    if (formData.phone.trim()) submitData.phone = formData.phone.trim();
-    if (formData.address1.trim()) submitData.address1 = formData.address1.trim();
-    if (formData.address2.trim()) submitData.address2 = formData.address2.trim();
-    if (formData.city.trim()) submitData.city = formData.city.trim();
-    if (formData.state) submitData.state = formData.state;
-    if (formData.zipCode.trim()) submitData.zipCode = formData.zipCode.trim();
-    if (formData.taxId.trim()) submitData.taxId = formData.taxId.trim();
-    if (formData.paymentTerms.trim()) submitData.paymentTerms = formData.paymentTerms.trim();
-    if (formData.licenseNumber.trim()) submitData.licenseNumber = formData.licenseNumber.trim();
-    if (formData.notes.trim()) submitData.notes = formData.notes.trim();
+    if (formData.contactName.trim()) {
+      submitData.contactName = formData.contactName.trim();
+    }
+    if (formData.email.trim()) {
+      submitData.email = formData.email.trim();
+    }
+    if (formData.phone.trim()) {
+      submitData.phone = formData.phone.trim();
+    }
+    if (formData.address1.trim()) {
+      submitData.address1 = formData.address1.trim();
+    }
+    if (formData.address2.trim()) {
+      submitData.address2 = formData.address2.trim();
+    }
+    if (formData.city.trim()) {
+      submitData.city = formData.city.trim();
+    }
+    if (formData.state) {
+      submitData.state = formData.state;
+    }
+    if (formData.zipCode.trim()) {
+      submitData.zipCode = formData.zipCode.trim();
+    }
+    if (formData.taxId.trim()) {
+      submitData.taxId = formData.taxId.trim();
+    }
+    if (formData.paymentTerms.trim()) {
+      submitData.paymentTerms = formData.paymentTerms.trim();
+    }
+    if (formData.licenseNumber.trim()) {
+      submitData.licenseNumber = formData.licenseNumber.trim();
+    }
+    if (formData.notes.trim()) {
+      submitData.notes = formData.notes.trim();
+    }
 
     if (isEditing) {
       updateMutation.mutate(submitData);
@@ -307,9 +372,7 @@ export default function VendorModal({
             <div className="grid grid-cols-2 gap-4">
               {/* Contact Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
                 <Input
                   value={formData.contactName}
                   onChange={(e) => handleChange('contactName', e.target.value)}
@@ -427,9 +490,7 @@ export default function VendorModal({
             <div className="grid grid-cols-2 gap-4">
               {/* Tax ID */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tax ID / EIN
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tax ID / EIN</label>
                 <Input
                   value={formData.taxId}
                   onChange={(e) => handleChange('taxId', e.target.value)}

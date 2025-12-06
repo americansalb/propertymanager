@@ -73,8 +73,9 @@ export default function ProfilePage() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     },
-    onError: (error: any) => {
-      setPasswordError(error.response?.data?.message || 'Failed to change password');
+    onError: (error: unknown) => {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      setPasswordError(axiosError.response?.data?.message || 'Failed to change password');
     },
   });
 

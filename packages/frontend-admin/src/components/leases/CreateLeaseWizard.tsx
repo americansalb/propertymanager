@@ -196,7 +196,7 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
       onOpenChange(false);
       navigate('/leases');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to create lease';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },
@@ -252,7 +252,7 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
         return newErrors;
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const message = error.response?.data?.message || 'Failed to create unit';
       setErrors({ newUnit: Array.isArray(message) ? message.join(', ') : message });
     },

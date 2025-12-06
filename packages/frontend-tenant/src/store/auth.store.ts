@@ -4,6 +4,20 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../services/api';
 
+interface ApiErrorResponse {
+  response?: {
+    data?: {
+      message?: string | string[];
+    };
+  };
+}
+
+function getErrorMessage(error: unknown, defaultMsg: string): string {
+  const apiError = error as ApiErrorResponse;
+  const message = apiError.response?.data?.message || defaultMsg;
+  return Array.isArray(message) ? message.join(', ') : message;
+}
+
 interface Tenant {
   id: string;
   firstName: string;
@@ -53,12 +67,10 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
-          const message =
-            error.response?.data?.message || 'Login failed. Please check your credentials.';
+        } catch (error: unknown) {
           set({
             isLoading: false,
-            error: Array.isArray(message) ? message.join(', ') : message,
+            error: getErrorMessage(error, 'Login failed. Please check your credentials.'),
           });
           throw error;
         }
@@ -80,11 +92,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           await api.post('/tenant-auth/forgot-password', { email });
           set({ isLoading: false });
-        } catch (error: any) {
-          const message = error.response?.data?.message || 'Failed to send reset email.';
+        } catch (error: unknown) {
           set({
             isLoading: false,
-            error: Array.isArray(message) ? message.join(', ') : message,
+            error: getErrorMessage(error, 'Failed to send reset email.'),
           });
           throw error;
         }
@@ -95,11 +106,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           await api.post('/tenant-auth/reset-password', { token, password });
           set({ isLoading: false });
-        } catch (error: any) {
-          const message = error.response?.data?.message || 'Failed to reset password.';
+        } catch (error: unknown) {
           set({
             isLoading: false,
-            error: Array.isArray(message) ? message.join(', ') : message,
+            error: getErrorMessage(error, 'Failed to reset password.'),
           });
           throw error;
         }
@@ -115,11 +125,10 @@ export const useAuthStore = create<AuthState>()(
             tenant: updatedTenant,
             isLoading: false,
           });
-        } catch (error: any) {
-          const message = error.response?.data?.message || 'Failed to update profile.';
+        } catch (error: unknown) {
           set({
             isLoading: false,
-            error: Array.isArray(message) ? message.join(', ') : message,
+            error: getErrorMessage(error, 'Failed to update profile.'),
           });
           throw error;
         }

@@ -256,7 +256,7 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
       setFieldErrors({});
       setTouched({});
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[WorkOrderUpdateModal] Failed to update work order:', error);
 
       // Extract and format error message from NestJS

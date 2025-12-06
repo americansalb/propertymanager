@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import { google, type Auth } from 'googleapis';
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -25,12 +26,14 @@ export interface EmailResult {
   error?: string;
 }
 
-type EmailProvider = 'sendgrid' | 'smtp' | 'none';
+type EmailProvider = 'gmail' | 'sendgrid' | 'smtp' | 'none';
 
 @Injectable()
 export class EmailService {
   private transporter: Transporter | null = null;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   private sendgridClient: typeof import('@sendgrid/mail') | null = null;
+  private gmailAuth: Auth.OAuth2Client | null = null;
   private readonly fromAddress: string;
   private readonly fromName: string;
   private readonly provider: EmailProvider;
@@ -41,17 +44,24 @@ export class EmailService {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {
-    this.fromAddress = this.configService.get<string>('EMAIL_FROM') ||
-                       this.configService.get<string>('SMTP_FROM') ||
-                       'noreply@propertymaster.io';
+    this.fromAddress =
+      this.configService.get<string>('EMAIL_FROM') ||
+      this.configService.get<string>('SMTP_FROM') ||
+      'noreply@propertymaster.io';
     this.fromName = this.configService.get<string>('EMAIL_FROM_NAME') || 'PropertyMaster';
     this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
-    // Determine email provider
+    // Determine email provider (priority: Gmail API > SendGrid > SMTP)
+    const gmailClientId = this.configService.get<string>('GMAIL_CLIENT_ID');
+    const gmailClientSecret = this.configService.get<string>('GMAIL_CLIENT_SECRET');
+    const gmailRefreshToken = this.configService.get<string>('GMAIL_REFRESH_TOKEN');
     const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
     const smtpHost = this.configService.get<string>('SMTP_HOST');
 
-    if (sendgridApiKey) {
+    if (gmailClientId && gmailClientSecret && gmailRefreshToken) {
+      this.provider = 'gmail';
+      this.initializeGmail(gmailClientId, gmailClientSecret, gmailRefreshToken);
+    } else if (sendgridApiKey) {
       this.provider = 'sendgrid';
       this.initializeSendGrid(sendgridApiKey);
     } else if (smtpHost) {
@@ -61,7 +71,7 @@ export class EmailService {
       this.provider = 'none';
       this.logger.warn({
         message: 'email.no_provider_configured',
-        hint: 'Set SENDGRID_API_KEY or SMTP_HOST to enable email sending',
+        hint: 'Set GMAIL_CLIENT_ID/SECRET/REFRESH_TOKEN, SENDGRID_API_KEY, or SMTP_HOST to enable email sending',
       });
     }
   }
@@ -83,6 +93,31 @@ export class EmailService {
         error: (error as Error).message,
       });
       this.sendgridClient = null;
+    }
+  }
+
+  private initializeGmail(clientId: string, clientSecret: string, refreshToken: string): void {
+    try {
+      const OAuth2 = google.auth.OAuth2;
+      this.gmailAuth = new OAuth2(
+        clientId,
+        clientSecret,
+        'https://developers.google.com/oauthplayground', // Redirect URI
+      );
+      this.gmailAuth.setCredentials({
+        refresh_token: refreshToken,
+      });
+
+      this.logger.log({
+        message: 'email.gmail_initialized',
+        from: this.fromAddress,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: 'email.gmail_init_failed',
+        error: (error as Error).message,
+      });
+      this.gmailAuth = null;
     }
   }
 
@@ -162,7 +197,9 @@ export class EmailService {
     try {
       let result: EmailResult;
 
-      if (this.provider === 'sendgrid' && this.sendgridClient) {
+      if (this.provider === 'gmail' && this.gmailAuth) {
+        result = await this.sendViaGmail(options);
+      } else if (this.provider === 'sendgrid' && this.sendgridClient) {
         result = await this.sendViaSendGrid(options);
       } else if (this.provider === 'smtp' && this.transporter) {
         result = await this.sendViaSmtp(options);
@@ -224,7 +261,7 @@ export class EmailService {
       replyTo: options.replyTo,
       cc: options.cc,
       bcc: options.bcc,
-      attachments: options.attachments?.map(att => ({
+      attachments: options.attachments?.map((att) => ({
         filename: att.filename,
         content: typeof att.content === 'string' ? att.content : att.content.toString('base64'),
         type: att.contentType,
@@ -237,6 +274,88 @@ export class EmailService {
     return {
       success: response.statusCode >= 200 && response.statusCode < 300,
       messageId: response.headers['x-message-id'] as string,
+    };
+  }
+
+  private async sendViaGmail(options: SendEmailOptions): Promise<EmailResult> {
+    if (!this.gmailAuth) {
+      return { success: false, error: 'Gmail auth not initialized' };
+    }
+
+    const gmail = google.gmail({ version: 'v1', auth: this.gmailAuth });
+
+    // Build the email in RFC 2822 format
+    const toAddresses = Array.isArray(options.to) ? options.to.join(', ') : options.to;
+    const ccAddresses = options.cc
+      ? Array.isArray(options.cc)
+        ? options.cc.join(', ')
+        : options.cc
+      : '';
+    const bccAddresses = options.bcc
+      ? Array.isArray(options.bcc)
+        ? options.bcc.join(', ')
+        : options.bcc
+      : '';
+
+    // Build email headers
+    const emailLines: string[] = [
+      `From: "${this.fromName}" <${this.fromAddress}>`,
+      `To: ${toAddresses}`,
+    ];
+
+    if (ccAddresses) {
+      emailLines.push(`Cc: ${ccAddresses}`);
+    }
+    if (bccAddresses) {
+      emailLines.push(`Bcc: ${bccAddresses}`);
+    }
+    if (options.replyTo) {
+      emailLines.push(`Reply-To: ${options.replyTo}`);
+    }
+
+    emailLines.push(`Subject: ${options.subject}`, 'MIME-Version: 1.0');
+
+    // Handle HTML or plain text
+    if (options.html) {
+      const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+      emailLines.push(
+        `Content-Type: multipart/alternative; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/plain; charset=UTF-8',
+        '',
+        options.text,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/html; charset=UTF-8',
+        '',
+        options.html,
+        '',
+        `--${boundary}--`,
+      );
+    } else {
+      emailLines.push('Content-Type: text/plain; charset=UTF-8', '', options.text);
+    }
+
+    const emailContent = emailLines.join('\r\n');
+
+    // Encode to base64url format
+    const encodedEmail = Buffer.from(emailContent)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    const response = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedEmail,
+      },
+    });
+
+    return {
+      success: response.status >= 200 && response.status < 300,
+      messageId: response.data.id || undefined,
     };
   }
 
@@ -254,7 +373,7 @@ export class EmailService {
       replyTo: options.replyTo,
       cc: options.cc,
       bcc: options.bcc,
-      attachments: options.attachments?.map(att => ({
+      attachments: options.attachments?.map((att) => ({
         filename: att.filename,
         content: att.content,
         contentType: att.contentType,
@@ -283,6 +402,21 @@ export class EmailService {
       } catch (error) {
         this.logger.error({
           message: 'email.smtp_connection_failed',
+          error: (error as Error).message,
+        });
+        return false;
+      }
+    }
+
+    // Gmail - verify by getting access token
+    if (this.provider === 'gmail' && this.gmailAuth) {
+      try {
+        await this.gmailAuth.getAccessToken();
+        this.logger.log({ message: 'email.gmail_connection_verified' });
+        return true;
+      } catch (error) {
+        this.logger.error({
+          message: 'email.gmail_connection_failed',
           error: (error as Error).message,
         });
         return false;
@@ -342,11 +476,7 @@ export class EmailService {
   /**
    * Send welcome email after registration/verification
    */
-  async sendWelcomeEmail(
-    to: string,
-    name: string,
-    loginUrl: string,
-  ): Promise<EmailResult> {
+  async sendWelcomeEmail(to: string, name: string, loginUrl: string): Promise<EmailResult> {
     return this.sendEmail({
       to,
       subject: 'Welcome to PropertyMaster!',
@@ -373,8 +503,22 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: `Payment Received - ${formattedAmount}`,
-      text: this.getPaymentReceivedText(tenantName, formattedAmount, formattedDate, propertyName, unitNumber, confirmationNumber),
-      html: this.getPaymentReceivedHtml(tenantName, formattedAmount, formattedDate, propertyName, unitNumber, confirmationNumber),
+      text: this.getPaymentReceivedText(
+        tenantName,
+        formattedAmount,
+        formattedDate,
+        propertyName,
+        unitNumber,
+        confirmationNumber,
+      ),
+      html: this.getPaymentReceivedHtml(
+        tenantName,
+        formattedAmount,
+        formattedDate,
+        propertyName,
+        unitNumber,
+        confirmationNumber,
+      ),
     });
   }
 
@@ -395,8 +539,22 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: 'Payment Failed - Action Required',
-      text: this.getPaymentFailedText(tenantName, formattedAmount, propertyName, unitNumber, reason, portalUrl),
-      html: this.getPaymentFailedHtml(tenantName, formattedAmount, propertyName, unitNumber, reason, portalUrl),
+      text: this.getPaymentFailedText(
+        tenantName,
+        formattedAmount,
+        propertyName,
+        unitNumber,
+        reason,
+        portalUrl,
+      ),
+      html: this.getPaymentFailedHtml(
+        tenantName,
+        formattedAmount,
+        propertyName,
+        unitNumber,
+        reason,
+        portalUrl,
+      ),
     });
   }
 
@@ -418,8 +576,22 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: `Rent Due Reminder - ${formattedDate}`,
-      text: this.getRentDueReminderText(tenantName, formattedAmount, formattedDate, propertyName, unitNumber, portalUrl),
-      html: this.getRentDueReminderHtml(tenantName, formattedAmount, formattedDate, propertyName, unitNumber, portalUrl),
+      text: this.getRentDueReminderText(
+        tenantName,
+        formattedAmount,
+        formattedDate,
+        propertyName,
+        unitNumber,
+        portalUrl,
+      ),
+      html: this.getRentDueReminderHtml(
+        tenantName,
+        formattedAmount,
+        formattedDate,
+        propertyName,
+        unitNumber,
+        portalUrl,
+      ),
     });
   }
 
@@ -441,8 +613,22 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: 'Late Fee Applied to Your Account',
-      text: this.getLateFeeAppliedText(tenantName, formattedLateFee, formattedTotal, propertyName, unitNumber, portalUrl),
-      html: this.getLateFeeAppliedHtml(tenantName, formattedLateFee, formattedTotal, propertyName, unitNumber, portalUrl),
+      text: this.getLateFeeAppliedText(
+        tenantName,
+        formattedLateFee,
+        formattedTotal,
+        propertyName,
+        unitNumber,
+        portalUrl,
+      ),
+      html: this.getLateFeeAppliedHtml(
+        tenantName,
+        formattedLateFee,
+        formattedTotal,
+        propertyName,
+        unitNumber,
+        portalUrl,
+      ),
     });
   }
 
@@ -464,8 +650,22 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: `Auto-Pay Scheduled - ${formattedDate}`,
-      text: this.getAutoPayUpcomingText(tenantName, formattedAmount, formattedDate, propertyName, unitNumber, portalUrl),
-      html: this.getAutoPayUpcomingHtml(tenantName, formattedAmount, formattedDate, propertyName, unitNumber, portalUrl),
+      text: this.getAutoPayUpcomingText(
+        tenantName,
+        formattedAmount,
+        formattedDate,
+        propertyName,
+        unitNumber,
+        portalUrl,
+      ),
+      html: this.getAutoPayUpcomingHtml(
+        tenantName,
+        formattedAmount,
+        formattedDate,
+        propertyName,
+        unitNumber,
+        portalUrl,
+      ),
     });
   }
 
@@ -485,8 +685,20 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: `Auto-Pay Processed - ${formattedAmount}`,
-      text: this.getAutoPayProcessedText(tenantName, formattedAmount, propertyName, unitNumber, confirmationNumber),
-      html: this.getAutoPayProcessedHtml(tenantName, formattedAmount, propertyName, unitNumber, confirmationNumber),
+      text: this.getAutoPayProcessedText(
+        tenantName,
+        formattedAmount,
+        propertyName,
+        unitNumber,
+        confirmationNumber,
+      ),
+      html: this.getAutoPayProcessedHtml(
+        tenantName,
+        formattedAmount,
+        propertyName,
+        unitNumber,
+        confirmationNumber,
+      ),
     });
   }
 
@@ -507,8 +719,22 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: `Lease Expiring in ${daysRemaining} Days`,
-      text: this.getLeaseExpiringText(tenantName, formattedDate, daysRemaining, propertyName, unitNumber, contactEmail),
-      html: this.getLeaseExpiringHtml(tenantName, formattedDate, daysRemaining, propertyName, unitNumber, contactEmail),
+      text: this.getLeaseExpiringText(
+        tenantName,
+        formattedDate,
+        daysRemaining,
+        propertyName,
+        unitNumber,
+        contactEmail,
+      ),
+      html: this.getLeaseExpiringHtml(
+        tenantName,
+        formattedDate,
+        daysRemaining,
+        propertyName,
+        unitNumber,
+        contactEmail,
+      ),
     });
   }
 
@@ -527,8 +753,39 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: `Work Order Update: ${workOrderTitle}`,
-      text: this.getWorkOrderUpdateText(tenantName, workOrderTitle, newStatus, notes, propertyName, unitNumber),
-      html: this.getWorkOrderUpdateHtml(tenantName, workOrderTitle, newStatus, notes, propertyName, unitNumber),
+      text: this.getWorkOrderUpdateText(
+        tenantName,
+        workOrderTitle,
+        newStatus,
+        notes,
+        propertyName,
+        unitNumber,
+      ),
+      html: this.getWorkOrderUpdateHtml(
+        tenantName,
+        workOrderTitle,
+        newStatus,
+        notes,
+        propertyName,
+        unitNumber,
+      ),
+    });
+  }
+
+  /**
+   * Send vendor approval email with login credentials
+   */
+  async sendVendorApprovalEmail(
+    to: string,
+    vendorName: string,
+    tempPassword: string,
+    loginUrl: string,
+  ): Promise<EmailResult> {
+    return this.sendEmail({
+      to,
+      subject: 'Welcome to PropertyMaster - Your Vendor Account Has Been Approved!',
+      text: this.getVendorApprovalText(vendorName, to, tempPassword, loginUrl),
+      html: this.getVendorApprovalHtml(vendorName, to, tempPassword, loginUrl),
     });
   }
 
@@ -925,12 +1182,41 @@ Best regards,
 PropertyMaster Team`;
   }
 
+  private getVendorApprovalText(
+    vendorName: string,
+    email: string,
+    tempPassword: string,
+    loginUrl: string,
+  ): string {
+    return `Dear ${vendorName},
+
+Congratulations! Your vendor account has been approved on PropertyMaster.
+
+You can now log in to access jobs, manage your profile, and connect with property managers.
+
+Your Login Credentials:
+- Email: ${email}
+- Temporary Password: ${tempPassword}
+
+Please log in and change your password immediately for security purposes.
+
+Login here: ${loginUrl}
+
+If you have any questions, please contact our support team.
+
+Best regards,
+PropertyMaster Team`;
+  }
+
   // ============================================================
   // HTML TEMPLATES
   // ============================================================
 
   private getPasswordResetHtml(name: string, resetLink: string): string {
-    return this.wrapHtml('#3b82f6', 'Password Reset Request', `
+    return this.wrapHtml(
+      '#3b82f6',
+      'Password Reset Request',
+      `
       <p>Dear ${name},</p>
       <p>You have requested to reset your password for the Tenant Portal.</p>
       <p style="text-align: center;">
@@ -941,11 +1227,15 @@ PropertyMaster Team`;
         <strong>Important:</strong> This link will expire in 1 hour.
       </div>
       <p>If you did not request this password reset, please ignore this email.</p>
-    `);
+    `,
+    );
   }
 
   private getEmailVerificationHtml(name: string, verificationLink: string): string {
-    return this.wrapHtml('#10b981', 'Verify Your Email', `
+    return this.wrapHtml(
+      '#10b981',
+      'Verify Your Email',
+      `
       <p>Dear ${name},</p>
       <p>Thank you for registering with PropertyMaster!</p>
       <p>Please verify your email address by clicking the button below:</p>
@@ -956,18 +1246,23 @@ PropertyMaster Team`;
       <div class="alert alert-info">
         This link will expire in 24 hours.
       </div>
-    `);
+    `,
+    );
   }
 
   private getWelcomeHtml(name: string, loginUrl: string): string {
-    return this.wrapHtml('#8b5cf6', 'Welcome to PropertyMaster!', `
+    return this.wrapHtml(
+      '#8b5cf6',
+      'Welcome to PropertyMaster!',
+      `
       <p>Dear ${name},</p>
       <p>Your email has been verified and your account is now active!</p>
       <p style="text-align: center;">
         <a href="${loginUrl}" class="button button-primary">Log In to Your Account</a>
       </p>
       <p>If you have any questions, please don't hesitate to contact our support team.</p>
-    `);
+    `,
+    );
   }
 
   private getPaymentReceivedHtml(
@@ -978,7 +1273,10 @@ PropertyMaster Team`;
     unitNumber: string,
     confirmationNumber: string,
   ): string {
-    return this.wrapHtml('#10b981', 'Payment Received', `
+    return this.wrapHtml(
+      '#10b981',
+      'Payment Received',
+      `
       <p>Dear ${tenantName},</p>
       <p>We have received your payment. Thank you!</p>
       <div class="details">
@@ -991,7 +1289,8 @@ PropertyMaster Team`;
       <div class="alert alert-success">
         Your payment has been successfully processed.
       </div>
-    `);
+    `,
+    );
   }
 
   private getPaymentFailedHtml(
@@ -1002,7 +1301,10 @@ PropertyMaster Team`;
     reason: string,
     portalUrl: string,
   ): string {
-    return this.wrapHtml('#ef4444', 'Payment Failed', `
+    return this.wrapHtml(
+      '#ef4444',
+      'Payment Failed',
+      `
       <p>Dear ${tenantName},</p>
       <div class="alert alert-error">
         <p>Your payment of <strong>${amount}</strong> could not be processed.</p>
@@ -1015,7 +1317,8 @@ PropertyMaster Team`;
       <p style="text-align: center;">
         <a href="${portalUrl}" class="button button-primary">Update Payment Method</a>
       </p>
-    `);
+    `,
+    );
   }
 
   private getRentDueReminderHtml(
@@ -1026,7 +1329,10 @@ PropertyMaster Team`;
     unitNumber: string,
     portalUrl: string,
   ): string {
-    return this.wrapHtml('#f59e0b', 'Rent Due Reminder', `
+    return this.wrapHtml(
+      '#f59e0b',
+      'Rent Due Reminder',
+      `
       <p>Dear ${tenantName},</p>
       <div class="alert alert-warning">
         <p>Your rent payment of <strong>${amount}</strong> is due on <strong>${dueDate}</strong>.</p>
@@ -1041,7 +1347,8 @@ PropertyMaster Team`;
         <a href="${portalUrl}" class="button button-primary">Pay Now</a>
       </p>
       <p>Please make your payment to avoid late fees.</p>
-    `);
+    `,
+    );
   }
 
   private getLateFeeAppliedHtml(
@@ -1052,7 +1359,10 @@ PropertyMaster Team`;
     unitNumber: string,
     portalUrl: string,
   ): string {
-    return this.wrapHtml('#ef4444', 'Late Fee Applied', `
+    return this.wrapHtml(
+      '#ef4444',
+      'Late Fee Applied',
+      `
       <p>Dear ${tenantName},</p>
       <div class="alert alert-error">
         <p>A late fee of <strong>${lateFeeAmount}</strong> has been applied to your account.</p>
@@ -1066,7 +1376,8 @@ PropertyMaster Team`;
       <p style="text-align: center;">
         <a href="${portalUrl}" class="button button-primary">Pay Now</a>
       </p>
-    `);
+    `,
+    );
   }
 
   private getAutoPayUpcomingHtml(
@@ -1077,7 +1388,10 @@ PropertyMaster Team`;
     unitNumber: string,
     portalUrl: string,
   ): string {
-    return this.wrapHtml('#3b82f6', 'Auto-Pay Reminder', `
+    return this.wrapHtml(
+      '#3b82f6',
+      'Auto-Pay Reminder',
+      `
       <p>Dear ${tenantName},</p>
       <div class="alert alert-info">
         <p>Your auto-pay of <strong>${amount}</strong> will be processed on <strong>${chargeDate}</strong>.</p>
@@ -1092,7 +1406,8 @@ PropertyMaster Team`;
       <p style="text-align: center;">
         <a href="${portalUrl}" class="button button-primary">Manage Auto-Pay</a>
       </p>
-    `);
+    `,
+    );
   }
 
   private getAutoPayProcessedHtml(
@@ -1102,7 +1417,10 @@ PropertyMaster Team`;
     unitNumber: string,
     confirmationNumber: string,
   ): string {
-    return this.wrapHtml('#10b981', 'Auto-Pay Processed', `
+    return this.wrapHtml(
+      '#10b981',
+      'Auto-Pay Processed',
+      `
       <p>Dear ${tenantName},</p>
       <div class="alert alert-success">
         <p>Your auto-pay of <strong>${amount}</strong> has been successfully processed.</p>
@@ -1114,7 +1432,8 @@ PropertyMaster Team`;
         <p><strong>Confirmation #:</strong> ${confirmationNumber}</p>
       </div>
       <p>Thank you for using auto-pay!</p>
-    `);
+    `,
+    );
   }
 
   private getLeaseExpiringHtml(
@@ -1125,7 +1444,10 @@ PropertyMaster Team`;
     unitNumber: string,
     contactEmail: string,
   ): string {
-    return this.wrapHtml('#8b5cf6', 'Lease Expiring Soon', `
+    return this.wrapHtml(
+      '#8b5cf6',
+      'Lease Expiring Soon',
+      `
       <p>Dear ${tenantName},</p>
       <div class="alert alert-warning" style="text-align: center;">
         <p class="countdown" style="color: #8b5cf6;">${daysRemaining} Days Remaining</p>
@@ -1139,7 +1461,8 @@ PropertyMaster Team`;
       <p style="text-align: center;">
         <a href="mailto:${contactEmail}" class="button button-primary">Contact Us</a>
       </p>
-    `);
+    `,
+    );
   }
 
   private getWorkOrderUpdateHtml(
@@ -1152,7 +1475,10 @@ PropertyMaster Team`;
   ): string {
     const statusColor = this.getStatusColor(newStatus);
 
-    return this.wrapHtml('#6366f1', 'Work Order Update', `
+    return this.wrapHtml(
+      '#6366f1',
+      'Work Order Update',
+      `
       <p>Dear ${tenantName},</p>
       <p>Your work order has been updated.</p>
       <div class="details">
@@ -1162,17 +1488,49 @@ PropertyMaster Team`;
         <p><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: 600;">${newStatus}</span></p>
         ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
       </div>
-    `);
+    `,
+    );
+  }
+
+  private getVendorApprovalHtml(
+    vendorName: string,
+    email: string,
+    tempPassword: string,
+    loginUrl: string,
+  ): string {
+    return this.wrapHtml(
+      '#10b981',
+      'Vendor Account Approved!',
+      `
+      <p>Dear ${vendorName},</p>
+      <div class="alert alert-success">
+        <p><strong>Congratulations!</strong> Your vendor account has been approved.</p>
+      </div>
+      <p>You can now log in to access jobs, manage your profile, and connect with property managers.</p>
+      <div class="details">
+        <p><strong>Your Login Credentials:</strong></p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Temporary Password:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${tempPassword}</code></p>
+      </div>
+      <div class="alert alert-warning">
+        <strong>Important:</strong> Please change your password immediately after logging in for security purposes.
+      </div>
+      <p style="text-align: center;">
+        <a href="${loginUrl}" class="button button-success">Log In Now</a>
+      </p>
+      <p style="font-size: 12px; color: #6b7280;">Or copy and paste this link: ${loginUrl}</p>
+    `,
+    );
   }
 
   private getStatusColor(status: string): string {
     const statusColors: Record<string, string> = {
-      'SUBMITTED': '#f59e0b',
-      'ASSIGNED': '#3b82f6',
-      'IN_PROGRESS': '#6366f1',
-      'ON_HOLD': '#9ca3af',
-      'COMPLETED': '#10b981',
-      'CANCELLED': '#ef4444',
+      SUBMITTED: '#f59e0b',
+      ASSIGNED: '#3b82f6',
+      IN_PROGRESS: '#6366f1',
+      ON_HOLD: '#9ca3af',
+      COMPLETED: '#10b981',
+      CANCELLED: '#ef4444',
     };
     return statusColors[status.toUpperCase()] || '#6b7280';
   }

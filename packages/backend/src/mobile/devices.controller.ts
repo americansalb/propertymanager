@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { DeviceService } from './device.service';
 import { RegisterDeviceDto, UpdateDeviceDto, SendPushNotificationDto } from './dto/mobile.dto';
+import { type AuthenticatedRequest } from '../common/types/authenticated-request';
 
 @ApiTags('Devices')
 @ApiBearerAuth()
@@ -24,32 +25,32 @@ export class DevicesController {
 
   @Get()
   @ApiOperation({ summary: 'List all registered devices' })
-  async findAll(@Req() req: any, @Query('userId') userId?: string) {
+  async findAll(@Req() req: AuthenticatedRequest, @Query('userId') userId?: string) {
     return this.deviceService.findAll(req.user.organizationId, userId);
   }
 
   @Get('my')
   @ApiOperation({ summary: 'Get current user devices' })
-  async getMyDevices(@Req() req: any) {
-    return this.deviceService.findByUserId(req.user.id);
+  async getMyDevices(@Req() req: AuthenticatedRequest) {
+    return this.deviceService.findByUserId(req.user.sub);
   }
 
   @Get('stats')
   @ApiOperation({ summary: 'Get device statistics' })
-  async getStats(@Req() req: any) {
+  async getStats(@Req() req: AuthenticatedRequest) {
     return this.deviceService.getStats(req.user.organizationId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get device by ID' })
-  async findById(@Req() req: any, @Param('id') id: string) {
+  async findById(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.deviceService.findById(id, req.user.organizationId);
   }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a device for push notifications' })
-  async register(@Req() req: any, @Body() data: RegisterDeviceDto) {
-    return this.deviceService.register(data, req.user.id);
+  async register(@Req() req: AuthenticatedRequest, @Body() data: RegisterDeviceDto) {
+    return this.deviceService.register(data, req.user.sub);
   }
 
   @Post('push')
@@ -66,7 +67,11 @@ export class DevicesController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update device' })
-  async update(@Req() req: any, @Param('id') id: string, @Body() data: UpdateDeviceDto) {
+  async update(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() data: UpdateDeviceDto,
+  ) {
     return this.deviceService.update(id, data, req.user.organizationId);
   }
 
@@ -78,13 +83,13 @@ export class DevicesController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Deactivate device' })
-  async deactivate(@Req() req: any, @Param('id') id: string) {
+  async deactivate(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.deviceService.deactivate(id, req.user.organizationId);
   }
 
   @Delete(':id/permanent')
   @ApiOperation({ summary: 'Permanently delete device' })
-  async delete(@Req() req: any, @Param('id') id: string) {
+  async delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.deviceService.delete(id, req.user.organizationId);
   }
 

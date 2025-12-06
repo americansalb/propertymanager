@@ -1,9 +1,11 @@
 import { Controller, Get, Post, Body, Query, UseGuards, Req, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { type Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from './device.service';
 import { RefreshTokenService } from './refresh-token.service';
+import { type AuthenticatedRequest } from '../common/types/authenticated-request';
 
 @ApiTags('Mobile')
 @Controller('mobile')
@@ -19,9 +21,9 @@ export class MobileController {
   async refreshToken(
     @Body('refreshToken') refreshToken: string,
     @Headers('user-agent') userAgent: string,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
-    const ipAddress = req.ip || req.connection?.remoteAddress;
+    const ipAddress = req.ip || req.socket?.remoteAddress;
     return this.refreshTokenService.rotateToken(refreshToken, userAgent, ipAddress);
   }
 
@@ -37,23 +39,23 @@ export class MobileController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Logout from all devices' })
-  async logoutAll(@Req() req: any) {
-    return this.refreshTokenService.revokeAllUserTokens(req.user.id);
+  async logoutAll(@Req() req: AuthenticatedRequest) {
+    return this.refreshTokenService.revokeAllUserTokens(req.user.sub);
   }
 
   @Get('sessions')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get active sessions' })
-  async getSessions(@Req() req: any) {
-    return this.refreshTokenService.getUserTokens(req.user.id);
+  async getSessions(@Req() req: AuthenticatedRequest) {
+    return this.refreshTokenService.getUserTokens(req.user.sub);
   }
 
   @Get('dashboard')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get mobile dashboard data (optimized)' })
-  async getDashboard(@Req() req: any) {
+  async getDashboard(@Req() req: AuthenticatedRequest) {
     const organizationId = req.user.organizationId;
 
     // Fetch all dashboard data in parallel for optimal mobile performance
@@ -93,7 +95,7 @@ export class MobileController {
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get properties list (optimized for mobile)' })
   async getProperties(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
@@ -147,12 +149,13 @@ export class MobileController {
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get work orders (optimized for mobile)' })
   async getWorkOrders(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('status') status?: string,
     @Query('priority') priority?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { organizationId: req.user.organizationId };
     if (status) {
       where.status = status;
@@ -186,7 +189,8 @@ export class MobileController {
     ]);
 
     return {
-      data: workOrders.map((wo) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: workOrders.map((wo: any) => ({
         id: wo.id,
         title: wo.title,
         description: wo.description?.substring(0, 100),
@@ -211,11 +215,12 @@ export class MobileController {
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get tenants list (optimized for mobile)' })
   async getTenants(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('search') search?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       lease: { unit: { property: { organizationId: req.user.organizationId } } },
     };
@@ -288,7 +293,7 @@ export class MobileController {
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get user notifications' })
   async getNotifications(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('unreadOnly') _unreadOnly?: string,
     @Query('page') _page: string = '1',
     @Query('limit') _limit: string = '20',
@@ -299,7 +304,7 @@ export class MobileController {
     const workOrderNotifications = await this.prisma.workOrder.findMany({
       where: {
         organizationId,
-        OR: [{ assignedToId: req.user.id }],
+        OR: [{ assignedToId: req.user.sub }],
         status: { in: ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS'] },
       },
       select: {
@@ -332,7 +337,7 @@ export class MobileController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get available quick actions' })
-  async getQuickActions(@Req() req: any) {
+  async getQuickActions(@Req() req: AuthenticatedRequest) {
     const role = req.user.role;
 
     const actions = [

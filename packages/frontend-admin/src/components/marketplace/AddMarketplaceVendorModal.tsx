@@ -1,25 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  CheckCircle,
-  ChevronRight,
-  X,
-  Upload,
-  Lock,
-  Droplet,
-  Zap,
-  Wind,
-  Star,
-  Award,
-  Shield,
-  FileCheck,
-  MapPin,
-  Building2,
-  Users,
-  Clock,
-  DollarSign,
-  Sparkles,
-} from 'lucide-react';
+import { CheckCircle, ChevronRight, X, Shield, Sparkles } from 'lucide-react';
 import api from '../../services/api';
 import { Dialog, DialogContent } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -162,7 +143,12 @@ const ENTITY_TYPES = [
   { value: 'LLC', emoji: '🏢', label: 'LLC', description: 'Limited Liability Company' },
   { value: 'Corporation', emoji: '🏛️', label: 'Corporation', description: 'Inc or Corp' },
   { value: 'Partnership', emoji: '🤝', label: 'Partnership', description: 'General or Limited' },
-  { value: 'Sole Proprietor', emoji: '👤', label: 'Sole Proprietor', description: 'Individual owner' },
+  {
+    value: 'Sole Proprietor',
+    emoji: '👤',
+    label: 'Sole Proprietor',
+    description: 'Individual owner',
+  },
 ];
 
 const LOCKSMITH_SERVICES = [
@@ -349,7 +335,10 @@ export default function AddMarketplaceVendorModal({
         licenseState: data.licenseState,
         licenseExpiryDate: data.licenseExpiryDate,
         servicesOffered: data.selectedServices,
-        serviceZipCodes: data.serviceZipCodes.split(',').map((z) => z.trim()).filter(Boolean),
+        serviceZipCodes: data.serviceZipCodes
+          .split(',')
+          .map((z) => z.trim())
+          .filter(Boolean),
         serviceRadius: parseInt(data.serviceRadius) || 25,
         emergencyAvailable: data.emergencyAvailable,
         emergencyResponseTime: parseInt(data.standardResponseTime) || 60,
@@ -369,7 +358,7 @@ export default function AddMarketplaceVendorModal({
         onOpenChange(false);
       }, 3000);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating vendor:', error);
       alert(`Oops! ${error.response?.data?.message || error.message}`);
       setCurrentStep('legal_terms');
@@ -434,13 +423,15 @@ export default function AddMarketplaceVendorModal({
     if (showConfetti) {
       const confettiCount = 50;
       const container = document.getElementById('confetti-container');
-      if (!container) return;
+      if (!container) {
+        return;
+      }
 
       for (let i = 0; i < confettiCount; i++) {
         const confetti = document.createElement('div');
         confetti.className = 'confetti-piece';
-        confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.animationDelay = Math.random() * 3 + 's';
+        confetti.style.left = `${Math.random() * 100}%`;
+        confetti.style.animationDelay = `${Math.random() * 3}s`;
         confetti.style.backgroundColor = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'][
           Math.floor(Math.random() * 5)
         ];
@@ -448,7 +439,9 @@ export default function AddMarketplaceVendorModal({
       }
 
       return () => {
-        if (container) container.innerHTML = '';
+        if (container) {
+          container.innerHTML = '';
+        }
       };
     }
   }, [showConfetti]);
@@ -472,7 +465,9 @@ export default function AddMarketplaceVendorModal({
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border-2 border-green-200">
                 <div className="text-4xl mb-3">💼</div>
                 <h3 className="font-bold text-lg mb-2">More Jobs</h3>
-                <p className="text-sm text-gray-600">Get matched with property managers in your area</p>
+                <p className="text-sm text-gray-600">
+                  Get matched with property managers in your area
+                </p>
               </div>
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-2xl border-2 border-blue-200">
                 <div className="text-4xl mb-3">⚡</div>
@@ -512,7 +507,7 @@ export default function AddMarketplaceVendorModal({
                   }}
                   className={`group relative overflow-hidden p-8 rounded-3xl border-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl ${
                     formData.specialty === specialty.id
-                      ? 'border-blue-600 bg-gradient-to-br ' + specialty.color
+                      ? `border-blue-600 bg-gradient-to-br ${specialty.color}`
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
@@ -904,7 +899,8 @@ export default function AddMarketplaceVendorModal({
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mt-4">
                 <p className="text-sm text-blue-800">
                   <Shield className="w-4 h-4 inline mr-2" />
-                  We verify with your state licensing board - they've already done the background check!
+                  We verify with your state licensing board - they've already done the background
+                  check!
                 </p>
               </div>
             </div>
@@ -940,9 +936,7 @@ export default function AddMarketplaceVendorModal({
             <div className="text-center space-y-3">
               <div className="text-6xl mb-4">🎫</div>
               <h2 className="text-4xl font-bold">Your license number?</h2>
-              <p className="text-lg text-gray-600">
-                State {formData.specialty} license
-              </p>
+              <p className="text-lg text-gray-600">State {formData.specialty} license</p>
             </div>
             <div className="space-y-6">
               <Input
@@ -1156,7 +1150,7 @@ export default function AddMarketplaceVendorModal({
           </div>
         );
 
-      case 'services':
+      case 'services': {
         const availableServices = getServicesForSpecialty();
         return (
           <div className="space-y-8 py-8">
@@ -1190,11 +1184,13 @@ export default function AddMarketplaceVendorModal({
                 size="lg"
                 className="px-12 py-6 text-xl"
               >
-                Continue ({formData.selectedServices.length} selected) <ChevronRight className="ml-2" />
+                Continue ({formData.selectedServices.length} selected){' '}
+                <ChevronRight className="ml-2" />
               </Button>
             </div>
           </div>
         );
+      }
 
       case 'service_area':
         return (
@@ -1286,7 +1282,7 @@ export default function AddMarketplaceVendorModal({
           </div>
         );
 
-      case 'legal_terms':
+      case 'legal_terms': {
         const allTermsAccepted =
           formData.independentContractorAcknowledgment &&
           formData.stateLicensingCompliance &&
@@ -1394,6 +1390,7 @@ export default function AddMarketplaceVendorModal({
             </Button>
           </div>
         );
+      }
 
       case 'submitting':
         return (
@@ -1413,8 +1410,8 @@ export default function AddMarketplaceVendorModal({
               You're all set!
             </h2>
             <p className="text-2xl text-gray-600 max-w-2xl mx-auto">
-              Your application has been submitted! We'll review your info and get you onboarded within
-              24-48 hours.
+              Your application has been submitted! We'll review your info and get you onboarded
+              within 24-48 hours.
             </p>
             <div className="text-6xl">✨</div>
           </div>

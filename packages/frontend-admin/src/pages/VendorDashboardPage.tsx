@@ -1,13 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  Package,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  LogOut,
-  User,
-  Settings,
-} from 'lucide-react';
+import { Package, CheckCircle, Clock, DollarSign, LogOut, User, Settings } from 'lucide-react';
 import { useAuthStore } from '../store/auth.store';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -27,10 +19,8 @@ export default function VendorDashboardPage() {
   const { data: vendorProfile } = useQuery({
     queryKey: ['vendor-profile', user?.id],
     queryFn: async () => {
-      // TODO: Implement vendor profile endpoint
-      // const response = await api.get(`/vendors/me`);
-      // return response.data.data;
-      return null;
+      const response = await api.get(`/vendors/me`);
+      return response.data.data;
     },
     enabled: !!user,
   });
@@ -39,11 +29,10 @@ export default function VendorDashboardPage() {
   const { data: availableJobs, isLoading: jobsLoading } = useQuery({
     queryKey: ['vendor-available-jobs'],
     queryFn: async () => {
-      // TODO: Implement marketplace jobs endpoint for vendors
-      // const response = await api.get('/marketplace/jobs/available');
-      // return response.data.data || [];
-      return [];
+      const response = await api.get('/marketplace/jobs/available');
+      return response.data.data || [];
     },
+    enabled: !!vendorProfile,
   });
 
   return (
@@ -82,9 +71,7 @@ export default function VendorDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold text-gray-900">
-                  {availableJobs?.length || 0}
-                </div>
+                <div className="text-3xl font-bold text-gray-900">{availableJobs?.length || 0}</div>
                 <Package className="w-8 h-8 text-blue-600" />
               </div>
             </CardContent>

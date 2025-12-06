@@ -334,6 +334,41 @@ export class MarketplaceService {
     return profile;
   }
 
+  /**
+   * Get vendor marketplace profile by user ID (for logged-in vendor users)
+   */
+  async getVendorProfileByUserId(userId: string, organizationId: string) {
+    // Find the vendor associated with this user
+    const vendor = await this.prisma.vendor.findFirst({
+      where: {
+        userId,
+        OR: [{ organizationId }, { organizationId: 'public-marketplace' }],
+      },
+      include: {
+        marketplaceProfile: {
+          include: {
+            services: {
+              include: {
+                serviceCatalog: true,
+              },
+            },
+            ratings: {
+              where: { isPublic: true },
+              orderBy: { createdAt: 'desc' },
+              take: 5,
+            },
+          },
+        },
+      },
+    });
+
+    if (!vendor?.marketplaceProfile) {
+      return null;
+    }
+
+    return vendor.marketplaceProfile;
+  }
+
   async updateVendorMarketplaceProfile(
     id: string,
     dto: UpdateVendorMarketplaceProfileDto,

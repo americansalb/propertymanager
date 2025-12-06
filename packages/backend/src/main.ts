@@ -8,6 +8,7 @@ import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { type Request, type Response, type NextFunction } from 'express';
 import { AppModule } from './app.module';
 import { createWinstonOptions } from './logger/logger.config';
 
@@ -97,7 +98,7 @@ async function bootstrap() {
   app.useStaticAssets(adminDistPath);
 
   // Handle SPA routing for both apps
-  app.use((req: any, res: any, next: any) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     // Skip API routes
     if (req.path.startsWith('/api')) {
       return next();
@@ -112,7 +113,7 @@ async function bootstrap() {
       const fullPath = join(tenantDistPath, htmlPath);
 
       // Check if specific page exists, otherwise serve index for client-side routing
-      res.sendFile(fullPath, (err: any) => {
+      res.sendFile(fullPath, (err: Error | null) => {
         if (err) {
           res.sendFile(join(tenantDistPath, 'index.html'));
         }
