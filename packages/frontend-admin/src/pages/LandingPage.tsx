@@ -4,8 +4,28 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 
 export default function LandingPage() {
-  // In production, this would come from environment variables
-  const tenantPortalUrl = import.meta.env.VITE_TENANT_PORTAL_URL || 'http://localhost:3002';
+  // Get tenant portal URL from environment or derive from current hostname
+  const getTenantPortalUrl = () => {
+    // First check for explicit env var
+    if (import.meta.env.VITE_TENANT_PORTAL_URL) {
+      return import.meta.env.VITE_TENANT_PORTAL_URL;
+    }
+
+    // In production (Render), derive tenant URL from current hostname
+    const hostname = window.location.hostname;
+
+    // If we're on localhost, use localhost with tenant port
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:3002';
+    }
+
+    // For Render/production: replace 'admin' with 'tenant' in hostname
+    // e.g., propertymaster-admin.onrender.com -> propertymaster-tenant.onrender.com
+    const tenantHostname = hostname.replace('-admin', '-tenant').replace('admin.', 'tenant.');
+    return `${window.location.protocol}//${tenantHostname}`;
+  };
+
+  const tenantPortalUrl = getTenantPortalUrl();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
