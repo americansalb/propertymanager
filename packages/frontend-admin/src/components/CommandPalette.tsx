@@ -79,7 +79,7 @@ const pages: SearchResult[] = [
     title: 'Dashboard',
     subtitle: 'Overview and analytics',
     icon: Building2,
-    href: '/',
+    href: '/dashboard',
   },
   {
     id: 'page-properties',
@@ -87,7 +87,7 @@ const pages: SearchResult[] = [
     title: 'Properties',
     subtitle: 'Manage properties',
     icon: Home,
-    href: '/properties',
+    href: '/dashboard/properties',
   },
   {
     id: 'page-leases',
@@ -95,7 +95,7 @@ const pages: SearchResult[] = [
     title: 'Leases',
     subtitle: 'Lease management',
     icon: FileText,
-    href: '/leases',
+    href: '/dashboard/leases',
   },
   {
     id: 'page-financial',
@@ -103,7 +103,7 @@ const pages: SearchResult[] = [
     title: 'Financial',
     subtitle: 'Payments and transactions',
     icon: DollarSign,
-    href: '/financial',
+    href: '/dashboard/financial',
   },
   {
     id: 'page-work-orders',
@@ -111,7 +111,7 @@ const pages: SearchResult[] = [
     title: 'Work Orders',
     subtitle: 'Maintenance requests',
     icon: Wrench,
-    href: '/work-orders',
+    href: '/dashboard/work-orders',
   },
   {
     id: 'page-vendors',
@@ -119,7 +119,7 @@ const pages: SearchResult[] = [
     title: 'Vendors',
     subtitle: 'Vendor management',
     icon: Users,
-    href: '/vendors',
+    href: '/dashboard/vendors',
   },
   {
     id: 'page-documents',
@@ -127,7 +127,7 @@ const pages: SearchResult[] = [
     title: 'Documents',
     subtitle: 'File management',
     icon: FolderOpen,
-    href: '/documents',
+    href: '/dashboard/documents',
   },
   {
     id: 'page-calendar',
@@ -135,7 +135,7 @@ const pages: SearchResult[] = [
     title: 'Calendar',
     subtitle: 'Events and scheduling',
     icon: Calendar,
-    href: '/calendar',
+    href: '/dashboard/calendar',
   },
   {
     id: 'page-activity',
@@ -143,7 +143,7 @@ const pages: SearchResult[] = [
     title: 'Activity',
     subtitle: 'Activity log',
     icon: Bell,
-    href: '/activity',
+    href: '/dashboard/activity',
   },
   {
     id: 'page-reports',
@@ -151,7 +151,7 @@ const pages: SearchResult[] = [
     title: 'Reports',
     subtitle: 'Analytics and exports',
     icon: BarChart3,
-    href: '/reports',
+    href: '/dashboard/reports',
   },
   {
     id: 'page-tenant-portal',
@@ -159,7 +159,7 @@ const pages: SearchResult[] = [
     title: 'Tenant Portal',
     subtitle: 'Tenant view',
     icon: User,
-    href: '/tenant-portal',
+    href: '/dashboard/tenant-preview',
   },
   {
     id: 'page-settings',
@@ -167,7 +167,7 @@ const pages: SearchResult[] = [
     title: 'Settings',
     subtitle: 'App configuration',
     icon: Settings,
-    href: '/settings',
+    href: '/dashboard/settings',
   },
   {
     id: 'page-notifications',
@@ -175,7 +175,7 @@ const pages: SearchResult[] = [
     title: 'Notifications',
     subtitle: 'All notifications',
     icon: Bell,
-    href: '/notifications',
+    href: '/dashboard/notifications',
   },
 ];
 
@@ -240,7 +240,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         icon: Wrench,
         shortcut: 'W',
         action: () => {
-          navigate('/work-orders');
+          navigate('/dashboard/work-orders');
           onClose();
         },
       },
@@ -251,7 +251,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         icon: FileText,
         shortcut: 'L',
         action: () => {
-          navigate('/leases');
+          navigate('/dashboard/leases');
           onClose();
         },
       },
@@ -262,7 +262,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         icon: BarChart3,
         shortcut: 'R',
         action: () => {
-          navigate('/reports');
+          navigate('/dashboard/reports');
           onClose();
         },
       },
@@ -273,7 +273,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         icon: Settings,
         shortcut: ',',
         action: () => {
-          navigate('/settings');
+          navigate('/dashboard/settings');
           onClose();
         },
       },
@@ -313,7 +313,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
             title: property.name,
             subtitle: property.address,
             icon: Home,
-            href: '/properties',
+            href: '/dashboard/properties',
             metadata: { propertyId: property.id },
           });
         }
@@ -332,7 +332,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
             title: `Lease - ${tenantName || 'Unknown Tenant'}`,
             subtitle: `Unit ${lease.unit?.unitNumber || 'N/A'} • $${lease.rentAmount?.toLocaleString() || 0}/mo`,
             icon: FileText,
-            href: '/leases',
+            href: '/dashboard/leases',
             metadata: { leaseId: lease.id },
           });
         }
@@ -353,7 +353,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
             title: wo.title || `Work Order #${wo.id.slice(-6)}`,
             subtitle: `${wo.status} • ${wo.priority} priority`,
             icon: Wrench,
-            href: '/work-orders',
+            href: '/dashboard/work-orders',
             metadata: { workOrderId: wo.id },
           });
         }
@@ -374,7 +374,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
             title: vendor.companyName,
             subtitle: vendor.specialty || 'General',
             icon: Users,
-            href: '/vendors',
+            href: '/dashboard/vendors',
             metadata: { vendorId: vendor.id },
           });
         }
@@ -400,7 +400,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
               title: tenantName || 'Unknown Tenant',
               subtitle: lease.tenant.email || lease.tenant.phone || '',
               icon: User,
-              href: '/leases',
+              href: '/dashboard/tenants',
               metadata: { tenantId: lease.tenant.id },
             });
           }

@@ -44,7 +44,7 @@ export default function LoginPage() {
       if (data.user.role === 'VENDOR') {
         navigate('/vendor-dashboard');
       } else {
-        navigate('/');
+        navigate('/dashboard');
       }
     },
   });

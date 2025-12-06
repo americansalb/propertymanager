@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import AdminLoginPage from './pages/AdminLoginPage';
 import RegisterPage from './pages/RegisterPage';
 import VendorRegisterPage from './pages/VendorRegisterPage';
 import MarketplaceBrowsePage from './pages/MarketplaceBrowsePage';
@@ -36,7 +38,9 @@ function App() {
   return (
     <Routes>
       {/* Public routes - no authentication required */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/admin" element={<AdminLoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/vendor-register" element={<VendorRegisterPage />} />
       <Route path="/marketplace-browse" element={<MarketplaceBrowsePage />} />
@@ -53,7 +57,7 @@ function App() {
 
       {/* Protected admin routes */}
       <Route
-        path="/*"
+        path="/dashboard/*"
         element={
           <PrivateRoute>
             <DashboardLayout>
