@@ -19,10 +19,13 @@ export default function LandingPage() {
       return 'http://localhost:3002';
     }
 
-    // For Render/production: replace 'admin' with 'tenant' in hostname
-    // e.g., propertymaster-admin.onrender.com -> propertymaster-tenant.onrender.com
-    const tenantHostname = hostname.replace('-admin', '-tenant').replace('admin.', 'tenant.');
-    return `${window.location.protocol}//${tenantHostname}`;
+    // For Render: propertymaster-1.onrender.com -> propertymaster-1-tenant.onrender.com
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      // Insert '-tenant' before .onrender.com
+      parts[0] = `${parts[0]}-tenant`;
+    }
+    return `${window.location.protocol}//${parts.join('.')}`;
   };
 
   const tenantPortalUrl = getTenantPortalUrl();
