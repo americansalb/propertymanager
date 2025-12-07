@@ -37,6 +37,27 @@ async function main() {
   });
   console.log('🗑️ Cleared demo accounts for fresh credentials');
 
+  // Clean up old demo property data (one-time cleanup)
+  const demoProperty = await prisma.property.findFirst({
+    where: { name: 'Sunset Gardens Apartments' }
+  });
+  if (demoProperty) {
+    console.log('🧹 Cleaning up old demo property...');
+    // Delete in order respecting foreign keys
+    await prisma.maintenanceRequest.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
+    await prisma.workOrder.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
+    await prisma.lease.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
+    await prisma.tenant.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
+    await prisma.unit.deleteMany({ where: { propertyId: demoProperty.id } });
+    await prisma.propertyVendor.deleteMany({ where: { propertyId: demoProperty.id } });
+    await prisma.property.delete({ where: { id: demoProperty.id } });
+    console.log('✅ Removed demo property: Sunset Gardens Apartments');
+  }
+
+  // Clean up demo vendor and bank account
+  await prisma.vendor.deleteMany({ where: { companyName: 'Quick Fix Maintenance' } });
+  await prisma.bankAccount.deleteMany({ where: { accountName: 'Operating Account', bankName: 'Chase Bank' } });
+
   // Upsert organization
   const organization = await prisma.organization.upsert({
     where: { slug: 'aalb' },
