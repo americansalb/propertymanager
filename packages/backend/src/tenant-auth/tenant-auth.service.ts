@@ -24,15 +24,34 @@ export class TenantAuthService {
   ) {}
 
   async setupTestTenant(email: string, password: string, firstName: string, lastName: string) {
-    // Find first available unit
+    // Find the demo admin's organization
+    const adminUser = await this.prisma.user.findFirst({
+      where: { email: 'admin@aalb.org' },
+      select: { organizationId: true },
+    });
+
+    if (!adminUser?.organizationId) {
+      throw new BadRequestException(
+        'Demo admin account not found. Please set up the demo account first.',
+      );
+    }
+
+    // Find first available unit in the demo organization
     const unit = await this.prisma.unit.findFirst({
+      where: {
+        property: {
+          organizationId: adminUser.organizationId,
+        },
+      },
       include: {
         property: true,
       },
     });
 
     if (!unit) {
-      throw new BadRequestException('No units available. Please create a property and unit first.');
+      throw new BadRequestException(
+        'No units available in demo organization. Please create a property and unit first.',
+      );
     }
 
     // Hash password
