@@ -1,9 +1,5 @@
 import {
   PrismaClient,
-  UserRole,
-  UserStatus,
-  OrganizationType,
-  SubscriptionPlan,
   TenantStatus,
   TenantInvitationStatus,
 } from '@prisma/client';
@@ -13,37 +9,43 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seed...');
-  console.log('📋 This seed only creates admin accounts and test tenant - your real data is preserved!');
+  console.log('📋 This seed creates a test tenant in your existing organization');
 
-  // Delete only the specific admin users we're creating (to reset credentials)
-  await prisma.refreshToken.deleteMany({
+  // Find the existing admin user (landlord@aalb.org) and their organization
+  const existingAdmin = await prisma.user.findFirst({
     where: {
-      user: {
-        email: { in: ['contact@aalb.org', 'admin@aalb.org'] }
-      }
-    }
-  });
-  await prisma.user.deleteMany({
-    where: {
-      email: { in: ['contact@aalb.org', 'admin@aalb.org'] }
+      email: 'landlord@aalb.org'
+    },
+    select: {
+      id: true,
+      organizationId: true,
+      organization: { select: { name: true } }
     }
   });
 
-  // Delete the test tenant to reset its state
+  if (!existingAdmin) {
+    console.log('❌ No admin user found with email landlord@aalb.org');
+    console.log('   Please ensure your admin account exists first.');
+    return;
+  }
+
+  console.log(`✅ Found admin in organization: ${existingAdmin.organization?.name}`);
+  const organizationId = existingAdmin.organizationId;
+
+  // Delete any existing test tenant
   await prisma.tenant.deleteMany({
     where: {
       email: 'tenant@aalb.org'
     }
   });
-  console.log('🗑️ Cleared demo accounts for fresh credentials');
+  console.log('🗑️ Cleared any existing test tenant');
 
-  // Clean up old demo property data (one-time cleanup)
+  // Clean up old demo property if it exists
   const demoProperty = await prisma.property.findFirst({
     where: { name: 'Sunset Gardens Apartments' }
   });
   if (demoProperty) {
     console.log('🧹 Cleaning up old demo property...');
-    // Delete in order respecting foreign keys
     await prisma.maintenanceRequest.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
     await prisma.workOrder.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
     await prisma.lease.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
@@ -54,96 +56,7 @@ async function main() {
     console.log('✅ Removed demo property: Sunset Gardens Apartments');
   }
 
-  // Clean up demo vendor and bank account
-  await prisma.vendor.deleteMany({ where: { companyName: 'Quick Fix Maintenance' } });
-  await prisma.bankAccount.deleteMany({ where: { accountName: 'Operating Account', bankName: 'Chase Bank' } });
-
-  // Upsert organization
-  const organization = await prisma.organization.upsert({
-    where: { slug: 'aalb' },
-    update: {
-      name: 'AALB Properties',
-      type: OrganizationType.PROPERTY_MANAGER,
-      plan: SubscriptionPlan.PROFESSIONAL,
-    },
-    create: {
-      name: 'AALB Properties',
-      slug: 'aalb',
-      type: OrganizationType.PROPERTY_MANAGER,
-      plan: SubscriptionPlan.PROFESSIONAL,
-      settings: {},
-    },
-  });
-
-  console.log('✅ Created/updated organization:', organization.name);
-
-  // Create public marketplace organization for vendor self-registration
-  const publicMarketplace = await prisma.organization.upsert({
-    where: { slug: 'public-marketplace' },
-    update: {
-      name: 'Public Marketplace',
-      type: OrganizationType.PROPERTY_MANAGER,
-      plan: SubscriptionPlan.TRIAL,
-    },
-    create: {
-      id: 'public-marketplace',
-      name: 'Public Marketplace',
-      slug: 'public-marketplace',
-      type: OrganizationType.PROPERTY_MANAGER,
-      plan: SubscriptionPlan.TRIAL,
-      settings: {},
-    },
-  });
-
-  console.log('✅ Created/updated public marketplace organization:', publicMarketplace.name);
-
-  // Create admin user with fresh password
-  const passwordHash = await bcrypt.hash('winner', 10);
-  const adminUser = await prisma.user.create({
-    data: {
-      email: 'contact@aalb.org',
-      passwordHash,
-      firstName: 'Admin',
-      lastName: 'AALB',
-      phone: '',
-      role: UserRole.SUPER_ADMIN,
-      status: UserStatus.ACTIVE,
-      emailVerified: true,
-      organizationId: organization.id,
-      failedLoginAttempts: 0,
-    },
-  });
-
-  console.log('✅ Created admin user:', adminUser.email);
-
-  // Create admin@aalb.org alias
-  const adminAlias = await prisma.user.create({
-    data: {
-      email: 'admin@aalb.org',
-      passwordHash,
-      firstName: 'Admin',
-      lastName: 'AALB',
-      phone: '',
-      role: UserRole.SUPER_ADMIN,
-      status: UserStatus.ACTIVE,
-      emailVerified: true,
-      organizationId: organization.id,
-      failedLoginAttempts: 0,
-    },
-  });
-
-  console.log('✅ Created admin alias:', adminAlias.email);
-
-  // Verify password hash works
-  const verifyPassword = await bcrypt.compare('winner', adminUser.passwordHash);
-  if (verifyPassword) {
-    console.log('✅ Password verification: SUCCESS');
-  } else {
-    console.error('❌ Password verification: FAILED - hash mismatch!');
-    console.log('   Hash stored:', adminUser.passwordHash?.substring(0, 20) + '...');
-  }
-
-  // Create test tenant for tenant portal (NO unit assignment - landlord will assign)
+  // Create test tenant in the SAME organization as the admin
   const tenantPasswordHash = await bcrypt.hash('winner', 10);
   const testTenant = await prisma.tenant.create({
     data: {
@@ -156,23 +69,21 @@ async function main() {
       portalPassword: tenantPasswordHash,
       isPrimary: true,
       invitationStatus: TenantInvitationStatus.ACCEPTED,
-      organizationId: organization.id,
+      organizationId: organizationId,
       // NO unitId - landlord will assign from admin portal
     },
   });
 
   console.log('✅ Created test tenant:', testTenant.email);
+  console.log('   Organization ID:', organizationId);
 
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📝 Login credentials:');
-  console.log('   Admin Portal:');
-  console.log('     Email: contact@aalb.org (or admin@aalb.org)');
-  console.log('     Password: winner');
+  console.log('   Admin Portal: landlord@aalb.org (your existing account)');
   console.log('\n   Tenant Portal:');
   console.log('     Email: tenant@aalb.org');
   console.log('     Password: winner');
-  console.log('     Note: No property assigned yet - assign from admin portal Tenants page');
-  console.log('\n💡 Add your real properties in the admin portal, then assign the test tenant!');
+  console.log('     Note: Go to Tenants page and assign to a property/unit');
 }
 
 main()
