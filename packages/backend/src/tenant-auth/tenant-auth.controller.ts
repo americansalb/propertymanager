@@ -69,6 +69,26 @@ class ChangePasswordDto {
   newPassword!: string;
 }
 
+class ValidateInvitationDto {
+  @IsString()
+  token!: string;
+}
+
+class RegisterDto {
+  @IsString()
+  token!: string;
+
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @Matches(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+  @Matches(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+  @Matches(/[0-9]/, { message: 'Password must contain at least one number' })
+  @Matches(/[!@#$%^&*(),.?":{}|<>]/, {
+    message: 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)',
+  })
+  password!: string;
+}
+
 @ApiTags('tenant-auth')
 @Controller('tenant-auth')
 export class TenantAuthController {
@@ -80,6 +100,24 @@ export class TenantAuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() dto: LoginDto) {
     const result = await this.tenantAuthService.login(dto.email, dto.password);
+    return { success: true, data: result };
+  }
+
+  @Post('validate-invitation')
+  @ApiOperation({ summary: 'Validate tenant invitation token' })
+  @ApiResponse({ status: 200, description: 'Token is valid' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async validateInvitation(@Body() dto: ValidateInvitationDto) {
+    const result = await this.tenantAuthService.validateInvitation(dto.token);
+    return { success: true, data: result };
+  }
+
+  @Post('register')
+  @ApiOperation({ summary: 'Register tenant portal account using invitation token' })
+  @ApiResponse({ status: 200, description: 'Registration successful' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token, or weak password' })
+  async register(@Body() dto: RegisterDto) {
+    const result = await this.tenantAuthService.registerWithInvitation(dto.token, dto.password);
     return { success: true, data: result };
   }
 

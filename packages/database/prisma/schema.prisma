@@ -297,6 +297,13 @@ model Lease {
   @@index([autoPayEnabled])
 }
 
+enum TenantInvitationStatus {
+  NOT_INVITED
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
 model Tenant {
   id          String   @id @default(cuid())
 
@@ -321,6 +328,13 @@ model Tenant {
   lastPortalLogin   DateTime?
   resetToken        String?
   resetTokenExpiry  DateTime?
+
+  // Invitation
+  invitationStatus  TenantInvitationStatus @default(NOT_INVITED)
+  invitationToken   String?  @unique
+  invitationSentAt  DateTime?
+  invitationExpiresAt DateTime?
+  invitedByUserId   String?
 
   // Account lockout
   failedLoginAttempts Int      @default(0)

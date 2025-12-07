@@ -13,6 +13,9 @@ import {
   AlertCircle,
   X,
   Shield,
+  Send,
+  Check,
+  Clock,
 } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../ui/button';
@@ -39,6 +42,9 @@ interface Tenant {
   isPrimary: boolean;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
+  portalEnabled?: boolean;
+  invitationStatus?: 'NOT_INVITED' | 'PENDING' | 'ACCEPTED' | 'EXPIRED';
+  invitationSentAt?: string;
 }
 
 interface Lease {
@@ -160,6 +166,36 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       const message = error.response?.data?.message || 'Failed to set primary tenant';
       setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
       setSetPrimaryDialogOpen(false);
+    },
+  });
+
+  // SEND INVITATION mutation
+  const sendInvitationMutation = useMutation({
+    mutationFn: async (tenantId: string) => {
+      const response = await api.post(`/tenants/${tenantId}/invite`);
+      return response.data;
+    },
+    onSuccess: () => {
+      invalidateQueries();
+    },
+    onError: (error: unknown) => {
+      const message = error.response?.data?.message || 'Failed to send invitation';
+      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+    },
+  });
+
+  // RESEND INVITATION mutation
+  const resendInvitationMutation = useMutation({
+    mutationFn: async (tenantId: string) => {
+      const response = await api.post(`/tenants/${tenantId}/resend-invite`);
+      return response.data;
+    },
+    onSuccess: () => {
+      invalidateQueries();
+    },
+    onError: (error: unknown) => {
+      const message = error.response?.data?.message || 'Failed to resend invitation';
+      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
     },
   });
 
@@ -306,7 +342,7 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
                         />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-gray-900">
                             {tenant.firstName} {tenant.lastName}
                           </span>
@@ -316,6 +352,23 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
                               Primary
                             </span>
                           )}
+                          {/* Portal Access Status */}
+                          {tenant.portalEnabled ? (
+                            <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                              <Check className="w-3 h-3" />
+                              Portal Access
+                            </span>
+                          ) : tenant.invitationStatus === 'PENDING' ? (
+                            <span className="inline-flex items-center gap-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                              <Clock className="w-3 h-3" />
+                              Invitation Pending
+                            </span>
+                          ) : tenant.invitationStatus === 'EXPIRED' ? (
+                            <span className="inline-flex items-center gap-1 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                              <AlertCircle className="w-3 h-3" />
+                              Invitation Expired
+                            </span>
+                          ) : null}
                         </div>
                         <div className="mt-1 space-y-1">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -345,6 +398,40 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
                     {/* Actions */}
                     {canManageTenants && (
                       <div className="flex items-center gap-1">
+                        {/* Invite/Resend Invite Button */}
+                        {!tenant.portalEnabled &&
+                          (tenant.invitationStatus === 'PENDING' ||
+                          tenant.invitationStatus === 'EXPIRED' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => resendInvitationMutation.mutate(tenant.id)}
+                              disabled={resendInvitationMutation.isPending}
+                              title="Resend Invitation"
+                              className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                            >
+                              {resendInvitationMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Send className="w-4 h-4" />
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => sendInvitationMutation.mutate(tenant.id)}
+                              disabled={sendInvitationMutation.isPending}
+                              title="Send Portal Invitation"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            >
+                              {sendInvitationMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Send className="w-4 h-4" />
+                              )}
+                            </Button>
+                          ))}
                         {!tenant.isPrimary && (
                           <Button
                             variant="ghost"

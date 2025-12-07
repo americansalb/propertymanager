@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class TenantsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+    private configService: ConfigService,
+  ) {}
 
   async findAll(organizationId: string, filters?: { search?: string; status?: string }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -279,6 +286,144 @@ export class TenantsService {
       activeLeases,
       portalEnabled,
       portalAdoptionRate: totalTenants > 0 ? Math.round((portalEnabled / totalTenants) * 100) : 0,
+    };
+  }
+
+  async sendInvitation(tenantId: string, organizationId: string, invitedByUserId: string) {
+    // Verify tenant belongs to organization
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        id: tenantId,
+        lease: {
+          unit: {
+            property: {
+              organizationId,
+            },
+          },
+        },
+      },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    if (tenant.portalEnabled) {
+      throw new BadRequestException('Tenant already has portal access');
+    }
+
+    // Generate invitation token
+    const invitationToken = randomBytes(32).toString('hex');
+    const invitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Update tenant with invitation
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        invitationStatus: 'PENDING',
+        invitationToken,
+        invitationSentAt: new Date(),
+        invitationExpiresAt,
+        invitedByUserId,
+      },
+    });
+
+    // Send invitation email
+    const tenantPortalUrl = this.configService.get<string>('FRONTEND_TENANT_URL') || '/tenant';
+    await this.emailService.sendTenantInvitationEmail(
+      tenant.email,
+      `${tenant.firstName} ${tenant.lastName}`,
+      tenant.lease?.unit?.property?.name || 'Your Property',
+      tenant.lease?.unit?.unitNumber || '',
+      invitationToken,
+      tenantPortalUrl,
+    );
+
+    return {
+      success: true,
+      message: 'Invitation sent successfully',
+      invitationSentAt: new Date(),
+      invitationExpiresAt,
+    };
+  }
+
+  async resendInvitation(tenantId: string, organizationId: string, invitedByUserId: string) {
+    // Get tenant
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        id: tenantId,
+        lease: {
+          unit: {
+            property: {
+              organizationId,
+            },
+          },
+        },
+      },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    if (tenant.portalEnabled) {
+      throw new BadRequestException('Tenant already has portal access');
+    }
+
+    // Generate new invitation token
+    const invitationToken = randomBytes(32).toString('hex');
+    const invitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Update tenant with new invitation
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        invitationStatus: 'PENDING',
+        invitationToken,
+        invitationSentAt: new Date(),
+        invitationExpiresAt,
+        invitedByUserId,
+      },
+    });
+
+    // Send invitation email
+    const tenantPortalUrl = this.configService.get<string>('FRONTEND_TENANT_URL') || '/tenant';
+    await this.emailService.sendTenantInvitationEmail(
+      tenant.email,
+      `${tenant.firstName} ${tenant.lastName}`,
+      tenant.lease?.unit?.property?.name || 'Your Property',
+      tenant.lease?.unit?.unitNumber || '',
+      invitationToken,
+      tenantPortalUrl,
+    );
+
+    return {
+      success: true,
+      message: 'Invitation resent successfully',
+      invitationSentAt: new Date(),
+      invitationExpiresAt,
     };
   }
 }

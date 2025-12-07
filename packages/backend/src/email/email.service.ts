@@ -789,6 +789,27 @@ export class EmailService {
     });
   }
 
+  /**
+   * Send tenant invitation email
+   */
+  async sendTenantInvitationEmail(
+    to: string,
+    tenantName: string,
+    propertyName: string,
+    unitNumber: string,
+    invitationToken: string,
+    portalUrl: string,
+  ): Promise<EmailResult> {
+    const registerLink = `${portalUrl}/register?token=${invitationToken}`;
+
+    return this.sendEmail({
+      to,
+      subject: `You're Invited to the Tenant Portal - ${propertyName}`,
+      text: this.getTenantInvitationText(tenantName, propertyName, unitNumber, registerLink),
+      html: this.getTenantInvitationHtml(tenantName, propertyName, unitNumber, registerLink),
+    });
+  }
+
   // ============================================================
   // UTILITY METHODS
   // ============================================================
@@ -1208,6 +1229,33 @@ Best regards,
 PropertyMaster Team`;
   }
 
+  private getTenantInvitationText(
+    tenantName: string,
+    propertyName: string,
+    unitNumber: string,
+    registerLink: string,
+  ): string {
+    return `Dear ${tenantName},
+
+You've been invited to join the Tenant Portal for your residence at ${propertyName}, Unit ${unitNumber}.
+
+The Tenant Portal allows you to:
+- Pay rent online
+- Submit maintenance requests
+- View your lease details
+- Communicate with property management
+
+To get started, click the link below to create your account:
+${registerLink}
+
+This invitation link will expire in 7 days.
+
+If you have any questions, please contact your property manager.
+
+Best regards,
+PropertyMaster Team`;
+  }
+
   // ============================================================
   // HTML TEMPLATES
   // ============================================================
@@ -1519,6 +1567,42 @@ PropertyMaster Team`;
         <a href="${loginUrl}" class="button button-success">Log In Now</a>
       </p>
       <p style="font-size: 12px; color: #6b7280;">Or copy and paste this link: ${loginUrl}</p>
+    `,
+    );
+  }
+
+  private getTenantInvitationHtml(
+    tenantName: string,
+    propertyName: string,
+    unitNumber: string,
+    registerLink: string,
+  ): string {
+    return this.wrapHtml(
+      '#10b981',
+      "You're Invited!",
+      `
+      <p>Dear ${tenantName},</p>
+      <div class="alert alert-success">
+        <p>You've been invited to join the <strong>Tenant Portal</strong> for your residence.</p>
+      </div>
+      <div class="details">
+        <p><strong>Property:</strong> ${propertyName}</p>
+        <p><strong>Unit:</strong> ${unitNumber}</p>
+      </div>
+      <p>The Tenant Portal allows you to:</p>
+      <ul style="margin: 16px 0; padding-left: 24px;">
+        <li>Pay rent online securely</li>
+        <li>Submit maintenance requests</li>
+        <li>View your lease details</li>
+        <li>Communicate with property management</li>
+      </ul>
+      <p style="text-align: center;">
+        <a href="${registerLink}" class="button button-success">Create Your Account</a>
+      </p>
+      <p style="font-size: 12px; color: #6b7280;">Or copy and paste this link: ${registerLink}</p>
+      <div class="alert alert-info">
+        This invitation link will expire in 7 days.
+      </div>
     `,
     );
   }

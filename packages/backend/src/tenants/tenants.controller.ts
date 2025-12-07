@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -133,5 +134,37 @@ export class TenantsController {
   async disablePortal(@Param('id') id: string, @OrganizationId() organizationId: string) {
     const tenant = await this.tenantsService.disablePortalAccess(id, organizationId);
     return { success: true, data: tenant, message: 'Portal access disabled' };
+  }
+
+  @Post(':id/invite')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send tenant portal invitation' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Invitation sent successfully' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  @ApiResponse({ status: 400, description: 'Tenant already has portal access' })
+  async sendInvitation(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Request() req: { user: { sub: string } },
+  ) {
+    const result = await this.tenantsService.sendInvitation(id, organizationId, req.user.sub);
+    return { success: true, ...result };
+  }
+
+  @Post(':id/resend-invite')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend tenant portal invitation' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Invitation resent successfully' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  @ApiResponse({ status: 400, description: 'Tenant already has portal access' })
+  async resendInvitation(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Request() req: { user: { sub: string } },
+  ) {
+    const result = await this.tenantsService.resendInvitation(id, organizationId, req.user.sub);
+    return { success: true, ...result };
   }
 }

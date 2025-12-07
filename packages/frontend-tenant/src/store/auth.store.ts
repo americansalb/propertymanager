@@ -28,6 +28,14 @@ interface Tenant {
   unitId: string | null;
 }
 
+interface InvitationInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  property: string | null;
+  unit: string | null;
+}
+
 interface AuthState {
   tenant: Tenant | null;
   token: string | null;
@@ -39,6 +47,8 @@ interface AuthState {
   requestPasswordReset: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
   updateProfile: (data: Partial<Tenant>) => Promise<void>;
+  validateInvitation: (token: string) => Promise<InvitationInfo>;
+  register: (token: string, password: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -129,6 +139,46 @@ export const useAuthStore = create<AuthState>()(
           set({
             isLoading: false,
             error: getErrorMessage(error, 'Failed to update profile.'),
+          });
+          throw error;
+        }
+      },
+
+      validateInvitation: async (token: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.post('/tenant-auth/validate-invitation', { token });
+          set({ isLoading: false });
+          return response.data.data.tenant as InvitationInfo;
+        } catch (error: unknown) {
+          set({
+            isLoading: false,
+            error: getErrorMessage(error, 'Invalid or expired invitation.'),
+          });
+          throw error;
+        }
+      },
+
+      register: async (token: string, password: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.post('/tenant-auth/register', { token, password });
+          const { tenant, token: authToken } = response.data.data;
+
+          localStorage.setItem('tenant_token', authToken);
+          localStorage.setItem('tenant_user', JSON.stringify(tenant));
+
+          set({
+            tenant,
+            token: authToken,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+        } catch (error: unknown) {
+          set({
+            isLoading: false,
+            error: getErrorMessage(error, 'Registration failed.'),
           });
           throw error;
         }

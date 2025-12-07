@@ -332,4 +332,107 @@ export class TenantAuthService {
       return null;
     }
   }
+
+  async validateInvitation(token: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        invitationToken: token,
+        invitationStatus: 'PENDING',
+        invitationExpiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new BadRequestException('Invalid or expired invitation token');
+    }
+
+    return {
+      valid: true,
+      tenant: {
+        firstName: tenant.firstName,
+        lastName: tenant.lastName,
+        email: tenant.email,
+        property: tenant.lease?.unit?.property?.name || null,
+        unit: tenant.lease?.unit?.unitNumber || null,
+      },
+    };
+  }
+
+  async registerWithInvitation(token: string, password: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        invitationToken: token,
+        invitationStatus: 'PENDING',
+        invitationExpiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new BadRequestException('Invalid or expired invitation token');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update tenant - enable portal access and mark invitation as accepted
+    await this.prisma.tenant.update({
+      where: { id: tenant.id },
+      data: {
+        portalEnabled: true,
+        portalPassword: hashedPassword,
+        invitationStatus: 'ACCEPTED',
+        invitationToken: null, // Clear the token so it can't be reused
+      },
+    });
+
+    // Generate JWT token for automatic login
+    const payload = {
+      sub: tenant.id,
+      email: tenant.email,
+      type: 'tenant',
+    };
+    const jwtToken = this.jwtService.sign(payload);
+
+    return {
+      message: 'Registration successful',
+      tenant: {
+        id: tenant.id,
+        firstName: tenant.firstName,
+        lastName: tenant.lastName,
+        email: tenant.email,
+        phone: tenant.phone,
+        leaseId: tenant.leaseId,
+        unitId: tenant.lease?.unitId || null,
+        unit: tenant.lease?.unit || null,
+        property: tenant.lease?.unit?.property || null,
+      },
+      token: jwtToken,
+    };
+  }
 }
