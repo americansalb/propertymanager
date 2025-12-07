@@ -328,7 +328,7 @@ export default function LeasePage() {
         </Card>
 
         {/* Lease Terms */}
-        {Object.keys(lease.terms).length > 0 && (
+        {lease.terms && Object.keys(lease.terms).length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Lease Terms</CardTitle>
