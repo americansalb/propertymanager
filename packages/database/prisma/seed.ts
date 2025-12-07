@@ -19,13 +19,33 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Clear existing demo data (but keep user data intact)
+  // Clear existing demo data in correct order (respect foreign key constraints)
   console.log('🧹 Clearing existing seed data...');
+
+  // First, delete dependent records
+  await prisma.paymentAllocation.deleteMany({});
+  await prisma.payment.deleteMany({});
+  await prisma.charge.deleteMany({});
+  await prisma.tenantMessage.deleteMany({});
+  await prisma.maintenanceRequest.deleteMany({});
+  await prisma.workOrder.deleteMany({});
+
+  // Delete leases before tenants (tenants reference leases)
+  await prisma.lease.deleteMany({});
+
+  // Now delete tenants
   await prisma.tenant.deleteMany({});
-  await prisma.bankAccount.deleteMany({});
-  await prisma.vendor.deleteMany({});
+
+  // Delete units before properties
   await prisma.unit.deleteMany({});
+
+  // Delete properties
   await prisma.property.deleteMany({});
+
+  // Delete other organization-level data
+  await prisma.bankAccount.deleteMany({});
+  await prisma.vendorProperty.deleteMany({});
+  await prisma.vendor.deleteMany({});
   await prisma.chartOfAccounts.deleteMany({});
 
   // Upsert organization
