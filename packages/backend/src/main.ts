@@ -88,15 +88,15 @@ async function bootstrap() {
   }
 
   // Serve static files from frontend builds
-  // In Docker, frontends are copied to /app/public and /app/public/tenant
-  // In development, they're in the workspace packages
-  const isDocker = process.env.NODE_ENV === 'production';
-  const adminDistPath = isDocker
+  // When running from repo root (Render native or local), frontends are in packages/
+  // When running from Docker, frontends are copied to /app/public
+  const isDockerBuild = process.cwd() === '/app';
+  const adminDistPath = isDockerBuild
     ? join(process.cwd(), 'public')
-    : join(__dirname, '..', '..', 'frontend-admin', 'dist');
-  const tenantDistPath = isDocker
+    : join(process.cwd(), 'packages', 'frontend-admin', 'dist');
+  const tenantDistPath = isDockerBuild
     ? join(process.cwd(), 'public', 'tenant')
-    : join(__dirname, '..', '..', 'frontend-tenant', 'out');
+    : join(process.cwd(), 'packages', 'frontend-tenant', 'out');
 
   // Serve tenant portal static files at /tenant
   app.useStaticAssets(tenantDistPath, { prefix: '/tenant' });
