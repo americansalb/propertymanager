@@ -40,22 +40,6 @@ async function main() {
   });
   console.log('🗑️ Cleared any existing test tenant');
 
-  // Clean up old demo property if it exists
-  const demoProperty = await prisma.property.findFirst({
-    where: { name: 'Sunset Gardens Apartments' }
-  });
-  if (demoProperty) {
-    console.log('🧹 Cleaning up old demo property...');
-    await prisma.maintenanceRequest.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
-    await prisma.workOrder.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
-    await prisma.lease.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
-    await prisma.tenant.deleteMany({ where: { unit: { propertyId: demoProperty.id } } });
-    await prisma.unit.deleteMany({ where: { propertyId: demoProperty.id } });
-    await prisma.propertyVendor.deleteMany({ where: { propertyId: demoProperty.id } });
-    await prisma.property.delete({ where: { id: demoProperty.id } });
-    console.log('✅ Removed demo property: Sunset Gardens Apartments');
-  }
-
   // Create test tenant in the SAME organization as the admin
   const tenantPasswordHash = await bcrypt.hash('winner', 10);
   const testTenant = await prisma.tenant.create({
