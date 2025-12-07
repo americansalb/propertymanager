@@ -44,7 +44,7 @@ async function main() {
 
   // Delete other organization-level data
   await prisma.bankAccount.deleteMany({});
-  await prisma.vendorProperty.deleteMany({});
+  await prisma.propertyVendor.deleteMany({});
   await prisma.vendor.deleteMany({});
   await prisma.chartOfAccounts.deleteMany({});
 
