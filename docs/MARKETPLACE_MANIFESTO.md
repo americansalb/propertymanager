@@ -493,7 +493,466 @@ Can't get landlords without vendors, can't get vendors without landlords.
 
 ---
 
-## Part 8: The Chicago Lock Service MVP
+## Part 8: Platform Retention - Why They Stay
+
+### The Core Problem
+
+Every marketplace faces disintermediation. Once a landlord finds a good vendor, why keep paying platform fees?
+
+**The naive answer:** "They'll lose the guarantee!"
+
+**The real answer:** That's not enough. Once you trust someone, you'll risk losing the guarantee to save 10%.
+
+We need **multiple layers of value** that make staying on-platform the obvious choice for BOTH sides.
+
+---
+
+### Landlord Retention Mechanisms
+
+#### 1. Competitive Bidding System
+
+For non-urgent jobs with high confidence estimates (90%+), landlords can open jobs for competitive bids:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DISPATCH OPTIONS                                           │
+│                                                             │
+│  [⚡ INSTANT DISPATCH - $120]                               │
+│  Send to next available verified vendor                     │
+│  Response within 4 hours                                    │
+│                                                             │
+│  [📊 OPEN FOR BIDS - Starting $120]                        │
+│  Let vendors compete for the job                            │
+│  Set bidding window: [4hr] [8hr] [24hr] [48hr]             │
+│  You can accept any bid at any time                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**How bidding works:**
+- Starting price = high end of platform estimate
+- Vendors bid DOWN from starting price
+- Each bid has a validity period (vendor chooses: 2hr, 4hr, 6hr)
+- Landlord can accept any bid at any time
+- Vendor commits to bid price if scope matches description
+
+**Why this retains landlords:**
+- They can ALWAYS get competitive pricing
+- They see the real market clearing price
+- More value than calling vendors themselves
+- Creates incentive to post ALL jobs (even with trusted vendors)
+
+**Scope change rules:**
+- Scope matches description → Vendor honors bid
+- Minor variance → Vendor can request up to estimate high
+- Major change → Vendor documents with photos, submits new quote
+- Repeated scope disputes → Landlord's "description accuracy" drops, future bids higher
+
+#### 2. Pricing Intelligence (Only On-Platform)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PRICING INTELLIGENCE                                       │
+│                                                             │
+│  Your vendor quoted: $280                                   │
+│                                                             │
+│  Market data (847 similar jobs):                           │
+│  ├── Low: $95                                              │
+│  ├── Average: $145                                         │
+│  ├── High: $210                                            │
+│  └── Your quote: ████████████████░░ 93rd percentile        │
+│                                                             │
+│  ⚠️ This quote is 47% above market average                 │
+│                                                             │
+│  [See Fair Price Vendors]  [Request Bids]  [Accept Anyway] │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Off-platform transactions don't get this. Landlords lose the ability to verify if prices are fair.
+
+#### 3. Property Health Score
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PROPERTY HEALTH SCORE                                      │
+│                                                             │
+│  123 Main St, Unit 4B                    SCORE: 94/100     │
+│                                                             │
+│  ✓ Plumbing: Last serviced 3mo ago                         │
+│  ✓ HVAC: Filter changed 1mo ago                            │
+│  ✓ Electrical: Inspection 6mo ago                          │
+│  ✓ Locks: Rekeyed at last turnover                         │
+│  ⚠️ Water heater: 8 years old (avg lifespan: 10yr)         │
+│                                                             │
+│  This score is verified by platform transaction history.   │
+│                                                             │
+│  USEFUL FOR:                                                │
+│  • Insurance claims (documented maintenance)                │
+│  • Property sales (verified history for buyers)             │
+│  • Refinancing (proves asset condition)                     │
+│  • Rental license compliance (Chicago requires records)     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Off-platform jobs don't count. The score becomes valuable for insurance, sales, refinancing, and compliance.
+
+#### 4. Maintenance Budget Tracking
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  2024 MAINTENANCE SUMMARY                                   │
+│                                                             │
+│  Total spend: $14,847                                       │
+│  vs. last year: -12% ($16,892)                             │
+│  vs. similar properties: -8% below average                  │
+│                                                             │
+│  BY CATEGORY:                                               │
+│  ├── Plumbing: $4,200 (28%)                                │
+│  ├── HVAC: $3,800 (26%)                                    │
+│  ├── Electrical: $2,100 (14%)                              │
+│  ├── Appliances: $2,847 (19%)                              │
+│  └── Other: $1,900 (13%)                                   │
+│                                                             │
+│  📊 TAX REPORT: [Download for Schedule E]                  │
+│                                                             │
+│  🔮 PREDICTED 2025: $13,200-16,400                         │
+│     Based on property age and maintenance patterns          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Complete spend tracking, tax-ready reports, and predictions only work for platform transactions.
+
+#### 5. Emergency Priority
+
+Platform subscribers get priority dispatch during high-demand periods:
+
+```
+EMERGENCY DISPATCH QUEUE:
+
+🔴 PIPE BURST - 2:47 AM Sunday
+
+Non-subscriber: "Next available vendor: 4-6 hours"
+Subscriber: "Priority dispatch: 45-90 minutes"
+```
+
+When you really need someone, platform membership matters.
+
+#### 6. Preventive Maintenance Alerts
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  🔔 PREVENTIVE MAINTENANCE ALERT                           │
+│                                                             │
+│  Based on your property data:                               │
+│                                                             │
+│  ⚠️ HVAC filter due for replacement                        │
+│     Last changed: 87 days ago                               │
+│     Recommended: Every 90 days                              │
+│     [Schedule Now - $45]                                    │
+│                                                             │
+│  ⚠️ Water heater approaching end of life                   │
+│     Age: 9 years | Avg lifespan: 10-12 years               │
+│     Recommendation: Budget $1,200-1,800 for replacement    │
+│     [Get Quotes Now]                                        │
+│                                                             │
+│  Properties using preventive maintenance save an average    │
+│  of 23% on emergency repairs.                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Predictive insights only work with complete platform history.
+
+#### 7. Volume Benefits
+
+| Annual Platform Jobs | Platform Fee |
+|---------------------|--------------|
+| 1-10 jobs           | 12%          |
+| 11-25 jobs          | 10%          |
+| 26-50 jobs          | 8%           |
+| 50+ jobs            | 6%           |
+
+Creates incentive to keep ALL jobs on platform to maintain tier.
+
+---
+
+### Vendor Retention Mechanisms
+
+#### 1. Guaranteed Payment + Fast Payout
+
+This is the killer feature. Most vendors spend 20%+ of time on collections.
+
+| Off-Platform | On-Platform |
+|--------------|-------------|
+| Invoice and hope | Payment secured before dispatch |
+| Wait 30-60 days | Paid in 48 hours |
+| Chase with calls | Money just appears |
+| Sometimes never paid | 100% collection rate |
+
+**The math:** A vendor doing $15K/month who spends 8 hours/month on invoicing and collections values their time at ~$50/hour = $400/month. Our 10% fee on $15K = $1,500. But they also avoid:
+- Bad debt (2-5% of revenue typically)
+- Cash flow stress
+- Accounting complexity
+
+For many vendors, guaranteed fast payment is worth MORE than our fee.
+
+#### 2. Instant Pay Option
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  JOB COMPLETED: Toilet Repair - $185                       │
+│                                                             │
+│  Your payout: $166.50 (after 10% platform fee)             │
+│                                                             │
+│  PAYOUT OPTIONS:                                            │
+│  ○ Standard (48 hours): $166.50                            │
+│  ○ Next-day ($1 fee): $165.50                              │
+│  ○ Instant (1.5% fee): $164.00                             │
+│                                                             │
+│  [Complete Payout]                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Vendors who need cash flow will pay for instant access. Only available on-platform.
+
+#### 3. Fair Price Certification
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│        ✓ PROPERTYMASTER CERTIFIED                          │
+│                                                             │
+│        Martinez Plumbing                                    │
+│        ────────────────────                                 │
+│        ⭐ 4.9 (234 verified jobs)                           │
+│        💰 Fair Price Verified                               │
+│        ⏱️ 98% on-time                                       │
+│        🔄 2% callback rate                                  │
+│                                                             │
+│  "This vendor's pricing and quality are verified           │
+│   through 234 documented platform transactions."           │
+│                                                             │
+│        [Download Badge]  [Embed on Website]                │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Certification requires:**
+- 80%+ of jobs through platform (maintains data integrity)
+- Pricing within 15% of market average
+- 4.5+ star rating
+- <5% dispute rate
+
+**Certification provides:**
+- Marketing badge (truck, website, cards)
+- Priority in search results
+- Featured in "Fair Price Vendors" section
+- Platform promotes certified vendors
+
+**If vendor takes jobs off-platform:** Certification suspended. They lose competitive advantage.
+
+#### 4. Revenue-Based Financing
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  💰 PROPERTYMASTER CAPITAL                                 │
+│                                                             │
+│  Based on your platform history, you're pre-approved for:  │
+│                                                             │
+│  EQUIPMENT LOAN                                             │
+│  Up to: $15,000                                            │
+│  APR: 9.9%                                                  │
+│  Term: 12-36 months                                        │
+│  Repayment: Auto-deducted from platform earnings           │
+│                                                             │
+│  CASH ADVANCE                                               │
+│  Up to: $5,000                                             │
+│  Fee: 5% flat                                               │
+│  Repayment: 10% of each payout until repaid               │
+│                                                             │
+│  No credit check. Based on your platform performance.      │
+│                                                             │
+│  [Apply Now]                                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Once a vendor has financing tied to platform earnings, they're locked in.
+
+#### 5. Business Intelligence Dashboard
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  YOUR BUSINESS INSIGHTS - November 2024                    │
+│                                                             │
+│  Revenue: $12,400                                          │
+│  Jobs completed: 47                                         │
+│  Avg job value: $264                                        │
+│                                                             │
+│  VS. MARKET:                                                │
+│  ├── Your avg toilet repair: $165                          │
+│  │   Market average: $155                                  │
+│  │   You're 6% above average (still competitive)           │
+│  │                                                          │
+│  ├── Your avg water heater: $1,240                         │
+│  │   Market average: $1,380                                │
+│  │   You're 10% below average (room to increase)          │
+│                                                             │
+│  OPPORTUNITY:                                               │
+│  🔥 Drain cleaning demand up 34% this month                │
+│  💡 Consider adding drain services to your profile         │
+│                                                             │
+│  EFFICIENCY:                                                │
+│  Your response time: 2.1 hours (Top 15%)                   │
+│  Your completion rate: 98% (Top 10%)                       │
+│  Your rating: 4.9 (Top 5%)                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+This intelligence only exists on-platform. Vendors become dependent on it.
+
+#### 6. Tax & Business Documentation
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📋 TAX CENTER                                             │
+│                                                             │
+│  2024 EARNINGS: $148,720                                   │
+│                                                             │
+│  DOCUMENTS READY:                                           │
+│  ├── [Download 1099-NEC]                                   │
+│  ├── [Download Income Summary]                             │
+│  ├── [Download Expense Report]                             │
+│  └── [Download Mileage Log]                                │
+│                                                             │
+│  ESTIMATED QUARTERLY TAX: $8,400                           │
+│  Next payment due: January 15                               │
+│                                                             │
+│  [Set Up Auto Tax Withholding]                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Platform handles all documentation. Going off-platform means back to manual tracking.
+
+#### 7. Group Benefits (Future)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  🏥 PROPERTYMASTER VENDOR BENEFITS                         │
+│                                                             │
+│  Available to vendors with 20+ jobs/month:                 │
+│                                                             │
+│  HEALTH INSURANCE                                           │
+│  Access to group rates through our partner network         │
+│  Average savings: $200-400/month vs. individual plans      │
+│                                                             │
+│  SUPPLY DISCOUNTS                                           │
+│  10% off at participating suppliers                         │
+│  Home Depot Pro, Ferguson, Grainger                        │
+│                                                             │
+│  VEHICLE PROGRAM                                            │
+│  Discounted rates on work vehicles and insurance           │
+│                                                             │
+│  [View All Benefits]                                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+This is the dream for independent tradespeople. Only platform-active vendors qualify.
+
+---
+
+### Financial Products (The Real Lock-In)
+
+#### For Landlords: Repair Financing
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  HVAC REPLACEMENT - $4,200                                 │
+│                                                             │
+│  PAYMENT OPTIONS:                                           │
+│                                                             │
+│  ○ Pay now: $4,200                                         │
+│                                                             │
+│  ○ Pay over 6 months: $720/mo                              │
+│    (4.9% fee = $206 total interest)                        │
+│                                                             │
+│  ○ Pay over 12 months: $378/mo                             │
+│    (8.9% fee = $374 total interest)                        │
+│                                                             │
+│  Vendor gets paid in full immediately.                     │
+│  You pay us back over time.                                │
+│                                                             │
+│  [Select Payment Plan]                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Landlords who finance through the platform won't go off-platform for that job or future jobs - the financing relationship keeps them engaged.
+
+#### For Vendors: Working Capital
+
+When vendors need to buy equipment, hire help, or bridge cash flow gaps, platform-based financing (auto-repaid from earnings) is far easier than traditional bank loans.
+
+---
+
+### The Subscription Model (Alternative)
+
+Instead of per-transaction fees, offer a subscription that makes per-job fees minimal:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PROPERTYMASTER PRO - $49/month                            │
+│                                                             │
+│  INCLUDES:                                                  │
+│  ✓ Unlimited dispatch to verified vendors                  │
+│  ✓ All transactions protected (90-day guarantee)           │
+│  ✓ $10,000 damage coverage per incident                   │
+│  ✓ Real-time pricing intelligence                          │
+│  ✓ Property health scores                                  │
+│  ✓ Compliance documentation                                │
+│  ✓ Priority emergency dispatch                             │
+│  ✓ Tax-ready maintenance reports                           │
+│  ✓ Preventive maintenance alerts                           │
+│                                                             │
+│  Platform fee on jobs: 3% (just covers payment processing) │
+│                                                             │
+│  NON-SUBSCRIBERS:                                           │
+│  Platform fee: 12% per job                                 │
+│  No guarantee, no priority, limited features               │
+│                                                             │
+│  Break-even: ~4 jobs/month at average $150                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Why subscription works for retention:**
+- Landlord is paying $49/month regardless
+- Taking jobs off-platform doesn't save them money
+- The 3% is basically just Stripe fees
+- All the value is baked into the subscription
+
+---
+
+### Retention Summary
+
+| Mechanism | Keeps Landlords | Keeps Vendors |
+|-----------|----------------|---------------|
+| Competitive bidding | ✓ Always get best price | |
+| Pricing intelligence | ✓ Know if quotes are fair | |
+| Property health score | ✓ Insurance/sale value | |
+| Budget tracking | ✓ Tax docs, predictions | |
+| Emergency priority | ✓ When it matters most | |
+| Volume discounts | ✓ Incentive to stay | |
+| Guaranteed payment | | ✓ No more collections |
+| Fast/instant payout | | ✓ Cash flow |
+| Certification | | ✓ Marketing value |
+| Revenue financing | | ✓ Capital access |
+| Business intelligence | | ✓ Run business better |
+| Tax documentation | | ✓ Simplify admin |
+| Group benefits | | ✓ Health insurance, discounts |
+| Repair financing | ✓ Spread large costs | ✓ Get paid immediately |
+| Subscription model | ✓ Already paying, no savings going off | ✓ Steady job flow |
+
+**The goal:** Make the platform so valuable that leaving feels like a downgrade, not a savings.
+
+---
+
+## Part 9: The Chicago Lock Service MVP
 
 ### Why Start Here
 
@@ -803,6 +1262,17 @@ This is the vision. Let's build it.
 
 ---
 
-*Document version: 1.0*
+*Document version: 2.0*
 *Last updated: December 2025*
 *Status: Strategic Foundation*
+
+---
+
+## Changelog
+
+**v2.0** - Added Part 8: Platform Retention
+- Comprehensive landlord retention mechanisms (bidding, pricing intelligence, property health scores, budget tracking, emergency priority, preventive maintenance, volume discounts)
+- Comprehensive vendor retention mechanisms (guaranteed payment, instant pay, certification, revenue financing, business intelligence, tax documentation, group benefits)
+- Financial products strategy (repair financing for landlords, working capital for vendors)
+- Subscription model alternative
+- Complete retention summary matrix
