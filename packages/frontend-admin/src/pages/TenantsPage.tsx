@@ -549,14 +549,15 @@ function AddTenantModal({ open, onClose }: { open: boolean; onClose: () => void 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch properties with units
+  // Fetch properties with units - always refetch when modal opens
   const { data: properties } = useQuery({
-    queryKey: ['properties-with-units'],
+    queryKey: ['properties-for-tenant', open],
     queryFn: async () => {
       const response = await api.get('/properties');
       return response.data.data as Property[];
     },
     enabled: open,
+    staleTime: 0,
   });
 
   // Reset form when modal closes
@@ -954,14 +955,15 @@ function AssignUnitModal({
     }
   }, [open]);
 
-  // Fetch properties with units
+  // Fetch properties with units - always refetch when modal opens
   const { data: properties } = useQuery({
-    queryKey: ['properties-with-units'],
+    queryKey: ['properties-with-units', open],
     queryFn: async () => {
       const response = await api.get('/properties');
       return response.data.data as Property[];
     },
     enabled: open,
+    staleTime: 0,
   });
 
   const selectedProperty = properties?.find((p) => p.id === propertyId);
