@@ -49,6 +49,21 @@ async function main() {
   await prisma.vendor.deleteMany({});
   await prisma.chartOfAccounts.deleteMany({});
 
+  // Delete admin users to ensure fresh credentials
+  await prisma.refreshToken.deleteMany({
+    where: {
+      user: {
+        email: { in: ['contact@aalb.org', 'admin@aalb.org'] }
+      }
+    }
+  });
+  await prisma.user.deleteMany({
+    where: {
+      email: { in: ['contact@aalb.org', 'admin@aalb.org'] }
+    }
+  });
+  console.log('🗑️ Cleared admin users for fresh credentials');
+
   // Upsert organization
   const organization = await prisma.organization.upsert({
     where: { slug: 'aalb' },
@@ -150,6 +165,15 @@ async function main() {
   });
 
   console.log('✅ Created admin alias:', adminAlias.email);
+
+  // Verify password hash works
+  const verifyPassword = await bcrypt.compare('winner', adminUser.passwordHash);
+  if (verifyPassword) {
+    console.log('✅ Password verification: SUCCESS');
+  } else {
+    console.error('❌ Password verification: FAILED - hash mismatch!');
+    console.log('   Hash stored:', adminUser.passwordHash?.substring(0, 20) + '...');
+  }
 
   // Create Chart of Accounts
   const chartOfAccounts = await prisma.chartOfAccounts.createMany({
