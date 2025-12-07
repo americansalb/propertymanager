@@ -246,6 +246,13 @@ export class MobileController {
           email: true,
           phone: true,
           isPrimary: true,
+          status: true,
+          unit: {
+            select: {
+              unitNumber: true,
+              property: { select: { name: true } },
+            },
+          },
           lease: {
             select: {
               id: true,
@@ -269,16 +276,21 @@ export class MobileController {
     ]);
 
     return {
-      data: tenants.map((t) => ({
-        id: t.id,
-        name: `${t.firstName} ${t.lastName}`,
-        email: t.email,
-        phone: t.phone,
-        isPrimary: t.isPrimary,
-        unit: `${t.lease.unit.property.name} - ${t.lease.unit.unitNumber}`,
-        leaseStatus: t.lease.status,
-        leaseEnd: t.lease.endDate,
-      })),
+      data: tenants.map((t) => {
+        const unitData = t.unit || t.lease?.unit;
+        return {
+          id: t.id,
+          name: `${t.firstName} ${t.lastName}`,
+          email: t.email,
+          phone: t.phone,
+          isPrimary: t.isPrimary,
+          unit: unitData
+            ? `${unitData.property.name} - ${unitData.unitNumber}`
+            : 'No unit assigned',
+          leaseStatus: t.lease?.status || t.status,
+          leaseEnd: t.lease?.endDate || null,
+        };
+      }),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

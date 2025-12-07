@@ -26,19 +26,19 @@ import { IsString, IsOptional, IsEmail, IsBoolean, IsDateString } from 'class-va
 
 class CreateTenantDto {
   @IsString()
-  firstName: string;
+  firstName!: string;
 
   @IsString()
-  lastName: string;
+  lastName!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
-  phone: string;
+  phone!: string;
 
   @IsString()
-  unitId: string;
+  unitId!: string;
 
   @IsOptional()
   @IsDateString()
@@ -199,7 +199,7 @@ export class TenantsController {
     @Request() req: { user: { sub: string } },
   ) {
     const result = await this.tenantsService.sendInvitation(id, organizationId, req.user.sub);
-    return { success: true, ...result };
+    return result;
   }
 
   @Post(':id/resend-invite')
@@ -215,6 +215,6 @@ export class TenantsController {
     @Request() req: { user: { sub: string } },
   ) {
     const result = await this.tenantsService.resendInvitation(id, organizationId, req.user.sub);
-    return { success: true, ...result };
+    return result;
   }
 }

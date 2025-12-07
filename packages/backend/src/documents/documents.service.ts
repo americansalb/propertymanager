@@ -1,7 +1,13 @@
-import { Injectable, Inject, LoggerService, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  LoggerService,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
-import { StorageService, UploadedFile } from '../storage/storage.service';
+import { StorageService, type UploadedFile } from '../storage/storage.service';
 
 type DocumentType =
   | 'LEASE_AGREEMENT'
@@ -48,11 +54,7 @@ export class DocumentsService {
   /**
    * Upload a document
    */
-  async uploadDocument(
-    dto: UploadDocumentDto,
-    organizationId: string,
-    uploadedById: string,
-  ) {
+  async uploadDocument(dto: UploadDocumentDto, organizationId: string, uploadedById: string) {
     // Validate entity exists and belongs to organization
     await this.validateEntity(dto.entityType, dto.entityId, organizationId);
 
@@ -97,11 +99,7 @@ export class DocumentsService {
   /**
    * Get documents by entity
    */
-  async getDocumentsByEntity(
-    entityType: string,
-    entityId: string,
-    organizationId: string,
-  ) {
+  async getDocumentsByEntity(entityType: string, entityId: string, organizationId: string) {
     return this.prisma.document.findMany({
       where: {
         entityType,
@@ -116,10 +114,7 @@ export class DocumentsService {
   /**
    * Get documents with pagination and filtering
    */
-  async getDocuments(
-    organizationId: string,
-    query: DocumentQueryDto,
-  ) {
+  async getDocuments(organizationId: string, query: DocumentQueryDto) {
     const { entityType, entityId, type, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
@@ -289,58 +284,81 @@ export class DocumentsService {
     let exists = false;
 
     switch (entityType.toLowerCase()) {
-      case 'property':
+      case 'property': {
         const property = await this.prisma.property.findFirst({
           where: { id: entityId, organizationId },
         });
         exists = !!property;
         break;
+      }
 
-      case 'unit':
+      case 'unit': {
         const unit = await this.prisma.unit.findFirst({
           where: { id: entityId },
           include: { property: true },
         });
         exists = !!unit && unit.property.organizationId === organizationId;
         break;
+      }
 
-      case 'lease':
+      case 'lease': {
         const lease = await this.prisma.lease.findFirst({
           where: { id: entityId },
           include: { unit: { include: { property: true } } },
         });
         exists = !!lease && lease.unit.property.organizationId === organizationId;
         break;
+      }
 
-      case 'vendor':
+      case 'vendor': {
         const vendor = await this.prisma.vendor.findFirst({
           where: { id: entityId, organizationId },
         });
         exists = !!vendor;
         break;
+      }
 
-      case 'workorder':
+      case 'workorder': {
         const workOrder = await this.prisma.workOrder.findFirst({
           where: { id: entityId, organizationId },
         });
         exists = !!workOrder;
         break;
+      }
 
-      case 'tenant':
+      case 'tenant': {
         const tenant = await this.prisma.tenant.findFirst({
           where: { id: entityId },
-          include: { lease: { include: { unit: { include: { property: true } } } } },
+          include: {
+            unit: { include: { property: true } },
+            lease: { include: { unit: { include: { property: true } } } },
+          },
         });
-        exists = !!tenant && tenant.lease.unit.property.organizationId === organizationId;
+        exists =
+          !!tenant &&
+          (tenant.unit?.property?.organizationId === organizationId ||
+            tenant.lease?.unit?.property?.organizationId === organizationId);
         break;
+      }
 
-      case 'maintenancerequest':
+      case 'maintenancerequest': {
         const request = await this.prisma.maintenanceRequest.findFirst({
           where: { id: entityId },
-          include: { tenant: { include: { lease: { include: { unit: { include: { property: true } } } } } } },
+          include: {
+            tenant: {
+              include: {
+                unit: { include: { property: true } },
+                lease: { include: { unit: { include: { property: true } } } },
+              },
+            },
+          },
         });
-        exists = !!request && request.tenant.lease.unit.property.organizationId === organizationId;
+        exists =
+          !!request &&
+          (request.tenant?.unit?.property?.organizationId === organizationId ||
+            request.tenant?.lease?.unit?.property?.organizationId === organizationId);
         break;
+      }
 
       default:
         throw new BadRequestException(`Invalid entity type: ${entityType}`);
@@ -404,10 +422,12 @@ export class DocumentsService {
   }
 
   private formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) {
+      return '0 Bytes';
+    }
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 }

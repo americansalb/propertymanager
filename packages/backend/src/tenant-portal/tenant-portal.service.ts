@@ -249,7 +249,7 @@ export class TenantPortalService {
     }
 
     await this.prisma.lease.update({
-      where: { id: tenant.leaseId },
+      where: { id: tenant.lease.id },
       data: {
         autoPayEnabled: enabled,
         autoPayDay: day || tenant.lease.autoPayDay,
