@@ -137,6 +137,30 @@ export default function MarketplacePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketplace-jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-stats'] });
+    },
+  });
+
+  // Decline quote mutation
+  const declineQuoteMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const response = await api.post(`/marketplace/jobs/${jobId}/quote/decline`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketplace-jobs'] });
+    },
+  });
+
+  // Cancel job mutation
+  const cancelJobMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const response = await api.post(`/marketplace/jobs/${jobId}/cancel`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketplace-jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-stats'] });
     },
   });
 
@@ -546,7 +570,11 @@ export default function MarketplacePage() {
                         key={job.id}
                         job={job}
                         onApproveQuote={() => approveQuoteMutation.mutate(job.id)}
+                        onDeclineQuote={() => declineQuoteMutation.mutate(job.id)}
+                        onCancelJob={() => cancelJobMutation.mutate(job.id)}
                         isApprovingQuote={approveQuoteMutation.isPending}
+                        isDecliningQuote={declineQuoteMutation.isPending}
+                        isCancellingJob={cancelJobMutation.isPending}
                       />
                     ))}
                   </div>
@@ -565,8 +593,18 @@ export default function MarketplacePage() {
                       <JobCard
                         key={job.id}
                         job={job}
-                        onConfirm={() => confirmJobMutation.mutate(job.id)}
+                        onConfirm={
+                          job.status === 'COMPLETED'
+                            ? () => confirmJobMutation.mutate(job.id)
+                            : undefined
+                        }
+                        onCancelJob={
+                          ['DISPATCHED', 'ACCEPTED'].includes(job.status)
+                            ? () => cancelJobMutation.mutate(job.id)
+                            : undefined
+                        }
                         isConfirming={confirmJobMutation.isPending}
+                        isCancellingJob={cancelJobMutation.isPending}
                       />
                     ))}
                   </div>
@@ -722,22 +760,32 @@ function JobCard({
   job,
   onConfirm,
   onApproveQuote,
+  onDeclineQuote,
+  onCancelJob,
   isConfirming,
   isApprovingQuote,
+  isDecliningQuote,
+  isCancellingJob,
 }: {
   job: any;
   onConfirm?: () => void;
   onApproveQuote?: () => void;
+  onDeclineQuote?: () => void;
+  onCancelJob?: () => void;
   isConfirming?: boolean;
   isApprovingQuote?: boolean;
+  isDecliningQuote?: boolean;
+  isCancellingJob?: boolean;
 }) {
   const statusInfo = JOB_STATUS_LABELS[job.status] || {
     label: job.status,
     color: 'bg-gray-100 text-gray-700',
   };
 
+  const hasQuote = job.status === 'QUOTE_SUBMITTED' && job.quotedAmount;
+
   return (
-    <Card>
+    <Card className={hasQuote ? 'border-amber-200 bg-amber-50/30' : ''}>
       <CardContent className="pt-4">
         <div className="space-y-3">
           {/* Header */}
@@ -760,7 +808,13 @@ function JobCard({
           {job.vendorProfile && (
             <div className="flex items-center gap-2 text-sm">
               <Users className="w-4 h-4 text-gray-400" />
-              <span>{job.vendorProfile.vendor.companyName}</span>
+              <span className="font-medium">{job.vendorProfile.vendor.companyName}</span>
+              {job.vendorProfile.averageRating && (
+                <span className="flex items-center gap-1 text-xs text-gray-500">
+                  <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                  {Number(job.vendorProfile.averageRating).toFixed(1)}
+                </span>
+              )}
             </div>
           )}
 
@@ -772,29 +826,101 @@ function JobCard({
             </div>
           )}
 
-          {/* Cost */}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">{job.actualTotal ? 'Final Cost' : 'Estimated'}</span>
-            <span className="font-semibold text-green-600">
-              ${Number(job.actualTotal || job.estimatedTotal || 0).toFixed(2)}
-            </span>
-          </div>
+          {/* Quote Details */}
+          {hasQuote && (
+            <div className="p-3 bg-amber-100/50 rounded-lg border border-amber-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-amber-800">Vendor Quote</span>
+                <span className="text-lg font-bold text-amber-900">
+                  ${Number(job.quotedAmount).toFixed(2)}
+                </span>
+              </div>
+              {job.estimatedHours && (
+                <div className="flex items-center gap-2 text-xs text-amber-700">
+                  <Clock className="w-3 h-3" />
+                  <span>Est. {job.estimatedHours} hours</span>
+                </div>
+              )}
+              {job.quoteNotes && (
+                <p className="text-xs text-amber-700 italic">"{job.quoteNotes}"</p>
+              )}
+              {job.estimatedTotal && (
+                <div className="text-xs text-gray-500 pt-1 border-t border-amber-200">
+                  Your estimate was: ${Number(job.estimatedTotal).toFixed(2)}
+                  {job.quotedAmount > job.estimatedTotal && (
+                    <span className="text-red-600 ml-2">
+                      (+${(Number(job.quotedAmount) - Number(job.estimatedTotal)).toFixed(2)})
+                    </span>
+                  )}
+                  {job.quotedAmount < job.estimatedTotal && (
+                    <span className="text-green-600 ml-2">
+                      (-${(Number(job.estimatedTotal) - Number(job.quotedAmount)).toFixed(2)})
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Cost - show only if not a quote submission */}
+          {!hasQuote && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">{job.actualTotal ? 'Final Cost' : 'Estimated'}</span>
+              <span className="font-semibold text-green-600">
+                ${Number(job.actualTotal || job.quotedAmount || job.estimatedTotal || 0).toFixed(2)}
+              </span>
+            </div>
+          )}
 
           {/* Actions */}
           {job.status === 'COMPLETED' && onConfirm && (
-            <Button size="sm" className="w-full" onClick={onConfirm} disabled={isConfirming}>
+            <Button
+              size="sm"
+              className="w-full bg-green-600 hover:bg-green-700"
+              onClick={onConfirm}
+              disabled={isConfirming}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
               {isConfirming ? 'Confirming...' : 'Confirm & Release Payment'}
             </Button>
           )}
 
-          {job.status === 'QUOTE_SUBMITTED' && onApproveQuote && (
+          {job.status === 'QUOTE_SUBMITTED' && (onApproveQuote || onDeclineQuote) && (
+            <div className="flex gap-2">
+              {onDeclineQuote && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  onClick={onDeclineQuote}
+                  disabled={isDecliningQuote || isApprovingQuote}
+                >
+                  {isDecliningQuote ? 'Declining...' : 'Decline'}
+                </Button>
+              )}
+              {onApproveQuote && (
+                <Button
+                  size="sm"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  onClick={onApproveQuote}
+                  disabled={isApprovingQuote || isDecliningQuote}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {isApprovingQuote ? 'Approving...' : 'Approve'}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {job.status === 'PENDING_DISPATCH' && onCancelJob && (
             <Button
               size="sm"
-              className="w-full"
-              onClick={onApproveQuote}
-              disabled={isApprovingQuote}
+              variant="outline"
+              className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              onClick={onCancelJob}
+              disabled={isCancellingJob}
             >
-              {isApprovingQuote ? 'Approving...' : 'Approve Quote'}
+              {isCancellingJob ? 'Cancelling...' : 'Cancel Job'}
             </Button>
           )}
         </div>
