@@ -1,6 +1,7 @@
 import {
   PrismaClient,
   UserRole,
+  UserStatus,
   OrganizationType,
   SubscriptionPlan,
   PropertyType,
@@ -87,7 +88,7 @@ async function main() {
 
   console.log('✅ Created/updated public marketplace organization:', publicMarketplace.name);
 
-  // Upsert admin user - always ensures correct password
+  // Upsert admin user - always ensures correct password and resets lockout
   const passwordHash = await bcrypt.hash('winner', 10);
   const adminUser = await prisma.user.upsert({
     where: { email: 'contact@aalb.org' },
@@ -96,8 +97,13 @@ async function main() {
       firstName: 'Admin',
       lastName: 'AALB',
       role: UserRole.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
       emailVerified: true,
       organizationId: organization.id,
+      // Reset security fields
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      lastFailedLoginAt: null,
     },
     create: {
       email: 'contact@aalb.org',
@@ -106,6 +112,7 @@ async function main() {
       lastName: 'AALB',
       phone: '',
       role: UserRole.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
       emailVerified: true,
       organizationId: organization.id,
     },
@@ -121,8 +128,13 @@ async function main() {
       firstName: 'Admin',
       lastName: 'AALB',
       role: UserRole.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
       emailVerified: true,
       organizationId: organization.id,
+      // Reset security fields
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      lastFailedLoginAt: null,
     },
     create: {
       email: 'admin@aalb.org',
@@ -131,6 +143,7 @@ async function main() {
       lastName: 'AALB',
       phone: '',
       role: UserRole.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
       emailVerified: true,
       organizationId: organization.id,
     },
