@@ -31,6 +31,11 @@ export class TenantAuthService {
         portalEnabled: true,
       },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -107,6 +112,10 @@ export class TenantAuthService {
     };
     const token = this.jwtService.sign(payload);
 
+    // Get unit and property from direct assignment or lease
+    const unit = tenant.unit || tenant.lease?.unit || null;
+    const property = tenant.unit?.property || tenant.lease?.unit?.property || null;
+
     return {
       tenant: {
         id: tenant.id,
@@ -115,9 +124,9 @@ export class TenantAuthService {
         email: tenant.email,
         phone: tenant.phone,
         leaseId: tenant.leaseId,
-        unitId: tenant.lease?.unitId || null,
-        unit: tenant.lease?.unit || null,
-        property: tenant.lease?.unit?.property || null,
+        unitId: tenant.unitId || tenant.lease?.unitId || null,
+        unit,
+        property,
       },
       token,
     };
@@ -195,6 +204,11 @@ export class TenantAuthService {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -211,6 +225,10 @@ export class TenantAuthService {
       throw new NotFoundException('Tenant not found');
     }
 
+    // Get unit and property from direct assignment or lease
+    const unit = tenant.unit || tenant.lease?.unit || null;
+    const property = tenant.unit?.property || tenant.lease?.unit?.property || null;
+
     return {
       id: tenant.id,
       firstName: tenant.firstName,
@@ -219,10 +237,13 @@ export class TenantAuthService {
       phone: tenant.phone,
       emergencyContact: tenant.emergencyContact,
       emergencyPhone: tenant.emergencyPhone,
+      status: tenant.status,
+      moveInDate: tenant.moveInDate,
+      moveOutDate: tenant.moveOutDate,
       leaseId: tenant.leaseId,
-      unitId: tenant.lease?.unitId || null,
-      unit: tenant.lease?.unit || null,
-      property: tenant.lease?.unit?.property || null,
+      unitId: tenant.unitId || tenant.lease?.unitId || null,
+      unit,
+      property,
       lease: tenant.lease
         ? {
             id: tenant.lease.id,
@@ -343,6 +364,11 @@ export class TenantAuthService {
         },
       },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -359,14 +385,18 @@ export class TenantAuthService {
       throw new BadRequestException('Invalid or expired invitation token');
     }
 
+    // Get property and unit from direct assignment or lease
+    const propertyName = tenant.unit?.property?.name || tenant.lease?.unit?.property?.name || null;
+    const unitNumber = tenant.unit?.unitNumber || tenant.lease?.unit?.unitNumber || null;
+
     return {
       valid: true,
       tenant: {
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email,
-        property: tenant.lease?.unit?.property?.name || null,
-        unit: tenant.lease?.unit?.unitNumber || null,
+        property: propertyName,
+        unit: unitNumber,
       },
     };
   }
@@ -381,6 +411,11 @@ export class TenantAuthService {
         },
       },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -419,6 +454,10 @@ export class TenantAuthService {
     };
     const jwtToken = this.jwtService.sign(payload);
 
+    // Get unit and property from direct assignment or lease
+    const unit = tenant.unit || tenant.lease?.unit || null;
+    const property = tenant.unit?.property || tenant.lease?.unit?.property || null;
+
     return {
       message: 'Registration successful',
       tenant: {
@@ -428,9 +467,9 @@ export class TenantAuthService {
         email: tenant.email,
         phone: tenant.phone,
         leaseId: tenant.leaseId,
-        unitId: tenant.lease?.unitId || null,
-        unit: tenant.lease?.unit || null,
-        property: tenant.lease?.unit?.property || null,
+        unitId: tenant.unitId || tenant.lease?.unitId || null,
+        unit,
+        property,
       },
       token: jwtToken,
     };

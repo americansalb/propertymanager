@@ -22,7 +22,32 @@ import {
 } from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
 import { OrganizationId } from '../common/decorators/organization.decorator';
-import { IsString, IsOptional, IsEmail } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsBoolean, IsDateString } from 'class-validator';
+
+class CreateTenantDto {
+  @IsString()
+  firstName: string;
+
+  @IsString()
+  lastName: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  phone: string;
+
+  @IsString()
+  unitId: string;
+
+  @IsOptional()
+  @IsDateString()
+  moveInDate?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  sendInvite?: boolean;
+}
 
 class UpdateTenantDto {
   @IsOptional()
@@ -57,10 +82,35 @@ class UpdateTenantDto {
 export class TenantsController {
   constructor(private tenantsService: TenantsService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create a new tenant and assign to unit' })
+  @ApiResponse({ status: 201, description: 'Tenant created successfully' })
+  @ApiResponse({ status: 404, description: 'Unit not found' })
+  async create(
+    @Body() dto: CreateTenantDto,
+    @OrganizationId() organizationId: string,
+    @Request() req: { user: { sub: string } },
+  ) {
+    const tenant = await this.tenantsService.create(
+      {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        phone: dto.phone,
+        unitId: dto.unitId,
+        moveInDate: dto.moveInDate ? new Date(dto.moveInDate) : undefined,
+        sendInvite: dto.sendInvite,
+      },
+      organizationId,
+      req.user.sub,
+    );
+    return { success: true, data: tenant };
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all tenants for the organization' })
   @ApiQuery({ name: 'search', required: false, description: 'Search by name, email, or phone' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by lease status' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by tenant status' })
   @ApiResponse({ status: 200, description: 'List of tenants' })
   async findAll(
     @OrganizationId() organizationId: string,

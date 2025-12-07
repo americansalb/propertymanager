@@ -15,34 +15,55 @@ export class TenantsService {
   async findAll(organizationId: string, filters?: { search?: string; status?: string }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
-      lease: {
-        unit: {
-          property: {
-            organizationId,
+      OR: [
+        // Tenants with direct unit assignment
+        {
+          unit: {
+            property: {
+              organizationId,
+            },
           },
         },
-      },
+        // Tenants with lease (legacy support)
+        {
+          lease: {
+            unit: {
+              property: {
+                organizationId,
+              },
+            },
+          },
+        },
+      ],
     };
 
     if (filters?.search) {
-      where.OR = [
-        { firstName: { contains: filters.search, mode: 'insensitive' } },
-        { lastName: { contains: filters.search, mode: 'insensitive' } },
-        { email: { contains: filters.search, mode: 'insensitive' } },
-        { phone: { contains: filters.search } },
+      where.AND = [
+        {
+          OR: [
+            { firstName: { contains: filters.search, mode: 'insensitive' } },
+            { lastName: { contains: filters.search, mode: 'insensitive' } },
+            { email: { contains: filters.search, mode: 'insensitive' } },
+            { phone: { contains: filters.search } },
+          ],
+        },
       ];
     }
 
     if (filters?.status) {
-      where.lease = {
-        ...where.lease,
-        status: filters.status,
-      };
+      where.status = filters.status;
     }
 
     const tenants = await this.prisma.tenant.findMany({
       where,
       include: {
+        unit: {
+          include: {
+            property: {
+              select: { id: true, name: true },
+            },
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -68,6 +89,25 @@ export class TenantsService {
       emergencyPhone: tenant.emergencyPhone,
       portalEnabled: tenant.portalEnabled,
       isPrimary: tenant.isPrimary,
+      status: tenant.status,
+      invitationStatus: tenant.invitationStatus,
+      invitationSentAt: tenant.invitationSentAt,
+      moveInDate: tenant.moveInDate,
+      moveOutDate: tenant.moveOutDate,
+      // Direct unit assignment
+      unit: tenant.unit
+        ? {
+            id: tenant.unit.id,
+            unitNumber: tenant.unit.unitNumber,
+            property: tenant.unit.property,
+          }
+        : tenant.lease?.unit
+          ? {
+              id: tenant.lease.unit.id,
+              unitNumber: tenant.lease.unit.unitNumber,
+              property: tenant.lease.unit.property,
+            }
+          : null,
       lease: tenant.lease
         ? {
             id: tenant.lease.id,
@@ -75,31 +115,117 @@ export class TenantsService {
             startDate: tenant.lease.startDate,
             endDate: tenant.lease.endDate,
             monthlyRent: tenant.lease.monthlyRent,
-            unit: tenant.lease.unit
-              ? {
-                  id: tenant.lease.unit.id,
-                  unitNumber: tenant.lease.unit.unitNumber,
-                  property: tenant.lease.unit.property,
-                }
-              : null,
           }
         : null,
     }));
+  }
+
+  async create(
+    data: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      unitId: string;
+      moveInDate?: Date;
+      sendInvite?: boolean;
+    },
+    organizationId: string,
+    invitedByUserId: string,
+  ) {
+    // Verify unit belongs to organization
+    const unit = await this.prisma.unit.findFirst({
+      where: {
+        id: data.unitId,
+        property: {
+          organizationId,
+        },
+      },
+      include: {
+        property: true,
+      },
+    });
+
+    if (!unit) {
+      throw new NotFoundException('Unit not found');
+    }
+
+    // Generate invitation token if sending invite
+    const invitationToken = data.sendInvite ? randomBytes(32).toString('hex') : null;
+    const invitationExpiresAt = data.sendInvite
+      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      : null;
+
+    // Create tenant
+    const tenant = await this.prisma.tenant.create({
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        unitId: data.unitId,
+        moveInDate: data.moveInDate || new Date(),
+        status: 'ACTIVE',
+        invitationStatus: data.sendInvite ? 'PENDING' : 'NOT_INVITED',
+        invitationToken,
+        invitationSentAt: data.sendInvite ? new Date() : null,
+        invitationExpiresAt,
+        invitedByUserId: data.sendInvite ? invitedByUserId : null,
+      },
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+      },
+    });
+
+    // Send invitation email if requested
+    if (data.sendInvite && invitationToken) {
+      const tenantPortalUrl = this.configService.get<string>('FRONTEND_TENANT_URL') || '/tenant';
+      await this.emailService.sendTenantInvitationEmail(
+        tenant.email,
+        `${tenant.firstName} ${tenant.lastName}`,
+        unit.property.name,
+        unit.unitNumber,
+        invitationToken,
+        tenantPortalUrl,
+      );
+    }
+
+    return tenant;
   }
 
   async findOne(id: string, organizationId: string) {
     const tenant = await this.prisma.tenant.findFirst({
       where: {
         id,
-        lease: {
-          unit: {
-            property: {
-              organizationId,
+        OR: [
+          {
+            unit: {
+              property: {
+                organizationId,
+              },
             },
           },
-        },
+          {
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -132,20 +258,33 @@ export class TenantsService {
       phone?: string;
       emergencyContact?: string;
       emergencyPhone?: string;
+      status?: string;
+      moveOutDate?: Date;
     },
     organizationId: string,
   ) {
-    // Verify tenant belongs to organization
+    // Verify tenant belongs to organization (via unit or lease)
     const existing = await this.prisma.tenant.findFirst({
       where: {
         id,
-        lease: {
-          unit: {
-            property: {
-              organizationId,
+        OR: [
+          {
+            unit: {
+              property: {
+                organizationId,
+              },
             },
           },
-        },
+          {
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+          },
+        ],
       },
     });
 
@@ -162,8 +301,17 @@ export class TenantsService {
         phone: data.phone,
         emergencyContact: data.emergencyContact,
         emergencyPhone: data.emergencyPhone,
+        status: data.status as 'ACTIVE' | 'INACTIVE' | 'MOVED_OUT' | undefined,
+        moveOutDate: data.moveOutDate,
       },
       include: {
+        unit: {
+          include: {
+            property: {
+              select: { id: true, name: true },
+            },
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -243,66 +391,90 @@ export class TenantsService {
   }
 
   async getStats(organizationId: string) {
-    const [totalTenants, activeLeases, portalEnabled] = await Promise.all([
-      this.prisma.tenant.count({
-        where: {
-          lease: {
-            unit: {
-              property: {
-                organizationId,
-              },
-            },
-          },
-        },
-      }),
-      this.prisma.tenant.count({
-        where: {
-          lease: {
-            status: 'ACTIVE',
-            unit: {
-              property: {
-                organizationId,
-              },
-            },
-          },
-        },
-      }),
-      this.prisma.tenant.count({
-        where: {
-          portalEnabled: true,
-          lease: {
-            unit: {
-              property: {
-                organizationId,
-              },
-            },
-          },
-        },
-      }),
-    ]);
-
-    return {
-      totalTenants,
-      activeLeases,
-      portalEnabled,
-      portalAdoptionRate: totalTenants > 0 ? Math.round((portalEnabled / totalTenants) * 100) : 0,
-    };
-  }
-
-  async sendInvitation(tenantId: string, organizationId: string, invitedByUserId: string) {
-    // Verify tenant belongs to organization
-    const tenant = await this.prisma.tenant.findFirst({
-      where: {
-        id: tenantId,
-        lease: {
+    const orgFilter = {
+      OR: [
+        {
           unit: {
             property: {
               organizationId,
             },
           },
         },
+        {
+          lease: {
+            unit: {
+              property: {
+                organizationId,
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    const [totalTenants, activeTenants, portalEnabled, pendingInvites] = await Promise.all([
+      this.prisma.tenant.count({
+        where: orgFilter,
+      }),
+      this.prisma.tenant.count({
+        where: {
+          ...orgFilter,
+          status: 'ACTIVE',
+        },
+      }),
+      this.prisma.tenant.count({
+        where: {
+          ...orgFilter,
+          portalEnabled: true,
+        },
+      }),
+      this.prisma.tenant.count({
+        where: {
+          ...orgFilter,
+          invitationStatus: 'PENDING',
+        },
+      }),
+    ]);
+
+    return {
+      totalTenants,
+      activeTenants,
+      portalEnabled,
+      pendingInvites,
+      portalAdoptionRate: totalTenants > 0 ? Math.round((portalEnabled / totalTenants) * 100) : 0,
+    };
+  }
+
+  async sendInvitation(tenantId: string, organizationId: string, invitedByUserId: string) {
+    // Verify tenant belongs to organization (via unit or lease)
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        id: tenantId,
+        OR: [
+          {
+            unit: {
+              property: {
+                organizationId,
+              },
+            },
+          },
+          {
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -339,13 +511,18 @@ export class TenantsService {
       },
     });
 
+    // Get property and unit info from direct assignment or lease
+    const propertyName =
+      tenant.unit?.property?.name || tenant.lease?.unit?.property?.name || 'Your Property';
+    const unitNumber = tenant.unit?.unitNumber || tenant.lease?.unit?.unitNumber || '';
+
     // Send invitation email
     const tenantPortalUrl = this.configService.get<string>('FRONTEND_TENANT_URL') || '/tenant';
     await this.emailService.sendTenantInvitationEmail(
       tenant.email,
       `${tenant.firstName} ${tenant.lastName}`,
-      tenant.lease?.unit?.property?.name || 'Your Property',
-      tenant.lease?.unit?.unitNumber || '',
+      propertyName,
+      unitNumber,
       invitationToken,
       tenantPortalUrl,
     );
@@ -359,19 +536,35 @@ export class TenantsService {
   }
 
   async resendInvitation(tenantId: string, organizationId: string, invitedByUserId: string) {
-    // Get tenant
+    // Get tenant (via unit or lease)
     const tenant = await this.prisma.tenant.findFirst({
       where: {
         id: tenantId,
-        lease: {
-          unit: {
-            property: {
-              organizationId,
+        OR: [
+          {
+            unit: {
+              property: {
+                organizationId,
+              },
             },
           },
-        },
+          {
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -408,13 +601,18 @@ export class TenantsService {
       },
     });
 
+    // Get property and unit info from direct assignment or lease
+    const propertyName =
+      tenant.unit?.property?.name || tenant.lease?.unit?.property?.name || 'Your Property';
+    const unitNumber = tenant.unit?.unitNumber || tenant.lease?.unit?.unitNumber || '';
+
     // Send invitation email
     const tenantPortalUrl = this.configService.get<string>('FRONTEND_TENANT_URL') || '/tenant';
     await this.emailService.sendTenantInvitationEmail(
       tenant.email,
       `${tenant.firstName} ${tenant.lastName}`,
-      tenant.lease?.unit?.property?.name || 'Your Property',
-      tenant.lease?.unit?.unitNumber || '',
+      propertyName,
+      unitNumber,
       invitationToken,
       tenantPortalUrl,
     );

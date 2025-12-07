@@ -229,6 +229,7 @@ model Unit {
 
   // Relations
   leases      Lease[]
+  tenants     Tenant[]
   workOrders  WorkOrder[]
 
   @@unique([propertyId, unitNumber])
@@ -304,6 +305,12 @@ enum TenantInvitationStatus {
   EXPIRED
 }
 
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  MOVED_OUT
+}
+
 model Tenant {
   id          String   @id @default(cuid())
 
@@ -344,8 +351,20 @@ model Tenant {
   // Stripe integration for payments
   stripeCustomerId String? @unique
 
-  leaseId     String
-  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  // Status tracking
+  status      TenantStatus @default(ACTIVE)
+
+  // Direct unit assignment (can be assigned without a lease)
+  unitId      String?
+  unit        Unit?    @relation(fields: [unitId], references: [id])
+
+  // Optional lease (for formal contract details)
+  leaseId     String?
+  lease       Lease?   @relation(fields: [leaseId], references: [id], onDelete: SetNull)
+
+  // Occupancy dates (independent of lease)
+  moveInDate  DateTime?
+  moveOutDate DateTime?
 
   isPrimary   Boolean  @default(false)
 
@@ -357,9 +376,11 @@ model Tenant {
   maintenanceRequests MaintenanceRequest[]
   messages    TenantMessage[]
 
+  @@index([unitId])
   @@index([leaseId])
   @@index([email])
   @@index([portalEnabled])
+  @@index([status])
 }
 
 // ============================================================================
