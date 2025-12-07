@@ -37,21 +37,21 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { title: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { title: 'Properties', href: '/properties', icon: Home },
-  { title: 'Leases', href: '/leases', icon: FileText },
-  { title: 'Tenants', href: '/tenants', icon: UserCircle },
-  { title: 'Financial', href: '/financial', icon: DollarSign },
-  { title: 'Work Orders', href: '/work-orders', icon: Wrench },
-  { title: 'Vendors', href: '/vendors', icon: Users },
-  { title: 'Marketplace', href: '/marketplace', icon: Store },
-  { title: 'Documents', href: '/documents', icon: FolderOpen },
-  { title: 'Calendar', href: '/calendar', icon: Calendar },
-  { title: 'Activity', href: '/activity', icon: Bell },
-  { title: 'Reports', href: '/reports', icon: BarChart3 },
-  { title: 'Export Data', href: '/export', icon: Download },
-  { title: 'Tenant Preview', href: '/tenant-preview', icon: User },
-  { title: 'Settings', href: '/settings', icon: Settings },
+  { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Properties', href: '/dashboard/properties', icon: Home },
+  { title: 'Leases', href: '/dashboard/leases', icon: FileText },
+  { title: 'Tenants', href: '/dashboard/tenants', icon: UserCircle },
+  { title: 'Financial', href: '/dashboard/financial', icon: DollarSign },
+  { title: 'Work Orders', href: '/dashboard/work-orders', icon: Wrench },
+  { title: 'Vendors', href: '/dashboard/vendors', icon: Users },
+  { title: 'Marketplace', href: '/dashboard/marketplace', icon: Store },
+  { title: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
+  { title: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
+  { title: 'Activity', href: '/dashboard/activity', icon: Bell },
+  { title: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
+  { title: 'Export Data', href: '/dashboard/export', icon: Download },
+  { title: 'Tenant Preview', href: '/dashboard/tenant-preview', icon: User },
+  { title: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

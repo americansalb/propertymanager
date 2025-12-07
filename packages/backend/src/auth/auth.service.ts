@@ -193,7 +193,7 @@ export class AuthService {
    */
   async validateUser(email: string, password: string): Promise<UserWithOrganization> {
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() },
       include: { organization: true },
     });
 

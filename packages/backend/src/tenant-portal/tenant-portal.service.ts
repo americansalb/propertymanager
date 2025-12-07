@@ -17,6 +17,11 @@ export class TenantPortalService {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -51,7 +56,7 @@ export class TenantPortalService {
       throw new NotFoundException('Tenant not found');
     }
 
-    // Calculate balance
+    // Calculate balance from lease charges
     const totalCharges =
       tenant.lease?.charges.reduce(
         (sum, charge) => sum + (Number(charge.amount) - Number(charge.amountPaid)),
@@ -62,6 +67,10 @@ export class TenantPortalService {
     const nextDueCharge = tenant.lease?.charges.find(
       (c) => c.status !== 'PAID' && c.status !== 'VOID',
     );
+
+    // Get unit and property from direct assignment or lease
+    const unitData = tenant.unit || tenant.lease?.unit;
+    const propertyData = tenant.unit?.property || tenant.lease?.unit?.property;
 
     return {
       tenant: {
@@ -81,22 +90,22 @@ export class TenantPortalService {
             autoPayDay: tenant.lease.autoPayDay,
           }
         : null,
-      unit: tenant.lease?.unit
+      unit: unitData
         ? {
-            id: tenant.lease.unit.id,
-            unitNumber: tenant.lease.unit.unitNumber,
-            bedrooms: tenant.lease.unit.bedrooms,
-            bathrooms: tenant.lease.unit.bathrooms,
+            id: unitData.id,
+            unitNumber: unitData.unitNumber,
+            bedrooms: unitData.bedrooms,
+            bathrooms: unitData.bathrooms,
           }
         : null,
-      property: tenant.lease?.unit?.property
+      property: propertyData
         ? {
-            id: tenant.lease.unit.property.id,
-            name: tenant.lease.unit.property.name,
-            address1: tenant.lease.unit.property.address1,
-            city: tenant.lease.unit.property.city,
-            state: tenant.lease.unit.property.state,
-            zipCode: tenant.lease.unit.property.zipCode,
+            id: propertyData.id,
+            name: propertyData.name,
+            address1: propertyData.address1,
+            city: propertyData.city,
+            state: propertyData.state,
+            zipCode: propertyData.zipCode,
           }
         : null,
       balance: totalCharges,
@@ -240,7 +249,7 @@ export class TenantPortalService {
     }
 
     await this.prisma.lease.update({
-      where: { id: tenant.leaseId },
+      where: { id: tenant.lease.id },
       data: {
         autoPayEnabled: enabled,
         autoPayDay: day || tenant.lease.autoPayDay,
@@ -361,10 +370,15 @@ export class TenantPortalService {
       photos?: string[];
     },
   ) {
-    // Verify tenant has active lease
+    // Verify tenant exists and has unit assignment (either direct or via lease)
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -377,8 +391,17 @@ export class TenantPortalService {
       },
     });
 
-    if (!tenant?.lease || tenant.lease.status !== 'ACTIVE') {
-      throw new BadRequestException('No active lease found');
+    // Get unit from direct assignment or lease
+    const unitData = tenant?.unit || tenant?.lease?.unit;
+    const propertyData = tenant?.unit?.property || tenant?.lease?.unit?.property;
+
+    if (!tenant || !unitData || !propertyData) {
+      throw new BadRequestException('No unit assignment found');
+    }
+
+    // Check if tenant is active
+    if (tenant.status !== 'ACTIVE') {
+      throw new BadRequestException('Tenant is not active');
     }
 
     const request = await this.prisma.maintenanceRequest.create({
@@ -398,14 +421,14 @@ export class TenantPortalService {
     // Also create a work order for management
     await this.prisma.workOrder.create({
       data: {
-        organizationId: tenant.lease.unit.property.organizationId,
+        organizationId: propertyData.organizationId,
         title: data.title,
         description: data.description,
         type: 'MAINTENANCE',
         priority: (data.priority as any) || 'MEDIUM',
         status: 'SUBMITTED',
-        propertyId: tenant.lease.unit.propertyId,
-        unitId: tenant.lease.unitId,
+        propertyId: propertyData.id,
+        unitId: unitData.id,
         location: data.location,
         tenantReportedBy: `${tenant.firstName} ${tenant.lastName}`,
         tenantPhone: tenant.phone,
@@ -439,6 +462,11 @@ export class TenantPortalService {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -460,49 +488,101 @@ export class TenantPortalService {
       },
     });
 
-    if (!tenant?.lease) {
-      throw new NotFoundException('Lease not found');
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
     }
 
-    const lease = tenant.lease;
+    // Get unit and property from direct assignment or lease
+    const unitData = tenant.unit || tenant.lease?.unit;
+    const propertyData = tenant.unit?.property || tenant.lease?.unit?.property;
 
-    return {
-      id: lease.id,
-      status: lease.status,
-      type: lease.type,
-      startDate: lease.startDate,
-      endDate: lease.endDate,
-      moveInDate: lease.moveInDate,
-      monthlyRent: lease.monthlyRent,
-      securityDeposit: lease.securityDeposit,
-      terms: lease.terms,
-      documentUrl: lease.documentUrl,
-      unit: {
-        id: lease.unit.id,
-        unitNumber: lease.unit.unitNumber,
-        bedrooms: lease.unit.bedrooms,
-        bathrooms: lease.unit.bathrooms,
-        squareFeet: lease.unit.squareFeet,
-        type: lease.unit.type,
-      },
-      property: {
-        id: lease.unit.property.id,
-        name: lease.unit.property.name,
-        address1: lease.unit.property.address1,
-        address2: lease.unit.property.address2,
-        city: lease.unit.property.city,
-        state: lease.unit.property.state,
-        zipCode: lease.unit.property.zipCode,
-        type: lease.unit.property.type,
-      },
-      tenants: lease.tenants,
-      daysRemaining: lease.endDate
-        ? Math.max(
-            0,
-            Math.ceil((new Date(lease.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-          )
-        : null,
-    };
+    // If tenant has a lease, return full lease details
+    if (tenant.lease) {
+      const lease = tenant.lease;
+      return {
+        id: lease.id,
+        status: lease.status,
+        type: lease.type,
+        startDate: lease.startDate,
+        endDate: lease.endDate,
+        moveInDate: lease.moveInDate,
+        monthlyRent: lease.monthlyRent,
+        securityDeposit: lease.securityDeposit,
+        terms: lease.terms,
+        documentUrl: lease.documentUrl,
+        unit: {
+          id: lease.unit.id,
+          unitNumber: lease.unit.unitNumber,
+          bedrooms: lease.unit.bedrooms,
+          bathrooms: lease.unit.bathrooms,
+          squareFeet: lease.unit.squareFeet,
+          type: lease.unit.type,
+        },
+        property: {
+          id: lease.unit.property.id,
+          name: lease.unit.property.name,
+          address1: lease.unit.property.address1,
+          address2: lease.unit.property.address2,
+          city: lease.unit.property.city,
+          state: lease.unit.property.state,
+          zipCode: lease.unit.property.zipCode,
+          type: lease.unit.property.type,
+        },
+        tenants: lease.tenants,
+        daysRemaining: lease.endDate
+          ? Math.max(
+              0,
+              Math.ceil((new Date(lease.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+            )
+          : null,
+      };
+    }
+
+    // If no lease but has direct unit assignment, return unit info only
+    if (unitData && propertyData) {
+      return {
+        id: null,
+        status: 'NO_LEASE',
+        type: null,
+        startDate: tenant.moveInDate,
+        endDate: null,
+        moveInDate: tenant.moveInDate,
+        monthlyRent: null,
+        securityDeposit: null,
+        terms: null,
+        documentUrl: null,
+        unit: {
+          id: unitData.id,
+          unitNumber: unitData.unitNumber,
+          bedrooms: unitData.bedrooms,
+          bathrooms: unitData.bathrooms,
+          squareFeet: unitData.squareFeet,
+          type: unitData.type,
+        },
+        property: {
+          id: propertyData.id,
+          name: propertyData.name,
+          address1: propertyData.address1,
+          address2: propertyData.address2,
+          city: propertyData.city,
+          state: propertyData.state,
+          zipCode: propertyData.zipCode,
+          type: propertyData.type,
+        },
+        tenants: [
+          {
+            id: tenant.id,
+            firstName: tenant.firstName,
+            lastName: tenant.lastName,
+            email: tenant.email,
+            isPrimary: tenant.isPrimary,
+          },
+        ],
+        daysRemaining: null,
+      };
+    }
+
+    throw new NotFoundException('No unit assignment found');
   }
 
   // ============================================================================

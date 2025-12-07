@@ -7,7 +7,7 @@ const nextConfig = {
   trailingSlash: true,
   transpilePackages: ['@propertymaster/shared'],
   images: {
-    unoptimized: true, // Required for static export
+    unoptimized: true,
   },
   webpack: (config) => {
     config.resolve.alias['@'] = path.resolve(__dirname, 'src');

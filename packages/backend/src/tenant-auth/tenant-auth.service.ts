@@ -23,6 +23,109 @@ export class TenantAuthService {
     private emailService: EmailService,
   ) {}
 
+  async setupTestTenant(email: string, password: string, firstName: string, lastName: string) {
+    // Find the demo admin's organization
+    const adminUser = await this.prisma.user.findFirst({
+      where: { email: 'admin@aalb.org' },
+      select: { organizationId: true },
+    });
+
+    if (!adminUser?.organizationId) {
+      throw new BadRequestException(
+        'Demo admin account not found. Please set up the demo account first.',
+      );
+    }
+
+    // Find first available unit in the demo organization
+    const unit = await this.prisma.unit.findFirst({
+      where: {
+        property: {
+          organizationId: adminUser.organizationId,
+        },
+      },
+      include: {
+        property: true,
+      },
+    });
+
+    if (!unit) {
+      throw new BadRequestException(
+        'No units available in demo organization. Please create a property and unit first.',
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Check if tenant already exists
+    const existingTenant = await this.prisma.tenant.findFirst({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existingTenant) {
+      // Update existing tenant
+      const updated = await this.prisma.tenant.update({
+        where: { id: existingTenant.id },
+        data: {
+          firstName,
+          lastName,
+          portalEnabled: true,
+          portalPassword: hashedPassword,
+          unitId: unit.id,
+          status: 'ACTIVE',
+          invitationStatus: 'ACCEPTED',
+        },
+      });
+
+      return {
+        message: 'Existing tenant updated with portal access',
+        tenant: {
+          id: updated.id,
+          email: updated.email,
+          firstName: updated.firstName,
+          lastName: updated.lastName,
+        },
+        unit: {
+          id: unit.id,
+          unitNumber: unit.unitNumber,
+          property: unit.property.name,
+        },
+      };
+    }
+
+    // Create new tenant
+    const tenant = await this.prisma.tenant.create({
+      data: {
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        phone: '555-000-0000',
+        unitId: unit.id,
+        status: 'ACTIVE',
+        portalEnabled: true,
+        portalPassword: hashedPassword,
+        isPrimary: true,
+        invitationStatus: 'ACCEPTED',
+        moveInDate: new Date(),
+      },
+    });
+
+    return {
+      message: 'Test tenant created successfully',
+      tenant: {
+        id: tenant.id,
+        email: tenant.email,
+        firstName: tenant.firstName,
+        lastName: tenant.lastName,
+      },
+      unit: {
+        id: unit.id,
+        unitNumber: unit.unitNumber,
+        property: unit.property.name,
+      },
+    };
+  }
+
   async login(email: string, password: string) {
     // Find tenant by email
     const tenant = await this.prisma.tenant.findFirst({
@@ -31,6 +134,11 @@ export class TenantAuthService {
         portalEnabled: true,
       },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -107,6 +215,10 @@ export class TenantAuthService {
     };
     const token = this.jwtService.sign(payload);
 
+    // Get unit and property from direct assignment or lease
+    const unit = tenant.unit || tenant.lease?.unit || null;
+    const property = tenant.unit?.property || tenant.lease?.unit?.property || null;
+
     return {
       tenant: {
         id: tenant.id,
@@ -115,9 +227,9 @@ export class TenantAuthService {
         email: tenant.email,
         phone: tenant.phone,
         leaseId: tenant.leaseId,
-        unitId: tenant.lease?.unitId || null,
-        unit: tenant.lease?.unit || null,
-        property: tenant.lease?.unit?.property || null,
+        unitId: tenant.unitId || tenant.lease?.unitId || null,
+        unit,
+        property,
       },
       token,
     };
@@ -195,6 +307,11 @@ export class TenantAuthService {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
         lease: {
           include: {
             unit: {
@@ -211,6 +328,10 @@ export class TenantAuthService {
       throw new NotFoundException('Tenant not found');
     }
 
+    // Get unit and property from direct assignment or lease
+    const unit = tenant.unit || tenant.lease?.unit || null;
+    const property = tenant.unit?.property || tenant.lease?.unit?.property || null;
+
     return {
       id: tenant.id,
       firstName: tenant.firstName,
@@ -219,10 +340,13 @@ export class TenantAuthService {
       phone: tenant.phone,
       emergencyContact: tenant.emergencyContact,
       emergencyPhone: tenant.emergencyPhone,
+      status: tenant.status,
+      moveInDate: tenant.moveInDate,
+      moveOutDate: tenant.moveOutDate,
       leaseId: tenant.leaseId,
-      unitId: tenant.lease?.unitId || null,
-      unit: tenant.lease?.unit || null,
-      property: tenant.lease?.unit?.property || null,
+      unitId: tenant.unitId || tenant.lease?.unitId || null,
+      unit,
+      property,
       lease: tenant.lease
         ? {
             id: tenant.lease.id,
@@ -331,5 +455,126 @@ export class TenantAuthService {
     } catch {
       return null;
     }
+  }
+
+  async validateInvitation(token: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        invitationToken: token,
+        invitationStatus: 'PENDING',
+        invitationExpiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new BadRequestException('Invalid or expired invitation token');
+    }
+
+    // Get property and unit from direct assignment or lease
+    const propertyName = tenant.unit?.property?.name || tenant.lease?.unit?.property?.name || null;
+    const unitNumber = tenant.unit?.unitNumber || tenant.lease?.unit?.unitNumber || null;
+
+    return {
+      valid: true,
+      tenant: {
+        firstName: tenant.firstName,
+        lastName: tenant.lastName,
+        email: tenant.email,
+        property: propertyName,
+        unit: unitNumber,
+      },
+    };
+  }
+
+  async registerWithInvitation(token: string, password: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        invitationToken: token,
+        invitationStatus: 'PENDING',
+        invitationExpiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+        lease: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new BadRequestException('Invalid or expired invitation token');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update tenant - enable portal access and mark invitation as accepted
+    await this.prisma.tenant.update({
+      where: { id: tenant.id },
+      data: {
+        portalEnabled: true,
+        portalPassword: hashedPassword,
+        invitationStatus: 'ACCEPTED',
+        invitationToken: null, // Clear the token so it can't be reused
+      },
+    });
+
+    // Generate JWT token for automatic login
+    const payload = {
+      sub: tenant.id,
+      email: tenant.email,
+      type: 'tenant',
+    };
+    const jwtToken = this.jwtService.sign(payload);
+
+    // Get unit and property from direct assignment or lease
+    const unit = tenant.unit || tenant.lease?.unit || null;
+    const property = tenant.unit?.property || tenant.lease?.unit?.property || null;
+
+    return {
+      message: 'Registration successful',
+      tenant: {
+        id: tenant.id,
+        firstName: tenant.firstName,
+        lastName: tenant.lastName,
+        email: tenant.email,
+        phone: tenant.phone,
+        leaseId: tenant.leaseId,
+        unitId: tenant.unitId || tenant.lease?.unitId || null,
+        unit,
+        property,
+      },
+      token: jwtToken,
+    };
   }
 }

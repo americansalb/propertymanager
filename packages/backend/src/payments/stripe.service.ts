@@ -38,11 +38,22 @@ export class StripeService {
   ): Promise<Stripe.PaymentIntent> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      include: { lease: { include: { unit: { include: { property: true } } } } },
+      include: {
+        unit: { include: { property: true } },
+        lease: { include: { unit: { include: { property: true } } } },
+      },
     });
 
     if (!tenant) {
       throw new Error('Tenant not found');
+    }
+
+    // Get unit and property from direct assignment or lease
+    const unitData = tenant.unit || tenant.lease?.unit;
+    const propertyData = tenant.unit?.property || tenant.lease?.unit?.property;
+
+    if (!unitData || !propertyData) {
+      throw new Error('Tenant has no unit assigned');
     }
 
     const paymentIntent = await this.stripe.paymentIntents.create({
@@ -54,11 +65,11 @@ export class StripeService {
       metadata: {
         tenantId,
         chargeIds: chargeIds.join(','),
-        propertyId: tenant.lease.unit.property.id,
-        unitId: tenant.lease.unitId,
+        propertyId: propertyData.id,
+        unitId: unitData.id,
         ...metadata,
       },
-      description: `Rent payment for ${tenant.lease.unit.property.name} - Unit ${tenant.lease.unit.unitNumber}`,
+      description: `Rent payment for ${propertyData.name} - Unit ${unitData.unitNumber}`,
     });
 
     this.logger.log(`Payment intent created: ${paymentIntent.id} for ${amount}`);

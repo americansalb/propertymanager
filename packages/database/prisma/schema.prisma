@@ -59,6 +59,7 @@ model Organization {
   vendors   Vendor[]
   bankAccounts BankAccount[]
   events    Event[]
+  tenants   Tenant[]  // Orphan tenants not yet assigned to a unit
 
   @@index([slug])
 }
@@ -229,6 +230,7 @@ model Unit {
 
   // Relations
   leases      Lease[]
+  tenants     Tenant[]
   workOrders  WorkOrder[]
 
   @@unique([propertyId, unitNumber])
@@ -297,6 +299,19 @@ model Lease {
   @@index([autoPayEnabled])
 }
 
+enum TenantInvitationStatus {
+  NOT_INVITED
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  MOVED_OUT
+}
+
 model Tenant {
   id          String   @id @default(cuid())
 
@@ -322,6 +337,13 @@ model Tenant {
   resetToken        String?
   resetTokenExpiry  DateTime?
 
+  // Invitation
+  invitationStatus  TenantInvitationStatus @default(NOT_INVITED)
+  invitationToken   String?  @unique
+  invitationSentAt  DateTime?
+  invitationExpiresAt DateTime?
+  invitedByUserId   String?
+
   // Account lockout
   failedLoginAttempts Int      @default(0)
   lockedUntil         DateTime?
@@ -330,8 +352,24 @@ model Tenant {
   // Stripe integration for payments
   stripeCustomerId String? @unique
 
-  leaseId     String
-  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  // Status tracking
+  status      TenantStatus @default(ACTIVE)
+
+  // Organization (for orphan tenants not yet assigned to a unit)
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
+  // Direct unit assignment (can be assigned without a lease)
+  unitId      String?
+  unit        Unit?    @relation(fields: [unitId], references: [id])
+
+  // Optional lease (for formal contract details)
+  leaseId     String?
+  lease       Lease?   @relation(fields: [leaseId], references: [id], onDelete: SetNull)
+
+  // Occupancy dates (independent of lease)
+  moveInDate  DateTime?
+  moveOutDate DateTime?
 
   isPrimary   Boolean  @default(false)
 
@@ -343,9 +381,11 @@ model Tenant {
   maintenanceRequests MaintenanceRequest[]
   messages    TenantMessage[]
 
+  @@index([unitId])
   @@index([leaseId])
   @@index([email])
   @@index([portalEnabled])
+  @@index([status])
 }
 
 // ============================================================================

@@ -260,8 +260,8 @@ export class PaymentsService {
     if (dto.allocations && dto.allocations.length > 0) {
       // Manual allocation
       await this.allocatePaymentManually(payment.id, dto.allocations, organizationId);
-    } else {
-      // Auto-allocate to oldest outstanding charges
+    } else if (tenant.lease?.id) {
+      // Auto-allocate to oldest outstanding charges (only if tenant has a lease)
       await this.autoAllocatePayment(payment.id, dto.amount, tenant.lease.id, organizationId);
     }
 
@@ -789,8 +789,8 @@ export class PaymentsService {
       select: { leaseId: true },
     });
 
-    if (!tenantWithLease) {
-      throw new NotFoundException('Tenant not found');
+    if (!tenantWithLease || !tenantWithLease.leaseId) {
+      throw new NotFoundException('Tenant not found or has no lease');
     }
 
     // Update lease with auto-pay settings
@@ -836,8 +836,8 @@ export class PaymentsService {
       },
     });
 
-    if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+    if (!tenant || !tenant.leaseId) {
+      throw new NotFoundException('Tenant not found or has no lease');
     }
 
     // Update lease to disable auto-pay
@@ -885,8 +885,8 @@ export class PaymentsService {
       },
     });
 
-    if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+    if (!tenant || !tenant.lease) {
+      throw new NotFoundException('Tenant not found or has no lease');
     }
 
     let defaultPaymentMethod = null;

@@ -42,7 +42,7 @@ async function bootstrap() {
               styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
               fontSrc: ["'self'", 'https://fonts.gstatic.com'],
               imgSrc: ["'self'", 'data:', 'https:'],
-              scriptSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Next.js requires inline scripts
               connectSrc: [
                 "'self'",
                 'https://api.stripe.com',
@@ -88,8 +88,15 @@ async function bootstrap() {
   }
 
   // Serve static files from frontend builds
-  const adminDistPath = join(__dirname, '..', '..', 'frontend-admin', 'dist');
-  const tenantDistPath = join(__dirname, '..', '..', 'frontend-tenant', 'out');
+  // When running from repo root (Render native or local), frontends are in packages/
+  // When running from Docker, frontends are copied to /app/public
+  const isDockerBuild = process.cwd() === '/app';
+  const adminDistPath = isDockerBuild
+    ? join(process.cwd(), 'public')
+    : join(process.cwd(), 'packages', 'frontend-admin', 'dist');
+  const tenantDistPath = isDockerBuild
+    ? join(process.cwd(), 'public', 'tenant')
+    : join(process.cwd(), 'packages', 'frontend-tenant', 'out');
 
   // Serve tenant portal static files at /tenant
   app.useStaticAssets(tenantDistPath, { prefix: '/tenant' });

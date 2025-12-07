@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -21,7 +22,32 @@ import {
 } from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
 import { OrganizationId } from '../common/decorators/organization.decorator';
-import { IsString, IsOptional, IsEmail } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsBoolean, IsDateString } from 'class-validator';
+
+class CreateTenantDto {
+  @IsString()
+  firstName!: string;
+
+  @IsString()
+  lastName!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  phone!: string;
+
+  @IsString()
+  unitId!: string;
+
+  @IsOptional()
+  @IsDateString()
+  moveInDate?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  sendInvite?: boolean;
+}
 
 class UpdateTenantDto {
   @IsOptional()
@@ -49,6 +75,11 @@ class UpdateTenantDto {
   emergencyPhone?: string;
 }
 
+class AssignToUnitDto {
+  @IsString()
+  unitId!: string;
+}
+
 @ApiTags('tenants')
 @Controller('tenants')
 @UseGuards(AuthGuard('jwt'))
@@ -56,10 +87,35 @@ class UpdateTenantDto {
 export class TenantsController {
   constructor(private tenantsService: TenantsService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create a new tenant and assign to unit' })
+  @ApiResponse({ status: 201, description: 'Tenant created successfully' })
+  @ApiResponse({ status: 404, description: 'Unit not found' })
+  async create(
+    @Body() dto: CreateTenantDto,
+    @OrganizationId() organizationId: string,
+    @Request() req: { user: { sub: string } },
+  ) {
+    const tenant = await this.tenantsService.create(
+      {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        phone: dto.phone,
+        unitId: dto.unitId,
+        moveInDate: dto.moveInDate ? new Date(dto.moveInDate) : undefined,
+        sendInvite: dto.sendInvite,
+      },
+      organizationId,
+      req.user.sub,
+    );
+    return { success: true, data: tenant };
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all tenants for the organization' })
   @ApiQuery({ name: 'search', required: false, description: 'Search by name, email, or phone' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by lease status' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by tenant status' })
   @ApiResponse({ status: 200, description: 'List of tenants' })
   async findAll(
     @OrganizationId() organizationId: string,
@@ -133,5 +189,52 @@ export class TenantsController {
   async disablePortal(@Param('id') id: string, @OrganizationId() organizationId: string) {
     const tenant = await this.tenantsService.disablePortalAccess(id, organizationId);
     return { success: true, data: tenant, message: 'Portal access disabled' };
+  }
+
+  @Post(':id/invite')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send tenant portal invitation' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Invitation sent successfully' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  @ApiResponse({ status: 400, description: 'Tenant already has portal access' })
+  async sendInvitation(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Request() req: { user: { sub: string } },
+  ) {
+    const result = await this.tenantsService.sendInvitation(id, organizationId, req.user.sub);
+    return result;
+  }
+
+  @Post(':id/resend-invite')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend tenant portal invitation' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Invitation resent successfully' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  @ApiResponse({ status: 400, description: 'Tenant already has portal access' })
+  async resendInvitation(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Request() req: { user: { sub: string } },
+  ) {
+    const result = await this.tenantsService.resendInvitation(id, organizationId, req.user.sub);
+    return result;
+  }
+
+  @Post(':id/assign-unit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Assign tenant to a unit' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Tenant assigned to unit successfully' })
+  @ApiResponse({ status: 404, description: 'Tenant or unit not found' })
+  async assignToUnit(
+    @Param('id') id: string,
+    @Body() dto: AssignToUnitDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    const result = await this.tenantsService.assignToUnit(id, dto.unitId, organizationId);
+    return { success: true, data: result };
   }
 }

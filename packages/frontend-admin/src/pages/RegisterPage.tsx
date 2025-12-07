@@ -26,7 +26,7 @@ export default function RegisterPage() {
     onSuccess: (data) => {
       // Refresh token is now in httpOnly cookie - only store accessToken
       login(data.accessToken, data.user);
-      navigate('/');
+      navigate('/dashboard');
     },
   });
 
