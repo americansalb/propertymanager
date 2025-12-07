@@ -12,6 +12,8 @@ import {
   CheckCircle,
   Clock,
   Loader2,
+  Building2,
+  Phone,
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/services/api';
@@ -105,6 +107,91 @@ export default function DashboardPage() {
     );
   }
 
+  // Show "no property assigned" view when tenant has no unit/property
+  if (!data.property && !data.unit) {
+    return (
+      <TenantLayout>
+        <div className="space-y-6">
+          {/* Welcome Section */}
+          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              Welcome, {data.tenant.firstName}!
+            </h1>
+            <p className="text-gray-600">Your tenant portal account is active</p>
+          </div>
+
+          {/* No Property Assigned Card */}
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardContent className="py-12">
+              <div className="text-center">
+                <Building2 className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  No Property Assigned Yet
+                </h2>
+                <p className="text-gray-600 max-w-md mx-auto mb-6">
+                  Your account is set up, but you haven&apos;t been assigned to a property yet. Your
+                  property manager will assign you to a unit soon.
+                </p>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Phone className="w-4 h-4" />
+                    <span className="text-sm">
+                      Contact your property manager if you have questions
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Account Info Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Your Account</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Name</p>
+                  <p className="font-medium">
+                    {data.tenant.firstName} {data.tenant.lastName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Email</p>
+                  <p className="font-medium">{data.tenant.email}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions - Limited */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Link href="/profile">
+                  <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
+                    <Home className="w-6 h-6" />
+                    <span>Update Profile</span>
+                  </Button>
+                </Link>
+                <Link href="/messages">
+                  <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
+                    <MessageSquare className="w-6 h-6" />
+                    <span>Contact Us</span>
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </TenantLayout>
+    );
+  }
+
   const daysUntilDue = data.nextDue
     ? Math.ceil((new Date(data.nextDue.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
@@ -130,10 +217,14 @@ export default function DashboardPage() {
           <Card className={data.balance > 0 ? 'border-red-200 bg-red-50/50' : ''}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">Balance Due</CardTitle>
-              <DollarSign className={`w-5 h-5 ${data.balance > 0 ? 'text-red-500' : 'text-green-500'}`} />
+              <DollarSign
+                className={`w-5 h-5 ${data.balance > 0 ? 'text-red-500' : 'text-green-500'}`}
+              />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${data.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              <div
+                className={`text-2xl font-bold ${data.balance > 0 ? 'text-red-600' : 'text-green-600'}`}
+              >
                 ${data.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
               {data.nextDue && daysUntilDue !== null && (
@@ -141,8 +232,8 @@ export default function DashboardPage() {
                   {daysUntilDue > 0
                     ? `Due in ${daysUntilDue} days`
                     : daysUntilDue === 0
-                    ? 'Due today'
-                    : `${Math.abs(daysUntilDue)} days overdue`}
+                      ? 'Due today'
+                      : `${Math.abs(daysUntilDue)} days overdue`}
                 </p>
               )}
             </CardContent>

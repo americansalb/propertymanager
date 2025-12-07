@@ -93,6 +93,7 @@ export default function TenantsPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [assignUnitModalOpen, setAssignUnitModalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -382,7 +383,7 @@ export default function TenantsPage() {
                           {tenant.phone}
                         </span>
                       </div>
-                      {tenant.unit && (
+                      {tenant.unit ? (
                         <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
                           <Building className="w-3 h-3" />
                           {tenant.unit.property.name}
@@ -397,10 +398,30 @@ export default function TenantsPage() {
                             </Badge>
                           )}
                         </p>
+                      ) : (
+                        <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">
+                          <Building className="w-3 h-3" />
+                          No unit assigned
+                        </p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {/* Assign unit button for tenants without a unit */}
+                    {!tenant.unit && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-amber-500 hover:bg-amber-600"
+                        onClick={() => {
+                          setSelectedTenant(tenant);
+                          setAssignUnitModalOpen(true);
+                        }}
+                      >
+                        <Home className="w-4 h-4 mr-1" />
+                        Assign Unit
+                      </Button>
+                    )}
                     {/* Invite actions */}
                     {!tenant.portalEnabled && (
                       <>
@@ -498,6 +519,16 @@ export default function TenantsPage() {
         open={historyModalOpen}
         onClose={() => {
           setHistoryModalOpen(false);
+          setSelectedTenant(null);
+        }}
+      />
+
+      {/* Assign Unit Modal */}
+      <AssignUnitModal
+        tenant={selectedTenant}
+        open={assignUnitModalOpen}
+        onClose={() => {
+          setAssignUnitModalOpen(false);
           setSelectedTenant(null);
         }}
       />
@@ -894,6 +925,132 @@ function TenantHistoryModal({
                 )}
               </div>
             )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AssignUnitModal({
+  tenant,
+  open,
+  onClose,
+}: {
+  tenant: Tenant | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [propertyId, setPropertyId] = useState('');
+  const [unitId, setUnitId] = useState('');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      setPropertyId('');
+      setUnitId('');
+    }
+  }, [open]);
+
+  // Fetch properties with units
+  const { data: properties } = useQuery({
+    queryKey: ['properties-with-units'],
+    queryFn: async () => {
+      const response = await api.get('/properties');
+      return response.data.data as Property[];
+    },
+    enabled: open,
+  });
+
+  const selectedProperty = properties?.find((p) => p.id === propertyId);
+
+  const assignUnit = useMutation({
+    mutationFn: () =>
+      api.post(`/tenants/${tenant?.id}/assign-unit`, {
+        unitId,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['tenant-stats'] });
+      toast({
+        title: 'Unit assigned successfully',
+        description: `${tenant?.firstName} ${tenant?.lastName} has been assigned to the unit.`,
+      });
+      onClose();
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      toast({
+        title: 'Failed to assign unit',
+        description: error.response?.data?.message || 'Please try again',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  if (!tenant) {
+    return null;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Assign Unit to Tenant</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="font-medium">
+              {tenant.firstName} {tenant.lastName}
+            </p>
+            <p className="text-sm text-gray-500">{tenant.email}</p>
+          </div>
+          <div>
+            <Label>Property</Label>
+            <Select
+              value={propertyId}
+              onValueChange={(value) => {
+                setPropertyId(value);
+                setUnitId('');
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a property" />
+              </SelectTrigger>
+              <SelectContent>
+                {properties?.map((property) => (
+                  <SelectItem key={property.id} value={property.id}>
+                    {property.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Unit</Label>
+            <Select value={unitId} onValueChange={setUnitId} disabled={!propertyId}>
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={propertyId ? 'Select a unit' : 'Select a property first'}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {selectedProperty?.units?.map((unit) => (
+                  <SelectItem key={unit.id} value={unit.id}>
+                    Unit {unit.unitNumber}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={() => assignUnit.mutate()} disabled={!unitId || assignUnit.isPending}>
+              {assignUnit.isPending ? 'Assigning...' : 'Assign Unit'}
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -34,6 +34,12 @@ export class TenantsService {
             },
           },
         },
+        // Orphan tenants (no unit assigned yet, but linked to organization)
+        {
+          organizationId,
+          unitId: null,
+          leaseId: null,
+        },
       ],
     };
 
@@ -218,6 +224,12 @@ export class TenantsService {
               },
             },
           },
+          // Orphan tenant with organization link
+          {
+            organizationId,
+            unitId: null,
+            leaseId: null,
+          },
         ],
       },
       include: {
@@ -263,7 +275,7 @@ export class TenantsService {
     },
     organizationId: string,
   ) {
-    // Verify tenant belongs to organization (via unit or lease)
+    // Verify tenant belongs to organization (via unit, lease, or direct org link)
     const existing = await this.prisma.tenant.findFirst({
       where: {
         id,
@@ -283,6 +295,12 @@ export class TenantsService {
                 },
               },
             },
+          },
+          // Orphan tenant with organization link
+          {
+            organizationId,
+            unitId: null,
+            leaseId: null,
           },
         ],
       },
@@ -408,6 +426,12 @@ export class TenantsService {
               },
             },
           },
+        },
+        // Include orphan tenants with organization link
+        {
+          organizationId,
+          unitId: null,
+          leaseId: null,
         },
       ],
     };
@@ -622,6 +646,91 @@ export class TenantsService {
       message: 'Invitation resent successfully',
       invitationSentAt: new Date(),
       invitationExpiresAt,
+    };
+  }
+
+  async assignToUnit(tenantId: string, unitId: string, organizationId: string) {
+    // Verify tenant belongs to organization
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        id: tenantId,
+        OR: [
+          {
+            unit: {
+              property: {
+                organizationId,
+              },
+            },
+          },
+          {
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+          },
+          // Orphan tenant with organization link
+          {
+            organizationId,
+          },
+        ],
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    // Verify unit belongs to organization
+    const unit = await this.prisma.unit.findFirst({
+      where: {
+        id: unitId,
+        property: {
+          organizationId,
+        },
+      },
+      include: {
+        property: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    if (!unit) {
+      throw new NotFoundException('Unit not found');
+    }
+
+    // Assign tenant to unit
+    const updated = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        unitId,
+        // Clear the organization link since tenant is now linked via unit
+        organizationId: null,
+      },
+      include: {
+        unit: {
+          include: {
+            property: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      id: updated.id,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      email: updated.email,
+      unit: {
+        id: updated.unit!.id,
+        unitNumber: updated.unit!.unitNumber,
+        property: updated.unit!.property,
+      },
     };
   }
 }

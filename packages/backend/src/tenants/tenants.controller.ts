@@ -75,6 +75,11 @@ class UpdateTenantDto {
   emergencyPhone?: string;
 }
 
+class AssignToUnitDto {
+  @IsString()
+  unitId!: string;
+}
+
 @ApiTags('tenants')
 @Controller('tenants')
 @UseGuards(AuthGuard('jwt'))
@@ -216,5 +221,20 @@ export class TenantsController {
   ) {
     const result = await this.tenantsService.resendInvitation(id, organizationId, req.user.sub);
     return result;
+  }
+
+  @Post(':id/assign-unit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Assign tenant to a unit' })
+  @ApiParam({ name: 'id', description: 'Tenant ID' })
+  @ApiResponse({ status: 200, description: 'Tenant assigned to unit successfully' })
+  @ApiResponse({ status: 404, description: 'Tenant or unit not found' })
+  async assignToUnit(
+    @Param('id') id: string,
+    @Body() dto: AssignToUnitDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    const result = await this.tenantsService.assignToUnit(id, dto.unitId, organizationId);
+    return { success: true, data: result };
   }
 }

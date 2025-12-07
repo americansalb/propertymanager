@@ -9,6 +9,8 @@ import {
   UnitStatus,
   AccountType,
   AccountSubType,
+  TenantStatus,
+  TenantInvitationStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -19,6 +21,7 @@ async function main() {
 
   // Clear existing demo data (but keep user data intact)
   console.log('🧹 Clearing existing seed data...');
+  await prisma.tenant.deleteMany({});
   await prisma.bankAccount.deleteMany({});
   await prisma.vendor.deleteMany({});
   await prisma.unit.deleteMany({});
@@ -89,6 +92,31 @@ async function main() {
   });
 
   console.log('✅ Created admin user:', adminUser.email);
+
+  // Upsert admin@aalb.org alias (for tenant portal integration)
+  const adminAlias = await prisma.user.upsert({
+    where: { email: 'admin@aalb.org' },
+    update: {
+      passwordHash,
+      firstName: 'Admin',
+      lastName: 'AALB',
+      role: UserRole.SUPER_ADMIN,
+      emailVerified: true,
+      organizationId: organization.id,
+    },
+    create: {
+      email: 'admin@aalb.org',
+      passwordHash,
+      firstName: 'Admin',
+      lastName: 'AALB',
+      phone: '',
+      role: UserRole.SUPER_ADMIN,
+      emailVerified: true,
+      organizationId: organization.id,
+    },
+  });
+
+  console.log('✅ Created admin alias:', adminAlias.email);
 
   // Create Chart of Accounts
   const chartOfAccounts = await prisma.chartOfAccounts.createMany({
@@ -295,10 +323,50 @@ async function main() {
 
   console.log('✅ Created bank account:', bankAccount.accountName);
 
+  // Create test tenant for tenant portal (NO unit assignment - landlord will assign)
+  const tenantPasswordHash = await bcrypt.hash('winner', 10);
+  const testTenant = await prisma.tenant.upsert({
+    where: { id: 'test-tenant-id' },
+    update: {
+      firstName: 'Test',
+      lastName: 'Tenant',
+      email: 'tenant@aalb.org',
+      phone: '555-000-0001',
+      status: TenantStatus.ACTIVE,
+      portalEnabled: true,
+      portalPassword: tenantPasswordHash,
+      isPrimary: true,
+      invitationStatus: TenantInvitationStatus.ACCEPTED,
+      organizationId: organization.id, // Link to org so landlord can see them
+      // NO unitId - tenant is not assigned to any property yet
+    },
+    create: {
+      id: 'test-tenant-id',
+      firstName: 'Test',
+      lastName: 'Tenant',
+      email: 'tenant@aalb.org',
+      phone: '555-000-0001',
+      status: TenantStatus.ACTIVE,
+      portalEnabled: true,
+      portalPassword: tenantPasswordHash,
+      isPrimary: true,
+      invitationStatus: TenantInvitationStatus.ACCEPTED,
+      organizationId: organization.id, // Link to org so landlord can see them
+      // NO unitId - tenant is not assigned to any property yet
+    },
+  });
+
+  console.log('✅ Created test tenant:', testTenant.email);
+
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📝 Login credentials:');
-  console.log('   Email: contact@aalb.org');
-  console.log('   Password: winner');
+  console.log('   Admin Portal:');
+  console.log('     Email: contact@aalb.org (or admin@aalb.org)');
+  console.log('     Password: winner');
+  console.log('\n   Tenant Portal:');
+  console.log('     Email: tenant@aalb.org');
+  console.log('     Password: winner');
+  console.log('     Note: No property assigned - landlord can assign from admin portal');
 }
 
 main()
