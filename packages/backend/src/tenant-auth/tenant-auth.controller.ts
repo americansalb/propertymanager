@@ -89,10 +89,38 @@ class RegisterDto {
   password!: string;
 }
 
+class SetupTestTenantDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(6)
+  password!: string;
+
+  @IsString()
+  firstName!: string;
+
+  @IsString()
+  lastName!: string;
+}
+
 @ApiTags('tenant-auth')
 @Controller('tenant-auth')
 export class TenantAuthController {
   constructor(private tenantAuthService: TenantAuthService) {}
+
+  @Post('setup-test')
+  @ApiOperation({ summary: 'Setup a test tenant account (for development)' })
+  @ApiResponse({ status: 200, description: 'Test tenant created/updated' })
+  async setupTestTenant(@Body() dto: SetupTestTenantDto) {
+    const result = await this.tenantAuthService.setupTestTenant(
+      dto.email,
+      dto.password,
+      dto.firstName,
+      dto.lastName,
+    );
+    return { success: true, data: result };
+  }
 
   @Post('login')
   @ApiOperation({ summary: 'Tenant portal login' })

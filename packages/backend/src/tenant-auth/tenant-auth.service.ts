@@ -23,6 +23,90 @@ export class TenantAuthService {
     private emailService: EmailService,
   ) {}
 
+  async setupTestTenant(email: string, password: string, firstName: string, lastName: string) {
+    // Find first available unit
+    const unit = await this.prisma.unit.findFirst({
+      include: {
+        property: true,
+      },
+    });
+
+    if (!unit) {
+      throw new BadRequestException('No units available. Please create a property and unit first.');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Check if tenant already exists
+    const existingTenant = await this.prisma.tenant.findFirst({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existingTenant) {
+      // Update existing tenant
+      const updated = await this.prisma.tenant.update({
+        where: { id: existingTenant.id },
+        data: {
+          firstName,
+          lastName,
+          portalEnabled: true,
+          portalPassword: hashedPassword,
+          unitId: unit.id,
+          status: 'ACTIVE',
+          invitationStatus: 'ACCEPTED',
+        },
+      });
+
+      return {
+        message: 'Existing tenant updated with portal access',
+        tenant: {
+          id: updated.id,
+          email: updated.email,
+          firstName: updated.firstName,
+          lastName: updated.lastName,
+        },
+        unit: {
+          id: unit.id,
+          unitNumber: unit.unitNumber,
+          property: unit.property.name,
+        },
+      };
+    }
+
+    // Create new tenant
+    const tenant = await this.prisma.tenant.create({
+      data: {
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        phone: '555-000-0000',
+        unitId: unit.id,
+        status: 'ACTIVE',
+        portalEnabled: true,
+        portalPassword: hashedPassword,
+        isPrimary: true,
+        invitationStatus: 'ACCEPTED',
+        moveInDate: new Date(),
+      },
+    });
+
+    return {
+      message: 'Test tenant created successfully',
+      tenant: {
+        id: tenant.id,
+        email: tenant.email,
+        firstName: tenant.firstName,
+        lastName: tenant.lastName,
+      },
+      unit: {
+        id: unit.id,
+        unitNumber: unit.unitNumber,
+        property: unit.property.name,
+      },
+    };
+  }
+
   async login(email: string, password: string) {
     // Find tenant by email
     const tenant = await this.prisma.tenant.findFirst({
