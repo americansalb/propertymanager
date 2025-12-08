@@ -901,8 +901,8 @@ Instead of per-transaction fees, offer a subscription that makes per-job fees mi
 │                                                             │
 │  INCLUDES:                                                  │
 │  ✓ Unlimited dispatch to verified vendors                  │
-│  ✓ All transactions protected (90-day guarantee)           │
-│  ✓ $10,000 damage coverage per incident                   │
+│  ✓ All transactions protected (72-hour escrow)             │
+│  ✓ Priority dispute resolution                             │
 │  ✓ Real-time pricing intelligence                          │
 │  ✓ Property health scores                                  │
 │  ✓ Compliance documentation                                │
@@ -952,7 +952,379 @@ Instead of per-transaction fees, offer a subscription that makes per-job fees mi
 
 ---
 
-## Part 9: The Chicago Lock Service MVP
+## Part 9: Payment & Transaction Model (FINAL)
+
+> **Note:** This section represents the finalized payment model and supersedes any conflicting information in earlier sections. Earlier mentions of "90-day workmanship guarantee" are deprecated - we are a marketplace, not an insurance company.
+
+### Core Philosophy
+
+We facilitate transactions and guarantee payment. We do NOT guarantee workmanship quality after payment is released. Quality accountability comes through ratings, reviews, and market consequences - not platform insurance.
+
+**Why this approach:**
+- Keeps the model simple and scalable
+- Avoids complex holdback/strike/reserve systems
+- Reduces platform liability
+- Matches how every other marketplace works (Uber doesn't guarantee your driver is a good conversationalist)
+
+---
+
+### Fee Structure
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  JOB: Toilet Repair                          TOTAL: $200   │
+│                                                             │
+│  BREAKDOWN:                                                 │
+│                                                             │
+│  Landlord pays:     $215.00                                │
+│  ├── Job cost:      $200.00                                │
+│  └── Service fee:    $15.00 (7.5%)                         │
+│                                                             │
+│  Vendor receives:   $195.00                                │
+│  ├── Job payment:   $200.00                                │
+│  └── Platform fee:   -$5.00 (2.5%)                         │
+│                                                             │
+│  Platform revenue:   $20.00 (10% total)                    │
+│  ├── From landlord:  $15.00                                │
+│  └── From vendor:     $5.00                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Why split fees 7.5% / 2.5%:**
+- Vendor only pays 2.5% - minimal incentive to go off-platform
+- If vendor takes job direct, they only save 2.5% but lose:
+  - Guaranteed payment
+  - Fast payout (48 hours vs net-30)
+  - Platform rating/reputation
+  - Access to future jobs
+- Landlord pays for the service (7.5%) - they're the customer
+
+---
+
+### Payment Flow
+
+```
+STEP 1: JOB CREATED
+┌─────────────────────────────────────────────────────────────┐
+│  Landlord approves job dispatch                             │
+│  → Payment method authorized (funds held, not charged)      │
+│  → Vendor sees: "Payment Secured ✓"                         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+STEP 2: VENDOR DISPATCHED
+┌─────────────────────────────────────────────────────────────┐
+│  Vendor accepts job                                         │
+│  → Vendor travels to property                               │
+│  → Completes work                                           │
+│  → Marks job complete in app (with photos if required)      │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+STEP 3: 72-HOUR CONFIRMATION WINDOW
+┌─────────────────────────────────────────────────────────────┐
+│  Landlord receives notification: "Job marked complete"      │
+│                                                             │
+│  OPTIONS:                                                   │
+│  [✓ Confirm Complete] - Payment releases immediately        │
+│  [✗ Dispute] - Opens completion dispute (see below)         │
+│  [No action] - Auto-releases after 72 hours                 │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+STEP 4: PAYMENT RELEASED
+┌─────────────────────────────────────────────────────────────┐
+│  Payment captured from landlord                             │
+│  Platform fees deducted                                     │
+│  Vendor payout scheduled:                                   │
+│  ├── Standard: 48 hours (free)                             │
+│  ├── Next-day: 24 hours ($1 fee)                           │
+│  └── Instant: Now (1.5% fee)                               │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+STEP 5: DONE
+┌─────────────────────────────────────────────────────────────┐
+│  Transaction complete                                       │
+│  Landlord prompted to leave rating                          │
+│  Vendor paid                                                │
+│  Platform takes cut                                         │
+│  Everyone happy                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Dispute Handling
+
+#### What We Handle: Completion Disputes (Within 72 Hours)
+
+These are disputes about whether the job was actually done:
+
+| Dispute Type | Example | Resolution |
+|--------------|---------|------------|
+| No-show | "Vendor never arrived" | Full refund to landlord |
+| Wrong work | "I ordered rekey, they replaced the lock" | Partial refund or redo |
+| Incomplete | "They only did 2 of 3 locks" | Partial payment based on completion |
+| Scope mismatch | "They said it would be $100, charged $300" | Review scope, adjust if needed |
+
+**Process:**
+1. Landlord files dispute within 72 hours
+2. Platform reviews evidence (photos, messages, vendor response)
+3. Decision made within 48 hours
+4. Payment adjusted accordingly
+
+**Dispute Fee:** We may charge a dispute fee ($15-25) to discourage frivolous disputes. Fee waived if dispute is valid.
+
+#### What We DON'T Handle: Quality Issues After Payment
+
+Once the 72-hour window closes and payment releases:
+
+| Issue | Example | Our Response |
+|-------|---------|--------------|
+| Repair failed | "The toilet is leaking again after 2 weeks" | Contact vendor directly |
+| Poor workmanship | "The lock is hard to turn" | Leave a bad review, contact vendor |
+| Damage discovered later | "They scratched my door" | Contact vendor's insurance |
+
+**Why we don't handle post-payment quality:**
+- We didn't do the work
+- We can't verify claims weeks later
+- It creates complex liability and holdback systems
+- Normal commerce works this way (you don't dispute your plumber bill with Yelp)
+
+**What landlords CAN do:**
+- Leave a 1-star review (affects vendor's future jobs)
+- Contact vendor directly (we provide their info)
+- Report repeated issues (we may investigate patterns)
+- Not hire that vendor again
+
+**What happens to bad vendors:**
+- Bad reviews tank their rating
+- Low-rated vendors get fewer jobs
+- Pattern of complaints = investigation
+- Severe/repeated issues = removal from platform
+
+---
+
+### Implementation: Stripe Connect
+
+**Technical Flow:**
+
+```javascript
+// 1. When job is created - Authorize payment
+const paymentIntent = await stripe.paymentIntents.create({
+  amount: totalAmount, // job + landlord fee
+  currency: 'usd',
+  customer: landlord.stripeCustomerId,
+  capture_method: 'manual', // Don't charge yet, just hold
+  transfer_data: {
+    destination: vendor.stripeAccountId,
+  },
+  application_fee_amount: platformFee, // 7.5% landlord + 2.5% vendor
+  metadata: {
+    job_id: job.id,
+    work_order_id: workOrder.id,
+  }
+});
+
+// 2. After 72 hours OR landlord confirms - Capture payment
+await stripe.paymentIntents.capture(paymentIntent.id);
+
+// 3. If disputed within 72 hours - Cancel authorization
+await stripe.paymentIntents.cancel(paymentIntent.id);
+```
+
+**Vendor Onboarding:**
+- Vendors create Stripe Connect Express account
+- We collect: Bank account, tax ID, basic business info
+- Stripe handles identity verification
+- Vendors can be paid out same-day if they want
+
+---
+
+### Auto-Release Logic
+
+```
+IF (job.status === 'completed' AND
+    currentTime > job.completedAt + 72 hours AND
+    job.disputeStatus === null)
+THEN
+    capturePayment(job.paymentIntentId)
+    scheduleVendorPayout(job.vendorId, job.vendorAmount)
+    job.status = 'paid'
+```
+
+**Why 72 hours (not 24, not 7 days):**
+- 24 hours: Too short - landlord might not check the work immediately
+- 7 days: Too long - vendors need faster cash flow
+- 72 hours: Enough time to verify, fast enough to be attractive to vendors
+
+---
+
+### Edge Cases
+
+#### Scope Changes During Job
+
+```
+SCENARIO: Vendor arrives, finds additional work needed
+
+Example: "Came to rekey 3 locks, found one lock is broken and needs replacement"
+
+PROCESS:
+1. Vendor documents with photos
+2. Vendor submits scope change request with new quote
+3. Landlord receives notification:
+   ┌─────────────────────────────────────────────────────────────┐
+   │  SCOPE CHANGE REQUEST                                       │
+   │                                                             │
+   │  Original: Rekey 3 locks - $60                             │
+   │  Vendor found: Lock #2 is broken, needs replacement         │
+   │                                                             │
+   │  New quote: Rekey 2 locks + Replace 1 lock - $155          │
+   │                                                             │
+   │  [Approve New Scope] [Decline - Complete Original Only]    │
+   └─────────────────────────────────────────────────────────────┘
+4. If approved: New authorization for difference
+5. If declined: Vendor completes original scope only
+```
+
+#### Vendor No-Shows
+
+```
+SCENARIO: Vendor accepts job but doesn't show up
+
+PROCESS:
+1. Landlord marks "Vendor didn't arrive"
+2. System checks:
+   - Did vendor check in? (GPS/app confirmation)
+   - Did vendor communicate delay?
+3. If no-show confirmed:
+   - Payment authorization cancelled
+   - Vendor receives strike
+   - Job automatically re-dispatched to next vendor
+   - 3 no-shows = vendor suspended
+```
+
+#### Landlord Goes Silent
+
+```
+SCENARIO: Vendor completes job, landlord never confirms or disputes
+
+PROCESS:
+1. Job completed → 72 hours pass
+2. No landlord action
+3. Payment auto-releases
+4. Vendor gets paid
+5. Landlord can still leave review
+
+Note: The auto-release protects vendors from unresponsive landlords
+```
+
+---
+
+### What We Explicitly Do NOT Do
+
+| Feature | Why Not |
+|---------|---------|
+| 90-day workmanship guarantee | We're a marketplace, not an insurance company |
+| Holdbacks on vendor payments | Creates adversarial dynamics, scales poorly on large jobs |
+| Quality claim fund | Liability we can't control |
+| Strike system for quality | Ratings and reviews handle this naturally |
+| Post-payment dispute arbitration | Not our job - that's between landlord and vendor |
+| Refunds for "quality issues" weeks later | We didn't do the work |
+
+**The simple rule:** Once payment releases, the transaction is complete. Quality issues are between landlord and vendor.
+
+---
+
+### Summary: The Transaction Model
+
+| Step | What Happens | Who's Protected |
+|------|--------------|-----------------|
+| Job created | Payment authorized (held) | Vendor knows funds exist |
+| Vendor dispatched | Vendor accepts, travels | Landlord has committed |
+| Work completed | Vendor marks done | Work is documented |
+| 72-hour window | Landlord can confirm or dispute | Landlord can verify |
+| Payment releases | Auto after 72h or on confirm | Vendor gets paid |
+| Post-payment | Normal business relationship | Both can leave reviews |
+
+**For vendors:** You WILL get paid. Fast. No chasing invoices.
+
+**For landlords:** You have 72 hours to verify work was done. After that, rate honestly. Bad vendors get filtered out by the market.
+
+**For us:** Simple, scalable, no insurance liability.
+
+---
+
+## Part 9.5: Future Financial Products (Phase 2+)
+
+> **Status:** Not for MVP. Requires working capital and scale.
+
+### Payment Plans for Large Repairs
+
+When we have sufficient cash flow, offer landlords the ability to split large repair costs:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  HVAC REPLACEMENT - $3,000                                 │
+│                                                             │
+│  PAYMENT OPTIONS:                                           │
+│                                                             │
+│  ○ Pay now: $3,000                                         │
+│                                                             │
+│  ○ Split in 3: $1,035 x 3 months                           │
+│    ($105 convenience fee = 3.5%)                           │
+│                                                             │
+│  ○ Split in 6: $530 x 6 months                             │
+│    ($180 convenience fee = 6%)                             │
+│                                                             │
+│  Vendor paid in full within 72 hours regardless.           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key decisions:**
+- **Flat fee, not APR** - Simpler, feels fairer, avoids predatory lending optics
+- **In-house, not Affirm** - We control rates, keep them reasonable (3-6% not 15%+)
+- **B2B focused** - Landlords are businesses, lower regulatory burden
+- **Requires capital** - We front the vendor payment, collect from landlord over time
+
+**When to implement:**
+- After we have consistent transaction volume
+- When we have ~$50K+ in reserve to float payments
+- When we've proven core model works
+
+### Vendor Working Capital (Phase 3+)
+
+Cash advances for vendors based on platform earnings history:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CAPITAL ADVANCE                                           │
+│                                                             │
+│  Based on your last 90 days: $12,400 earned               │
+│                                                             │
+│  You qualify for:                                          │
+│  Up to $2,500 advance                                      │
+│  5% flat fee ($125)                                        │
+│  Repayment: 10% of each payout until repaid               │
+│                                                             │
+│  No credit check. Based on platform performance.           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Why this creates lock-in:**
+- Vendor with outstanding advance won't leave platform
+- Repayment is automatic (deducted from earnings)
+- Lower default risk (we control their income stream)
+
+**When to implement:**
+- After 100+ active vendors
+- When we have capital to lend
+- When we've proven vendor retention
+
+---
+
+## Part 10: The Chicago Lock Service MVP
 
 ### Why Start Here
 
@@ -996,7 +1368,7 @@ Master Key Systems:
 These prices include:
 - Trip charge
 - Standard hardware (where applicable)
-- 90-day workmanship guarantee
+- 72-hour completion guarantee (see Part 9 for payment model)
 
 ### Launch Plan
 
@@ -1262,13 +1634,24 @@ This is the vision. Let's build it.
 
 ---
 
-*Document version: 2.0*
+*Document version: 3.0*
 *Last updated: December 2025*
-*Status: Strategic Foundation*
+*Status: Strategic Foundation - Ready for Development*
 
 ---
 
 ## Changelog
+
+**v3.0** - Added Part 9: Payment & Transaction Model (FINAL)
+- Finalized fee structure: 7.5% landlord service fee + 2.5% vendor platform fee
+- 72-hour confirmation window for completion verification
+- Clear separation: We handle completion disputes, NOT quality issues after payment
+- "We're a marketplace, not an insurance company" - removed all 90-day workmanship guarantee references
+- Detailed Stripe Connect implementation guide
+- Edge case handling: scope changes, no-shows, silent landlords
+- Explicit list of what we do NOT do (holdbacks, quality claims, post-payment arbitration)
+- Added Part 9.5: Future Financial Products roadmap (payment plans, vendor capital)
+- Updated subscription model to remove deprecated guarantee language
 
 **v2.0** - Added Part 8: Platform Retention
 - Comprehensive landlord retention mechanisms (bidding, pricing intelligence, property health scores, budget tracking, emergency priority, preventive maintenance, volume discounts)
