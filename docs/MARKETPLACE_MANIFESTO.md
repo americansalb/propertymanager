@@ -1103,29 +1103,82 @@ Vendor identity revealed ONLY after payment is secured.
 
 ---
 
-#### Pricing: Simple 10% Markup
-
-No complex spread capture. No fake "savings" calculations. Just a clean markup.
+#### Pricing Model: Markup + Transparent Fees
 
 ```
-HOW IT WORKS:
+VENDOR BIDS: $100
 
-Vendor bids: $160
-Platform markup: 10%
-Landlord sees: $176
+STEP 1 - HIDDEN MARKUP:
+├── Vendor bid: $100
+├── Platform markup: 10%
+└── Base price shown to landlord: $110
 
-Vendor gets: $160 - 2.5% fee = $156
-Platform keeps: $176 - $156 = $20 (12.5% effective margin)
+STEP 2 - LANDLORD FEES (visible):
+├── Base price: $110
+├── Service fee (2.5%): $2.75
+└── Landlord pays: $112.75
+
+STEP 3 - VENDOR FEES (visible):
+├── Vendor bid: $100
+├── Payment processing (3%): -$3.00
+├── Payment guarantee (2.5%): -$2.50
+└── Vendor receives: $94.50
+
+PLATFORM REVENUE:
+├── Hidden markup: $10.00
+├── Landlord service fee: $2.75
+├── Vendor fees: $5.50
+└── Total: $18.25 (18.25% effective margin)
 ```
 
-**Complete opacity between both sides (like Uber):**
+**What each party sees:**
 
-| Party | Sees | Doesn't See |
-|-------|------|-------------|
-| Landlord | $176 all-in price | Vendor's $160 bid |
-| Vendor | Their $160 bid, $156 payout | Landlord's $176 payment |
+```
+LANDLORD VIEW:
+┌─────────────────────────────────────────────────────────────┐
+│  TOILET REPAIR                                              │
+│                                                             │
+│  Quote: $110.00                                             │
+│  Service fee (2.5%): $2.75                                  │
+│  ─────────────────────                                      │
+│  Total: $112.75                                             │
+│                                                             │
+│  [Confirm & Pay]                                            │
+└─────────────────────────────────────────────────────────────┘
 
-No awkward conversations. No fee line items. No comparing notes.
+VENDOR VIEW:
+┌─────────────────────────────────────────────────────────────┐
+│  JOB COMPLETED: Toilet Repair                               │
+│                                                             │
+│  Your quote: $100.00                                        │
+│  Payment processing (3%): -$3.00                            │
+│  Payment guarantee (2.5%): -$2.50                           │
+│  ─────────────────────                                      │
+│  You receive: $94.50                                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Why visible fees work:**
+
+| Fee | Justification |
+|-----|---------------|
+| Service fee (landlord) | "Platform access, vetted vendors, scheduling" |
+| Payment processing (vendor) | "We handle all payments, no invoicing" |
+| Payment guarantee (vendor) | "Guaranteed payment within 48hrs, no chasing" |
+
+**The hidden 10% markup:**
+- Neither side knows about it
+- Landlord thinks vendor quoted $110
+- Vendor thinks landlord paid ~$100 + fees
+- No awkward conversations
+
+**Fee summary:**
+
+| Party | Visible Fees | Hidden | Total Paid/Lost |
+|-------|--------------|--------|-----------------|
+| Landlord | 2.5% service fee | Sees marked-up price | Pays 12.75% over vendor bid |
+| Vendor | 5.5% (3% + 2.5%) | None | Keeps 94.5% of bid |
+| Platform | — | 10% markup | Keeps 18.25% |
 
 **FUTURE: Spread Capture & Savings Messaging (Phase 2)**
 
@@ -1243,6 +1296,105 @@ But wait:
 | Vendor identity hidden until paid | Can't contact directly |
 
 **Key rule:** Vendor NEVER meets landlord with $0 committed.
+
+---
+
+#### Platform Stickiness (Preventing Long-Term Leakage)
+
+Pre-payment prevents leakage on job #1. But what about job #2, #3, #10?
+
+Once landlord and vendor have each other's contact info, they CAN go direct. Every marketplace faces this.
+
+**The reality:** You can't prevent all leakage. You make staying easier than leaving.
+
+**Why VENDORS stay on platform:**
+
+| Value | Off-Platform Alternative |
+|-------|--------------------------|
+| Guaranteed payment in 48hrs | Chase invoices, hope they pay |
+| Steady job flow | Hustle for every lead |
+| No marketing costs | Pay for ads, SEO, referrals |
+| Professional profile/reviews | Build reputation from scratch |
+| Scheduling/dispatch handled | Manage your own calendar |
+| Payment processing handled | Set up merchant account, invoice |
+
+```
+VENDOR CALCULATION:
+
+On-platform:
+├── Get $94.50 on $100 job
+├── Payment guaranteed
+├── No invoicing
+├── Jobs come to me
+└── Net effective: ~$94.50
+
+Off-platform:
+├── Get $100 (maybe)
+├── 10% of clients don't pay → -$10
+├── Time chasing payment → -$5 equivalent
+├── Marketing to find clients → -$15
+└── Net effective: ~$70
+
+Platform wins.
+```
+
+**Why LANDLORDS stay on platform:**
+
+| Value | Off-Platform Alternative |
+|-------|--------------------------|
+| Vetted, reviewed vendors | Hope the guy is legit |
+| Payment protection | Cash is gone if job goes wrong |
+| One dashboard, all properties | Spreadsheets and texts |
+| Scheduling + tenant coordination | Phone tag |
+| Job history + documentation | Shoeboxes of receipts |
+| Dispute resolution | Small claims court |
+
+```
+LANDLORD CALCULATION:
+
+On-platform:
+├── Pay $112.75 for $100 job
+├── Vendor is vetted
+├── Payment protected
+├── Everything documented
+├── One dashboard
+└── Time saved: 30 min/job
+
+Off-platform:
+├── Pay $100 (maybe less)
+├── Vet vendor yourself → 30 min
+├── No protection if bad work
+├── Track everything manually
+├── Coordinate via text/phone
+└── Time spent: 45+ min/job
+
+Platform wins on convenience.
+```
+
+**Additional stickiness features:**
+
+| Feature | Lock-In Effect |
+|---------|----------------|
+| Multi-property dashboard | All properties in one place |
+| Tenant maintenance portal | Tenants submit requests directly |
+| Vendor relationship history | "Mike's Plumbing has done 12 jobs for you" |
+| Spending reports | Tax-ready expense tracking |
+| Preferred vendor lists | Your trusted vendors, one click |
+| Maintenance scheduling | Recurring jobs auto-dispatched |
+
+**The math for landlords:**
+- 12.75% premium vs going direct
+- But: Save 30+ min per job
+- At $50/hr value of time = $25 saved
+- Net: Platform SAVES them money
+
+**The math for vendors:**
+- 5.5% fees
+- But: No invoicing, no chasing, no marketing
+- Equivalent to 20%+ savings on customer acquisition
+- Net: Platform MAKES them money
+
+**Bottom line:** Make the platform so valuable that the fees feel like a bargain, not a tax.
 
 ---
 
