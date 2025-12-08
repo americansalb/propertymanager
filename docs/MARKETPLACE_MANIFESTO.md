@@ -1020,6 +1020,72 @@ Urgent jobs cost slightly more (baked into the quote). Landlord doesn't see why.
 
 ---
 
+### Bidding System Revenue Model
+
+When vendors bid on jobs, platform captures additional revenue from the spread:
+
+```
+BID JOB EXAMPLE:
+
+Starting estimate: $1,000
+Vendor bids: $800
+Raw savings: $200
+
+PLATFORM CAPTURES SPREAD:
+├── We keep: $75 of the $200 savings
+├── Price shown to landlord: $875
+└── Landlord sees: "You saved $125!" (vs original $1,000 estimate)
+
+FEES STILL APPLY:
+├── Landlord pays: $875 + 7.5% = $940.63
+├── Vendor receives: $800 - 2.5% = $780
+└── Platform total: $75 (spread) + $65.63 (landlord fee) + $20 (vendor fee) = $160.63
+```
+
+**Compare to non-bid job at $800:**
+- Platform revenue: $80 (10%)
+- With bidding: $160.63 (20%+)
+
+**THE SAVINGS GUARANTEE:**
+
+We guarantee: Landlord's platform fee will never exceed their bidding savings.
+
+```
+GUARANTEE EXAMPLE (when it kicks in):
+
+Original estimate: $1,000
+Vendor bids: $950 (small discount)
+Spread captured: $25
+Price shown to landlord: $975
+Landlord savings: $25
+
+Fee calculation:
+├── 7.5% of $975 = $73.13
+├── Savings shown = $25
+├── Fee ($73.13) > Savings ($25)
+└── Credit issued: $48.13
+
+Result: Landlord effectively pays capped fee of $25
+Message: "You saved $25! Your service fee has been capped at your savings."
+```
+
+**Why this guarantee works:**
+- Landlord never regrets using the bidding system
+- Worst case: they break even (fee = savings)
+- Best case: they save significantly more than the fee
+- Encourages use of bidding → more vendor engagement → better prices
+
+**Fee summary for bid jobs:**
+
+| Who Pays | What | Rate |
+|----------|------|------|
+| Landlord | Platform fee | 7.5% of final price |
+| Vendor | Platform fee | 2.5% of their bid |
+| Platform | Keeps spread | Variable (hidden from both) |
+| Guarantee | Landlord credit | If fee > savings |
+
+---
+
 ### Payment Processing Strategy
 
 **Two tracks based on timeline:**
