@@ -968,36 +968,93 @@ We facilitate transactions and guarantee payment. We do NOT guarantee workmanshi
 
 ---
 
-### Fee Structure
+### Pricing Model: Dynamic All-In Pricing
+
+**What the landlord sees:** One price. No breakdown. No line items.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  JOB: Toilet Repair                          TOTAL: $200   │
+│  TOILET REPAIR                                              │
 │                                                             │
-│  BREAKDOWN:                                                 │
+│  When do you need this done?                               │
+│  ○ Within 24 hours                                         │
+│  ○ Within 3 days                                           │
+│  ● Next week (5+ days)                                     │
 │                                                             │
-│  Landlord pays:     $215.00                                │
-│  ├── Job cost:      $200.00                                │
-│  └── Service fee:    $15.00 (7.5%)                         │
+│  Estimated cost: $107.50                                   │
 │                                                             │
-│  Vendor receives:   $195.00                                │
-│  ├── Job payment:   $200.00                                │
-│  └── Platform fee:   -$5.00 (2.5%)                         │
-│                                                             │
-│  Platform revenue:   $20.00 (10% total)                    │
-│  ├── From landlord:  $15.00                                │
-│  └── From vendor:     $5.00                                │
+│  [Confirm & Pay]                                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Why split fees 7.5% / 2.5%:**
+Change the timeline → price changes. No explanation needed.
+
+Like Uber: you see a price. Wait an hour, different price. No "surge fee" line item.
+
+---
+
+### Fee Structure (Internal)
+
+**What we charge (not shown to landlord):**
+
+| Component | Rate | On $100 job |
+|-----------|------|-------------|
+| Platform fee (landlord) | 7.5% | $7.50 |
+| Platform fee (vendor) | 2.5% | $2.50 |
+| **Platform revenue** | **10%** | **$10.00** |
+
+**Payment processing (baked into price):**
+
+| Job Type | Payment Method | Processing Cost | Platform Keeps |
+|----------|---------------|-----------------|----------------|
+| Scheduled (5+ days) | ACH | ~$0.50 | ~9.5% |
+| Urgent (<5 days) | Card | ~3% | ~7% |
+
+Urgent jobs cost slightly more (baked into the quote). Landlord doesn't see why.
+
+**Why this works:**
+- Landlord sees one simple price
+- No confusing fee breakdowns
 - Vendor only pays 2.5% - minimal incentive to go off-platform
-- If vendor takes job direct, they only save 2.5% but lose:
-  - Guaranteed payment
-  - Fast payout (48 hours vs net-30)
-  - Platform rating/reputation
-  - Access to future jobs
-- Landlord pays for the service (7.5%) - they're the customer
+- Platform margin protected regardless of payment method
+
+---
+
+### Payment Processing Strategy
+
+**Two tracks based on timeline:**
+
+```
+SCHEDULED JOB (5+ days out):
+┌─────────────────────────────────────────────────────────────┐
+│  Day 0: Job requested, ACH initiated                       │
+│  Day 3-5: ACH clears → money in platform account           │
+│  Day 5+: Vendor dispatched (money already secured)         │
+│  Job complete → 72hr window → Vendor paid                  │
+└─────────────────────────────────────────────────────────────┘
+Cost: ~$0.50 via Dwolla/Stripe ACH
+
+URGENT JOB (<5 days):
+┌─────────────────────────────────────────────────────────────┐
+│  Day 0: Job requested, card authorized (hold)              │
+│  Day 0: Vendor dispatched immediately                      │
+│  Job complete → 72hr window → Card captured → Vendor paid  │
+└─────────────────────────────────────────────────────────────┘
+Cost: ~3% via Stripe
+
+**Key rule:** Vendor is NEVER dispatched until payment is secured.
+- Scheduled: ACH must clear first
+- Urgent: Card must be successfully authorized
+```
+
+**Provider options:**
+- ACH: Dwolla ($0.25/tx), Stripe ACH (0.8% max $5), Plaid + bank
+- Cards: Stripe (2.9% + $0.30)
+
+**Why not cards for everything?**
+- 3% of every transaction = 30% of our gross revenue to Stripe
+- ACH at $0.50 flat = ~0.5% on a $100 job
+- Scheduled jobs (most maintenance) can wait for ACH to clear
 
 ---
 
@@ -1634,13 +1691,23 @@ This is the vision. Let's build it.
 
 ---
 
-*Document version: 3.0*
+*Document version: 3.1*
 *Last updated: December 2025*
 *Status: Strategic Foundation - Ready for Development*
 
 ---
 
 ## Changelog
+
+**v3.1** - Dynamic Pricing & Payment Processing Strategy
+- Dynamic all-in pricing: Landlord sees ONE price, no breakdown
+- Price changes based on inputs (timeline, etc.) like Uber - no explanation needed
+- Two-track payment processing:
+  - Scheduled jobs (5+ days): ACH (~$0.50) - wait for clear, then dispatch
+  - Urgent jobs (<5 days): Card (~3%) - immediate dispatch
+- Vendor NEVER dispatched until payment secured
+- Payment processing cost baked into quote, not shown separately
+- Added provider options: Dwolla, Stripe ACH, Plaid
 
 **v3.0** - Added Part 9: Payment & Transaction Model (FINAL)
 - Finalized fee structure: 7.5% landlord service fee + 2.5% vendor platform fee
