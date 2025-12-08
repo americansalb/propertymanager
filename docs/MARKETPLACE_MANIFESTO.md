@@ -1020,69 +1020,178 @@ Urgent jobs cost slightly more (baked into the quote). Landlord doesn't see why.
 
 ---
 
-### Bidding System Revenue Model
+### Quoting & Bidding Model
 
-When vendors bid on jobs, platform captures additional revenue from the spread:
+#### Remote-First Quoting
 
-```
-BID JOB EXAMPLE:
-
-Starting estimate: $1,000
-Vendor bids: $800
-Raw savings: $200
-
-PLATFORM CAPTURES SPREAD:
-├── We keep: $75 of the $200 savings
-├── Price shown to landlord: $875
-└── Landlord sees: "You saved $125!" (vs original $1,000 estimate)
-
-FEES STILL APPLY:
-├── Landlord pays: $875 + 7.5% = $940.63
-├── Vendor receives: $800 - 2.5% = $780
-└── Platform total: $75 (spread) + $65.63 (landlord fee) + $20 (vendor fee) = $160.63
-```
-
-**Compare to non-bid job at $800:**
-- Platform revenue: $80 (10%)
-- With bidding: $160.63 (20%+)
-
-**THE SAVINGS GUARANTEE:**
-
-We guarantee: Landlord's platform fee will never exceed their bidding savings.
+Most jobs can be quoted from photos and description alone. No free on-site visits.
 
 ```
-GUARANTEE EXAMPLE (when it kicks in):
+QUOTE FLOW:
 
-Original estimate: $1,000
-Vendor bids: $950 (small discount)
-Spread captured: $25
-Price shown to landlord: $975
-Landlord savings: $25
+1. Landlord submits job request
+   ├── Description: "Toilet won't stop running"
+   ├── Photos: [upload]
+   └── Urgency: Within 3 days
 
-Fee calculation:
-├── 7.5% of $975 = $73.13
-├── Savings shown = $25
-├── Fee ($73.13) > Savings ($25)
-└── Credit issued: $48.13
+2. Job broadcast to qualified vendors
 
-Result: Landlord effectively pays capped fee of $25
-Message: "You saved $25! Your service fee has been capped at your savings."
+3. Vendors quote REMOTELY (from photos/description)
+   ├── Vendor A: $160
+   ├── Vendor B: $175
+   └── Vendor C: $200
+
+4. Landlord sees quotes with markup (all-in pricing)
+   ├── Vendor A: $176
+   ├── Vendor B: $193
+   └── Vendor C: $220
+
+5. Landlord picks one, PAYS UPFRONT
+
+6. THEN vendor is dispatched
 ```
 
-**Why this guarantee works:**
-- Landlord never regrets using the bidding system
-- Worst case: they break even (fee = savings)
-- Best case: they save significantly more than the fee
-- Encourages use of bidding → more vendor engagement → better prices
+**For complex jobs requiring on-site assessment:**
 
-**Fee summary for bid jobs:**
+```
+1. Landlord: "HVAC not working, not sure what's wrong"
+2. Vendors can't quote accurately without seeing it
+3. Landlord pays ESTIMATED RANGE upfront: $200-500
+4. Vendor dispatched, assesses, provides actual quote
+5. If within range → job proceeds
+6. If over range → landlord approves additional or cancels (partial refund)
+```
 
-| Who Pays | What | Rate |
-|----------|------|------|
-| Landlord | Platform fee | 7.5% of final price |
-| Vendor | Platform fee | 2.5% of their bid |
-| Platform | Keeps spread | Variable (hidden from both) |
-| Guarantee | Landlord credit | If fee > savings |
+---
+
+#### What Landlords See in Quotes
+
+**SHOW:**
+| Element | Why |
+|---------|-----|
+| ★★★★☆ Rating + review count | Trust signal |
+| Scope of work | What exactly they'll do |
+| "Licensed & Insured" badges | Credibility |
+| Response time, jobs completed | Track record |
+| Profile photo / logo | Professionalism |
+| All-in price | Simple, no breakdown |
+
+**HIDE (until payment secured):**
+| Element | Why |
+|---------|-----|
+| Full business name | Prevents off-platform contact |
+| Phone number | Prevents off-platform contact |
+| Email | Prevents off-platform contact |
+| Business address | Prevents off-platform contact |
+| Vendor's actual bid | Opacity protects margin |
+
+```
+QUOTE CARD EXAMPLE:
+┌─────────────────────────────────────────────────────────────┐
+│  ★★★★☆ (4.7) · 142 jobs · Licensed & Insured               │
+│                                                             │
+│  $176                                                       │
+│                                                             │
+│  Scope: Replace flapper valve and fill valve.              │
+│  Parts included. 90-day warranty on work.                  │
+│                                                             │
+│  [View Reviews]  [Select & Pay]                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Vendor identity revealed ONLY after payment is secured.
+
+---
+
+#### Pricing: Simple 10% Markup
+
+No complex spread capture. No fake "savings" calculations. Just a clean markup.
+
+```
+HOW IT WORKS:
+
+Vendor bids: $160
+Platform markup: 10%
+Landlord sees: $176
+
+Vendor gets: $160 - 2.5% fee = $156
+Platform keeps: $176 - $156 = $20 (12.5% effective margin)
+```
+
+**Complete opacity between both sides (like Uber):**
+
+| Party | Sees | Doesn't See |
+|-------|------|-------------|
+| Landlord | $176 all-in price | Vendor's $160 bid |
+| Vendor | Their $160 bid, $156 payout | Landlord's $176 payment |
+
+No awkward conversations. No fee line items. No comparing notes.
+
+**Future: Savings messaging (once we have data)**
+
+After 100+ similar jobs, we CAN honestly say:
+- "Based on 500 toilet repairs in Chicago, average cost is $195"
+- "This quote is 10% below average"
+
+Until then: No fake savings claims. Just show prices.
+
+---
+
+#### Payment Before Dispatch (Anti-Leakage)
+
+**The Problem:** If vendor meets landlord before payment is locked, they can pitch cash deals.
+
+```
+WITHOUT PRE-PAYMENT:
+
+Vendor arrives for "free quote"
+Vendor: "It'll be $176 through the app... or $140 cash right now"
+Landlord: "Deal"
+
+Platform gets: $0
+```
+
+**The Solution:** Landlord always pays estimated amount BEFORE vendor is dispatched.
+
+```
+WITH PRE-PAYMENT:
+
+1. Landlord picks quote: $176
+2. Landlord PAYS $176 (money secured)
+3. Vendor dispatched
+4. Vendor arrives, money already locked
+5. No point pitching cash deal - landlord already paid
+
+Platform gets: $20
+```
+
+**Why landlords won't go off-platform:**
+
+```
+"Vendor just offered $140 cash instead..."
+
+But wait:
+├── I already paid $176
+├── Have to cancel the job
+├── Wait 3-5 days for refund
+├── Pay vendor cash separately
+├── No payment protection
+├── No reviews/accountability
+└── Save $36?
+
+"...not worth the hassle."
+```
+
+**Anti-leakage summary:**
+
+| Friction Point | Effect |
+|----------------|--------|
+| Money already paid | Psychological commitment |
+| Refund takes days | Hassle to cancel |
+| Lose platform protections | Risk |
+| Vendor identity hidden until paid | Can't contact directly |
+
+**Key rule:** Vendor NEVER meets landlord with $0 committed.
 
 ---
 
