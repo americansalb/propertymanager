@@ -1127,13 +1127,64 @@ Platform keeps: $176 - $156 = $20 (12.5% effective margin)
 
 No awkward conversations. No fee line items. No comparing notes.
 
-**Future: Savings messaging (once we have data)**
+**FUTURE: Spread Capture & Savings Messaging (Phase 2)**
 
-After 100+ similar jobs, we CAN honestly say:
-- "Based on 500 toilet repairs in Chicago, average cost is $195"
-- "This quote is 10% below average"
+Once we have sufficient historical data (100+ jobs per category/region), we unlock additional revenue and UX:
 
-Until then: No fake savings claims. Just show prices.
+```
+PHASE 2 MODEL:
+
+Historical data shows: Average toilet repair in Chicago = $195
+
+Vendors bid: $160, $175, $200
+
+Platform sets reference price: $195 (market average)
+
+SPREAD CAPTURE:
+├── Lowest bid: $160
+├── Reference price: $195
+├── Raw spread: $35
+├── Platform captures: $17.50 (50% of spread)
+├── Price shown to landlord: $177.50
+└── Landlord sees: "You saved $17.50 vs market average!"
+
+TOTAL PLATFORM REVENUE:
+├── Spread capture: $17.50
+├── Markup on bid (10%): $16.00
+├── Total: $33.50 (21% effective margin)
+```
+
+**Savings guarantee (Phase 2):**
+
+We guarantee: Landlord's fees never exceed their savings vs market average.
+
+```
+EDGE CASE: Bid is close to market average
+
+Market average: $195
+Vendor bids: $190
+Spread: $5
+
+Platform would normally take:
+├── Spread capture (50%): $2.50
+├── Markup (10%): $19.00
+├── Total fees: $21.50
+
+But savings shown = $5
+Fee ($21.50) > Savings ($5)
+
+GUARANTEE KICKS IN:
+├── Fee capped at savings: $5
+├── Landlord gets credit: $16.50
+└── Message: "Your fee has been capped at your savings!"
+```
+
+**Why wait for Phase 2:**
+- Need real data to establish honest market averages
+- Fake savings claims = legal/trust risk
+- Phase 1 (simple markup) proves the model first
+
+**Trigger for Phase 2:** 100+ completed jobs in a category/region
 
 ---
 
