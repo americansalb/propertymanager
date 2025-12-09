@@ -642,9 +642,15 @@ model Payment {
 
   amount      Decimal  @db.Decimal(10, 2)
 
-  // Payment processor integration
+  // Payment processor integration - Helcim (primary for cards)
+  helcimTransactionId   String? @unique
+
+  // Payment processor integration - Stripe (fallback)
   stripePaymentIntentId String? @unique
   stripeChargeId        String?
+
+  // Payment processor integration - Dwolla (ACH)
+  dwollaTransferId      String? @unique
 
   // Check/Money Order details
   checkNumber String?
@@ -663,7 +669,9 @@ model Payment {
   @@index([tenantId])
   @@index([status])
   @@index([paymentDate])
+  @@index([helcimTransactionId])
   @@index([stripePaymentIntentId])
+  @@index([dwollaTransferId])
 }
 
 // Payment allocation to charges

@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import api from '@/services/api';
+import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import TenantLayout from '@/components/layouts/TenantLayout';
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import HelcimPaymentForm from '@/components/payments/HelcimPaymentForm';
 
 interface OutstandingCharge {
   id: string;
@@ -83,11 +85,13 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
 
 export default function PaymentsPage() {
   const queryClient = useQueryClient();
+  const { tenant } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'pay' | 'history'>('pay');
   const [autoPayDialogOpen, setAutoPayDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedCharges, setSelectedCharges] = useState<string[]>([]);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const { data: outstandingData, isLoading: loadingCharges } = useQuery({
     queryKey: ['outstanding-charges'],
@@ -524,51 +528,54 @@ export default function PaymentsPage() {
         </Dialog>
 
         {/* Payment Dialog */}
-        <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <Dialog
+          open={paymentDialogOpen}
+          onOpenChange={(open) => {
+            setPaymentDialogOpen(open);
+            if (!open) {
+              setPaymentSuccess(false);
+              setPaymentAmount('');
+            }
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Make a Payment</DialogTitle>
-              <DialogDescription>Enter your payment details below.</DialogDescription>
+              <DialogDescription>
+                Pay securely with your credit or debit card.
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Amount to Pay</p>
-                <p className="text-3xl font-bold">
-                  $
-                  {(selectedTotal || totalDue).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                  })}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="customAmount">Or enter custom amount</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <Input
-                    id="customAmount"
-                    type="number"
-                    placeholder="0.00"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    className="pl-8"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t">
-                <p className="text-sm text-gray-500 mb-4">
-                  Payment processing is securely handled through Stripe. You&apos;ll be redirected
-                  to complete your payment.
-                </p>
-                <Button className="w-full" size="lg">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Continue to Payment
-                </Button>
-              </div>
-            </div>
+            {tenant && (
+              <HelcimPaymentForm
+                amount={
+                  paymentAmount
+                    ? parseFloat(paymentAmount)
+                    : selectedTotal > 0
+                      ? selectedTotal
+                      : totalDue
+                }
+                chargeIds={
+                  selectedCharges.length > 0
+                    ? selectedCharges
+                    : outstandingData?.charges.map((c) => c.id) || []
+                }
+                tenantId={tenant.id}
+                onSuccess={(transactionId) => {
+                  setPaymentSuccess(true);
+                  queryClient.invalidateQueries({ queryKey: ['outstanding-charges'] });
+                  queryClient.invalidateQueries({ queryKey: ['payment-history'] });
+                  setTimeout(() => {
+                    setPaymentDialogOpen(false);
+                    setPaymentSuccess(false);
+                    setSelectedCharges([]);
+                    setPaymentAmount('');
+                  }, 2000);
+                }}
+                onError={(error) => {
+                  console.error('Payment error:', error);
+                }}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>

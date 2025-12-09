@@ -7,10 +7,9 @@ import {
 } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
-import { StripeService } from './stripe.service';
+import { HelcimService } from './helcim.service';
 import {
   type RecordPaymentDto,
-  type CreatePaymentIntentDto,
   type RefundPaymentDto,
   PaymentStatus,
 } from '../financial/dto/payment.dto';
@@ -19,7 +18,7 @@ import {
 export class PaymentsService {
   constructor(
     private prisma: PrismaService,
-    private stripeService: StripeService,
+    private helcimService: HelcimService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -270,70 +269,6 @@ export class PaymentsService {
   }
 
   /**
-   * Create a Stripe payment intent for online payment
-   */
-  async createPaymentIntent(dto: CreatePaymentIntentDto, organizationId: string, userId?: string) {
-    // Verify tenant exists and belongs to organization
-    const tenant = await this.prisma.tenant.findFirst({
-      where: {
-        id: dto.tenantId,
-        lease: {
-          unit: {
-            property: {
-              organizationId,
-            },
-          },
-        },
-      },
-    });
-
-    if (!tenant) {
-      throw new NotFoundException('Tenant not found or does not belong to your organization');
-    }
-
-    // Verify all charges exist and belong to the tenant's lease
-    if (dto.chargeIds && dto.chargeIds.length > 0) {
-      const charges = await this.prisma.charge.findMany({
-        where: {
-          id: { in: dto.chargeIds },
-          lease: {
-            tenants: {
-              some: { id: dto.tenantId },
-            },
-          },
-        },
-      });
-
-      if (charges.length !== dto.chargeIds.length) {
-        throw new BadRequestException(
-          'One or more charges not found or do not belong to this tenant',
-        );
-      }
-    }
-
-    const paymentIntent = await this.stripeService.createPaymentIntent(
-      dto.amount,
-      dto.tenantId,
-      dto.chargeIds || [],
-    );
-
-    this.logger.log({
-      message: 'payment.intent_created',
-      paymentIntentId: paymentIntent.id,
-      tenantId: dto.tenantId,
-      amount: dto.amount,
-      organizationId,
-      userId,
-    });
-
-    return {
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-      amount: dto.amount,
-    };
-  }
-
-  /**
    * Refund a payment (partial or full)
    */
   async refundPayment(id: string, dto: RefundPaymentDto, organizationId: string, userId?: string) {
@@ -351,12 +286,11 @@ export class PaymentsService {
       throw new BadRequestException('Refund amount cannot exceed payment amount');
     }
 
-    // If this was a Stripe payment, process refund through Stripe
-    if (payment.stripePaymentIntentId) {
-      await this.stripeService.createRefund(
-        payment.stripePaymentIntentId,
+    // If this was a Helcim payment, process refund through Helcim
+    if (payment.helcimTransactionId) {
+      await this.helcimService.processRefund(
+        parseInt(payment.helcimTransactionId, 10),
         refundAmount,
-        dto.reason as any,
       );
     }
 
@@ -699,217 +633,5 @@ export class PaymentsService {
 
       remainingRefund -= reverseAmount;
     }
-  }
-
-  /**
-   * Get or create a Stripe customer for a tenant
-   */
-  async getOrCreateStripeCustomer(tenantId: string, organizationId: string) {
-    // Verify tenant exists and belongs to organization
-    const tenant = await this.prisma.tenant.findFirst({
-      where: {
-        id: tenantId,
-        lease: {
-          unit: {
-            property: {
-              organizationId,
-            },
-          },
-        },
-      },
-      include: {
-        lease: {
-          include: {
-            unit: {
-              include: {
-                property: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!tenant) {
-      throw new NotFoundException('Tenant not found or does not belong to your organization');
-    }
-
-    const fullName = `${tenant.firstName} ${tenant.lastName}`;
-    const customer = await this.stripeService.getOrCreateCustomer(tenantId, tenant.email, fullName);
-
-    this.logger.log({
-      message: 'stripe.customer_retrieved',
-      customerId: customer.id,
-      tenantId,
-      organizationId,
-    });
-
-    return customer;
-  }
-
-  /**
-   * Enable auto-pay for a tenant
-   */
-  async enableAutoPay(
-    tenantId: string,
-    paymentMethodId: string,
-    dayOfMonth: number,
-    organizationId: string,
-  ) {
-    // Verify tenant exists
-    const tenant = await this.prisma.tenant.findFirst({
-      where: {
-        id: tenantId,
-        lease: {
-          unit: {
-            property: {
-              organizationId,
-            },
-          },
-        },
-      },
-      include: {
-        lease: true,
-      },
-    });
-
-    if (!tenant) {
-      throw new NotFoundException('Tenant not found');
-    }
-
-    // Get or create Stripe customer
-    const customer = await this.getOrCreateStripeCustomer(tenantId, organizationId);
-
-    // Set default payment method
-    await this.stripeService.setDefaultPaymentMethod(customer.id, paymentMethodId);
-
-    // Get tenant's lease to update auto-pay settings
-    const tenantWithLease = await this.prisma.tenant.findFirst({
-      where: { id: tenantId },
-      select: { leaseId: true },
-    });
-
-    if (!tenantWithLease || !tenantWithLease.leaseId) {
-      throw new NotFoundException('Tenant not found or has no lease');
-    }
-
-    // Update lease with auto-pay settings
-    await this.prisma.lease.update({
-      where: { id: tenantWithLease.leaseId },
-      data: {
-        autoPayEnabled: true,
-        autoPayDay: dayOfMonth,
-        autoPayPaymentMethodId: paymentMethodId,
-      },
-    });
-
-    this.logger.log({
-      message: 'autopay.enabled',
-      tenantId,
-      paymentMethodId,
-      dayOfMonth,
-      organizationId,
-    });
-
-    return {
-      enabled: true,
-      dayOfMonth,
-      paymentMethodId,
-    };
-  }
-
-  /**
-   * Disable auto-pay for a tenant
-   */
-  async disableAutoPay(tenantId: string, organizationId: string) {
-    // Verify tenant exists
-    const tenant = await this.prisma.tenant.findFirst({
-      where: {
-        id: tenantId,
-        lease: {
-          unit: {
-            property: {
-              organizationId,
-            },
-          },
-        },
-      },
-    });
-
-    if (!tenant || !tenant.leaseId) {
-      throw new NotFoundException('Tenant not found or has no lease');
-    }
-
-    // Update lease to disable auto-pay
-    await this.prisma.lease.update({
-      where: { id: tenant.leaseId },
-      data: {
-        autoPayEnabled: false,
-        autoPayDay: null,
-        autoPayPaymentMethodId: null,
-      },
-    });
-
-    this.logger.log({
-      message: 'autopay.disabled',
-      tenantId,
-      organizationId,
-    });
-
-    return { enabled: false };
-  }
-
-  /**
-   * Get auto-pay status for a tenant
-   */
-  async getAutoPayStatus(tenantId: string, organizationId: string) {
-    const tenant = await this.prisma.tenant.findFirst({
-      where: {
-        id: tenantId,
-        lease: {
-          unit: {
-            property: {
-              organizationId,
-            },
-          },
-        },
-      },
-      select: {
-        lease: {
-          select: {
-            autoPayEnabled: true,
-            autoPayDay: true,
-            autoPayPaymentMethodId: true,
-          },
-        },
-      },
-    });
-
-    if (!tenant || !tenant.lease) {
-      throw new NotFoundException('Tenant not found or has no lease');
-    }
-
-    let defaultPaymentMethod = null;
-    try {
-      const customer = await this.getOrCreateStripeCustomer(tenantId, organizationId);
-      const pm = await this.stripeService.getDefaultPaymentMethod(customer.id);
-      if (pm) {
-        defaultPaymentMethod = {
-          id: pm.id,
-          type: pm.type,
-          last4: pm.card?.last4 || pm.us_bank_account?.last4,
-          brand: pm.card?.brand,
-          bankName: pm.us_bank_account?.bank_name,
-        };
-      }
-    } catch {
-      // No Stripe customer yet, that's fine
-    }
-
-    return {
-      enabled: tenant.lease.autoPayEnabled || false,
-      dayOfMonth: tenant.lease.autoPayDay,
-      defaultPaymentMethod,
-    };
   }
 }

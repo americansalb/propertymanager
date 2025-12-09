@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { StripeService } from '../payments/stripe.service';
+import { HelcimService } from '../payments/helcim.service';
 
 @Injectable()
 export class TenantPortalService {
   constructor(
     private prisma: PrismaService,
-    private stripeService: StripeService,
+    private helcimService: HelcimService,
   ) {}
 
   // ============================================================================
@@ -301,15 +301,15 @@ export class TenantPortalService {
       throw new BadRequestException('Payment amount exceeds outstanding balance');
     }
 
-    // Check if Stripe is configured
-    if (!this.stripeService.isConfigured()) {
+    // Check if Helcim is configured
+    if (!this.helcimService.checkConfigured()) {
       throw new BadRequestException(
         'Payment processing is not configured. Please contact support.',
       );
     }
 
-    // Create the payment intent
-    const paymentIntent = await this.stripeService.createPaymentIntent(
+    // Initialize Helcim checkout session
+    const checkout = await this.helcimService.initializeCheckout(
       amount,
       tenantId,
       chargeIds,
@@ -320,8 +320,8 @@ export class TenantPortalService {
     );
 
     return {
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+      checkoutToken: checkout.checkoutToken,
+      secretToken: checkout.secretToken,
       amount,
     };
   }
