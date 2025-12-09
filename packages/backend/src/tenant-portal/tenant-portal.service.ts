@@ -445,13 +445,110 @@ export class TenantPortalService {
         id: requestId,
         tenantId,
       },
+      include: {
+        tenant: {
+          include: {
+            unit: {
+              include: {
+                property: true,
+              },
+            },
+            lease: {
+              include: {
+                unit: {
+                  include: {
+                    property: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!request) {
       throw new NotFoundException('Maintenance request not found');
     }
 
-    return request;
+    // Get the related work order to show management's progress
+    const unit = request.tenant?.unit || request.tenant?.lease?.unit;
+    const property = request.tenant?.unit?.property || request.tenant?.lease?.unit?.property;
+
+    let workOrderStatus = null;
+    if (property) {
+      const workOrder = await this.prisma.workOrder.findFirst({
+        where: {
+          organizationId: property.organizationId,
+          title: request.title,
+          propertyId: property.id,
+          createdAt: {
+            gte: new Date(new Date(request.createdAt).getTime() - 60000), // Within 1 minute of request
+          },
+        },
+        include: {
+          assignedTo: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+          vendor: {
+            select: {
+              companyName: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (workOrder) {
+        workOrderStatus = {
+          status: workOrder.status,
+          assignedTo: workOrder.assignedTo
+            ? `${workOrder.assignedTo.firstName} ${workOrder.assignedTo.lastName}`
+            : null,
+          vendor: workOrder.vendor?.companyName || null,
+          scheduledDate: workOrder.scheduledDate,
+          completedDate: workOrder.completedDate,
+          completionNotes: workOrder.completionNotes,
+          estimatedCost: workOrder.estimatedCost,
+        };
+      }
+    }
+
+    return {
+      id: request.id,
+      title: request.title,
+      description: request.description,
+      category: request.category,
+      priority: request.priority,
+      status: request.status,
+      location: request.location,
+      photos: request.photos,
+      permissionToEnter: request.permissionToEnter,
+      preferredTimes: request.preferredTimes,
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
+      resolvedAt: request.resolvedAt,
+      resolution: request.resolution,
+      unit: unit
+        ? {
+            id: unit.id,
+            unitNumber: unit.unitNumber,
+          }
+        : null,
+      property: property
+        ? {
+            id: property.id,
+            name: property.name,
+            address1: property.address1,
+            city: property.city,
+            state: property.state,
+          }
+        : null,
+      workOrder: workOrderStatus,
+    };
   }
 
   // ============================================================================
