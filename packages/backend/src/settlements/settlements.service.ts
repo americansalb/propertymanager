@@ -565,15 +565,21 @@ export class SettlementsService {
     organizationId: string,
     settings: {
       autoPayoutEnabled?: boolean;
-      autoPayoutDay?: number;
+      payoutFrequency?: 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'MANUAL';
+      payoutDayOfWeek?: number;
+      payoutDayOfMonth?: number;
       autoPayoutMinimum?: number;
       payoutBankAccountId?: string;
     },
   ) {
     const balance = await this.getOrCreateBalance(organizationId);
 
-    if (settings.autoPayoutDay && (settings.autoPayoutDay < 1 || settings.autoPayoutDay > 28)) {
-      throw new BadRequestException('Auto-payout day must be between 1 and 28');
+    if (settings.payoutDayOfWeek && (settings.payoutDayOfWeek < 1 || settings.payoutDayOfWeek > 5)) {
+      throw new BadRequestException('Payout day of week must be 1-5 (Monday-Friday)');
+    }
+
+    if (settings.payoutDayOfMonth && (settings.payoutDayOfMonth < 1 || settings.payoutDayOfMonth > 28)) {
+      throw new BadRequestException('Payout day of month must be between 1 and 28');
     }
 
     if (settings.payoutBankAccountId) {
@@ -594,10 +600,154 @@ export class SettlementsService {
       where: { id: balance.id },
       data: {
         autoPayoutEnabled: settings.autoPayoutEnabled,
-        autoPayoutDay: settings.autoPayoutDay,
+        payoutFrequency: settings.payoutFrequency,
+        payoutDayOfWeek: settings.payoutDayOfWeek,
+        payoutDayOfMonth: settings.payoutDayOfMonth,
         autoPayoutMinimum: settings.autoPayoutMinimum,
         payoutBankAccountId: settings.payoutBankAccountId,
       },
     });
+  }
+
+  /**
+   * Get organizations due for auto-payout today
+   */
+  async getOrganizationsDueForPayout(): Promise<any[]> {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
+    const dayOfMonth = today.getDate();
+    const weekOfMonth = Math.ceil(dayOfMonth / 7);
+
+    // Skip weekends
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return [];
+    }
+
+    // Get all balances with auto-payout enabled and sufficient funds
+    const balances = await this.prisma.organizationBalance.findMany({
+      where: {
+        autoPayoutEnabled: true,
+        payoutBankAccountId: { not: null },
+        availableBalance: { gt: 0 },
+      },
+      include: {
+        organization: true,
+      },
+    });
+
+    const dueForPayout: any[] = [];
+
+    for (const balance of balances) {
+      const frequency = balance.payoutFrequency;
+      const minAmount = Number(balance.autoPayoutMinimum || 50);
+      const availableBalance = Number(balance.availableBalance);
+
+      if (availableBalance < minAmount) {
+        continue;
+      }
+
+      let isDue = false;
+
+      switch (frequency) {
+        case 'DAILY':
+          isDue = true;
+          break;
+
+        case 'WEEKLY':
+          // Check if today matches their payout day (default Friday = 5)
+          isDue = dayOfWeek === (balance.payoutDayOfWeek || 5);
+          break;
+
+        case 'BIWEEKLY':
+          // Every other week on their chosen day
+          isDue = dayOfWeek === (balance.payoutDayOfWeek || 5) && weekOfMonth % 2 === 1;
+          break;
+
+        case 'MONTHLY':
+          // On their chosen day of month
+          isDue = dayOfMonth === (balance.payoutDayOfMonth || 1);
+          break;
+
+        case 'MANUAL':
+          // Never auto-payout
+          isDue = false;
+          break;
+      }
+
+      if (isDue) {
+        dueForPayout.push(balance);
+      }
+    }
+
+    return dueForPayout;
+  }
+
+  /**
+   * Process auto-payouts for all due organizations
+   * Called by scheduled job
+   */
+  async processAutoPayouts(): Promise<{ processed: number; failed: number; skipped: number }> {
+    const dueOrgs = await this.getOrganizationsDueForPayout();
+
+    let processed = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const balance of dueOrgs) {
+      try {
+        if (!balance.payoutBankAccountId) {
+          skipped++;
+          continue;
+        }
+
+        const availableBalance = Number(balance.availableBalance);
+
+        // Create payout request
+        const payoutRequest = await this.prisma.payoutRequest.create({
+          data: {
+            balanceId: balance.id,
+            amount: availableBalance,
+            bankAccountId: balance.payoutBankAccountId,
+            notes: `Auto-payout (${balance.payoutFrequency})`,
+          },
+        });
+
+        // Reserve the funds
+        await this.prisma.organizationBalance.update({
+          where: { id: balance.id },
+          data: {
+            availableBalance: 0,
+            pendingBalance: { increment: availableBalance },
+          },
+        });
+
+        // Mark as processing (actual transfer will be done by Dwolla integration)
+        await this.prisma.payoutRequest.update({
+          where: { id: payoutRequest.id },
+          data: {
+            status: 'PROCESSING',
+            processedAt: new Date(),
+          },
+        });
+
+        this.logger.log({
+          message: 'settlement.auto_payout_initiated',
+          organizationId: balance.organizationId,
+          amount: availableBalance,
+          payoutRequestId: payoutRequest.id,
+        });
+
+        processed++;
+      } catch (error) {
+        this.logger.error({
+          message: 'settlement.auto_payout_failed',
+          organizationId: balance.organizationId,
+          error: (error as Error).message,
+        });
+        failed++;
+      }
+    }
+
+    return { processed, failed, skipped };
   }
 }

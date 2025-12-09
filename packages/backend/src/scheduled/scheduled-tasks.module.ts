@@ -6,6 +6,7 @@ import { LeasesModule } from '../leases/leases.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { FinancialModule } from '../financial/financial.module';
+import { SettlementsModule } from '../settlements/settlements.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { FinancialModule } from '../financial/financial.module';
     NotificationsModule,
     PaymentsModule,
     FinancialModule,
+    SettlementsModule,
   ],
   providers: [ScheduledTasksService],
   exports: [ScheduledTasksService],

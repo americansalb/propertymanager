@@ -1516,6 +1516,14 @@ enum SettlementEntryType {
   CHARGEBACK            // Disputed payment (deducted)
 }
 
+enum PayoutFrequency {
+  DAILY             // Every business day
+  WEEKLY            // Once per week (default)
+  BIWEEKLY          // Every two weeks
+  MONTHLY           // Once per month
+  MANUAL            // Only when landlord requests
+}
+
 // Track organization's collected money balance
 model OrganizationBalance {
   id              String   @id @default(cuid())
@@ -1533,9 +1541,11 @@ model OrganizationBalance {
   totalFees          Decimal  @db.Decimal(15, 2) @default(0)
 
   // Payout settings
-  autoPayoutEnabled  Boolean  @default(false)
-  autoPayoutDay      Int?     // Day of month (1-28) for auto-payout
-  autoPayoutMinimum  Decimal? @db.Decimal(10, 2) @default(100)
+  autoPayoutEnabled  Boolean  @default(true)           // Default: auto-payout ON
+  payoutFrequency    PayoutFrequency @default(WEEKLY)  // Default: weekly
+  payoutDayOfWeek    Int?     @default(5)              // 1=Mon, 5=Fri (for weekly/biweekly)
+  payoutDayOfMonth   Int?                              // 1-28 (for monthly)
+  autoPayoutMinimum  Decimal? @db.Decimal(10, 2) @default(50)  // Min $50 to trigger payout
 
   // Default payout bank account
   payoutBankAccountId String?

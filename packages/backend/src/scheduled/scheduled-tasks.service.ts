@@ -6,6 +6,7 @@ import { LeasesService } from '../leases/leases.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { HelcimService } from '../payments/helcim.service';
 import { ChargesService } from '../financial/charges.service';
+import { SettlementsService } from '../settlements/settlements.service';
 
 @Injectable()
 export class ScheduledTasksService {
@@ -15,6 +16,7 @@ export class ScheduledTasksService {
     private notificationsService: NotificationsService,
     private helcimService: HelcimService,
     private chargesService: ChargesService,
+    private settlementsService: SettlementsService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -515,6 +517,35 @@ export class ScheduledTasksService {
     } catch (error) {
       this.logger.error({
         message: 'scheduled.late_fees.error',
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  // ============================================================
+  // LANDLORD PAYOUTS (Settlement)
+  // ============================================================
+
+  /**
+   * Process auto-payouts daily at 8 AM
+   * Checks each organization's payout schedule and initiates transfers
+   */
+  @Cron('0 8 * * 1-5') // 8:00 AM Monday-Friday
+  async handleAutoPayouts() {
+    this.logger.log({ message: 'scheduled.payouts.start' });
+
+    try {
+      const result = await this.settlementsService.processAutoPayouts();
+
+      this.logger.log({
+        message: 'scheduled.payouts.complete',
+        processed: result.processed,
+        failed: result.failed,
+        skipped: result.skipped,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: 'scheduled.payouts.error',
         error: (error as Error).message,
       });
     }
