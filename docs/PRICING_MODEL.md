@@ -1,19 +1,19 @@
 # PropertyMaster Pricing Model
 
-**Version:** 1.0
+**Version:** 1.1
 **Last Updated:** December 2024
 
 ---
 
 ## Subscription Tiers
 
-| Tier | Units | Monthly | Annual | ACH Fee | Card Markup |
-|------|-------|---------|--------|---------|-------------|
-| **Free** | 1-4 | $0 | $0 | $2.95 | 0.5% |
-| **Starter** | 5-15 | $18 | $180 | $2.50 | 0.35% |
-| **Pro** | 16-50 | $29 | $290 | $2.00 | 0.1% |
-| **Business** | 51-150 | $49 | $490 | $2.00 | 0.1% |
-| **Scale** | 151+ | $99 | $990 | $2.00 | 0.1% |
+| Tier | Units | Monthly | Annual | ACH Fee | Card Rate |
+|------|-------|---------|--------|---------|-----------|
+| **Free** | 1-4 | $0 | $0 | $2.95 | 2.80% |
+| **Starter** | 5-15 | $18 | $180 | $2.50 | 2.70% |
+| **Pro** | 16-50 | $29 | $290 | $2.00 | 2.60% |
+| **Business** | 51-150 | $49 | $490 | $2.00 | 2.49% |
+| **Scale** | 151+ | $99 | $990 | $2.00 | 2.49% |
 
 ---
 
@@ -26,10 +26,11 @@
 - **Margin:** $1.75 - $2.70 per transaction
 
 ### Card Payments (Credit/Debit)
-- **Processor:** Stripe
-- **Stripe Fee:** 2.9% + $0.30
-- **Our Markup:** 0.1% - 0.5% depending on tier
-- **Total to Tenant:** 3.0% - 3.4% + $0.30
+- **Processor:** Helcim (interchange-plus pricing)
+- **Our Cost:** ~2.27% + $0.25 (Visa/MC/Discover average)
+- **Cards Accepted:** Visa, Mastercard, Discover (NO American Express)
+- **Rate Charged:** 2.49% - 2.80% depending on tier
+- **Our Margin:** $3.05 - $7.70 per $1,500 transaction
 
 ### Fee Structure
 - **Landlord configures** whether tenant pays processing fees
@@ -52,9 +53,9 @@
 - Subscription: $0
 - Average rent: $6,000/month (4 units x $1,500)
 - If 100% pay via platform:
-  - ACH revenue: $2.70 margin x 4 = $10.80/month
-  - Card revenue: 0.5% x $6,000 = $30/month (if all cards)
-- **Breakeven acquisition cost:** ~$100
+  - ACH margin: $2.70 x 4 = $10.80/month
+  - Card margin: $7.70 x 4 = $30.80/month (if all cards at 2.8%)
+- **Monthly revenue:** $10.80 - $30.80 depending on payment mix
 
 #### Starter Tier (5-15 units)
 - Subscription: $18/month
@@ -84,25 +85,21 @@
 
 ## Competitive Positioning
 
-### vs. AppFolio
-- AppFolio: $1.40/ACH, $280/mo minimum, 2.99% eCheck
-- **We're cheaper at all tiers**
+**Our card rates (2.49% - 2.80%) beat everyone:**
 
-### vs. Buildium
-- Buildium: $1.25/ACH, starts at $58/mo for 20 units
-- **We're cheaper, especially for small PMs**
+| Competitor | Their Card Rate | Our Best Rate | Savings |
+|------------|-----------------|---------------|---------|
+| AppFolio | 2.99% | 2.49% | **0.50%** |
+| Buildium | 2.95% | 2.49% | **0.46%** |
+| RentRedi | 2.9% + $0.30 | 2.49% | **0.41% + $0.30** |
+| Baselane | 2.9% + $0.30 | 2.49% | **0.41% + $0.30** |
+| Innago | 2.75% | 2.49% | **0.26%** |
+| Stripe Direct | 2.9% + $0.30 | 2.49% | **0.41% + $0.30** |
 
-### vs. RentRedi
-- RentRedi: $12/mo flat, but charges 2.9% + $0.30 all cards
-- **We have better card rates at paid tiers**
-
-### vs. Baselane
-- Baselane: Free, monetizes banking + payments
-- **Similar model, we add marketplace differentiation**
-
-### vs. Innago
-- Innago: Free, monetizes payment fees only
-- **We have subscription + marketplace for sustainability**
+### Why We're Cheaper
+- **Helcim interchange-plus** vs competitors' flat-rate Stripe
+- **No American Express** eliminates 3%+ interchange risk
+- **Volume discounts** from Helcim as we scale
 
 ---
 
@@ -112,8 +109,9 @@ For a PM with 151+ units considering in-house payments:
 
 **Our Cost:**
 - $99/mo subscription
-- 0.1% card markup on $226,500 rent = $226.50/mo
-- **Total: $325.50/month**
+- 2.49% card on $226,500 = $5,640 (but tenant pays, not PM)
+- PM pays nothing beyond subscription
+- **Total PM cost: $99/month**
 
 **In-House Cost:**
 - PCI compliance audit: $1,250-4,166/month (amortized)
@@ -148,15 +146,16 @@ For a PM with 151+ units considering in-house payments:
 - Maintain $2+ minimum fee for fallback margin
 - If Dwolla fails, can switch to Stripe ACH ($5/transaction) and remain profitable
 
-### Stripe Card Processing
-- Stripe for all card payments (2.9% + $0.30)
-- Add tier-based markup (0.1% - 0.5%)
-- Total tenant sees: 3.0% - 3.4% + $0.30
+### Helcim Card Processing
+- Helcim for all card payments (interchange-plus ~2.27% + $0.25)
+- Charge tier-based rate (2.49% - 2.80%)
+- **NO American Express** - only Visa/MC/Discover
+- Margin: $3.05 - $7.70 per $1,500 transaction
 
 ### Fee Display
 - Show fees transparently at checkout
 - "Service fee: $2.95" for ACH
-- "Processing fee: 3.15%" for cards
+- "Processing fee: 2.80%" for cards (varies by tier)
 - Landlord cannot hide fees (compliance)
 
 ---
