@@ -43,6 +43,7 @@ import { HealthModule } from './health/health.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { RequestLoggerMiddleware } from './monitoring/request-logger.middleware';
+import { SettlementsModule } from './settlements/settlements.module';
 
 @Module({
   controllers: [AppController],
@@ -90,6 +91,7 @@ import { RequestLoggerMiddleware } from './monitoring/request-logger.middleware'
     HealthModule,
     MonitoringModule,
     MarketplaceModule,
+    SettlementsModule,
   ],
   providers: [
     {

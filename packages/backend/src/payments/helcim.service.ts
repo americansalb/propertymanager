@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SettlementsService } from '../settlements/settlements.service';
 
 interface HelcimPaymentResponse {
   transactionId: number;
@@ -54,6 +55,8 @@ export class HelcimService {
     private configService: ConfigService,
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    @Inject(forwardRef(() => SettlementsService))
+    private settlementsService: SettlementsService,
   ) {
     this.apiToken = this.configService.get<string>('HELCIM_API_TOKEN') || '';
     this.accountId = this.configService.get<string>('HELCIM_ACCOUNT_ID') || '';
@@ -438,6 +441,30 @@ export class HelcimService {
     }
 
     this.logger.log(`Payment allocated across ${chargeIds.length} charges`);
+
+    // Credit landlord settlement balance
+    if (tenant && tenant.lease) {
+      const organizationId = tenant.lease.unit.property.organizationId;
+      try {
+        // Get the primary charge type for categorization
+        const primaryCharge = await this.prisma.charge.findFirst({
+          where: { id: { in: chargeIds } },
+        });
+        const chargeType = primaryCharge?.type || 'RENT';
+
+        await this.settlementsService.creditPayment(
+          payment.id,
+          amount,
+          'CREDIT_CARD',
+          organizationId,
+          chargeType,
+        );
+        this.logger.log(`Settlement credited for payment ${payment.id}`);
+      } catch (error) {
+        this.logger.error('Failed to credit settlement balance', error);
+        // Don't fail the payment - settlement can be reconciled later
+      }
+    }
 
     // Send success notification
     if (tenant && tenant.lease) {

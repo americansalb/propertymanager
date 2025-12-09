@@ -4,10 +4,12 @@ import {
   BadRequestException,
   Inject,
   LoggerService,
+  forwardRef,
 } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
 import { HelcimService } from './helcim.service';
+import { SettlementsService } from '../settlements/settlements.service';
 import {
   type RecordPaymentDto,
   type RefundPaymentDto,
@@ -19,6 +21,8 @@ export class PaymentsService {
   constructor(
     private prisma: PrismaService,
     private helcimService: HelcimService,
+    @Inject(forwardRef(() => SettlementsService))
+    private settlementsService: SettlementsService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -264,6 +268,31 @@ export class PaymentsService {
       await this.autoAllocatePayment(payment.id, dto.amount, tenant.lease.id, organizationId);
     }
 
+    // Credit landlord settlement balance
+    try {
+      // For manual payments (cash/check), we charge minimal or no processing fee
+      await this.settlementsService.creditPayment(
+        payment.id,
+        dto.amount,
+        dto.method,
+        organizationId,
+        'RENT', // Default charge type
+      );
+      this.logger.log({
+        message: 'settlement.credited',
+        paymentId: payment.id,
+        amount: dto.amount,
+        organizationId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: 'settlement.credit_failed',
+        paymentId: payment.id,
+        error: (error as Error).message,
+      });
+      // Don't fail the payment - settlement can be reconciled later
+    }
+
     // Return payment with allocations
     return this.findOne(payment.id, organizationId);
   }
@@ -308,6 +337,23 @@ export class PaymentsService {
 
     // Reverse allocations
     await this.reverseAllocations(id, refundAmount);
+
+    // Debit landlord settlement balance
+    try {
+      await this.settlementsService.debitRefund(id, refundAmount, organizationId);
+      this.logger.log({
+        message: 'settlement.refund_debited',
+        paymentId: id,
+        refundAmount,
+        organizationId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: 'settlement.refund_debit_failed',
+        paymentId: id,
+        error: (error as Error).message,
+      });
+    }
 
     this.logger.log({
       message: 'payment.refunded',
