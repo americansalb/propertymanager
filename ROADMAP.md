@@ -2467,9 +2467,11 @@ interface FinancialSummary {
 
 ---
 
-## PHASE 63: Stripe Account Setup
+## PHASE 63: Stripe Account Setup (Cards Only)
 
-**Objective:** Configure Stripe for payment processing.
+**Objective:** Configure Stripe for credit/debit card processing only.
+
+**Note:** Stripe is used ONLY for card payments (3.15% fee). ACH payments use Dwolla for lower fees ($0.25 vs $5).
 
 **Deliverables:**
 
@@ -2499,6 +2501,265 @@ STRIPE_API_VERSION=2023-10-16
 
 **Dependencies:** Phase 1
 **Estimated Effort:** 2 hours
+
+---
+
+## PHASE 63A: Dwolla Account Setup (ACH Payments)
+
+**Objective:** Configure Dwolla for low-cost ACH payment processing.
+
+**Why Dwolla over Stripe ACH:**
+- Stripe ACH: 0.8% capped at $5 per transaction
+- Dwolla ACH: ~$0.25 per transaction (custom pricing)
+- **Savings: $4.75 per transaction** (95% cheaper)
+
+**Deliverables:**
+
+1. Create Dwolla sandbox account at dwolla.com
+2. Apply for production access (requires business verification)
+3. Configure environment variables:
+   - DWOLLA_APP_KEY
+   - DWOLLA_APP_SECRET
+   - DWOLLA_ENVIRONMENT (sandbox/production)
+4. Install Dwolla SDK: `pnpm add dwolla-v2`
+5. Create DwollaModule with configuration
+6. Verify connection with test API call
+
+**Environment Variables:**
+
+```env
+DWOLLA_APP_KEY=your_app_key
+DWOLLA_APP_SECRET=your_app_secret
+DWOLLA_ENVIRONMENT=sandbox
+DWOLLA_WEBHOOK_SECRET=your_webhook_secret
+```
+
+**Acceptance Criteria:**
+
+- [ ] Dwolla SDK installed
+- [ ] Sandbox account created
+- [ ] Environment variables documented
+- [ ] Test connection successful
+
+**Dependencies:** Phase 1
+**Estimated Effort:** 2 hours
+
+---
+
+## PHASE 63B: Dwolla Service Implementation
+
+**Objective:** Core Dwolla ACH operations.
+
+**Deliverables:**
+
+1. Create `packages/backend/src/modules/payments/dwolla.service.ts`
+2. `createCustomer(tenant)` - Create Dwolla customer for tenant
+3. `createFundingSource(customerId, bankAccount)` - Link bank account
+4. `verifyMicroDeposits(fundingSourceId, amounts)` - Verify bank account
+5. `initiateTransfer(source, destination, amount, metadata)` - ACH transfer
+6. `getTransferStatus(transferId)` - Check transfer status
+7. `cancelTransfer(transferId)` - Cancel pending transfer
+
+**Service Implementation:**
+
+```typescript
+@Injectable()
+export class DwollaService {
+  private client: Client;
+
+  constructor(private configService: ConfigService) {
+    this.client = new Client({
+      key: this.configService.get('DWOLLA_APP_KEY'),
+      secret: this.configService.get('DWOLLA_APP_SECRET'),
+      environment: this.configService.get('DWOLLA_ENVIRONMENT'),
+    });
+  }
+
+  async createCustomer(tenant: Tenant): Promise<string> {
+    const response = await this.client.post('customers', {
+      firstName: tenant.firstName,
+      lastName: tenant.lastName,
+      email: tenant.email,
+      type: 'personal',
+    });
+    return response.headers.get('location'); // Customer URL
+  }
+
+  async initiateTransfer(
+    sourceUrl: string,
+    destinationUrl: string,
+    amount: number,
+    metadata: object,
+  ) {
+    return this.client.post('transfers', {
+      _links: {
+        source: { href: sourceUrl },
+        destination: { href: destinationUrl },
+      },
+      amount: {
+        currency: 'USD',
+        value: amount.toFixed(2),
+      },
+      metadata,
+    });
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Customer creation works
+- [ ] Bank account linking works
+- [ ] Transfer initiation works
+- [ ] Proper error handling
+
+**Dependencies:** Phase 63A
+**Estimated Effort:** 6 hours
+
+---
+
+## PHASE 63C: Dwolla Webhook Handler
+
+**Objective:** Process Dwolla webhook events for transfer status updates.
+
+**Deliverables:**
+
+1. Create webhook endpoint: `POST /api/v1/webhooks/dwolla`
+2. Verify webhook signature
+3. Handle events:
+   - `transfer_created` → Log transfer initiated
+   - `transfer_completed` → Record payment, allocate to charges
+   - `transfer_failed` → Mark payment failed, notify tenant
+   - `transfer_cancelled` → Handle cancellation
+   - `customer_funding_source_verified` → Enable bank account
+4. Idempotent processing (handle retries)
+5. Log all webhook events
+
+**Webhook Handler:**
+
+```typescript
+@Post('webhooks/dwolla')
+async handleWebhook(
+  @Headers('x-request-signature-sha-256') signature: string,
+  @Body() body: DwollaWebhookEvent,
+) {
+  // Verify signature
+  this.dwollaService.verifyWebhook(body, signature);
+
+  switch (body.topic) {
+    case 'transfer_completed':
+      await this.paymentsService.handleDwollaTransferComplete(body);
+      break;
+    case 'transfer_failed':
+      await this.paymentsService.handleDwollaTransferFailed(body);
+      break;
+  }
+
+  return { received: true };
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Signature verification works
+- [ ] Events processed correctly
+- [ ] Idempotent (duplicate events ignored)
+- [ ] Failures logged and tenant notified
+
+**Dependencies:** Phase 63B
+**Estimated Effort:** 4 hours
+
+---
+
+## PHASE 63D: ACH Payment Scheduler (Recurring Payments)
+
+**Objective:** Build scheduler for recurring ACH payments via Dwolla.
+
+**Note:** Dwolla does not have built-in recurring payments. We build our own scheduler that calls Dwolla API on schedule.
+
+**Deliverables:**
+
+1. Create `ScheduledPayment` database model:
+   ```prisma
+   model ScheduledPayment {
+     id              String   @id @default(cuid())
+     organizationId  String
+     leaseId         String
+     tenantId        String
+     amount          Decimal
+     dayOfMonth      Int      // 1-28
+     fundingSourceId String   // Dwolla bank account
+     isActive        Boolean  @default(true)
+     nextPaymentDate DateTime
+     lastPaymentDate DateTime?
+     createdAt       DateTime @default(now())
+     updatedAt       DateTime @updatedAt
+   }
+   ```
+
+2. Create `ScheduledPaymentsService`:
+   - `create(dto)` - Set up recurring payment
+   - `cancel(id)` - Disable recurring payment
+   - `processScheduledPayments()` - Daily cron job
+
+3. Create daily cron job (`@Cron('0 8 * * *')`):
+   ```typescript
+   @Cron('0 8 * * *') // Run at 8 AM daily
+   async processScheduledPayments() {
+     const today = new Date();
+     const duePayments = await this.prisma.scheduledPayment.findMany({
+       where: {
+         isActive: true,
+         nextPaymentDate: { lte: today },
+       },
+       include: { tenant: true, lease: true },
+     });
+
+     for (const payment of duePayments) {
+       try {
+         // Initiate Dwolla transfer
+         await this.dwollaService.initiateTransfer(
+           payment.fundingSourceId,
+           this.getOrgBankAccount(payment.organizationId),
+           payment.amount,
+           { leaseId: payment.leaseId, scheduledPaymentId: payment.id },
+         );
+
+         // Update next payment date
+         await this.prisma.scheduledPayment.update({
+           where: { id: payment.id },
+           data: {
+             nextPaymentDate: this.addMonths(payment.nextPaymentDate, 1),
+             lastPaymentDate: today,
+           },
+         });
+
+         this.logger.log('Scheduled payment initiated', { paymentId: payment.id });
+       } catch (error) {
+         this.logger.error('Scheduled payment failed', { paymentId: payment.id, error });
+         // Notify tenant of failed auto-pay
+         await this.notifyPaymentFailed(payment);
+       }
+     }
+   }
+   ```
+
+4. API Endpoints:
+   - `POST /api/v1/payments/scheduled` - Create recurring payment
+   - `GET /api/v1/payments/scheduled` - List tenant's scheduled payments
+   - `DELETE /api/v1/payments/scheduled/:id` - Cancel recurring payment
+
+**Acceptance Criteria:**
+
+- [ ] Scheduled payment model created
+- [ ] Cron job runs daily at 8 AM
+- [ ] Payments initiated via Dwolla
+- [ ] Next payment date updated correctly
+- [ ] Failed payments logged and tenant notified
+- [ ] Tenant can enable/disable auto-pay
+
+**Dependencies:** Phase 63C
+**Estimated Effort:** 6 hours
 
 ---
 
@@ -2801,40 +3062,66 @@ export function SavedPaymentMethods({ onSelect }: Props) {
 
 ---
 
-## PHASE 70: Auto-Pay Enrollment
+## PHASE 70: Auto-Pay Enrollment (Frontend)
 
-**Objective:** Allow tenants to enroll in automatic rent payments.
+**Objective:** Frontend UI for tenants to enroll in automatic rent payments via Dwolla ACH.
+
+**Note:** The backend scheduler is implemented in Phase 63D. This phase focuses on the frontend enrollment UI.
 
 **Deliverables:**
 
-1. Add to Lease: autoPayEnabled, autoPayDay, autoPayMethodId
-2. `POST /api/v1/leases/:id/autopay` - Enable auto-pay
-3. `DELETE /api/v1/leases/:id/autopay` - Disable auto-pay
-4. Scheduled job: process auto-payments daily
-5. Email notification before charging
-6. Handle failed auto-payments
+1. Create `AutoPayEnrollment.tsx` component in tenant portal
+2. Bank account linking via Plaid (for Dwolla funding source)
+3. Select payment day (1st-28th of month)
+4. Confirmation of auto-pay terms
+5. Email notification settings (notify X days before)
+6. Cancel auto-pay option
 
-**Auto-Pay Job:**
+**Frontend Auto-Pay Enrollment:**
 
 ```typescript
-@Cron('0 8 * * *') // Run at 8 AM daily
-async processAutoPayments() {
-  const today = new Date().getDate();
-  const leases = await this.prisma.lease.findMany({
-    where: {
-      autoPayEnabled: true,
-      autoPayDay: today,
-      status: 'ACTIVE',
+export function AutoPayEnrollment({ leaseId }: Props) {
+  const [step, setStep] = useState<'link-bank' | 'select-day' | 'confirm'>('link-bank');
+  const [fundingSourceId, setFundingSourceId] = useState<string>();
+  const [paymentDay, setPaymentDay] = useState(1);
+
+  const enrollAutoPay = useMutation({
+    mutationFn: () => api.post(`/payments/scheduled`, {
+      leaseId,
+      fundingSourceId,
+      dayOfMonth: paymentDay,
+    }),
+    onSuccess: () => {
+      toast.success('Auto-pay enrolled successfully');
     },
-    include: { tenant: true, charges: { where: { status: 'PENDING' } } },
   });
 
-  for (const lease of leases) {
-    const amount = this.calculateOutstanding(lease.charges);
-    if (amount > 0) {
-      await this.processPayment(lease, amount);
-    }
-  }
+  return (
+    <div>
+      {step === 'link-bank' && (
+        <PlaidLink
+          onSuccess={(publicToken) => {
+            // Exchange for Dwolla funding source
+            exchangeForFundingSource(publicToken).then(setFundingSourceId);
+            setStep('select-day');
+          }}
+        />
+      )}
+      {step === 'select-day' && (
+        <Select
+          label="Payment Day"
+          value={paymentDay}
+          onChange={setPaymentDay}
+          options={Array.from({ length: 28 }, (_, i) => ({ value: i + 1, label: `${i + 1}` }))}
+        />
+      )}
+      {step === 'confirm' && (
+        <Button onClick={() => enrollAutoPay.mutate()}>
+          Enable Auto-Pay
+        </Button>
+      )}
+    </div>
+  );
 }
 ```
 
