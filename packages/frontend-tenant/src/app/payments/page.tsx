@@ -28,7 +28,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import HelcimPaymentForm from '@/components/payments/HelcimPaymentForm';
 
 interface OutstandingCharge {
@@ -91,7 +90,6 @@ export default function PaymentsPage() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedCharges, setSelectedCharges] = useState<string[]>([]);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const { data: outstandingData, isLoading: loadingCharges } = useQuery({
     queryKey: ['outstanding-charges'],
@@ -533,7 +531,6 @@ export default function PaymentsPage() {
           onOpenChange={(open) => {
             setPaymentDialogOpen(open);
             if (!open) {
-              setPaymentSuccess(false);
               setPaymentAmount('');
             }
           }}
@@ -541,9 +538,7 @@ export default function PaymentsPage() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Make a Payment</DialogTitle>
-              <DialogDescription>
-                Pay securely with your credit or debit card.
-              </DialogDescription>
+              <DialogDescription>Pay securely with your credit or debit card.</DialogDescription>
             </DialogHeader>
             {tenant && (
               <HelcimPaymentForm
@@ -560,13 +555,11 @@ export default function PaymentsPage() {
                     : outstandingData?.charges.map((c) => c.id) || []
                 }
                 tenantId={tenant.id}
-                onSuccess={(transactionId) => {
-                  setPaymentSuccess(true);
+                onSuccess={() => {
                   queryClient.invalidateQueries({ queryKey: ['outstanding-charges'] });
                   queryClient.invalidateQueries({ queryKey: ['payment-history'] });
                   setTimeout(() => {
                     setPaymentDialogOpen(false);
-                    setPaymentSuccess(false);
                     setSelectedCharges([]);
                     setPaymentAmount('');
                   }, 2000);

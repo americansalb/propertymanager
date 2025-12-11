@@ -26,9 +26,15 @@ interface CardFormData {
 // Card type detection based on BIN ranges
 const getCardType = (cardNumber: string): string => {
   const cleanNumber = cardNumber.replace(/\s/g, '');
-  if (/^4/.test(cleanNumber)) return 'visa';
-  if (/^5[1-5]/.test(cleanNumber)) return 'mastercard';
-  if (/^6(?:011|5)/.test(cleanNumber)) return 'discover';
+  if (/^4/.test(cleanNumber)) {
+    return 'visa';
+  }
+  if (/^5[1-5]/.test(cleanNumber)) {
+    return 'mastercard';
+  }
+  if (/^6(?:011|5)/.test(cleanNumber)) {
+    return 'discover';
+  }
   return 'unknown';
 };
 
@@ -51,7 +57,7 @@ const formatCardNumber = (value: string): string => {
 const formatExpiry = (value: string): string => {
   const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
   if (v.length >= 2) {
-    return v.substring(0, 2) + '/' + v.substring(2, 4);
+    return `${v.substring(0, 2)}/${v.substring(2, 4)}`;
   }
   return v;
 };
@@ -105,7 +111,7 @@ export default function HelcimPaymentForm({
       newErrors.cardExpiry = 'Invalid expiry date';
     } else {
       const month = parseInt(expiryParts[0], 10);
-      const year = parseInt('20' + expiryParts[1], 10);
+      const year = parseInt(`20${expiryParts[1]}`, 10);
       const now = new Date();
       const expiry = new Date(year, month, 0);
       if (month < 1 || month > 12 || expiry < now) {
@@ -175,10 +181,14 @@ export default function HelcimPaymentForm({
 
     if (field === 'cardNumber') {
       formattedValue = formatCardNumber(value);
-      if (formattedValue.length > 19) return; // Max 16 digits + 3 spaces
+      if (formattedValue.length > 19) {
+        return; // Max 16 digits + 3 spaces
+      }
     } else if (field === 'cardExpiry') {
       formattedValue = formatExpiry(value);
-      if (formattedValue.length > 5) return; // MM/YY
+      if (formattedValue.length > 5) {
+        return; // MM/YY
+      }
     } else if (field === 'cardCvv') {
       formattedValue = value.replace(/\D/g, '').slice(0, 4);
     }
@@ -234,9 +244,7 @@ export default function HelcimPaymentForm({
             autoComplete="cc-number"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            {cardType === 'visa' && (
-              <span className="text-blue-600 font-bold text-sm">VISA</span>
-            )}
+            {cardType === 'visa' && <span className="text-blue-600 font-bold text-sm">VISA</span>}
             {cardType === 'mastercard' && (
               <span className="text-orange-600 font-bold text-sm">MC</span>
             )}
@@ -308,17 +316,14 @@ export default function HelcimPaymentForm({
       {paymentStatus === 'error' && (
         <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
           <AlertCircle className="w-5 h-5 text-red-500" />
-          <p className="text-sm text-red-700">Payment failed. Please check your card details and try again.</p>
+          <p className="text-sm text-red-700">
+            Payment failed. Please check your card details and try again.
+          </p>
         </div>
       )}
 
       {/* Submit Button */}
-      <Button
-        type="submit"
-        className="w-full"
-        size="lg"
-        disabled={paymentStatus === 'processing'}
-      >
+      <Button type="submit" className="w-full" size="lg" disabled={paymentStatus === 'processing'}>
         {paymentStatus === 'processing' ? (
           <>
             <Loader2 className="w-5 h-5 mr-2 animate-spin" />

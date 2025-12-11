@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -122,10 +122,13 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 export default function MaintenanceDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const requestId = params.id as string;
 
-  const { data: request, isLoading, error } = useQuery({
+  const {
+    data: request,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['maintenance-request', requestId],
     queryFn: async () => {
       const response = await api.get(`/tenant-portal/maintenance/${requestId}`);
@@ -168,9 +171,7 @@ export default function MaintenanceDetailPage() {
     );
   }
 
-  const statusConfig = STATUS_CONFIG[request.status] || STATUS_CONFIG.SUBMITTED;
   const priorityConfig = PRIORITY_CONFIG[request.priority] || PRIORITY_CONFIG.MEDIUM;
-  const StatusIcon = statusConfig.icon;
 
   // Determine the effective status (use work order status if available for better accuracy)
   const effectiveStatus = request.workOrder?.status || request.status;
@@ -355,11 +356,13 @@ export default function MaintenanceDetailPage() {
                 {/* Assigned */}
                 {(request.workOrder.assignedTo || request.workOrder.vendor) && (
                   <div className="relative">
-                    <div className={`absolute left-[-28px] top-1 w-4 h-4 rounded-full ${
-                      ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].includes(request.workOrder.status)
-                        ? 'bg-purple-500'
-                        : 'bg-gray-300'
-                    }`} />
+                    <div
+                      className={`absolute left-[-28px] top-1 w-4 h-4 rounded-full ${
+                        ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].includes(request.workOrder.status)
+                          ? 'bg-purple-500'
+                          : 'bg-gray-300'
+                      }`}
+                    />
                     <div className="absolute left-[-22px] top-5 w-0.5 h-full bg-gray-200" />
                     <p className="text-sm font-medium text-gray-900">
                       {request.workOrder.vendor
@@ -374,15 +377,15 @@ export default function MaintenanceDetailPage() {
                 {/* Scheduled */}
                 {request.workOrder.scheduledDate && (
                   <div className="relative">
-                    <div className={`absolute left-[-28px] top-1 w-4 h-4 rounded-full ${
-                      new Date(request.workOrder.scheduledDate) <= new Date()
-                        ? 'bg-yellow-500'
-                        : 'bg-gray-300'
-                    }`} />
+                    <div
+                      className={`absolute left-[-28px] top-1 w-4 h-4 rounded-full ${
+                        new Date(request.workOrder.scheduledDate) <= new Date()
+                          ? 'bg-yellow-500'
+                          : 'bg-gray-300'
+                      }`}
+                    />
                     <div className="absolute left-[-22px] top-5 w-0.5 h-full bg-gray-200" />
-                    <p className="text-sm font-medium text-gray-900">
-                      Scheduled for Service
-                    </p>
+                    <p className="text-sm font-medium text-gray-900">Scheduled for Service</p>
                     <p className="text-xs text-gray-500">
                       {format(new Date(request.workOrder.scheduledDate), 'EEEE, MMMM d, yyyy')}
                     </p>
@@ -448,12 +451,13 @@ export default function MaintenanceDetailPage() {
             </CardHeader>
             <CardContent>
               <p className="text-green-900 whitespace-pre-wrap">{request.resolution}</p>
-              {request.workOrder?.completionNotes && request.workOrder.completionNotes !== request.resolution && (
-                <div className="mt-4 pt-4 border-t border-green-200">
-                  <p className="text-sm font-medium text-green-800 mb-2">Additional Notes</p>
-                  <p className="text-green-900">{request.workOrder.completionNotes}</p>
-                </div>
-              )}
+              {request.workOrder?.completionNotes &&
+                request.workOrder.completionNotes !== request.resolution && (
+                  <div className="mt-4 pt-4 border-t border-green-200">
+                    <p className="text-sm font-medium text-green-800 mb-2">Additional Notes</p>
+                    <p className="text-green-900">{request.workOrder.completionNotes}</p>
+                  </div>
+                )}
             </CardContent>
           </Card>
         )}
@@ -467,8 +471,8 @@ export default function MaintenanceDetailPage() {
                 <div>
                   <p className="font-medium text-red-800">Emergency Request</p>
                   <p className="text-sm text-red-700 mt-1">
-                    This is marked as an emergency. If you haven&apos;t been contacted yet,
-                    please call our emergency maintenance line directly.
+                    This is marked as an emergency. If you haven&apos;t been contacted yet, please
+                    call our emergency maintenance line directly.
                   </p>
                 </div>
               </div>
@@ -485,10 +489,7 @@ export default function MaintenanceDetailPage() {
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {request.photos.map((photo, index) => (
-                  <div
-                    key={index}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden"
-                  >
+                  <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                     <img
                       src={photo}
                       alt={`Photo ${index + 1}`}
