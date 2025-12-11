@@ -21,4 +21,8 @@ export const authService = {
     const response = await api.get('/users/me');
     return response.data.data;
   },
+
+  async resendVerificationEmail(email: string): Promise<void> {
+    await api.post('/auth/resend-verification', { email });
+  },
 };

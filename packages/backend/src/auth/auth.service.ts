@@ -235,6 +235,13 @@ export class AuthService {
       throw new UnauthorizedException('Account is suspended or deactivated');
     }
 
+    // Check if email is verified
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'EMAIL_NOT_VERIFIED:Please verify your email address before logging in. Check your inbox for a verification link.',
+      );
+    }
+
     // Reset failed attempts and update last login
     await this.resetFailedAttempts(user.id);
 
