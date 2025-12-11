@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Delete,
   Param,
   Body,
   Query,
@@ -24,10 +23,7 @@ import { PaymentsService } from './payments.service';
 import { HelcimService } from './helcim.service';
 import { OrganizationId } from '../common/decorators/organization.decorator';
 import { UserId } from '../common/decorators/user-id.decorator';
-import {
-  RecordPaymentDto,
-  RefundPaymentDto,
-} from '../financial/dto/payment.dto';
+import { RecordPaymentDto, RefundPaymentDto } from '../financial/dto/payment.dto';
 import { IsString, IsNumber, IsOptional, IsArray } from 'class-validator';
 
 // DTOs for Helcim payments
@@ -311,10 +307,7 @@ export class PaymentsController {
     @Param('transactionId') transactionId: string,
     @Body() body: { amount?: number },
   ) {
-    const result = await this.helcimService.processRefund(
-      parseInt(transactionId, 10),
-      body.amount,
-    );
+    const result = await this.helcimService.processRefund(parseInt(transactionId, 10), body.amount);
 
     return {
       success: true,

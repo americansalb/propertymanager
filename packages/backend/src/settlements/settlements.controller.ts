@@ -9,20 +9,15 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { SettlementsService } from './settlements.service';
 
 @ApiTags('settlements')
 @Controller('settlements')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiBearerAuth()
 export class SettlementsController {
   constructor(private settlementsService: SettlementsService) {}
@@ -103,10 +98,7 @@ export class SettlementsController {
       payoutBankAccountId?: string;
     },
   ) {
-    return this.settlementsService.updatePayoutSettings(
-      req.user.organizationId,
-      body,
-    );
+    return this.settlementsService.updatePayoutSettings(req.user.organizationId, body);
   }
 
   // Admin-only: manually process or fail payouts
@@ -120,10 +112,7 @@ export class SettlementsController {
   @Post('payouts/:id/complete')
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Mark payout as completed (admin only)' })
-  async completePayout(
-    @Param('id') id: string,
-    @Body() body: { providerTransferId?: string },
-  ) {
+  async completePayout(@Param('id') id: string, @Body() body: { providerTransferId?: string }) {
     return this.settlementsService.completePayout(id, body.providerTransferId);
   }
 

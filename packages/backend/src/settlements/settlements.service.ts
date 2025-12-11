@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
-import { Decimal } from '@prisma/client/runtime/library';
 
 // Fee rates by tier (these should match PRICING_MODEL.md)
 const CARD_FEE_RATES: Record<string, number> = {
@@ -189,11 +188,7 @@ export class SettlementsService {
   /**
    * Debit balance for refunds
    */
-  async debitRefund(
-    paymentId: string,
-    refundAmount: number,
-    organizationId: string,
-  ) {
+  async debitRefund(paymentId: string, refundAmount: number, organizationId: string) {
     const balance = await this.getOrCreateBalance(organizationId);
 
     return this.prisma.$transaction(async (tx) => {
@@ -338,9 +333,7 @@ export class SettlementsService {
     }
 
     if (payoutRequest.status !== 'PENDING') {
-      throw new BadRequestException(
-        `Cannot process payout with status ${payoutRequest.status}`,
-      );
+      throw new BadRequestException(`Cannot process payout with status ${payoutRequest.status}`);
     }
 
     // Mark as processing
@@ -574,11 +567,17 @@ export class SettlementsService {
   ) {
     const balance = await this.getOrCreateBalance(organizationId);
 
-    if (settings.payoutDayOfWeek && (settings.payoutDayOfWeek < 1 || settings.payoutDayOfWeek > 5)) {
+    if (
+      settings.payoutDayOfWeek &&
+      (settings.payoutDayOfWeek < 1 || settings.payoutDayOfWeek > 5)
+    ) {
       throw new BadRequestException('Payout day of week must be 1-5 (Monday-Friday)');
     }
 
-    if (settings.payoutDayOfMonth && (settings.payoutDayOfMonth < 1 || settings.payoutDayOfMonth > 28)) {
+    if (
+      settings.payoutDayOfMonth &&
+      (settings.payoutDayOfMonth < 1 || settings.payoutDayOfMonth > 28)
+    ) {
       throw new BadRequestException('Payout day of month must be between 1 and 28');
     }
 
