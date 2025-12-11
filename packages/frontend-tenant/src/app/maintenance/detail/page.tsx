@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -64,7 +64,14 @@ interface MaintenanceRequestDetail {
   } | null;
 }
 
-const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: any; label: string }> = {
+interface StatusConfig {
+  bg: string;
+  text: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}
+
+const STATUS_CONFIG: Record<string, StatusConfig> = {
   SUBMITTED: {
     bg: 'bg-blue-100',
     text: 'text-blue-700',
@@ -121,8 +128,8 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function MaintenanceDetailPage() {
-  const params = useParams();
-  const requestId = params.id as string;
+  const searchParams = useSearchParams();
+  const requestId = searchParams.get('id');
 
   const {
     data: request,
@@ -136,6 +143,28 @@ export default function MaintenanceDetailPage() {
     },
     enabled: !!requestId,
   });
+
+  if (!requestId) {
+    return (
+      <TenantLayout>
+        <div className="max-w-3xl mx-auto">
+          <Card>
+            <CardContent className="py-12 text-center">
+              <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No request specified</h3>
+              <p className="text-gray-500 mb-6">Please select a maintenance request to view.</p>
+              <Link href="/maintenance">
+                <Button>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Requests
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </TenantLayout>
+    );
+  }
 
   if (isLoading) {
     return (
