@@ -60,6 +60,7 @@ model Organization {
   bankAccounts BankAccount[]
   events    Event[]
   tenants   Tenant[]  // Orphan tenants not yet assigned to a unit
+  balance   OrganizationBalance?  // Settlement balance for payouts
 
   @@index([slug])
 }
@@ -642,9 +643,15 @@ model Payment {
 
   amount      Decimal  @db.Decimal(10, 2)
 
-  // Payment processor integration
+  // Payment processor integration - Helcim (primary for cards)
+  helcimTransactionId   String? @unique
+
+  // Payment processor integration - Stripe (fallback)
   stripePaymentIntentId String? @unique
   stripeChargeId        String?
+
+  // Payment processor integration - Dwolla (ACH)
+  dwollaTransferId      String? @unique
 
   // Check/Money Order details
   checkNumber String?
@@ -663,7 +670,9 @@ model Payment {
   @@index([tenantId])
   @@index([status])
   @@index([paymentDate])
+  @@index([helcimTransactionId])
   @@index([stripePaymentIntentId])
+  @@index([dwollaTransferId])
 }
 
 // Payment allocation to charges
@@ -1490,6 +1499,162 @@ model Document {
   @@index([entityType, entityId])
   @@index([type])
   @@index([storageKey])
+}
+
+// ============================================================================
+// LANDLORD SETTLEMENTS & PAYOUTS
+// ============================================================================
+
+enum SettlementEntryType {
+  RENT_COLLECTED        // Tenant paid rent
+  FEE_COLLECTED         // Late fees, pet fees, etc.
+  PLATFORM_FEE          // Our cut (deducted)
+  PROCESSING_FEE        // Card/ACH processing fees (deducted)
+  PAYOUT                // Money sent to landlord (deducted)
+  REFUND                // Refund issued (deducted)
+  ADJUSTMENT            // Manual adjustment (+/-)
+  CHARGEBACK            // Disputed payment (deducted)
+}
+
+enum PayoutFrequency {
+  DAILY             // Every business day
+  WEEKLY            // Once per week (default)
+  BIWEEKLY          // Every two weeks
+  MONTHLY           // Once per month
+  MANUAL            // Only when landlord requests
+}
+
+// Track organization's collected money balance
+model OrganizationBalance {
+  id              String   @id @default(cuid())
+
+  organizationId  String   @unique
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Current balance (money we owe the landlord)
+  availableBalance   Decimal  @db.Decimal(15, 2) @default(0)
+  pendingBalance     Decimal  @db.Decimal(15, 2) @default(0)  // In-flight payments not yet cleared
+
+  // Lifetime totals
+  totalCollected     Decimal  @db.Decimal(15, 2) @default(0)
+  totalPaidOut       Decimal  @db.Decimal(15, 2) @default(0)
+  totalFees          Decimal  @db.Decimal(15, 2) @default(0)
+
+  // Payout settings
+  autoPayoutEnabled  Boolean  @default(true)           // Default: auto-payout ON
+  payoutFrequency    PayoutFrequency @default(WEEKLY)  // Default: weekly
+  payoutDayOfWeek    Int?     @default(5)              // 1=Mon, 5=Fri (for weekly/biweekly)
+  payoutDayOfMonth   Int?                              // 1-28 (for monthly)
+  autoPayoutMinimum  Decimal? @db.Decimal(10, 2) @default(50)  // Min $50 to trigger payout
+
+  // Default payout bank account
+  payoutBankAccountId String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  ledgerEntries   SettlementLedger[]
+  payoutRequests  PayoutRequest[]
+
+  @@index([organizationId])
+}
+
+// Immutable ledger of all money movements
+model SettlementLedger {
+  id              String   @id @default(cuid())
+
+  balanceId       String
+  balance         OrganizationBalance @relation(fields: [balanceId], references: [id], onDelete: Cascade)
+
+  type            SettlementEntryType
+  amount          Decimal  @db.Decimal(15, 2)  // Positive for credits, negative for debits
+
+  // Running balance after this entry
+  runningBalance  Decimal  @db.Decimal(15, 2)
+
+  description     String
+
+  // Reference to source transaction
+  referenceType   String?  // "Payment", "Refund", "Payout", etc.
+  referenceId     String?
+
+  // For payments: link to original payment
+  paymentId       String?
+
+  // For payouts: link to payout request
+  payoutRequestId String?
+
+  // Audit
+  createdAt       DateTime @default(now())
+
+  @@index([balanceId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
+}
+
+enum PayoutStatus {
+  PENDING           // Requested, awaiting processing
+  PROCESSING        // Transfer initiated
+  COMPLETED         // Money sent successfully
+  FAILED            // Transfer failed
+  CANCELLED         // Cancelled before processing
+}
+
+enum PayoutMethod {
+  ACH               // Bank transfer
+  CHECK             // Physical check
+  WIRE              // Wire transfer
+}
+
+// Landlord payout/withdrawal requests
+model PayoutRequest {
+  id              String   @id @default(cuid())
+
+  balanceId       String
+  balance         OrganizationBalance @relation(fields: [balanceId], references: [id], onDelete: Cascade)
+
+  status          PayoutStatus @default(PENDING)
+  method          PayoutMethod @default(ACH)
+
+  // Amount
+  amount          Decimal  @db.Decimal(15, 2)
+
+  // Bank account details (denormalized for history)
+  bankAccountId   String?
+  bankName        String?
+  accountLast4    String?
+
+  // Processing details
+  processedAt     DateTime?
+  completedAt     DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+
+  // Provider references
+  dwollaTransferId    String? @unique
+  stripeTransferId    String? @unique
+
+  // For checks
+  checkNumber     String?
+  mailedAt        DateTime?
+
+  // Audit
+  requestedById   String?  // User who requested
+  processedById   String?  // Admin who processed
+
+  // Notes
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([balanceId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([dwollaTransferId])
+  @@index([stripeTransferId])
 }
 
 // ============================================================================

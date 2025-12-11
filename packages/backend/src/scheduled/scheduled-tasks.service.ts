@@ -4,8 +4,9 @@ import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { PrismaService } from '../prisma/prisma.service';
 import { LeasesService } from '../leases/leases.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { StripeService } from '../payments/stripe.service';
+import { HelcimService } from '../payments/helcim.service';
 import { ChargesService } from '../financial/charges.service';
+import { SettlementsService } from '../settlements/settlements.service';
 
 @Injectable()
 export class ScheduledTasksService {
@@ -13,8 +14,9 @@ export class ScheduledTasksService {
     private prisma: PrismaService,
     private leasesService: LeasesService,
     private notificationsService: NotificationsService,
-    private stripeService: StripeService,
+    private helcimService: HelcimService,
     private chargesService: ChargesService,
+    private settlementsService: SettlementsService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -283,10 +285,24 @@ export class ScheduledTasksService {
     const organizationId = lease.unit.property.organizationId;
 
     try {
-      // Create payment intent with saved payment method
+      // Process auto-pay with saved card token via Helcim
       const chargeIds = outstandingCharges.map((c: any) => c.id);
 
-      const paymentIntent = await this.stripeService.createPaymentIntent(
+      // TODO: Implement saved card token storage and retrieval for auto-pay
+      // For now, auto-pay requires tenant to have a saved card token in their profile
+      // This will be fully implemented in Phase 70 (Auto-Pay with Dwolla for ACH)
+
+      if (!lease.autoPayPaymentMethodId) {
+        return {
+          leaseId: lease.id,
+          status: 'skipped',
+          reason: 'no_saved_payment_method',
+        };
+      }
+
+      // Process payment using saved card token
+      const paymentResult = await this.helcimService.processPayment(
+        lease.autoPayPaymentMethodId, // This would be a saved Helcim card token
         totalOutstanding,
         primaryTenant.id,
         chargeIds,
@@ -296,13 +312,10 @@ export class ScheduledTasksService {
         },
       );
 
-      // Note: In production, you'd confirm the payment intent with the saved payment method
-      // For now, we're creating the intent - Stripe webhooks will handle the rest
-
       this.logger.log({
-        message: 'scheduled.autopay.intent_created',
+        message: 'scheduled.autopay.payment_processed',
         leaseId: lease.id,
-        paymentIntentId: paymentIntent.id,
+        transactionId: paymentResult.transactionId,
         amount: totalOutstanding,
       });
 
@@ -313,14 +326,14 @@ export class ScheduledTasksService {
         totalOutstanding,
         lease.unit.property.name,
         lease.unit.unitNumber,
-        paymentIntent.id,
+        String(paymentResult.transactionId),
         organizationId,
       );
 
       return {
         leaseId: lease.id,
         status: 'success',
-        paymentIntentId: paymentIntent.id,
+        transactionId: paymentResult.transactionId,
         amount: totalOutstanding,
       };
     } catch (error) {
@@ -504,6 +517,35 @@ export class ScheduledTasksService {
     } catch (error) {
       this.logger.error({
         message: 'scheduled.late_fees.error',
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  // ============================================================
+  // LANDLORD PAYOUTS (Settlement)
+  // ============================================================
+
+  /**
+   * Process auto-payouts daily at 8 AM
+   * Checks each organization's payout schedule and initiates transfers
+   */
+  @Cron('0 8 * * 1-5') // 8:00 AM Monday-Friday
+  async handleAutoPayouts() {
+    this.logger.log({ message: 'scheduled.payouts.start' });
+
+    try {
+      const result = await this.settlementsService.processAutoPayouts();
+
+      this.logger.log({
+        message: 'scheduled.payouts.complete',
+        processed: result.processed,
+        failed: result.failed,
+        skipped: result.skipped,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: 'scheduled.payouts.error',
         error: (error as Error).message,
       });
     }

@@ -155,7 +155,7 @@ export default function MaintenancePage() {
                     const statusConfig = STATUS_COLORS[request.status] || STATUS_COLORS.SUBMITTED;
                     const StatusIcon = statusConfig.icon;
                     return (
-                      <Link key={request.id} href={`/maintenance/${request.id}`}>
+                      <Link key={request.id} href={`/maintenance/detail?id=${request.id}`}>
                         <Card className="hover:border-primary/50 transition-colors cursor-pointer">
                           <CardContent className="py-4">
                             <div className="flex items-start justify-between gap-4">
@@ -217,7 +217,7 @@ export default function MaintenancePage() {
                     const statusConfig = STATUS_COLORS[request.status] || STATUS_COLORS.COMPLETED;
                     const StatusIcon = statusConfig.icon;
                     return (
-                      <Link key={request.id} href={`/maintenance/${request.id}`}>
+                      <Link key={request.id} href={`/maintenance/detail?id=${request.id}`}>
                         <Card className="hover:border-gray-300 transition-colors cursor-pointer opacity-75">
                           <CardContent className="py-4">
                             <div className="flex items-start justify-between gap-4">
