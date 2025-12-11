@@ -21,6 +21,7 @@ import {
   Hash,
 } from 'lucide-react';
 import api from '../../services/api';
+import { getApiErrorMessage } from '../../lib/utils';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -197,8 +198,8 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
       navigate('/leases');
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to create lease';
-      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to create lease');
+      setErrors({ submit: message });
     },
   });
 
@@ -253,8 +254,8 @@ export default function CreateLeaseWizard({ open, onOpenChange }: CreateLeaseWiz
       });
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to create unit';
-      setErrors({ newUnit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to create unit');
+      setErrors({ newUnit: message });
     },
   });
 

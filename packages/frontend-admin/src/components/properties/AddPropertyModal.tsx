@@ -24,6 +24,7 @@ import {
   Bath,
 } from 'lucide-react';
 import api from '../../services/api';
+import { getApiErrorMessage } from '../../lib/utils';
 import { Dialog, DialogContent } from '../ui/dialog';
 import { Button } from '../ui/button';
 
@@ -389,12 +390,39 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
       onOpenChange(false);
     },
     onError: (error: unknown) => {
-      setErrors({ submit: error.response?.data?.message || 'Failed to create property' });
+      setErrors({ submit: getApiErrorMessage(error, 'Failed to create property') });
     },
   });
 
+  // Validate before submission
+  const validateForSubmission = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Must have address (either selected or manual)
+    const hasAddress = selectedAddress || (manualAddress && manualCity && manualState && manualZip);
+    if (!hasAddress) {
+      newErrors.address = 'Property address is required';
+    }
+
+    // Must have property name
+    if (!propertyName.trim()) {
+      newErrors.propertyName = 'Property name is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Navigation
   const handleNext = () => {
+    if (step === 'review') {
+      if (!validateForSubmission()) {
+        return;
+      }
+      createMutation.mutate();
+      return;
+    }
+
     if (step === 'units') {
       if (skipUnits) {
         setStep('review');
@@ -408,8 +436,6 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
       } else {
         setStep('review');
       }
-    } else if (step === 'review') {
-      createMutation.mutate();
     }
   };
 
@@ -1185,9 +1211,18 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                 </div>
               )}
 
-              {errors.submit && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" /> {errors.submit}
+              {Object.keys(errors).length > 0 && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 space-y-2">
+                  <div className="flex items-center gap-2 font-medium">
+                    <AlertCircle className="w-4 h-4" /> Please fix the following errors:
+                  </div>
+                  <ul className="ml-6 space-y-1 list-disc">
+                    {Object.entries(errors).map(([key, message]) => (
+                      <li key={key} className="text-sm">
+                        {message}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

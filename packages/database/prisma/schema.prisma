@@ -382,6 +382,7 @@ model Tenant {
   maintenanceRequests MaintenanceRequest[]
   messages    TenantMessage[]
 
+  @@unique([email, organizationId])
   @@index([unitId])
   @@index([leaseId])
   @@index([email])

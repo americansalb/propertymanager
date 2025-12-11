@@ -138,6 +138,23 @@ export class LeasesService {
       throw new BadRequestException('Exactly one tenant must be marked as primary');
     }
 
+    // 5b. Check for duplicate emails within the organization
+    for (const tenantDto of dto.tenants) {
+      const normalizedEmail = tenantDto.email.toLowerCase().trim();
+      const existingTenant = await this.prisma.tenant.findFirst({
+        where: {
+          email: normalizedEmail,
+          organizationId,
+        },
+      });
+
+      if (existingTenant) {
+        throw new BadRequestException(
+          `A tenant with email "${tenantDto.email}" already exists in this organization`,
+        );
+      }
+    }
+
     // 6. Create lease with tenants in a transaction
     const lease = await this.prisma.$transaction(async (tx) => {
       // Create the lease
@@ -161,9 +178,10 @@ export class LeasesService {
         await tx.tenant.create({
           data: {
             leaseId: newLease.id,
+            organizationId,
             firstName: tenantDto.firstName,
             lastName: tenantDto.lastName,
-            email: tenantDto.email,
+            email: tenantDto.email.toLowerCase().trim(),
             phone: tenantDto.phone,
             isPrimary: tenantDto.isPrimary || false,
             emergencyContactName: tenantDto.emergencyContactName,
@@ -524,6 +542,21 @@ export class LeasesService {
       throw new BadRequestException(`Cannot add tenants to a lease with status ${lease.status}`);
     }
 
+    // Check for duplicate email within the organization
+    const normalizedEmail = dto.email.toLowerCase().trim();
+    const existingTenant = await this.prisma.tenant.findFirst({
+      where: {
+        email: normalizedEmail,
+        organizationId,
+      },
+    });
+
+    if (existingTenant) {
+      throw new BadRequestException(
+        `A tenant with email "${dto.email}" already exists in this organization`,
+      );
+    }
+
     // If this tenant is marked as primary, unset other primaries
     if (dto.isPrimary) {
       await this.prisma.tenant.updateMany({
@@ -535,9 +568,10 @@ export class LeasesService {
     const tenant = await this.prisma.tenant.create({
       data: {
         leaseId,
+        organizationId,
         firstName: dto.firstName,
         lastName: dto.lastName,
-        email: dto.email,
+        email: normalizedEmail,
         phone: dto.phone,
         isPrimary: dto.isPrimary || false,
         emergencyContactName: dto.emergencyContactName,

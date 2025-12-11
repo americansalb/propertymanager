@@ -18,6 +18,7 @@ import {
   Clock,
 } from 'lucide-react';
 import api from '../../services/api';
+import { getApiErrorMessage } from '../../lib/utils';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -124,8 +125,8 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       setErrors({});
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to add tenant';
-      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to add tenant');
+      setErrors({ submit: message });
     },
   });
 
@@ -145,8 +146,8 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       setSelectedTenant(null);
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to remove tenant';
-      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to remove tenant');
+      setErrors({ submit: message });
       setDeleteDialogOpen(false);
     },
   });
@@ -163,8 +164,8 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       setSelectedTenant(null);
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to set primary tenant';
-      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to set primary tenant');
+      setErrors({ submit: message });
       setSetPrimaryDialogOpen(false);
     },
   });
@@ -179,8 +180,8 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       invalidateQueries();
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to send invitation';
-      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to send invitation');
+      setErrors({ submit: message });
     },
   });
 
@@ -194,8 +195,8 @@ export default function TenantManagement({ lease }: TenantManagementProps) {
       invalidateQueries();
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to resend invitation';
-      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to resend invitation');
+      setErrors({ submit: message });
     },
   });
 
