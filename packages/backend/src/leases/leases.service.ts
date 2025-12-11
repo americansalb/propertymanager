@@ -139,12 +139,34 @@ export class LeasesService {
     }
 
     // 5b. Check for duplicate emails within the organization
+    // Check ALL tenants that belong to this organization (via direct org link, unit, or lease)
     for (const tenantDto of dto.tenants) {
       const normalizedEmail = tenantDto.email.toLowerCase().trim();
       const existingTenant = await this.prisma.tenant.findFirst({
         where: {
           email: normalizedEmail,
-          organizationId,
+          OR: [
+            // Direct organization link
+            { organizationId },
+            // Via unit assignment
+            {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+            // Via lease assignment
+            {
+              lease: {
+                unit: {
+                  property: {
+                    organizationId,
+                  },
+                },
+              },
+            },
+          ],
         },
       });
 
@@ -542,12 +564,30 @@ export class LeasesService {
       throw new BadRequestException(`Cannot add tenants to a lease with status ${lease.status}`);
     }
 
-    // Check for duplicate email within the organization
+    // Check for duplicate email within the organization (via direct org link, unit, or lease)
     const normalizedEmail = dto.email.toLowerCase().trim();
     const existingTenant = await this.prisma.tenant.findFirst({
       where: {
         email: normalizedEmail,
-        organizationId,
+        OR: [
+          { organizationId },
+          {
+            unit: {
+              property: {
+                organizationId,
+              },
+            },
+          },
+          {
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+          },
+        ],
       },
     });
 

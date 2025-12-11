@@ -629,11 +629,39 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
                 placeholder="Property Name"
                 className="w-full px-4 py-3 border-2 rounded-xl"
               />
+              {/* Validation errors for manual address */}
+              {Object.keys(errors).length > 0 && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm space-y-1">
+                  {Object.values(errors).map((error, idx) => (
+                    <div key={idx}>{error}</div>
+                  ))}
+                </div>
+              )}
               <Button
                 onClick={() => {
-                  if (manualAddress && manualCity && manualState && manualZip && propertyName) {
-                    setStep('mode');
+                  const newErrors: Record<string, string> = {};
+                  if (!manualAddress.trim()) {
+                    newErrors.address = 'Street address is required';
                   }
+                  if (!manualCity.trim()) {
+                    newErrors.city = 'City is required';
+                  }
+                  if (!manualState.trim()) {
+                    newErrors.state = 'State is required';
+                  }
+                  if (!manualZip.trim()) {
+                    newErrors.zip = 'ZIP code is required';
+                  }
+                  if (!propertyName.trim()) {
+                    newErrors.propertyName = 'Property name is required';
+                  }
+
+                  if (Object.keys(newErrors).length > 0) {
+                    setErrors(newErrors);
+                    return;
+                  }
+                  setErrors({});
+                  setStep('mode');
                 }}
                 className="w-full bg-indigo-600 text-white"
               >

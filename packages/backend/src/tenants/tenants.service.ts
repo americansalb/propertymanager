@@ -139,11 +139,30 @@ export class TenantsService {
     organizationId: string,
     invitedByUserId: string,
   ) {
-    // Check for duplicate email within the organization
+    // Check for duplicate email within the organization (via direct org link, unit, or lease)
+    const normalizedEmail = data.email.toLowerCase().trim();
     const existingTenant = await this.prisma.tenant.findFirst({
       where: {
-        email: data.email.toLowerCase().trim(),
-        organizationId,
+        email: normalizedEmail,
+        OR: [
+          { organizationId },
+          {
+            unit: {
+              property: {
+                organizationId,
+              },
+            },
+          },
+          {
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+          },
+        ],
       },
     });
 
