@@ -74,6 +74,7 @@ export default function AdminLoginPage() {
                   placeholder="admin@propertymaster.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  autoComplete="email"
                   required
                   className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500"
                 />
@@ -88,6 +89,7 @@ export default function AdminLoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    autoComplete="current-password"
                     required
                     className="bg-slate-800/50 border-slate-700 text-white pr-10 focus:border-red-500 focus:ring-red-500"
                   />

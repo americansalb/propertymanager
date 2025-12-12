@@ -116,7 +116,7 @@ export class AppModule implements NestModule, OnModuleInit {
     this.logger.log('🔧 DATABASE SETUP STARTING...');
     this.logger.log(`Database path: ${dbPath}`);
 
-    // Run db push
+    // Run db push to ensure schema is in sync
     try {
       this.logger.log('📦 Running prisma db push...');
       execSync('npx prisma db push --skip-generate --accept-data-loss', {
@@ -129,18 +129,9 @@ export class AppModule implements NestModule, OnModuleInit {
       this.logger.error(`❌ DB push failed: ${e instanceof Error ? e.message : e}`);
     }
 
-    // Run seed
-    try {
-      this.logger.log('🌱 Running seed...');
-      execSync('npx tsx prisma/seed.ts', {
-        cwd: dbPath,
-        stdio: 'inherit',
-        env: { ...process.env },
-      });
-      this.logger.log('✅ Seed complete');
-    } catch (e: unknown) {
-      this.logger.error(`❌ Seed failed: ${e instanceof Error ? e.message : e}`);
-    }
+    // NOTE: Seed is NOT run in production to avoid invalidating existing JWT tokens
+    // The seed deletes and recreates test tenants which would break logged-in sessions
+    // If you need to seed production, run it manually: npx tsx prisma/seed.ts
 
     this.logger.log('🔧 DATABASE SETUP FINISHED');
   }

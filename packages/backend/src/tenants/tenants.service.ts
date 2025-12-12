@@ -139,6 +139,39 @@ export class TenantsService {
     organizationId: string,
     invitedByUserId: string,
   ) {
+    // Check for duplicate email within the organization (via direct org link, unit, or lease)
+    const normalizedEmail = data.email.toLowerCase().trim();
+    const existingTenant = await this.prisma.tenant.findFirst({
+      where: {
+        email: normalizedEmail,
+        OR: [
+          { organizationId },
+          {
+            unit: {
+              property: {
+                organizationId,
+              },
+            },
+          },
+          {
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    if (existingTenant) {
+      throw new BadRequestException(
+        `A tenant with email "${data.email}" already exists in this organization`,
+      );
+    }
+
     // Verify unit belongs to organization
     const unit = await this.prisma.unit.findFirst({
       where: {
@@ -162,12 +195,12 @@ export class TenantsService {
       ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       : null;
 
-    // Create tenant
+    // Create tenant (normalize email to lowercase)
     const tenant = await this.prisma.tenant.create({
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
+        email: data.email.toLowerCase().trim(),
         phone: data.phone,
         unitId: data.unitId,
         moveInDate: data.moveInDate || new Date(),

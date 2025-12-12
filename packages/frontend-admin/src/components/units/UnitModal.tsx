@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Home, Loader2, X, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
+import { getApiErrorMessage } from '../../lib/utils';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -106,8 +107,8 @@ export default function UnitModal({
       onOpenChange(false);
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to create unit';
-      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to create unit');
+      setErrors({ submit: message });
     },
   });
 
@@ -123,8 +124,8 @@ export default function UnitModal({
       onOpenChange(false);
     },
     onError: (error: unknown) => {
-      const message = error.response?.data?.message || 'Failed to update unit';
-      setErrors({ submit: Array.isArray(message) ? message.join(', ') : message });
+      const message = getApiErrorMessage(error, 'Failed to update unit');
+      setErrors({ submit: message });
     },
   });
 

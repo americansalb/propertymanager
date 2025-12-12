@@ -224,13 +224,21 @@ export class TenantPortalService {
     });
 
     if (!tenant?.lease) {
-      throw new NotFoundException('Lease not found');
+      // Return disabled state when no lease exists
+      return {
+        enabled: false,
+        day: null,
+        hasPaymentMethod: false,
+        available: false,
+        message: 'Auto-pay is not available without an active lease.',
+      };
     }
 
     return {
       enabled: tenant.lease.autoPayEnabled,
       day: tenant.lease.autoPayDay,
       hasPaymentMethod: !!tenant.lease.autoPayPaymentMethodId,
+      available: true,
     };
   }
 
@@ -309,15 +317,10 @@ export class TenantPortalService {
     }
 
     // Initialize Helcim checkout session
-    const checkout = await this.helcimService.initializeCheckout(
-      amount,
-      tenantId,
-      chargeIds,
-      {
-        propertyName: tenant.lease.unit.property.name,
-        unitNumber: tenant.lease.unit.unitNumber,
-      },
-    );
+    const checkout = await this.helcimService.initializeCheckout(amount, tenantId, chargeIds, {
+      propertyName: tenant.lease.unit.property.name,
+      unitNumber: tenant.lease.unit.unitNumber,
+    });
 
     return {
       checkoutToken: checkout.checkoutToken,
@@ -679,7 +682,32 @@ export class TenantPortalService {
       };
     }
 
-    throw new NotFoundException('No unit assignment found');
+    // No lease and no unit - return a "no lease" response instead of error
+    return {
+      id: null,
+      status: 'NO_LEASE',
+      type: null,
+      startDate: null,
+      endDate: null,
+      moveInDate: null,
+      monthlyRent: null,
+      securityDeposit: null,
+      terms: null,
+      documentUrl: null,
+      unit: null,
+      property: null,
+      tenants: [
+        {
+          id: tenant.id,
+          firstName: tenant.firstName,
+          lastName: tenant.lastName,
+          email: tenant.email,
+          isPrimary: tenant.isPrimary,
+        },
+      ],
+      daysRemaining: null,
+      message: 'No lease or unit assignment found. Please contact your property manager.',
+    };
   }
 
   // ============================================================================

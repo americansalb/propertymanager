@@ -21,6 +21,7 @@ import {
   DoorOpen,
 } from 'lucide-react';
 import api from '../services/api';
+import { getApiErrorMessage } from '../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -150,10 +151,10 @@ export default function TenantsPage() {
       queryClient.invalidateQueries({ queryKey: ['tenant-stats'] });
       toast({ title: 'Invitation sent successfully' });
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Failed to send invitation',
-        description: error.response?.data?.message || 'Please try again',
+        description: getApiErrorMessage(error, 'Please try again'),
         variant: 'destructive',
       });
     },
@@ -166,10 +167,10 @@ export default function TenantsPage() {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       toast({ title: 'Invitation resent successfully' });
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Failed to resend invitation',
-        description: error.response?.data?.message || 'Please try again',
+        description: getApiErrorMessage(error, 'Please try again'),
         variant: 'destructive',
       });
     },
@@ -596,10 +597,10 @@ function AddTenantModal({ open, onClose }: { open: boolean; onClose: () => void 
       });
       onClose();
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Failed to add tenant',
-        description: error.response?.data?.message || 'Please try again',
+        description: getApiErrorMessage(error, 'Please try again'),
         variant: 'destructive',
       });
     },
@@ -982,10 +983,10 @@ function AssignUnitModal({
       });
       onClose();
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Failed to assign unit',
-        description: error.response?.data?.message || 'Please try again',
+        description: getApiErrorMessage(error, 'Please try again'),
         variant: 'destructive',
       });
     },

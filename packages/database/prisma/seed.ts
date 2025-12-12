@@ -32,33 +32,52 @@ async function main() {
   console.log(`✅ Found admin in organization: ${existingAdmin.organization?.name}`);
   const organizationId = existingAdmin.organizationId;
 
-  // Delete any existing test tenant
-  await prisma.tenant.deleteMany({
-    where: {
-      email: 'tenant@aalb.org'
-    }
+  // Check if test tenant already exists (preserves ID to avoid invalidating JWT tokens)
+  const existingTenant = await prisma.tenant.findFirst({
+    where: { email: 'tenant@aalb.org' }
   });
-  console.log('🗑️ Cleared any existing test tenant');
 
-  // Create test tenant in the SAME organization as the admin
   const tenantPasswordHash = await bcrypt.hash('winner', 10);
-  const testTenant = await prisma.tenant.create({
-    data: {
-      firstName: 'Test',
-      lastName: 'Tenant',
-      email: 'tenant@aalb.org',
-      phone: '555-000-0001',
-      status: TenantStatus.ACTIVE,
-      portalEnabled: true,
-      portalPassword: tenantPasswordHash,
-      isPrimary: true,
-      invitationStatus: TenantInvitationStatus.ACCEPTED,
-      organizationId: organizationId,
-      // NO unitId - landlord will assign from admin portal
-    },
-  });
 
-  console.log('✅ Created test tenant:', testTenant.email);
+  let testTenant;
+  if (existingTenant) {
+    // Update existing tenant (preserves ID)
+    testTenant = await prisma.tenant.update({
+      where: { id: existingTenant.id },
+      data: {
+        firstName: 'Test',
+        lastName: 'Tenant',
+        phone: '555-000-0001',
+        status: TenantStatus.ACTIVE,
+        portalEnabled: true,
+        portalPassword: tenantPasswordHash,
+        isPrimary: true,
+        invitationStatus: TenantInvitationStatus.ACCEPTED,
+        organizationId: organizationId,
+      },
+    });
+    console.log('✅ Updated existing test tenant:', testTenant.email);
+  } else {
+    // Create new tenant
+    testTenant = await prisma.tenant.create({
+      data: {
+        firstName: 'Test',
+        lastName: 'Tenant',
+        email: 'tenant@aalb.org',
+        phone: '555-000-0001',
+        status: TenantStatus.ACTIVE,
+        portalEnabled: true,
+        portalPassword: tenantPasswordHash,
+        isPrimary: true,
+        invitationStatus: TenantInvitationStatus.ACCEPTED,
+        organizationId: organizationId,
+        // NO unitId - landlord will assign from admin portal
+      },
+    });
+    console.log('✅ Created new test tenant:', testTenant.email);
+  }
+
+  console.log('   Tenant ID:', testTenant.id);
   console.log('   Organization ID:', organizationId);
 
   console.log('\n🎉 Seed completed successfully!');
