@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Bell,
+  FolderOpen,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Payments', href: '/payments', icon: DollarSign },
   { name: 'Maintenance', href: '/maintenance', icon: Wrench },
   { name: 'My Lease', href: '/lease', icon: FileText },
+  { name: 'Documents', href: '/documents', icon: FolderOpen },
   { name: 'Messages', href: '/messages', icon: MessageSquare },
   { name: 'Profile', href: '/profile', icon: User },
 ];
@@ -39,10 +41,20 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
   const { tenant, isAuthenticated, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { data: unreadCount } = useQuery({
+  const { data: unreadMessageCount } = useQuery({
     queryKey: ['unread-messages'],
     queryFn: async () => {
       const response = await api.get('/tenant-portal/messages/unread-count');
+      return response.data.data.count as number;
+    },
+    enabled: isAuthenticated,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const { data: unreadNotificationCount } = useQuery({
+    queryKey: ['notification-count'],
+    queryFn: async () => {
+      const response = await api.get('/tenant-portal/notifications/unread-count');
       return response.data.data.count as number;
     },
     enabled: isAuthenticated,
@@ -105,14 +117,32 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
                 >
                   <item.icon className="w-5 h-5" />
                   {item.name}
-                  {item.name === 'Messages' && unreadCount && unreadCount > 0 && (
+                  {item.name === 'Messages' && unreadMessageCount && unreadMessageCount > 0 && (
                     <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      {unreadCount}
+                      {unreadMessageCount}
                     </span>
                   )}
                 </Link>
               );
             })}
+            {/* Notifications Link */}
+            <Link
+              href="/notifications"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname === '/notifications'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Bell className="w-5 h-5" />
+              Notifications
+              {unreadNotificationCount && unreadNotificationCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </Link>
           </nav>
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
             <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
@@ -150,14 +180,31 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
                 >
                   <item.icon className="w-5 h-5" />
                   {item.name}
-                  {item.name === 'Messages' && unreadCount && unreadCount > 0 && (
+                  {item.name === 'Messages' && unreadMessageCount && unreadMessageCount > 0 && (
                     <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      {unreadCount}
+                      {unreadMessageCount}
                     </span>
                   )}
                 </Link>
               );
             })}
+            {/* Notifications Link */}
+            <Link
+              href="/notifications"
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname === '/notifications'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Bell className="w-5 h-5" />
+              Notifications
+              {unreadNotificationCount && unreadNotificationCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </Link>
           </nav>
           <div className="p-4 border-t">
             <div className="flex items-center gap-3 mb-3">
@@ -196,14 +243,14 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
               </div>
               <span className="font-semibold">PropertyMaster</span>
             </div>
-            <div className="relative">
+            <Link href="/notifications" className="relative">
               <Bell className="w-6 h-6 text-gray-500" />
-              {unreadCount && unreadCount > 0 && (
+              {unreadNotificationCount && unreadNotificationCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
                 </span>
               )}
-            </div>
+            </Link>
           </div>
         </header>
 

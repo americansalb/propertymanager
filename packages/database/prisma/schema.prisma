@@ -292,6 +292,7 @@ model Lease {
   // Relations
   tenants     Tenant[]
   charges     Charge[]
+  renewalOffers LeaseRenewalOffer[]
 
   @@index([unitId])
   @@index([status])
@@ -381,6 +382,8 @@ model Tenant {
   payments    Payment[]
   maintenanceRequests MaintenanceRequest[]
   messages    TenantMessage[]
+  documents   TenantDocument[]
+  notifications TenantNotification[]
 
   @@unique([email, organizationId])
   @@index([unitId])
@@ -1286,6 +1289,9 @@ model MaintenanceRequest {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Relations
+  feedback    MaintenanceFeedback?
+
   @@index([tenantId])
   @@index([status])
   @@index([createdAt])
@@ -1328,6 +1334,171 @@ model TenantMessage {
   @@index([direction])
   @@index([isRead])
   @@index([createdAt])
+}
+
+// ============================================================================
+// TENANT PORTAL ENHANCEMENTS
+// ============================================================================
+
+enum TenantDocumentType {
+  LEASE_AGREEMENT
+  LEASE_ADDENDUM
+  MOVE_IN_CHECKLIST
+  MOVE_OUT_CHECKLIST
+  COMMUNITY_RULES
+  INSURANCE_CERTIFICATE
+  PET_DOCUMENTATION
+  PAYMENT_RECEIPT
+  ANNUAL_STATEMENT
+  OTHER
+}
+
+model TenantDocument {
+  id              String   @id @default(cuid())
+
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?
+  type            TenantDocumentType
+
+  storageKey      String   @unique
+  storageUrl      String
+  mimeType        String
+  size            Int      // File size in bytes
+
+  uploadedBy      String   // "TENANT" or "MANAGEMENT"
+  isVisibleToTenant Boolean @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum TenantNotificationType {
+  PAYMENT_RECEIVED
+  PAYMENT_DUE
+  PAYMENT_OVERDUE
+  AUTOPAY_SCHEDULED
+  AUTOPAY_PROCESSED
+  AUTOPAY_FAILED
+  MAINTENANCE_UPDATE
+  MAINTENANCE_COMPLETED
+  LEASE_EXPIRING
+  LEASE_RENEWED
+  NEW_MESSAGE
+  DOCUMENT_ADDED
+  ANNOUNCEMENT
+}
+
+model TenantNotification {
+  id              String   @id @default(cuid())
+
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  type            TenantNotificationType
+  title           String
+  message         String
+
+  // Link to related entity
+  referenceType   String?  // "PAYMENT", "MAINTENANCE", "LEASE", "MESSAGE"
+  referenceId     String?
+  actionUrl       String?  // Deep link within app
+
+  isRead          Boolean  @default(false)
+  readAt          DateTime?
+
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model MaintenanceFeedback {
+  id                   String   @id @default(cuid())
+
+  maintenanceRequestId String   @unique
+  maintenanceRequest   MaintenanceRequest @relation(fields: [maintenanceRequestId], references: [id], onDelete: Cascade)
+
+  overallRating        Int      // 1-5
+  qualityRating        Int?     // 1-5
+  timelinessRating     Int?     // 1-5
+  communicationRating  Int?     // 1-5
+
+  comment              String?  @db.Text
+  wouldRecommend       Boolean?
+
+  issueResolved        Boolean  @default(true)
+  followUpRequested    Boolean  @default(false)
+  followUpReason       String?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+enum RenewalOfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COUNTER_OFFERED
+  EXPIRED
+  CANCELLED
+}
+
+enum RenewalResponse {
+  ACCEPT
+  DECLINE
+  COUNTER
+  MOVE_OUT
+}
+
+model LeaseRenewalOffer {
+  id              String   @id @default(cuid())
+
+  leaseId         String
+  lease           Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  status          RenewalOfferStatus @default(PENDING)
+
+  // New terms
+  newMonthlyRent  Decimal  @db.Decimal(10, 2)
+  newStartDate    DateTime
+  newEndDate      DateTime?
+  newLeaseType    LeaseType
+
+  // Changes from current
+  rentChangeAmount   Decimal? @db.Decimal(10, 2)
+  rentChangePercent  Decimal? @db.Decimal(5, 2)
+
+  // Response
+  respondedAt     DateTime?
+  tenantResponse  RenewalResponse?
+  tenantNotes     String?  @db.Text
+
+  // Counter offer
+  counterOfferRent    Decimal? @db.Decimal(10, 2)
+  counterOfferNotes   String?  @db.Text
+
+  // Expiration
+  expiresAt       DateTime
+
+  // Resulting new lease
+  newLeaseId      String?
+
+  createdById     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([leaseId])
+  @@index([status])
+  @@index([expiresAt])
 }
 
 // ============================================================================
