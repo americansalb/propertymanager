@@ -1,28 +1,30 @@
-# PROPERTYMASTER: 108-PHASE COMPREHENSIVE ROADMAP
+# PROPERTYMASTER: 120-PHASE COMPREHENSIVE ROADMAP
 
-**Version:** 2.0
+**Version:** 3.0
 **Created:** November 27, 2025
+**Updated:** December 12, 2025
 **Status:** DEFINITIVE - NO ASSUMPTIONS ALLOWED
 
 ---
 
 ## ROADMAP STRUCTURE
 
-| Section                   | Phases  | Description                                       | MVP Status |
-| ------------------------- | ------- | ------------------------------------------------- | ---------- |
-| **FOUNDATION**            | 1-12    | Infrastructure, tooling, quality gates            | **MVP**    |
-| **AUTH & SECURITY**       | 13-20   | Authentication, authorization, security hardening | **MVP**    |
-| **PROPERTIES**            | 21-30   | Property CRUD, validation, organization scoping   | **MVP**    |
-| **UNITS**                 | 31-38   | Unit management, status tracking, occupancy       | **MVP**    |
-| **LEASES**                | 39-50   | Lease lifecycle, rent tracking, renewals          | **MVP**    |
-| **FINANCIAL CORE**        | 51-62   | Chart of accounts, transactions, ledgers          | **MVP**    |
-| **PAYMENTS**              | 63-72   | Payment processing, Stripe, auto-pay              | **MVP**    |
-| **WORK ORDERS**           | 73-82   | Maintenance requests, assignment, completion      | Post-MVP   |
-| **VENDORS**               | 83-88   | Vendor management, compliance, performance        | Post-MVP   |
-| **TENANT PORTAL**         | 89-96   | Tenant-facing features, self-service              | Post-MVP   |
-| **REPORTING**             | 97-102  | Analytics, dashboards, exports                    | Post-MVP   |
-| **AI & AUTOMATION**       | 103-106 | Predictive features, document AI                  | Post-MVP   |
-| **MOBILE & INTEGRATIONS** | 107-108 | PWA, third-party integrations                     | Post-MVP   |
+| Section                   | Phases    | Description                                       | MVP Status   |
+| ------------------------- | --------- | ------------------------------------------------- | ------------ |
+| **FOUNDATION**            | 1-12      | Infrastructure, tooling, quality gates            | **MVP**      |
+| **AUTH & SECURITY**       | 13-20     | Authentication, authorization, security hardening | **MVP**      |
+| **PROPERTIES**            | 21-30     | Property CRUD, validation, organization scoping   | **MVP**      |
+| **UNITS**                 | 31-38     | Unit management, status tracking, occupancy       | **MVP**      |
+| **LEASES**                | 39-50     | Lease lifecycle, rent tracking, renewals          | **MVP**      |
+| **FINANCIAL CORE**        | 51-62     | Chart of accounts, transactions, ledgers          | **MVP**      |
+| **PAYMENTS**              | 63-72     | Payment processing, Stripe, auto-pay              | **MVP**      |
+| **WORK ORDERS**           | 73-82     | Maintenance requests, assignment, completion      | Post-MVP     |
+| **VENDORS**               | 83-88     | Vendor management, compliance, performance        | Post-MVP     |
+| **TENANT PORTAL**         | 89-96     | Tenant-facing features, self-service              | Post-MVP     |
+| **REPORTING**             | 97-102    | Analytics, dashboards, exports                    | Post-MVP     |
+| **AI & AUTOMATION**       | 103-106   | Predictive features, document AI                  | Post-MVP     |
+| **MOBILE & INTEGRATIONS** | 107-108   | PWA, third-party integrations                     | Post-MVP     |
+| **TENANT ACQUISITION**    | 109-120   | Listings, screening, e-signatures, syndication    | **Priority** |
 
 ---
 
@@ -3531,31 +3533,344 @@ export function AutoPayEnrollment({ leaseId }: Props) {
 
 ---
 
+# SECTION 14: TENANT ACQUISITION (Phases 109-120) [STRATEGIC PRIORITY]
+
+> **Strategic Priority:** This section addresses the #1 landlord pain point—finding quality tenants.
+> See `docs/TENANT_ACQUISITION_STRATEGY.md` for full strategic context.
+>
+> **Key Differentiator:** Instant income verification via Plaid that competitors don't have.
+
+---
+
+## PHASE 109: Applicant Data Model & API
+
+**Objective:** Create the foundation for applicant tracking and lead management.
+
+**Deliverables:**
+
+1. Add Prisma models: `Listing`, `Lead`, `Applicant`, `ScreeningReport`, `IncomeVerification`
+2. Create `ApplicantsModule` with CRUD operations
+3. Create `LeadsModule` for inquiry tracking
+4. API endpoints: `POST /applicants`, `GET /applicants`, `PATCH /applicants/:id/status`
+5. Lead-to-applicant conversion flow
+6. Applicant status workflow: PENDING → SCREENING → APPROVED/DENIED → LEASE_SENT → SIGNED
+
+**Acceptance Criteria:**
+
+- [ ] All models created and migrated
+- [ ] API endpoints documented in Swagger
+- [ ] Status transitions validated (no invalid state changes)
+- [ ] Organization scoping enforced
+
+**Dependencies:** Phase 39 (Leases)
+**Estimated Effort:** 8 hours
+
+---
+
+## PHASE 110: Online Application Form
+
+**Objective:** Create a tenant-facing application form.
+
+**Deliverables:**
+
+1. Public application page (no auth required, token-based access)
+2. Application form fields: personal info, employment, rental history, references
+3. File upload for documents (ID, pay stubs - optional)
+4. Application fee payment via Stripe ($25-50 configurable)
+5. Confirmation email to applicant
+6. Notification to landlord of new application
+
+**Acceptance Criteria:**
+
+- [ ] Mobile-responsive application form
+- [ ] Stripe payment integration for application fee
+- [ ] Application stored in database with status PENDING
+- [ ] Landlord notified via email
+
+**Dependencies:** Phase 109
+**Estimated Effort:** 10 hours
+
+---
+
+## PHASE 111: TransUnion SmartMove Integration
+
+**Objective:** Integrate credit, criminal, and eviction screening via TransUnion.
+
+**Deliverables:**
+
+1. Apply for TransUnion SmartMove Partner API access
+2. Implement screening request flow (tenant-paid model)
+3. Store screening results: credit score, ResidentScore, criminal status, eviction status
+4. Display screening report in admin dashboard
+5. Decision workflow: Approve / Deny / Request More Info
+6. Adverse action notice generation (FCRA compliance)
+
+**Acceptance Criteria:**
+
+- [ ] Screening request triggers TransUnion API call
+- [ ] Results stored in `ScreeningReport` model
+- [ ] ResidentScore displayed (15% better eviction prediction than FICO)
+- [ ] Adverse action notice auto-generated on denial
+
+**Dependencies:** Phase 110
+**Estimated Effort:** 16 hours
+
+---
+
+## PHASE 112: Plaid Income Verification (KEY DIFFERENTIATOR)
+
+**Objective:** Add instant, fraud-proof income verification via Plaid.
+
+**Deliverables:**
+
+1. Integrate Plaid Income API (Payroll + Bank Income)
+2. Plaid Link component in application flow
+3. Retrieve and store: verified income, employer name, employment status
+4. Display income verification results alongside screening report
+5. Income-to-rent ratio calculation and display (target: 3x rent)
+6. Fallback: manual document upload if Plaid unavailable
+
+**Acceptance Criteria:**
+
+- [ ] Plaid Link integrated in application form
+- [ ] Income verified in <15 seconds (vs 24hr manual)
+- [ ] Results stored in `IncomeVerification` model
+- [ ] Income-to-rent ratio calculated and displayed
+
+**Marketing Message:** "The only screening that verifies income instantly from your bank—not fake pay stubs."
+
+**Dependencies:** Phase 111
+**Estimated Effort:** 12 hours
+
+---
+
+## PHASE 113: E-Signature Integration
+
+**Objective:** Enable digital lease signing via HelloSign or BoldSign.
+
+**Deliverables:**
+
+1. Integrate e-signature provider API (HelloSign recommended)
+2. Lease template management (upload, variables, preview)
+3. Send lease for signature from approved applicant
+4. Track signing status: SENT → VIEWED → SIGNED
+5. Store executed lease PDF in documents
+6. Auto-create tenant record upon lease completion
+
+**Acceptance Criteria:**
+
+- [ ] Lease sent for signature with one click
+- [ ] Both parties can sign digitally
+- [ ] Signed lease stored in S3/documents
+- [ ] Tenant record auto-created on completion
+
+**Dependencies:** Phase 112
+**Estimated Effort:** 10 hours
+
+---
+
+## PHASE 114: Listing Management Module
+
+**Objective:** Create listings from vacant units for marketing.
+
+**Deliverables:**
+
+1. Add `Listing` model with relationship to `Unit`
+2. Listing CRUD: create from vacant unit, edit, publish, unpublish
+3. Listing fields: title, description, price, availability, amenities, pet policy
+4. Photo gallery with drag-drop upload (S3 storage)
+5. Listing preview (public-facing view)
+6. Listing status: DRAFT → ACTIVE → LEASED → EXPIRED
+
+**Acceptance Criteria:**
+
+- [ ] One-click listing creation from vacant unit
+- [ ] Photo upload with reordering
+- [ ] Public preview URL generated
+- [ ] Status auto-updates when unit leased
+
+**Dependencies:** Phase 31 (Units)
+**Estimated Effort:** 10 hours
+
+---
+
+## PHASE 115: Zillow Feed Partnership & Integration
+
+**Objective:** Syndicate listings to Zillow, Trulia, and HotPads (FREE).
+
+**Deliverables:**
+
+1. Apply for Zillow Rentals Feed Integration (email: rentalfeedinquiries@zillowgroup.com)
+2. Build XML feed conforming to Zillow Rental Listings Feed Guide
+3. Implement Real-Time API for instant updates
+4. USPS address verification for listings
+5. Photo optimization for Zillow requirements
+6. Syndication status tracking per listing
+
+**Acceptance Criteria:**
+
+- [ ] Feed partnership approved by Zillow
+- [ ] Listings appear on Zillow within 24 hours of publish
+- [ ] Updates sync in real-time via API
+- [ ] Cost: $0 (feed partner status)
+
+**Dependencies:** Phase 114
+**Estimated Effort:** 16 hours
+**Note:** 4-6 week Zillow approval process required—apply early!
+
+---
+
+## PHASE 116: Apartments.com Integration
+
+**Objective:** Syndicate listings to Apartments.com network (FREE).
+
+**Deliverables:**
+
+1. Apply for Apartments.com vendor integration
+2. Implement API integration for listing syndication
+3. Support for Apartments.com network: ForRent, ApartmentFinder, Apartamentos.com
+4. Listing sync on publish/update/unpublish
+5. Lead capture from Apartments.com inquiries
+
+**Acceptance Criteria:**
+
+- [ ] Listings syndicated to Apartments.com network
+- [ ] Updates sync within 24 hours
+- [ ] Leads captured and stored in system
+
+**Dependencies:** Phase 115
+**Estimated Effort:** 10 hours
+
+---
+
+## PHASE 117: Additional Syndication Partners
+
+**Objective:** Expand syndication to 25+ platforms.
+
+**Deliverables:**
+
+1. Zumper/PadMapper integration
+2. Realtor.com integration
+3. Facebook Marketplace integration (if API available)
+4. Craigslist automated posting
+5. Syndication dashboard showing status per platform
+6. One-click publish to all enabled platforms
+
+**Acceptance Criteria:**
+
+- [ ] Listings syndicated to 5+ platforms minimum
+- [ ] Status visible per platform in dashboard
+- [ ] Failed syndications flagged for review
+
+**Dependencies:** Phase 116
+**Estimated Effort:** 12 hours
+
+---
+
+## PHASE 118: Lead Inbox & Management
+
+**Objective:** Centralize all listing inquiries in one inbox.
+
+**Deliverables:**
+
+1. Lead inbox UI showing all inquiries across platforms
+2. Lead source tracking (Zillow, Apartments.com, Direct, etc.)
+3. Auto-response templates (configurable per listing)
+4. Lead status workflow: NEW → CONTACTED → SHOWING → APPLIED → CLOSED
+5. Bulk actions: respond, archive, convert to applicant
+6. Lead activity timeline
+
+**Acceptance Criteria:**
+
+- [ ] All platform inquiries flow into single inbox
+- [ ] Auto-response sent within 5 minutes of inquiry
+- [ ] Lead source analytics available
+
+**Dependencies:** Phase 117
+**Estimated Effort:** 10 hours
+
+---
+
+## PHASE 119: Showing Scheduler
+
+**Objective:** Enable self-service showing scheduling for prospects.
+
+**Deliverables:**
+
+1. Availability calendar per listing (landlord sets available times)
+2. Public booking page for prospects
+3. Confirmation and reminder emails/SMS
+4. Rescheduling and cancellation flow
+5. No-show tracking
+6. Calendar sync (Google Calendar, Outlook)
+
+**Acceptance Criteria:**
+
+- [ ] Prospects can self-schedule showings
+- [ ] Landlord receives notification of bookings
+- [ ] Reminders sent 24hr and 1hr before showing
+- [ ] No-shows tracked for lead quality scoring
+
+**Dependencies:** Phase 118
+**Estimated Effort:** 10 hours
+
+---
+
+## PHASE 120: Pricing Intelligence & Analytics
+
+**Objective:** Help landlords price listings competitively.
+
+**Deliverables:**
+
+1. Rent price recommendations based on comparable listings
+2. "Your listing is X% above/below market" indicator
+3. Days-on-market tracking per listing
+4. Lead-to-lease conversion funnel analytics
+5. Vacancy cost calculator ("Each day vacant costs $X")
+6. Screening success rate by source
+
+**Acceptance Criteria:**
+
+- [ ] Price recommendation shown on listing create/edit
+- [ ] Conversion funnel: Leads → Showings → Applications → Leases
+- [ ] Vacancy cost displayed prominently
+
+**Dependencies:** Phase 119
+**Estimated Effort:** 8 hours
+
+---
+
 # SUMMARY
 
 ## Phase Distribution
 
-| Section               | Phases  | Status   |
-| --------------------- | ------- | -------- |
-| Foundation            | 1-12    | **MVP**  |
-| Auth & Security       | 13-20   | **MVP**  |
-| Properties            | 21-30   | **MVP**  |
-| Units                 | 31-38   | **MVP**  |
-| Leases                | 39-50   | **MVP**  |
-| Financial Core        | 51-62   | **MVP**  |
-| Payments              | 63-72   | **MVP**  |
-| Work Orders           | 73-82   | Post-MVP |
-| Vendors               | 83-88   | Post-MVP |
-| Tenant Portal         | 89-96   | Post-MVP |
-| Reporting             | 97-102  | Post-MVP |
-| AI & Automation       | 103-106 | Post-MVP |
-| Mobile & Integrations | 107-108 | Post-MVP |
+| Section               | Phases    | Status              |
+| --------------------- | --------- | ------------------- |
+| Foundation            | 1-12      | **MVP**             |
+| Auth & Security       | 13-20     | **MVP**             |
+| Properties            | 21-30     | **MVP**             |
+| Units                 | 31-38     | **MVP**             |
+| Leases                | 39-50     | **MVP**             |
+| Financial Core        | 51-62     | **MVP**             |
+| Payments              | 63-72     | **MVP**             |
+| Work Orders           | 73-82     | Post-MVP            |
+| Vendors               | 83-88     | Post-MVP            |
+| Tenant Portal         | 89-96     | Post-MVP            |
+| Reporting             | 97-102    | Post-MVP            |
+| AI & Automation       | 103-106   | Post-MVP            |
+| Mobile & Integrations | 107-108   | Post-MVP            |
+| **Tenant Acquisition**| **109-120** | **Strategic Priority** |
 
-## Total Phases: 108
+## Total Phases: 120
 
 ## MVP Phases: 1-72 (72 phases)
 
 ## Post-MVP Phases: 73-108 (36 phases)
+
+## Strategic Priority Phases: 109-120 (12 phases)
+
+> **Note:** Tenant Acquisition (109-120) should be prioritized alongside or immediately after MVP completion.
+> This addresses the #1 landlord pain point and differentiates us from competitors.
 
 ---
 
@@ -3567,6 +3882,7 @@ export function AutoPayEnrollment({ leaseId }: Props) {
 4. **Write tests BEFORE marking phase complete**
 5. **Document any deviations in commit messages**
 6. **No assumptions - if unclear, add to phase requirements**
+7. **Apply for Zillow partnership early (Phase 115)—4-6 week approval time**
 
 ---
 
@@ -3575,6 +3891,7 @@ export function AutoPayEnrollment({ leaseId }: Props) {
 | Date       | Version | Changes                                              |
 | ---------- | ------- | ---------------------------------------------------- |
 | 2025-11-27 | 2.0     | Complete rewrite with 108 phases, clear MVP boundary |
+| 2025-12-12 | 3.0     | Added Tenant Acquisition section (Phases 109-120) as strategic priority |
 
 ---
 
