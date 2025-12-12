@@ -184,6 +184,8 @@ model Property {
   accounts    Account[]
   workOrders  WorkOrder[]
   vendors     PropertyVendor[]
+  portalConfig TenantPortalConfig?
+  amenities   Amenity[]
 
   @@index([organizationId])
   @@index([status])
@@ -1334,6 +1336,376 @@ model TenantMessage {
   @@index([direction])
   @@index([isRead])
   @@index([createdAt])
+}
+
+// ============================================================================
+// TENANT PORTAL CONFIGURATION (Landlord-controlled features)
+// ============================================================================
+
+model TenantPortalConfig {
+  id              String   @id @default(cuid())
+
+  propertyId      String   @unique
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Phase 1 Features
+  documentsEnabled       Boolean @default(true)
+  notificationsEnabled   Boolean @default(true)
+  paymentReceiptsEnabled Boolean @default(true)
+  maintenanceFeedbackEnabled Boolean @default(true)
+  leaseRenewalEnabled    Boolean @default(true)
+
+  // Phase 2 Features
+  amenityReservationsEnabled Boolean @default(false)
+  packageTrackingEnabled Boolean @default(false)
+  guestParkingEnabled    Boolean @default(false)
+  moveSchedulingEnabled  Boolean @default(false)
+  petRegistrationEnabled Boolean @default(false)
+
+  // Phase 3 Features (future)
+  communityForumEnabled  Boolean @default(false)
+  neighborDirectoryEnabled Boolean @default(false)
+  eventsCalendarEnabled  Boolean @default(false)
+
+  // Phase 4 Features (future)
+  referralProgramEnabled Boolean @default(false)
+  rewardsEnabled         Boolean @default(false)
+
+  // Customization
+  welcomeMessage         String?
+  customThemeColor       String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================================================
+// TENANT PORTAL - PHASE 2 FEATURES
+// ============================================================================
+
+// Amenity Reservations
+enum AmenityType {
+  GYM
+  POOL
+  CLUBHOUSE
+  ROOFTOP
+  BBQ_AREA
+  TENNIS_COURT
+  BASKETBALL_COURT
+  BUSINESS_CENTER
+  CONFERENCE_ROOM
+  PARTY_ROOM
+  THEATER
+  DOG_PARK
+  OTHER
+}
+
+model Amenity {
+  id              String   @id @default(cuid())
+
+  propertyId      String
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?
+  type            AmenityType
+  location        String?  // "Building A, Floor 2"
+
+  // Availability
+  isActive        Boolean  @default(true)
+  requiresReservation Boolean @default(true)
+  maxCapacity     Int?
+  maxReservationHours Int @default(2)
+  advanceBookingDays Int @default(14)  // How far ahead can book
+
+  // Operating hours (JSON: { "monday": { "open": "06:00", "close": "22:00" }, ... })
+  operatingHours  Json     @default("{}")
+
+  // Rules
+  rules           String?  @db.Text
+  depositRequired Decimal? @db.Decimal(10, 2)
+
+  // Images
+  photos          String[] @default([])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  reservations    AmenityReservation[]
+
+  @@index([propertyId])
+  @@index([type])
+  @@index([isActive])
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model AmenityReservation {
+  id              String   @id @default(cuid())
+
+  amenityId       String
+  amenity         Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  tenantId        String
+
+  status          ReservationStatus @default(PENDING)
+
+  // Time slot
+  startTime       DateTime
+  endTime         DateTime
+
+  // Guest info
+  guestCount      Int      @default(1)
+  notes           String?
+
+  // Confirmation
+  confirmationCode String  @unique @default(cuid())
+
+  // Cancellation
+  cancelledAt     DateTime?
+  cancellationReason String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([amenityId])
+  @@index([tenantId])
+  @@index([startTime])
+  @@index([status])
+}
+
+// Package Tracking
+enum PackageStatus {
+  RECEIVED
+  NOTIFIED
+  PICKED_UP
+  RETURNED_TO_SENDER
+}
+
+enum PackageSize {
+  SMALL      // Letter/small envelope
+  MEDIUM     // Shoebox size
+  LARGE      // Large box
+  OVERSIZED  // Furniture, large items
+}
+
+model Package {
+  id              String   @id @default(cuid())
+
+  propertyId      String
+
+  tenantId        String
+
+  status          PackageStatus @default(RECEIVED)
+  size            PackageSize @default(MEDIUM)
+
+  // Package details
+  carrier         String?  // "UPS", "FedEx", "USPS", "Amazon", etc.
+  trackingNumber  String?
+  description     String?
+
+  // Location
+  storageLocation String?  // "Mailroom Shelf B3"
+
+  // Dates
+  receivedAt      DateTime @default(now())
+  notifiedAt      DateTime?
+  pickedUpAt      DateTime?
+
+  // Pickup
+  pickedUpBy      String?  // Name of person who picked up
+  signatureUrl    String?
+
+  // Photo of package
+  photoUrl        String?
+
+  // Notes
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([receivedAt])
+}
+
+// Guest Parking Passes
+enum ParkingPassStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model GuestParkingPass {
+  id              String   @id @default(cuid())
+
+  propertyId      String
+
+  tenantId        String
+
+  status          ParkingPassStatus @default(ACTIVE)
+
+  // Guest info
+  guestName       String
+  guestVehicleMake  String?
+  guestVehicleModel String?
+  guestVehicleColor String?
+  guestLicensePlate String?
+
+  // Validity
+  validFrom       DateTime
+  validUntil      DateTime
+
+  // Pass details
+  passCode        String   @unique @default(cuid())
+  parkingSpot     String?  // Assigned spot if applicable
+
+  // Notes
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([validFrom])
+  @@index([validUntil])
+}
+
+// Move-in/Move-out Scheduling
+enum MoveType {
+  MOVE_IN
+  MOVE_OUT
+}
+
+enum MoveScheduleStatus {
+  REQUESTED
+  APPROVED
+  DENIED
+  COMPLETED
+  CANCELLED
+}
+
+model MoveSchedule {
+  id              String   @id @default(cuid())
+
+  propertyId      String
+
+  tenantId        String
+
+  type            MoveType
+  status          MoveScheduleStatus @default(REQUESTED)
+
+  // Scheduling
+  requestedDate   DateTime
+  requestedTimeSlot String  // "9am-12pm", "1pm-5pm", etc.
+  approvedDate    DateTime?
+  approvedTimeSlot String?
+
+  // Elevator reservation
+  elevatorReserved Boolean @default(false)
+  elevatorNumber   String?
+
+  // Moving company
+  movingCompanyName String?
+  movingCompanyPhone String?
+  estimatedDuration Int?    // Hours
+
+  // Special requirements
+  specialRequests String?
+
+  // Admin notes
+  adminNotes      String?
+  denialReason    String?
+
+  // Completion
+  completedAt     DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([type])
+  @@index([status])
+  @@index([requestedDate])
+}
+
+// Pet Registration
+enum PetType {
+  DOG
+  CAT
+  BIRD
+  FISH
+  SMALL_MAMMAL  // Hamster, guinea pig, etc.
+  REPTILE
+  OTHER
+}
+
+enum PetRegistrationStatus {
+  PENDING_APPROVAL
+  APPROVED
+  DENIED
+  EXPIRED
+}
+
+model PetRegistration {
+  id              String   @id @default(cuid())
+
+  propertyId      String
+
+  tenantId        String
+
+  status          PetRegistrationStatus @default(PENDING_APPROVAL)
+
+  // Pet info
+  petName         String
+  petType         PetType
+  breed           String?
+  weight          Decimal? @db.Decimal(5, 2) // in pounds
+  color           String?
+  age             Int?     // in years
+  description     String?
+
+  // Vaccination/Health
+  isVaccinated    Boolean  @default(false)
+  vaccinationExpiryDate DateTime?
+  vetName         String?
+  vetPhone        String?
+
+  // Documentation
+  photoUrl        String?
+  vaccinationRecordUrl String?
+
+  // Registration
+  registrationNumber String? @unique
+  registrationExpiryDate DateTime?
+
+  // Fees
+  petDeposit      Decimal? @db.Decimal(10, 2)
+  monthlyPetRent  Decimal? @db.Decimal(10, 2)
+
+  // Admin notes
+  adminNotes      String?
+  denialReason    String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([petType])
+  @@index([status])
 }
 
 // ============================================================================

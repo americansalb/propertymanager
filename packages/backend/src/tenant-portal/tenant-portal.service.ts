@@ -1543,4 +1543,707 @@ export class TenantPortalService {
 
     return updatedOffer;
   }
+
+  // ============================================================================
+  // PORTAL CONFIGURATION
+  // ============================================================================
+
+  async getPortalConfig(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        unit: { include: { property: { include: { portalConfig: true } } } },
+        lease: { include: { unit: { include: { property: { include: { portalConfig: true } } } } } },
+      },
+    });
+
+    const property = tenant?.unit?.property || tenant?.lease?.unit?.property;
+
+    if (!property) {
+      // Return default config if no property
+      return {
+        documentsEnabled: true,
+        notificationsEnabled: true,
+        paymentReceiptsEnabled: true,
+        maintenanceFeedbackEnabled: true,
+        leaseRenewalEnabled: true,
+        amenityReservationsEnabled: false,
+        packageTrackingEnabled: false,
+        guestParkingEnabled: false,
+        moveSchedulingEnabled: false,
+        petRegistrationEnabled: false,
+        communityForumEnabled: false,
+        neighborDirectoryEnabled: false,
+        eventsCalendarEnabled: false,
+        referralProgramEnabled: false,
+        rewardsEnabled: false,
+        welcomeMessage: null,
+        customThemeColor: null,
+      };
+    }
+
+    // Get or create portal config for the property
+    let config = property.portalConfig;
+    if (!config) {
+      config = await this.prisma.tenantPortalConfig.create({
+        data: { propertyId: property.id },
+      });
+    }
+
+    return {
+      documentsEnabled: config.documentsEnabled,
+      notificationsEnabled: config.notificationsEnabled,
+      paymentReceiptsEnabled: config.paymentReceiptsEnabled,
+      maintenanceFeedbackEnabled: config.maintenanceFeedbackEnabled,
+      leaseRenewalEnabled: config.leaseRenewalEnabled,
+      amenityReservationsEnabled: config.amenityReservationsEnabled,
+      packageTrackingEnabled: config.packageTrackingEnabled,
+      guestParkingEnabled: config.guestParkingEnabled,
+      moveSchedulingEnabled: config.moveSchedulingEnabled,
+      petRegistrationEnabled: config.petRegistrationEnabled,
+      communityForumEnabled: config.communityForumEnabled,
+      neighborDirectoryEnabled: config.neighborDirectoryEnabled,
+      eventsCalendarEnabled: config.eventsCalendarEnabled,
+      referralProgramEnabled: config.referralProgramEnabled,
+      rewardsEnabled: config.rewardsEnabled,
+      welcomeMessage: config.welcomeMessage,
+      customThemeColor: config.customThemeColor,
+    };
+  }
+
+  // ============================================================================
+  // AMENITY RESERVATIONS
+  // ============================================================================
+
+  async getAmenities(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        unit: { include: { property: true } },
+        lease: { include: { unit: { include: { property: true } } } },
+      },
+    });
+
+    const property = tenant?.unit?.property || tenant?.lease?.unit?.property;
+    if (!property) {
+      return { amenities: [] };
+    }
+
+    const amenities = await this.prisma.amenity.findMany({
+      where: { propertyId: property.id, isActive: true },
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      amenities: amenities.map((a) => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        type: a.type,
+        location: a.location,
+        requiresReservation: a.requiresReservation,
+        maxCapacity: a.maxCapacity,
+        maxReservationHours: a.maxReservationHours,
+        advanceBookingDays: a.advanceBookingDays,
+        operatingHours: a.operatingHours,
+        rules: a.rules,
+        depositRequired: a.depositRequired,
+        photos: a.photos,
+      })),
+    };
+  }
+
+  async getAmenityReservations(tenantId: string, status?: string) {
+    const where: any = { tenantId };
+    if (status) {
+      where.status = status;
+    }
+
+    const reservations = await this.prisma.amenityReservation.findMany({
+      where,
+      include: { amenity: true },
+      orderBy: { startTime: 'desc' },
+    });
+
+    return reservations.map((r) => ({
+      id: r.id,
+      amenityId: r.amenityId,
+      amenityName: r.amenity.name,
+      amenityType: r.amenity.type,
+      status: r.status,
+      startTime: r.startTime,
+      endTime: r.endTime,
+      guestCount: r.guestCount,
+      notes: r.notes,
+      confirmationCode: r.confirmationCode,
+      createdAt: r.createdAt,
+    }));
+  }
+
+  async createAmenityReservation(
+    tenantId: string,
+    data: {
+      amenityId: string;
+      startTime: Date;
+      endTime: Date;
+      guestCount?: number;
+      notes?: string;
+    },
+  ) {
+    // Verify tenant has access to this amenity
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        unit: { include: { property: true } },
+        lease: { include: { unit: { include: { property: true } } } },
+      },
+    });
+
+    const property = tenant?.unit?.property || tenant?.lease?.unit?.property;
+    if (!property) {
+      throw new BadRequestException('No property found');
+    }
+
+    const amenity = await this.prisma.amenity.findFirst({
+      where: { id: data.amenityId, propertyId: property.id, isActive: true },
+    });
+
+    if (!amenity) {
+      throw new NotFoundException('Amenity not found');
+    }
+
+    // Check for conflicts
+    const conflict = await this.prisma.amenityReservation.findFirst({
+      where: {
+        amenityId: data.amenityId,
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        OR: [
+          { startTime: { lte: data.startTime }, endTime: { gt: data.startTime } },
+          { startTime: { lt: data.endTime }, endTime: { gte: data.endTime } },
+          { startTime: { gte: data.startTime }, endTime: { lte: data.endTime } },
+        ],
+      },
+    });
+
+    if (conflict) {
+      throw new BadRequestException('This time slot is already booked');
+    }
+
+    // Validate reservation duration
+    const duration = (new Date(data.endTime).getTime() - new Date(data.startTime).getTime()) / (1000 * 60 * 60);
+    if (duration > amenity.maxReservationHours) {
+      throw new BadRequestException(`Reservation cannot exceed ${amenity.maxReservationHours} hours`);
+    }
+
+    // Validate booking window
+    const daysInAdvance = Math.ceil((new Date(data.startTime).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (daysInAdvance > amenity.advanceBookingDays) {
+      throw new BadRequestException(`Cannot book more than ${amenity.advanceBookingDays} days in advance`);
+    }
+
+    const reservation = await this.prisma.amenityReservation.create({
+      data: {
+        amenityId: data.amenityId,
+        tenantId,
+        status: 'CONFIRMED',
+        startTime: data.startTime,
+        endTime: data.endTime,
+        guestCount: data.guestCount || 1,
+        notes: data.notes,
+      },
+      include: { amenity: true },
+    });
+
+    return {
+      id: reservation.id,
+      confirmationCode: reservation.confirmationCode,
+      amenityName: reservation.amenity.name,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      status: reservation.status,
+    };
+  }
+
+  async cancelAmenityReservation(tenantId: string, reservationId: string, reason?: string) {
+    const reservation = await this.prisma.amenityReservation.findFirst({
+      where: { id: reservationId, tenantId },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException('Reservation not found');
+    }
+
+    if (reservation.status === 'CANCELLED') {
+      throw new BadRequestException('Reservation is already cancelled');
+    }
+
+    if (reservation.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot cancel a completed reservation');
+    }
+
+    await this.prisma.amenityReservation.update({
+      where: { id: reservationId },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+        cancellationReason: reason,
+      },
+    });
+
+    return { success: true };
+  }
+
+  // ============================================================================
+  // PACKAGE TRACKING
+  // ============================================================================
+
+  async getPackages(tenantId: string, status?: string) {
+    const where: any = { tenantId };
+    if (status) {
+      where.status = status;
+    }
+
+    const packages = await this.prisma.package.findMany({
+      where,
+      orderBy: { receivedAt: 'desc' },
+    });
+
+    return packages.map((p) => ({
+      id: p.id,
+      status: p.status,
+      size: p.size,
+      carrier: p.carrier,
+      trackingNumber: p.trackingNumber,
+      description: p.description,
+      storageLocation: p.storageLocation,
+      receivedAt: p.receivedAt,
+      notifiedAt: p.notifiedAt,
+      pickedUpAt: p.pickedUpAt,
+      photoUrl: p.photoUrl,
+      notes: p.notes,
+    }));
+  }
+
+  async getPackageCount(tenantId: string) {
+    const count = await this.prisma.package.count({
+      where: { tenantId, status: { in: ['RECEIVED', 'NOTIFIED'] } },
+    });
+
+    return { count };
+  }
+
+  async markPackagePickedUp(tenantId: string, packageId: string, pickedUpBy?: string) {
+    const pkg = await this.prisma.package.findFirst({
+      where: { id: packageId, tenantId },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException('Package not found');
+    }
+
+    if (pkg.status === 'PICKED_UP') {
+      throw new BadRequestException('Package has already been picked up');
+    }
+
+    await this.prisma.package.update({
+      where: { id: packageId },
+      data: {
+        status: 'PICKED_UP',
+        pickedUpAt: new Date(),
+        pickedUpBy: pickedUpBy || 'Self',
+      },
+    });
+
+    return { success: true };
+  }
+
+  // ============================================================================
+  // GUEST PARKING PASSES
+  // ============================================================================
+
+  async getGuestParkingPasses(tenantId: string, status?: string) {
+    const where: any = { tenantId };
+    if (status) {
+      where.status = status;
+    }
+
+    const passes = await this.prisma.guestParkingPass.findMany({
+      where,
+      orderBy: { validFrom: 'desc' },
+    });
+
+    return passes.map((p) => ({
+      id: p.id,
+      status: p.status,
+      guestName: p.guestName,
+      guestVehicleMake: p.guestVehicleMake,
+      guestVehicleModel: p.guestVehicleModel,
+      guestVehicleColor: p.guestVehicleColor,
+      guestLicensePlate: p.guestLicensePlate,
+      validFrom: p.validFrom,
+      validUntil: p.validUntil,
+      passCode: p.passCode,
+      parkingSpot: p.parkingSpot,
+      notes: p.notes,
+      createdAt: p.createdAt,
+    }));
+  }
+
+  async createGuestParkingPass(
+    tenantId: string,
+    data: {
+      guestName: string;
+      guestVehicleMake?: string;
+      guestVehicleModel?: string;
+      guestVehicleColor?: string;
+      guestLicensePlate?: string;
+      validFrom: Date;
+      validUntil: Date;
+      notes?: string;
+    },
+  ) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        unit: { include: { property: true } },
+        lease: { include: { unit: { include: { property: true } } } },
+      },
+    });
+
+    const property = tenant?.unit?.property || tenant?.lease?.unit?.property;
+    if (!property) {
+      throw new BadRequestException('No property found');
+    }
+
+    // Validate dates
+    if (new Date(data.validFrom) > new Date(data.validUntil)) {
+      throw new BadRequestException('End date must be after start date');
+    }
+
+    // Check for active passes (limit per tenant)
+    const activePasses = await this.prisma.guestParkingPass.count({
+      where: {
+        tenantId,
+        status: 'ACTIVE',
+        validUntil: { gt: new Date() },
+      },
+    });
+
+    if (activePasses >= 3) {
+      throw new BadRequestException('Maximum of 3 active guest passes allowed');
+    }
+
+    const pass = await this.prisma.guestParkingPass.create({
+      data: {
+        propertyId: property.id,
+        tenantId,
+        guestName: data.guestName,
+        guestVehicleMake: data.guestVehicleMake,
+        guestVehicleModel: data.guestVehicleModel,
+        guestVehicleColor: data.guestVehicleColor,
+        guestLicensePlate: data.guestLicensePlate,
+        validFrom: data.validFrom,
+        validUntil: data.validUntil,
+        notes: data.notes,
+      },
+    });
+
+    return {
+      id: pass.id,
+      passCode: pass.passCode,
+      guestName: pass.guestName,
+      validFrom: pass.validFrom,
+      validUntil: pass.validUntil,
+    };
+  }
+
+  async cancelGuestParkingPass(tenantId: string, passId: string) {
+    const pass = await this.prisma.guestParkingPass.findFirst({
+      where: { id: passId, tenantId },
+    });
+
+    if (!pass) {
+      throw new NotFoundException('Parking pass not found');
+    }
+
+    if (pass.status === 'CANCELLED') {
+      throw new BadRequestException('Pass is already cancelled');
+    }
+
+    await this.prisma.guestParkingPass.update({
+      where: { id: passId },
+      data: { status: 'CANCELLED' },
+    });
+
+    return { success: true };
+  }
+
+  // ============================================================================
+  // MOVE SCHEDULING
+  // ============================================================================
+
+  async getMoveSchedules(tenantId: string) {
+    const schedules = await this.prisma.moveSchedule.findMany({
+      where: { tenantId },
+      orderBy: { requestedDate: 'desc' },
+    });
+
+    return schedules.map((s) => ({
+      id: s.id,
+      type: s.type,
+      status: s.status,
+      requestedDate: s.requestedDate,
+      requestedTimeSlot: s.requestedTimeSlot,
+      approvedDate: s.approvedDate,
+      approvedTimeSlot: s.approvedTimeSlot,
+      elevatorReserved: s.elevatorReserved,
+      elevatorNumber: s.elevatorNumber,
+      movingCompanyName: s.movingCompanyName,
+      movingCompanyPhone: s.movingCompanyPhone,
+      estimatedDuration: s.estimatedDuration,
+      specialRequests: s.specialRequests,
+      denialReason: s.denialReason,
+      createdAt: s.createdAt,
+    }));
+  }
+
+  async createMoveSchedule(
+    tenantId: string,
+    data: {
+      type: 'MOVE_IN' | 'MOVE_OUT';
+      requestedDate: Date;
+      requestedTimeSlot: string;
+      movingCompanyName?: string;
+      movingCompanyPhone?: string;
+      estimatedDuration?: number;
+      specialRequests?: string;
+    },
+  ) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        unit: { include: { property: true } },
+        lease: { include: { unit: { include: { property: true } } } },
+      },
+    });
+
+    const property = tenant?.unit?.property || tenant?.lease?.unit?.property;
+    if (!property) {
+      throw new BadRequestException('No property found');
+    }
+
+    // Check for existing pending/approved schedule of same type
+    const existing = await this.prisma.moveSchedule.findFirst({
+      where: {
+        tenantId,
+        type: data.type,
+        status: { in: ['REQUESTED', 'APPROVED'] },
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(`You already have a pending ${data.type.toLowerCase().replace('_', '-')} schedule`);
+    }
+
+    const schedule = await this.prisma.moveSchedule.create({
+      data: {
+        propertyId: property.id,
+        tenantId,
+        type: data.type,
+        requestedDate: data.requestedDate,
+        requestedTimeSlot: data.requestedTimeSlot,
+        movingCompanyName: data.movingCompanyName,
+        movingCompanyPhone: data.movingCompanyPhone,
+        estimatedDuration: data.estimatedDuration,
+        specialRequests: data.specialRequests,
+      },
+    });
+
+    return {
+      id: schedule.id,
+      type: schedule.type,
+      status: schedule.status,
+      requestedDate: schedule.requestedDate,
+      requestedTimeSlot: schedule.requestedTimeSlot,
+    };
+  }
+
+  async cancelMoveSchedule(tenantId: string, scheduleId: string) {
+    const schedule = await this.prisma.moveSchedule.findFirst({
+      where: { id: scheduleId, tenantId },
+    });
+
+    if (!schedule) {
+      throw new NotFoundException('Move schedule not found');
+    }
+
+    if (schedule.status === 'CANCELLED') {
+      throw new BadRequestException('Schedule is already cancelled');
+    }
+
+    if (schedule.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot cancel a completed move');
+    }
+
+    await this.prisma.moveSchedule.update({
+      where: { id: scheduleId },
+      data: { status: 'CANCELLED' },
+    });
+
+    return { success: true };
+  }
+
+  // ============================================================================
+  // PET REGISTRATION
+  // ============================================================================
+
+  async getPetRegistrations(tenantId: string) {
+    const pets = await this.prisma.petRegistration.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return pets.map((p) => ({
+      id: p.id,
+      status: p.status,
+      petName: p.petName,
+      petType: p.petType,
+      breed: p.breed,
+      weight: p.weight,
+      color: p.color,
+      age: p.age,
+      description: p.description,
+      isVaccinated: p.isVaccinated,
+      vaccinationExpiryDate: p.vaccinationExpiryDate,
+      vetName: p.vetName,
+      vetPhone: p.vetPhone,
+      photoUrl: p.photoUrl,
+      registrationNumber: p.registrationNumber,
+      registrationExpiryDate: p.registrationExpiryDate,
+      petDeposit: p.petDeposit,
+      monthlyPetRent: p.monthlyPetRent,
+      denialReason: p.denialReason,
+      createdAt: p.createdAt,
+    }));
+  }
+
+  async registerPet(
+    tenantId: string,
+    data: {
+      petName: string;
+      petType: string;
+      breed?: string;
+      weight?: number;
+      color?: string;
+      age?: number;
+      description?: string;
+      isVaccinated?: boolean;
+      vaccinationExpiryDate?: Date;
+      vetName?: string;
+      vetPhone?: string;
+      photoUrl?: string;
+      vaccinationRecordUrl?: string;
+    },
+  ) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        unit: { include: { property: true } },
+        lease: { include: { unit: { include: { property: true } } } },
+      },
+    });
+
+    const property = tenant?.unit?.property || tenant?.lease?.unit?.property;
+    if (!property) {
+      throw new BadRequestException('No property found');
+    }
+
+    const pet = await this.prisma.petRegistration.create({
+      data: {
+        propertyId: property.id,
+        tenantId,
+        petName: data.petName,
+        petType: data.petType as any,
+        breed: data.breed,
+        weight: data.weight,
+        color: data.color,
+        age: data.age,
+        description: data.description,
+        isVaccinated: data.isVaccinated || false,
+        vaccinationExpiryDate: data.vaccinationExpiryDate,
+        vetName: data.vetName,
+        vetPhone: data.vetPhone,
+        photoUrl: data.photoUrl,
+        vaccinationRecordUrl: data.vaccinationRecordUrl,
+      },
+    });
+
+    return {
+      id: pet.id,
+      status: pet.status,
+      petName: pet.petName,
+      petType: pet.petType,
+    };
+  }
+
+  async updatePetRegistration(
+    tenantId: string,
+    petId: string,
+    data: {
+      breed?: string;
+      weight?: number;
+      color?: string;
+      age?: number;
+      description?: string;
+      isVaccinated?: boolean;
+      vaccinationExpiryDate?: Date;
+      vetName?: string;
+      vetPhone?: string;
+      photoUrl?: string;
+      vaccinationRecordUrl?: string;
+    },
+  ) {
+    const pet = await this.prisma.petRegistration.findFirst({
+      where: { id: petId, tenantId },
+    });
+
+    if (!pet) {
+      throw new NotFoundException('Pet registration not found');
+    }
+
+    const updated = await this.prisma.petRegistration.update({
+      where: { id: petId },
+      data: {
+        breed: data.breed,
+        weight: data.weight,
+        color: data.color,
+        age: data.age,
+        description: data.description,
+        isVaccinated: data.isVaccinated,
+        vaccinationExpiryDate: data.vaccinationExpiryDate,
+        vetName: data.vetName,
+        vetPhone: data.vetPhone,
+        photoUrl: data.photoUrl,
+        vaccinationRecordUrl: data.vaccinationRecordUrl,
+      },
+    });
+
+    return updated;
+  }
+
+  async deletePetRegistration(tenantId: string, petId: string) {
+    const pet = await this.prisma.petRegistration.findFirst({
+      where: { id: petId, tenantId },
+    });
+
+    if (!pet) {
+      throw new NotFoundException('Pet registration not found');
+    }
+
+    await this.prisma.petRegistration.delete({
+      where: { id: petId },
+    });
+
+    return { success: true };
+  }
 }
