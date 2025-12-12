@@ -99,7 +99,7 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
 
   // Build navigation dynamically based on portal config
   const navigation = useMemo(() => {
-    const config = portalConfig || {};
+    const config: Partial<PortalConfig> = portalConfig || {};
     const allNavItems = [...baseNavigation, ...phase2Navigation];
 
     return allNavItems.filter((item) => {
