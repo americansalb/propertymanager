@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -157,10 +157,10 @@ export default function MoveSchedulePage() {
 
   const schedules = data || [];
   const hasPendingMoveIn = schedules.some(
-    (s) => s.type === 'MOVE_IN' && (s.status === 'REQUESTED' || s.status === 'APPROVED')
+    (s) => s.type === 'MOVE_IN' && (s.status === 'REQUESTED' || s.status === 'APPROVED'),
   );
   const hasPendingMoveOut = schedules.some(
-    (s) => s.type === 'MOVE_OUT' && (s.status === 'REQUESTED' || s.status === 'APPROVED')
+    (s) => s.type === 'MOVE_OUT' && (s.status === 'REQUESTED' || s.status === 'APPROVED'),
   );
 
   return (
@@ -317,9 +317,7 @@ export default function MoveSchedulePage() {
                 <Truck className="w-5 h-5" />
                 Schedule Move
               </DialogTitle>
-              <DialogDescription>
-                Request an elevator reservation for your move
-              </DialogDescription>
+              <DialogDescription>Request an elevator reservation for your move</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">

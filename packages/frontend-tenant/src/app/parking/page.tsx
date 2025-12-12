@@ -2,20 +2,10 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Car,
-  Loader2,
-  AlertCircle,
-  Plus,
-  Calendar,
-  Clock,
-  Copy,
-  Check,
-  X,
-} from 'lucide-react';
+import { Car, Loader2, AlertCircle, Plus, Calendar, Copy, Check, X } from 'lucide-react';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -157,7 +147,7 @@ export default function ParkingPage() {
 
   const passes = data || [];
   const activePasses = passes.filter(
-    (p) => p.status === 'ACTIVE' && isAfter(new Date(p.validUntil), new Date())
+    (p) => p.status === 'ACTIVE' && isAfter(new Date(p.validUntil), new Date()),
   );
 
   return (
@@ -205,16 +195,12 @@ export default function ParkingPage() {
         ) : (
           <div className="space-y-4">
             {passes.map((pass) => {
-              const statusConfig = STATUS_LABELS[pass.status] || STATUS_LABELS.ACTIVE;
               const isExpired = isBefore(new Date(pass.validUntil), new Date());
               const displayStatus = isExpired && pass.status === 'ACTIVE' ? 'EXPIRED' : pass.status;
               const displayConfig = STATUS_LABELS[displayStatus];
 
               return (
-                <Card
-                  key={pass.id}
-                  className={displayStatus !== 'ACTIVE' ? 'opacity-75' : ''}
-                >
+                <Card key={pass.id} className={displayStatus !== 'ACTIVE' ? 'opacity-75' : ''}>
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
                       <div className="p-3 bg-blue-100 rounded-lg">
@@ -235,7 +221,11 @@ export default function ParkingPage() {
 
                             {pass.guestLicensePlate && (
                               <p className="text-sm text-gray-600 mt-1">
-                                {[pass.guestVehicleColor, pass.guestVehicleMake, pass.guestVehicleModel]
+                                {[
+                                  pass.guestVehicleColor,
+                                  pass.guestVehicleMake,
+                                  pass.guestVehicleModel,
+                                ]
                                   .filter(Boolean)
                                   .join(' ')}{' '}
                                 - <span className="font-mono">{pass.guestLicensePlate}</span>
@@ -265,7 +255,9 @@ export default function ParkingPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => copyPassCode(pass.passCode.slice(-8).toUpperCase(), pass.id)}
+                                  onClick={() =>
+                                    copyPassCode(pass.passCode.slice(-8).toUpperCase(), pass.id)
+                                  }
                                   className="h-8"
                                 >
                                   {copiedId === pass.id ? (
@@ -307,9 +299,7 @@ export default function ParkingPage() {
                 <Car className="w-5 h-5" />
                 Create Guest Parking Pass
               </DialogTitle>
-              <DialogDescription>
-                Create a temporary parking pass for your guest
-              </DialogDescription>
+              <DialogDescription>Create a temporary parking pass for your guest</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">

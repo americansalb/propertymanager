@@ -79,7 +79,9 @@ export function FeedbackForm({
   });
 
   const handleSubmit = () => {
-    if (overallRating === 0) return;
+    if (overallRating === 0) {
+      return;
+    }
 
     submitMutation.mutate({
       overallRating,
@@ -95,7 +97,9 @@ export function FeedbackForm({
   };
 
   const handleFollowUp = () => {
-    if (!followUpReason.trim()) return;
+    if (!followUpReason.trim()) {
+      return;
+    }
     followUpMutation.mutate(followUpReason);
   };
 
@@ -195,9 +199,7 @@ export function FeedbackForm({
         <div className="space-y-2">
           <Label>Overall Rating *</Label>
           <StarRating value={overallRating} onChange={setOverallRating} size="lg" />
-          {overallRating === 0 && (
-            <p className="text-sm text-gray-500">Click a star to rate</p>
-          )}
+          {overallRating === 0 && <p className="text-sm text-gray-500">Click a star to rate</p>}
         </div>
 
         {/* Issue Resolved */}
@@ -284,9 +286,7 @@ export function FeedbackForm({
           disabled={overallRating === 0 || submitMutation.isPending}
           className="w-full sm:w-auto"
         >
-          {submitMutation.isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          ) : null}
+          {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           {existingFeedback ? 'Update Feedback' : 'Submit Feedback'}
         </Button>
       </CardContent>

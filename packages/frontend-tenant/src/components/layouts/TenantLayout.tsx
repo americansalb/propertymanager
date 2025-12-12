@@ -63,10 +63,20 @@ const baseNavigation = [
 
 // Phase 2 features (shown based on config)
 const phase2Navigation = [
-  { name: 'Amenities', href: '/amenities', icon: Calendar, configKey: 'amenityReservationsEnabled' },
+  {
+    name: 'Amenities',
+    href: '/amenities',
+    icon: Calendar,
+    configKey: 'amenityReservationsEnabled',
+  },
   { name: 'Packages', href: '/packages', icon: Package, configKey: 'packageTrackingEnabled' },
   { name: 'Guest Parking', href: '/parking', icon: Car, configKey: 'guestParkingEnabled' },
-  { name: 'Move Schedule', href: '/move-schedule', icon: Truck, configKey: 'moveSchedulingEnabled' },
+  {
+    name: 'Move Schedule',
+    href: '/move-schedule',
+    icon: Truck,
+    configKey: 'moveSchedulingEnabled',
+  },
   { name: 'Pets', href: '/pets', icon: PawPrint, configKey: 'petRegistrationEnabled' },
 ];
 
@@ -94,7 +104,9 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
 
     return allNavItems.filter((item) => {
       // Items without a configKey are always shown
-      if (!item.configKey) return true;
+      if (!item.configKey) {
+        return true;
+      }
       // Items with a configKey are shown only if the feature is enabled
       return config[item.configKey as keyof PortalConfig] === true;
     });
@@ -148,7 +160,9 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile menu */}
-      <div className={`lg:hidden fixed inset-0 z-50 ${mobileMenuOpen ? '' : 'pointer-events-none'}`}>
+      <div
+        className={`lg:hidden fixed inset-0 z-50 ${mobileMenuOpen ? '' : 'pointer-events-none'}`}
+      >
         <div
           className={`fixed inset-0 bg-gray-900/50 transition-opacity ${mobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setMobileMenuOpen(false)}

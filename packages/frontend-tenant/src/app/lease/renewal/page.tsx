@@ -4,12 +4,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
-  Calendar,
   DollarSign,
-  Clock,
   CheckCircle,
   XCircle,
-  ArrowRight,
   Loader2,
   AlertCircle,
   TrendingUp,
@@ -69,7 +66,9 @@ const LEASE_TYPE_LABELS: Record<string, string> = {
 
 export default function LeaseRenewalPage() {
   const [selectedOffer, setSelectedOffer] = useState<RenewalOffer | null>(null);
-  const [responseType, setResponseType] = useState<'ACCEPT' | 'DECLINE' | 'COUNTER' | 'MOVE_OUT' | null>(null);
+  const [responseType, setResponseType] = useState<
+    'ACCEPT' | 'DECLINE' | 'COUNTER' | 'MOVE_OUT' | null
+  >(null);
   const [counterOfferRent, setCounterOfferRent] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,7 +110,9 @@ export default function LeaseRenewalPage() {
   });
 
   const handleResponse = async () => {
-    if (!selectedOffer || !responseType) return;
+    if (!selectedOffer || !responseType) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -174,7 +175,13 @@ export default function LeaseRenewalPage() {
 
         {/* Current Lease Summary */}
         {currentLease && (
-          <Card className={daysUntilExpiry !== null && daysUntilExpiry < 60 ? 'border-amber-200 bg-amber-50/50' : ''}>
+          <Card
+            className={
+              daysUntilExpiry !== null && daysUntilExpiry < 60
+                ? 'border-amber-200 bg-amber-50/50'
+                : ''
+            }
+          >
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <FileText className="w-5 h-5" />
@@ -205,19 +212,23 @@ export default function LeaseRenewalPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Days Remaining</p>
-                  <p className={`text-xl font-bold ${daysUntilExpiry !== null && daysUntilExpiry < 60 ? 'text-amber-600' : 'text-gray-900'}`}>
-                    {daysUntilExpiry !== null ? (
-                      daysUntilExpiry > 0 ? `${daysUntilExpiry} days` : 'Expired'
-                    ) : (
-                      'N/A'
-                    )}
+                  <p
+                    className={`text-xl font-bold ${daysUntilExpiry !== null && daysUntilExpiry < 60 ? 'text-amber-600' : 'text-gray-900'}`}
+                  >
+                    {daysUntilExpiry !== null
+                      ? daysUntilExpiry > 0
+                        ? `${daysUntilExpiry} days`
+                        : 'Expired'
+                      : 'N/A'}
                   </p>
                 </div>
               </div>
               {daysUntilExpiry !== null && daysUntilExpiry < 60 && daysUntilExpiry > 0 && (
                 <div className="mt-4 flex items-center gap-2 text-amber-700">
                   <AlertTriangle className="w-4 h-4" />
-                  <span className="text-sm">Your lease is expiring soon. Please review renewal offers below.</span>
+                  <span className="text-sm">
+                    Your lease is expiring soon. Please review renewal offers below.
+                  </span>
                 </div>
               )}
             </CardContent>
@@ -232,8 +243,8 @@ export default function LeaseRenewalPage() {
                 <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Renewal Offers</h3>
                 <p className="text-gray-500 max-w-md mx-auto">
-                  When your property manager sends you a renewal offer, it will appear here. Check back
-                  closer to your lease end date.
+                  When your property manager sends you a renewal offer, it will appear here. Check
+                  back closer to your lease end date.
                 </p>
               </div>
             </CardContent>
@@ -260,7 +271,9 @@ export default function LeaseRenewalPage() {
                         <CardDescription>
                           Offer expires {format(new Date(offer.expiresAt), 'MMMM d, yyyy')}
                           {daysUntilOfferExpiry <= 7 && daysUntilOfferExpiry > 0 && (
-                            <span className="text-amber-600 ml-2">({daysUntilOfferExpiry} days left)</span>
+                            <span className="text-amber-600 ml-2">
+                              ({daysUntilOfferExpiry} days left)
+                            </span>
                           )}
                         </CardDescription>
                       </div>
@@ -311,10 +324,7 @@ export default function LeaseRenewalPage() {
                         <p className="text-lg font-medium text-gray-900">
                           {format(new Date(offer.newStartDate), 'MMM d, yyyy')}
                           {offer.newEndDate && (
-                            <>
-                              {' '}
-                              - {format(new Date(offer.newEndDate), 'MMM d, yyyy')}
-                            </>
+                            <> - {format(new Date(offer.newEndDate), 'MMM d, yyyy')}</>
                           )}
                         </p>
                       </div>
@@ -452,9 +462,7 @@ export default function LeaseRenewalPage() {
                       : ''
                 }
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {responseType === 'ACCEPT' && 'Confirm Acceptance'}
                 {responseType === 'DECLINE' && 'Confirm Decline'}
                 {responseType === 'COUNTER' && 'Submit Counter Offer'}

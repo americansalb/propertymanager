@@ -7,7 +7,6 @@ import {
   Loader2,
   AlertCircle,
   Plus,
-  Calendar,
   Clock,
   CheckCircle,
   XCircle,
@@ -17,7 +16,7 @@ import {
 } from 'lucide-react';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,7 +55,11 @@ interface PetRegistration {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  PENDING_APPROVAL: { label: 'Pending Approval', color: 'bg-amber-100 text-amber-700', icon: Clock },
+  PENDING_APPROVAL: {
+    label: 'Pending Approval',
+    color: 'bg-amber-100 text-amber-700',
+    icon: Clock,
+  },
   APPROVED: { label: 'Approved', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   DENIED: { label: 'Denied', color: 'bg-red-100 text-red-700', icon: XCircle },
   EXPIRED: { label: 'Expired', color: 'bg-gray-100 text-gray-700', icon: AlertCircle },
@@ -160,7 +163,9 @@ export default function PetsPage() {
   };
 
   const handleUpdate = () => {
-    if (!editingPet) return;
+    if (!editingPet) {
+      return;
+    }
 
     updateMutation.mutate({
       id: editingPet.id,
@@ -187,7 +192,7 @@ export default function PetsPage() {
     setDescription(pet.description || '');
     setIsVaccinated(pet.isVaccinated);
     setVaccinationExpiryDate(
-      pet.vaccinationExpiryDate ? format(new Date(pet.vaccinationExpiryDate), 'yyyy-MM-dd') : ''
+      pet.vaccinationExpiryDate ? format(new Date(pet.vaccinationExpiryDate), 'yyyy-MM-dd') : '',
     );
     setVetName(pet.vetName || '');
     setVetPhone(pet.vetPhone || '');
@@ -213,7 +218,9 @@ export default function PetsPage() {
       <TenantLayout>
         <div className="text-center py-12">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Unable to load pet registrations</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Unable to load pet registrations
+          </h3>
           <p className="text-gray-500">Please try again later.</p>
         </div>
       </TenantLayout>
@@ -260,7 +267,8 @@ export default function PetsPage() {
               const statusConfig = STATUS_CONFIG[pet.status] || STATUS_CONFIG.PENDING_APPROVAL;
               const StatusIcon = statusConfig.icon;
               const vaccinationExpired =
-                pet.vaccinationExpiryDate && isBefore(new Date(pet.vaccinationExpiryDate), new Date());
+                pet.vaccinationExpiryDate &&
+                isBefore(new Date(pet.vaccinationExpiryDate), new Date());
 
               return (
                 <Card key={pet.id}>
@@ -317,7 +325,8 @@ export default function PetsPage() {
                                   {pet.vaccinationExpiryDate && (
                                     <span className="text-gray-500">
                                       {' '}
-                                      (exp. {format(new Date(pet.vaccinationExpiryDate), 'MMM d, yyyy')})
+                                      (exp.{' '}
+                                      {format(new Date(pet.vaccinationExpiryDate), 'MMM d, yyyy')})
                                     </span>
                                   )}
                                 </div>
@@ -358,11 +367,7 @@ export default function PetsPage() {
                           </div>
 
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEditDialog(pet)}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => openEditDialog(pet)}>
                               <Edit2 className="w-4 h-4" />
                             </Button>
                             <Button
@@ -393,9 +398,7 @@ export default function PetsPage() {
                 <PawPrint className="w-5 h-5" />
                 Register Pet
               </DialogTitle>
-              <DialogDescription>
-                Register your pet with the building management
-              </DialogDescription>
+              <DialogDescription>Register your pet with the building management</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
@@ -556,19 +559,11 @@ export default function PetsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="editBreed">Breed</Label>
-                  <Input
-                    id="editBreed"
-                    value={breed}
-                    onChange={(e) => setBreed(e.target.value)}
-                  />
+                  <Input id="editBreed" value={breed} onChange={(e) => setBreed(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="editColor">Color</Label>
-                  <Input
-                    id="editColor"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                  />
+                  <Input id="editColor" value={color} onChange={(e) => setColor(e.target.value)} />
                 </div>
               </div>
 

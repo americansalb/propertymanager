@@ -19,9 +19,9 @@ import {
 import Link from 'next/link';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import TenantLayout from '@/components/layouts/TenantLayout';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
   id: string;

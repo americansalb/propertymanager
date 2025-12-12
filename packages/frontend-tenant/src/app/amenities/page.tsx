@@ -2,26 +2,15 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Calendar,
-  Clock,
-  Users,
-  Loader2,
-  AlertCircle,
-  Plus,
-  X,
-  CheckCircle,
-  MapPin,
-  Info,
-} from 'lucide-react';
+import { Calendar, Clock, Users, Loader2, Plus, CheckCircle, MapPin, Info } from 'lucide-react';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import TenantLayout from '@/components/layouts/TenantLayout';
-import { format, addDays, startOfDay, setHours, setMinutes } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -139,7 +128,9 @@ export default function AmenitiesPage() {
   };
 
   const handleSubmitBooking = () => {
-    if (!selectedAmenity || !bookingDate || !bookingStartTime || !bookingEndTime) return;
+    if (!selectedAmenity || !bookingDate || !bookingStartTime || !bookingEndTime) {
+      return;
+    }
 
     const startTime = new Date(`${bookingDate}T${bookingStartTime}:00`);
     const endTime = new Date(`${bookingDate}T${bookingEndTime}:00`);
@@ -168,7 +159,8 @@ export default function AmenitiesPage() {
   const amenities = amenitiesData?.amenities || [];
   const reservations = reservationsData || [];
   const upcomingReservations = reservations.filter(
-    (r) => r.status !== 'CANCELLED' && r.status !== 'COMPLETED' && new Date(r.startTime) > new Date()
+    (r) =>
+      r.status !== 'CANCELLED' && r.status !== 'COMPLETED' && new Date(r.startTime) > new Date(),
   );
 
   return (
@@ -323,7 +315,10 @@ export default function AmenitiesPage() {
                   value={bookingDate}
                   onChange={(e) => setBookingDate(e.target.value)}
                   min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
-                  max={format(addDays(new Date(), selectedAmenity?.advanceBookingDays || 14), 'yyyy-MM-dd')}
+                  max={format(
+                    addDays(new Date(), selectedAmenity?.advanceBookingDays || 14),
+                    'yyyy-MM-dd',
+                  )}
                 />
               </div>
 

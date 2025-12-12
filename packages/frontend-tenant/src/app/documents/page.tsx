@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   FileText,
   Download,
-  Upload,
   Filter,
   Loader2,
   AlertCircle,
@@ -19,13 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TenantLayout from '@/components/layouts/TenantLayout';
 import { format } from 'date-fns';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -72,11 +64,13 @@ const DOCUMENT_TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 export default function DocumentsPage() {
@@ -92,7 +86,7 @@ export default function DocumentsPage() {
     },
   });
 
-  const handleDownload = async (documentId: string, documentName: string) => {
+  const handleDownload = async (documentId: string, _documentName: string) => {
     setDownloading(documentId);
     try {
       const response = await api.get(`/tenant-portal/documents/${documentId}/download`);

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import TenantLayout from '@/components/layouts/TenantLayout';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -178,7 +178,7 @@ export default function PackagesPage() {
                 <p className="text-gray-500">
                   {filter === 'pending'
                     ? "When packages arrive for you, they'll appear here."
-                    : "Your picked up packages will appear here."}
+                    : 'Your picked up packages will appear here.'}
                 </p>
               </div>
             </CardContent>
@@ -195,9 +195,7 @@ export default function PackagesPage() {
                     <div className="flex items-start gap-4">
                       <div className="p-3 bg-gray-100 rounded-lg">
                         <span className="text-2xl">
-                          {pkg.carrier
-                            ? CARRIER_ICONS[pkg.carrier.toUpperCase()] || '📦'
-                            : '📦'}
+                          {pkg.carrier ? CARRIER_ICONS[pkg.carrier.toUpperCase()] || '📦' : '📦'}
                         </span>
                       </div>
 
@@ -222,10 +220,7 @@ export default function PackagesPage() {
                                   <Truck className="w-4 h-4 text-gray-400" />
                                   {pkg.carrier}
                                   {pkg.trackingNumber && (
-                                    <span className="text-gray-400">
-                                      {' '}
-                                      - {pkg.trackingNumber}
-                                    </span>
+                                    <span className="text-gray-400"> - {pkg.trackingNumber}</span>
                                   )}
                                 </p>
                               )}
@@ -248,11 +243,7 @@ export default function PackagesPage() {
                                 addSuffix: true,
                               })}
                               {pkg.pickedUpAt && (
-                                <>
-                                  {' '}
-                                  • Picked up{' '}
-                                  {format(new Date(pkg.pickedUpAt), 'MMM d, yyyy')}
-                                </>
+                                <> • Picked up {format(new Date(pkg.pickedUpAt), 'MMM d, yyyy')}</>
                               )}
                             </p>
                           </div>
