@@ -118,6 +118,12 @@ export default function MarketplaceDispatchModal({
       const response = await api.post('/marketplace/jobs', data);
       return response.data;
     },
+    onError: (error: any) => {
+      console.error('Failed to create marketplace job:', error);
+      alert(
+        error?.response?.data?.message || 'Failed to create marketplace job. Please try again.',
+      );
+    },
   });
 
   // Dispatch job mutation
@@ -131,6 +137,10 @@ export default function MarketplaceDispatchModal({
       queryClient.invalidateQueries({ queryKey: ['work-orders'] });
       onOpenChange(false);
       resetForm();
+    },
+    onError: (error: any) => {
+      console.error('Failed to dispatch job:', error);
+      alert(error?.response?.data?.message || 'Failed to dispatch job. Please try again.');
     },
   });
 

@@ -68,7 +68,7 @@ export default function LandingPage() {
                     Message your property manager
                   </li>
                 </ul>
-                <a href="/tenant/login/" className="block">
+                <a href="/tenant/login" className="block">
                   <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg">
                     Tenant Login
                   </Button>

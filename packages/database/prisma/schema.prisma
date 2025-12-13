@@ -226,7 +226,7 @@ model Unit {
   marketRent  Decimal  @db.Decimal(10, 2)
 
   propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -545,7 +545,7 @@ model JournalEntry {
   id          String   @id @default(cuid())
 
   transactionId String
-  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
 
   accountId   String
   account     Account  @relation(fields: [accountId], references: [id])
@@ -593,7 +593,7 @@ model Charge {
   id          String   @id @default(cuid())
 
   leaseId     String
-  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Restrict)
 
   type        ChargeType
   status      ChargeStatus @default(PENDING)
@@ -686,10 +686,10 @@ model PaymentAllocation {
   id          String   @id @default(cuid())
 
   paymentId   String
-  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
 
   chargeId    String
-  charge      Charge   @relation(fields: [chargeId], references: [id], onDelete: Cascade)
+  charge      Charge   @relation(fields: [chargeId], references: [id], onDelete: Restrict)
 
   amount      Decimal  @db.Decimal(10, 2)
 
