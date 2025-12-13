@@ -22,13 +22,7 @@ import {
 } from '../ui/dialog';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface AutoPaySettingsProps {
   leaseId: string;
@@ -50,9 +44,7 @@ export default function AutoPaySettings({
   const [showDisableDialog, setShowDisableDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number>(autoPayDay || 1);
-  const [paymentMethodId, setPaymentMethodId] = useState<string>(
-    autoPayPaymentMethodId || ''
-  );
+  const [paymentMethodId, setPaymentMethodId] = useState<string>(autoPayPaymentMethodId || '');
 
   const enableMutation = useMutation({
     mutationFn: async (data: { autoPayDay: number; paymentMethodId: string }) => {
@@ -114,7 +106,9 @@ export default function AutoPaySettings({
   const dayOptions = Array.from({ length: 28 }, (_, i) => i + 1);
 
   const getOrdinalSuffix = (day: number) => {
-    if (day > 3 && day < 21) return 'th';
+    if (day > 3 && day < 21) {
+      return 'th';
+    }
     switch (day % 10) {
       case 1:
         return 'st';
@@ -219,7 +213,8 @@ export default function AutoPaySettings({
           <DialogHeader>
             <DialogTitle>Enable Auto-Pay</DialogTitle>
             <DialogDescription>
-              Set up automatic rent payments for this lease. Payments will be processed on the selected day each month.
+              Set up automatic rent payments for this lease. Payments will be processed on the
+              selected day each month.
             </DialogDescription>
           </DialogHeader>
 
@@ -292,7 +287,8 @@ export default function AutoPaySettings({
           <DialogHeader>
             <DialogTitle>Disable Auto-Pay</DialogTitle>
             <DialogDescription>
-              Are you sure you want to disable auto-pay for this lease? The tenant will need to make payments manually.
+              Are you sure you want to disable auto-pay for this lease? The tenant will need to make
+              payments manually.
             </DialogDescription>
           </DialogHeader>
 
@@ -302,7 +298,8 @@ export default function AutoPaySettings({
               <div className="text-sm text-red-700">
                 <p className="font-medium">Warning</p>
                 <p>
-                  Disabling auto-pay means rent will no longer be automatically collected. Make sure the tenant is aware of this change.
+                  Disabling auto-pay means rent will no longer be automatically collected. Make sure
+                  the tenant is aware of this change.
                 </p>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Store, CheckCircle } from 'lucide-react';
 import AddMarketplaceVendorModal from '../components/marketplace/AddMarketplaceVendorModal';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -12,7 +12,6 @@ export default function VendorRegisterPage() {
 
   const handleSuccess = () => {
     setSubmitted(true);
-    setIsModalOpen(false);
   };
 
   return (
@@ -255,6 +254,7 @@ export default function VendorRegisterPage() {
             setIsModalOpen(false);
           }
         }}
+        onSuccess={handleSuccess}
       />
     </div>
   );

@@ -37,7 +37,9 @@ export const FormMoneyInput = forwardRef<HTMLInputElement, FormMoneyInputProps>(
 
     // Display value - format number as string with 2 decimal places
     const [displayValue, setDisplayValue] = useState(() => {
-      if (value === undefined || value === null || value === '') return '';
+      if (value === undefined || value === null || value === '') {
+        return '';
+      }
       const num = typeof value === 'string' ? parseFloat(value) : value;
       return isNaN(num) ? '' : num.toFixed(2);
     });
@@ -58,10 +60,14 @@ export const FormMoneyInput = forwardRef<HTMLInputElement, FormMoneyInputProps>(
 
         // Prevent multiple decimal points
         const parts = sanitized.split('.');
-        if (parts.length > 2) return;
+        if (parts.length > 2) {
+          return;
+        }
 
         // Limit decimal places to 2
-        if (parts[1] && parts[1].length > 2) return;
+        if (parts[1] && parts[1].length > 2) {
+          return;
+        }
 
         setDisplayValue(sanitized);
 
@@ -74,7 +80,9 @@ export const FormMoneyInput = forwardRef<HTMLInputElement, FormMoneyInputProps>(
     );
 
     const handleBlur = useCallback(() => {
-      if (displayValue === '') return;
+      if (displayValue === '') {
+        return;
+      }
       const numValue = parseFloat(displayValue);
       if (!isNaN(numValue)) {
         setDisplayValue(numValue.toFixed(2));
@@ -83,17 +91,12 @@ export const FormMoneyInput = forwardRef<HTMLInputElement, FormMoneyInputProps>(
 
     return (
       <div className="space-y-1.5">
-        <Label
-          htmlFor={fieldId}
-          className={cn('text-sm font-medium', error && 'text-red-600')}
-        >
+        <Label htmlFor={fieldId} className={cn('text-sm font-medium', error && 'text-red-600')}>
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </Label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-            {currency}
-          </span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">{currency}</span>
           <input
             ref={ref}
             id={fieldId}
