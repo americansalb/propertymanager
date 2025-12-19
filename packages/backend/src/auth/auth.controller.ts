@@ -217,7 +217,13 @@ export class AuthController {
     } catch {
       // Clear invalid cookie
       this.clearRefreshTokenCookie(res);
-      throw new Error('Invalid refresh token');
+      return {
+        success: false,
+        error: {
+          message: 'Invalid or expired refresh token',
+          code: 'INVALID_REFRESH_TOKEN',
+        },
+      };
     }
   }
 
