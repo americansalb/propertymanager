@@ -24,7 +24,7 @@ import {
 } from '@propertymaster/database';
 
 // Security constants
-const MAX_FAILED_ATTEMPTS = 5;
+const MAX_FAILED_ATTEMPTS = 10;
 const LOCKOUT_DURATION_MINUTES = 15;
 const BCRYPT_ROUNDS = 12;
 
