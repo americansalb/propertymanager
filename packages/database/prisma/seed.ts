@@ -33,7 +33,7 @@ async function main() {
   const organizationId = existingAdmin.organizationId;
 
   // Update landlord password and unlock account
-  const landlordPassword = 'bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB';
+  const landlordPassword = 'winner';
   const landlordPasswordHash = await bcrypt.hash(landlordPassword, 12);
   await prisma.user.update({
     where: { id: existingAdmin.id },
