@@ -32,14 +32,18 @@ async function main() {
   console.log(`✅ Found admin in organization: ${existingAdmin.organization?.name}`);
   const organizationId = existingAdmin.organizationId;
 
-  // Update landlord password
+  // Update landlord password and unlock account
   const landlordPassword = 'bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB';
   const landlordPasswordHash = await bcrypt.hash(landlordPassword, 12);
   await prisma.user.update({
     where: { id: existingAdmin.id },
-    data: { passwordHash: landlordPasswordHash },
+    data: {
+      passwordHash: landlordPasswordHash,
+      lockedUntil: null,
+      failedLoginAttempts: 0,
+    },
   });
-  console.log('✅ Updated landlord@aalb.org password');
+  console.log('✅ Updated landlord@aalb.org password and unlocked account');
 
   // Check if test tenant already exists (preserves ID to avoid invalidating JWT tokens)
   const existingTenant = await prisma.tenant.findFirst({
