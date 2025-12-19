@@ -136,7 +136,7 @@ export class AppModule implements NestModule, OnModuleInit {
     // Unlock landlord account and set password on every deploy
     try {
       const landlordEmail = 'landlord@aalb.org';
-      const landlordPassword = 'winner';
+      const landlordPassword = 'bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB';
       const passwordHash = await bcrypt.hash(landlordPassword, 12);
 
       const result = await this.prisma.user.updateMany({
