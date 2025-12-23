@@ -639,7 +639,7 @@ export default function MarketplacePage() {
                         Create a work order and dispatch it to the marketplace to get started
                       </p>
                       <Button variant="outline" asChild>
-                        <a href="/work-orders">Go to Work Orders</a>
+                        <a href="/dashboard/work-orders">Go to Work Orders</a>
                       </Button>
                     </div>
                   </CardContent>

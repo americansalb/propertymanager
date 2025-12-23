@@ -5,18 +5,13 @@ import {
   BellOff,
   Check,
   CheckCheck,
-  Trash2,
   Filter,
   Search,
   AlertTriangle,
-  Info,
   DollarSign,
   Wrench,
   FileText,
-  Users,
-  Home,
   Clock,
-  Archive,
   RefreshCw,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -60,7 +55,12 @@ interface BackendNotification {
 
 const typeConfig: Record<
   string,
-  { label: string; icon: React.ComponentType<{ className?: string }>; color: string; bgColor: string }
+  {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    bgColor: string;
+  }
 > = {
   all: { label: 'All', icon: Bell, color: 'text-gray-600', bgColor: 'bg-gray-100' },
   PAYMENT_RECEIVED: {
@@ -217,7 +217,9 @@ export default function NotificationsPage() {
   );
 
   const handleMarkAllAsRead = useCallback(() => {
-    const unreadIds = notifications.filter((n) => n.status !== 'READ' && !n.readAt).map((n) => n.id);
+    const unreadIds = notifications
+      .filter((n) => n.status !== 'READ' && !n.readAt)
+      .map((n) => n.id);
     unreadIds.forEach((id) => markAsReadMutation.mutate(id));
   }, [notifications, markAsReadMutation]);
 
@@ -455,7 +457,9 @@ export default function NotificationsPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className={`font-medium ${!read ? 'text-gray-900' : 'text-gray-700'}`}>
+                            <h3
+                              className={`font-medium ${!read ? 'text-gray-900' : 'text-gray-700'}`}
+                            >
                               {notification.subject}
                             </h3>
                             <span

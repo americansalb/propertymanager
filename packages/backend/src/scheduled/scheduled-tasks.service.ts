@@ -64,23 +64,32 @@ export class ScheduledTasksService {
         const expiringLeases = await this.getExpiringLeasesForReminder(days);
 
         for (const lease of expiringLeases) {
-          const primaryTenant = lease.tenants.find((t: any) => t.isPrimary);
-          if (!primaryTenant) {
-            continue;
+          try {
+            const primaryTenant = lease.tenants.find((t: any) => t.isPrimary);
+            if (!primaryTenant) {
+              continue;
+            }
+
+            const organizationId = lease.unit.property.organizationId;
+
+            await this.notificationsService.sendLeaseExpiringNotification(
+              primaryTenant.email,
+              `${primaryTenant.firstName} ${primaryTenant.lastName}`,
+              lease.endDate!,
+              days,
+              lease.unit.property.name,
+              lease.unit.unitNumber,
+              lease.id,
+              organizationId,
+            );
+          } catch (error) {
+            this.logger.error({
+              message: 'scheduled.lease_expiration_reminders.item_error',
+              leaseId: lease.id,
+              days,
+              error: (error as Error).message,
+            });
           }
-
-          const organizationId = lease.unit.property.organizationId;
-
-          await this.notificationsService.sendLeaseExpiringNotification(
-            primaryTenant.email,
-            `${primaryTenant.firstName} ${primaryTenant.lastName}`,
-            lease.endDate!,
-            days,
-            lease.unit.property.name,
-            lease.unit.unitNumber,
-            lease.id,
-            organizationId,
-          );
         }
 
         this.logger.log({
@@ -214,37 +223,45 @@ export class ScheduledTasksService {
       });
 
       for (const lease of upcomingAutoPayLeases) {
-        const primaryTenant = lease.tenants[0];
-        if (!primaryTenant) {
-          continue;
+        try {
+          const primaryTenant = lease.tenants[0];
+          if (!primaryTenant) {
+            continue;
+          }
+
+          const outstandingAmount = lease.charges.reduce((sum, charge) => {
+            return sum + (Number(charge.amount) - Number(charge.amountPaid));
+          }, 0);
+
+          if (outstandingAmount <= 0) {
+            continue;
+          }
+
+          const chargeDate = new Date();
+          chargeDate.setDate(lease.autoPayDay!);
+          if (chargeDate < today) {
+            chargeDate.setMonth(chargeDate.getMonth() + 1);
+          }
+
+          const organizationId = lease.unit.property.organizationId;
+
+          await this.notificationsService.sendAutoPayUpcomingNotification(
+            primaryTenant.email,
+            `${primaryTenant.firstName} ${primaryTenant.lastName}`,
+            outstandingAmount,
+            chargeDate,
+            lease.unit.property.name,
+            lease.unit.unitNumber,
+            lease.id,
+            organizationId,
+          );
+        } catch (error) {
+          this.logger.error({
+            message: 'scheduled.autopay_reminders.item_error',
+            leaseId: lease.id,
+            error: (error as Error).message,
+          });
         }
-
-        const outstandingAmount = lease.charges.reduce((sum, charge) => {
-          return sum + (Number(charge.amount) - Number(charge.amountPaid));
-        }, 0);
-
-        if (outstandingAmount <= 0) {
-          continue;
-        }
-
-        const chargeDate = new Date();
-        chargeDate.setDate(lease.autoPayDay!);
-        if (chargeDate < today) {
-          chargeDate.setMonth(chargeDate.getMonth() + 1);
-        }
-
-        const organizationId = lease.unit.property.organizationId;
-
-        await this.notificationsService.sendAutoPayUpcomingNotification(
-          primaryTenant.email,
-          `${primaryTenant.firstName} ${primaryTenant.lastName}`,
-          outstandingAmount,
-          chargeDate,
-          lease.unit.property.name,
-          lease.unit.unitNumber,
-          lease.id,
-          organizationId,
-        );
       }
 
       this.logger.log({
@@ -399,33 +416,42 @@ export class ScheduledTasksService {
       });
 
       for (const charge of upcomingCharges) {
-        // Skip if auto-pay is enabled
-        if (charge.lease.autoPayEnabled) {
-          continue;
+        try {
+          // Skip if auto-pay is enabled
+          if (charge.lease.autoPayEnabled) {
+            continue;
+          }
+
+          const primaryTenant = charge.lease.tenants[0];
+          if (!primaryTenant) {
+            continue;
+          }
+
+          const outstandingAmount = Number(charge.amount) - Number(charge.amountPaid);
+          if (outstandingAmount <= 0) {
+            continue;
+          }
+
+          const organizationId = charge.lease.unit.property.organizationId;
+
+          await this.notificationsService.sendRentDueReminderNotification(
+            primaryTenant.email,
+            `${primaryTenant.firstName} ${primaryTenant.lastName}`,
+            outstandingAmount,
+            charge.dueDate,
+            charge.lease.unit.property.name,
+            charge.lease.unit.unitNumber,
+            charge.id,
+            organizationId,
+          );
+        } catch (error) {
+          this.logger.error({
+            message: 'scheduled.rent_reminders.item_error',
+            chargeId: charge.id,
+            leaseId: charge.leaseId,
+            error: (error as Error).message,
+          });
         }
-
-        const primaryTenant = charge.lease.tenants[0];
-        if (!primaryTenant) {
-          continue;
-        }
-
-        const outstandingAmount = Number(charge.amount) - Number(charge.amountPaid);
-        if (outstandingAmount <= 0) {
-          continue;
-        }
-
-        const organizationId = charge.lease.unit.property.organizationId;
-
-        await this.notificationsService.sendRentDueReminderNotification(
-          primaryTenant.email,
-          `${primaryTenant.firstName} ${primaryTenant.lastName}`,
-          outstandingAmount,
-          charge.dueDate,
-          charge.lease.unit.property.name,
-          charge.lease.unit.unitNumber,
-          charge.id,
-          organizationId,
-        );
       }
 
       this.logger.log({

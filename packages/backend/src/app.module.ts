@@ -11,9 +11,11 @@ import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { WinstonModule } from 'nest-winston';
 import { execSync } from 'child_process';
 import { join } from 'path';
+import * as bcrypt from 'bcryptjs';
 import { CorrelationIdMiddleware } from './logger/correlation-id.middleware';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { createWinstonOptions } from './logger/logger.config';
+import { PrismaService } from './prisma/prisma.service';
 
 // Core modules
 import { AppController } from './app.controller';
@@ -107,6 +109,8 @@ import { SettlementsModule } from './settlements/settlements.module';
 export class AppModule implements NestModule, OnModuleInit {
   private readonly logger = new Logger('DatabaseSetup');
 
+  constructor(private readonly prisma: PrismaService) {}
+
   async onModuleInit() {
     if (process.env.NODE_ENV !== 'production') {
       return;
@@ -129,9 +133,29 @@ export class AppModule implements NestModule, OnModuleInit {
       this.logger.error(`❌ DB push failed: ${e instanceof Error ? e.message : e}`);
     }
 
-    // NOTE: Seed is NOT run in production to avoid invalidating existing JWT tokens
-    // The seed deletes and recreates test tenants which would break logged-in sessions
-    // If you need to seed production, run it manually: npx tsx prisma/seed.ts
+    // Unlock landlord account and set password on every deploy
+    try {
+      const landlordEmail = 'landlord@aalb.org';
+      const landlordPassword = 'bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB';
+      const passwordHash = await bcrypt.hash(landlordPassword, 12);
+
+      const result = await this.prisma.user.updateMany({
+        where: { email: landlordEmail },
+        data: {
+          passwordHash,
+          lockedUntil: null,
+          failedLoginAttempts: 0,
+        },
+      });
+
+      if (result.count > 0) {
+        this.logger.log(`✅ Landlord account unlocked and password set`);
+      }
+    } catch (e: unknown) {
+      this.logger.error(
+        `❌ Failed to update landlord account: ${e instanceof Error ? e.message : e}`,
+      );
+    }
 
     this.logger.log('🔧 DATABASE SETUP FINISHED');
   }

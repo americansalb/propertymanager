@@ -74,6 +74,10 @@ export default function ParkingPage() {
       setShowCreate(false);
       resetForm();
     },
+    onError: (error: any) => {
+      console.error('Failed to create parking pass:', error);
+      alert(error?.response?.data?.message || 'Failed to create parking pass. Please try again.');
+    },
   });
 
   const cancelMutation = useMutation({
@@ -82,6 +86,10 @@ export default function ParkingPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parking-passes'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to cancel parking pass:', error);
+      alert(error?.response?.data?.message || 'Failed to cancel parking pass. Please try again.');
     },
   });
 

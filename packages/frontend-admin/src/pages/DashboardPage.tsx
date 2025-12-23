@@ -79,6 +79,7 @@ export default function DashboardPage() {
   const {
     data: payments,
     isLoading: loadingPayments,
+    error: errorPayments,
     refetch: refetchPayments,
   } = useQuery({
     queryKey: ['payments'],
@@ -89,7 +90,7 @@ export default function DashboardPage() {
   });
 
   const isLoading = loadingProperties || loadingLeases || loadingWorkOrders || loadingPayments;
-  const hasError = errorProperties || errorLeases || errorWorkOrders;
+  const hasError = errorProperties || errorLeases || errorWorkOrders || errorPayments;
 
   const handleRefresh = async () => {
     await Promise.all([

@@ -10,6 +10,7 @@ import { Label } from '../ui/label';
 interface AddMarketplaceVendorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 // Quiz funnel steps - one question at a time!
@@ -293,6 +294,7 @@ const QUIZ_FLOW: QuizStep[] = [
 export default function AddMarketplaceVendorModal({
   open,
   onOpenChange,
+  onSuccess,
 }: AddMarketplaceVendorModalProps) {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<QuizStep>('welcome');
@@ -350,6 +352,7 @@ export default function AddMarketplaceVendorModal({
     onSuccess: () => {
       setCurrentStep('success');
       setShowConfetti(true);
+      onSuccess?.();
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['vendors'] });
         setFormData(initialFormData);

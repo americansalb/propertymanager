@@ -4,7 +4,6 @@ import { Calendar, AlertTriangle, Clock, ArrowRight, RefreshCw } from 'lucide-re
 import api from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { formatDate } from '../../lib/utils';
 
 interface ExpirationSummary {
   expiring30Days: number;
@@ -59,9 +58,15 @@ export default function ExpiringLeasesWidget() {
   };
 
   const getUrgencyColor = (days: number) => {
-    if (days <= 7) return 'bg-red-100 text-red-700 border-red-200';
-    if (days <= 14) return 'bg-orange-100 text-orange-700 border-orange-200';
-    if (days <= 30) return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (days <= 7) {
+      return 'bg-red-100 text-red-700 border-red-200';
+    }
+    if (days <= 14) {
+      return 'bg-orange-100 text-orange-700 border-orange-200';
+    }
+    if (days <= 30) {
+      return 'bg-amber-100 text-amber-700 border-amber-200';
+    }
     return 'bg-blue-100 text-blue-700 border-blue-200';
   };
 
@@ -133,7 +138,9 @@ export default function ExpiringLeasesWidget() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 ml-2">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium border ${getUrgencyColor(daysRemaining)}`}>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full font-medium border ${getUrgencyColor(daysRemaining)}`}
+                        >
                           <Clock className="w-3 h-3 inline mr-1" />
                           {daysRemaining <= 0 ? 'Expired' : `${daysRemaining}d`}
                         </span>

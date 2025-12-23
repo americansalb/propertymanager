@@ -66,6 +66,10 @@ export function FeedbackForm({
       setSubmitted(true);
       onSuccess?.();
     },
+    onError: (error: any) => {
+      console.error('Failed to submit feedback:', error);
+      alert(error?.response?.data?.message || 'Failed to submit feedback. Please try again.');
+    },
   });
 
   const followUpMutation = useMutation({
@@ -75,6 +79,10 @@ export function FeedbackForm({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance-requests'] });
       setShowFollowUp(false);
+    },
+    onError: (error: any) => {
+      console.error('Failed to request follow-up:', error);
+      alert(error?.response?.data?.message || 'Failed to request follow-up. Please try again.');
     },
   });
 

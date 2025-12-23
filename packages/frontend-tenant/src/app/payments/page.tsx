@@ -123,6 +123,12 @@ export default function PaymentsPage() {
       queryClient.invalidateQueries({ queryKey: ['autopay-settings'] });
       setAutoPayDialogOpen(false);
     },
+    onError: (error: any) => {
+      console.error('Failed to update auto-pay settings:', error);
+      alert(
+        error?.response?.data?.message || 'Failed to update auto-pay settings. Please try again.',
+      );
+    },
   });
 
   const totalDue = outstandingData?.total || 0;

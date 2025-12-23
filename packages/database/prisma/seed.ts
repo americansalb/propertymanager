@@ -32,6 +32,19 @@ async function main() {
   console.log(`✅ Found admin in organization: ${existingAdmin.organization?.name}`);
   const organizationId = existingAdmin.organizationId;
 
+  // Update landlord password and unlock account
+  const landlordPassword = 'bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB';
+  const landlordPasswordHash = await bcrypt.hash(landlordPassword, 12);
+  await prisma.user.update({
+    where: { id: existingAdmin.id },
+    data: {
+      passwordHash: landlordPasswordHash,
+      lockedUntil: null,
+      failedLoginAttempts: 0,
+    },
+  });
+  console.log('✅ Updated landlord@aalb.org password and unlocked account');
+
   // Check if test tenant already exists (preserves ID to avoid invalidating JWT tokens)
   const existingTenant = await prisma.tenant.findFirst({
     where: { email: 'tenant@aalb.org' }
@@ -82,7 +95,9 @@ async function main() {
 
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📝 Login credentials:');
-  console.log('   Admin Portal: landlord@aalb.org (your existing account)');
+  console.log('   Admin Portal:');
+  console.log('     Email: landlord@aalb.org');
+  console.log('     Password: bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB');
   console.log('\n   Tenant Portal:');
   console.log('     Email: tenant@aalb.org');
   console.log('     Password: winner');

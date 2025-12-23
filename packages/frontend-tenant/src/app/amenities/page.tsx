@@ -106,6 +106,10 @@ export default function AmenitiesPage() {
       setGuestCount(1);
       setNotes('');
     },
+    onError: (error: any) => {
+      console.error('Failed to create reservation:', error);
+      alert(error?.response?.data?.message || 'Failed to create reservation. Please try again.');
+    },
   });
 
   const cancelReservationMutation = useMutation({
@@ -116,6 +120,10 @@ export default function AmenitiesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['amenity-reservations'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to cancel reservation:', error);
+      alert(error?.response?.data?.message || 'Failed to cancel reservation. Please try again.');
     },
   });
 

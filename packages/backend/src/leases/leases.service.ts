@@ -597,26 +597,29 @@ export class LeasesService {
       );
     }
 
-    // If this tenant is marked as primary, unset other primaries
-    if (dto.isPrimary) {
-      await this.prisma.tenant.updateMany({
-        where: { leaseId },
-        data: { isPrimary: false },
-      });
-    }
+    // Use transaction to ensure primary tenant state consistency
+    const tenant = await this.prisma.$transaction(async (tx) => {
+      // If this tenant is marked as primary, unset other primaries
+      if (dto.isPrimary) {
+        await tx.tenant.updateMany({
+          where: { leaseId },
+          data: { isPrimary: false },
+        });
+      }
 
-    const tenant = await this.prisma.tenant.create({
-      data: {
-        leaseId,
-        organizationId,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        email: normalizedEmail,
-        phone: dto.phone,
-        isPrimary: dto.isPrimary || false,
-        emergencyContactName: dto.emergencyContactName,
-        emergencyContactPhone: dto.emergencyContactPhone,
-      },
+      return tx.tenant.create({
+        data: {
+          leaseId,
+          organizationId,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          email: normalizedEmail,
+          phone: dto.phone,
+          isPrimary: dto.isPrimary || false,
+          emergencyContactName: dto.emergencyContactName,
+          emergencyContactPhone: dto.emergencyContactPhone,
+        },
+      });
     });
 
     this.logger.log({

@@ -511,51 +511,54 @@ export class PaymentsService {
     allocations: { chargeId: string; amount: number }[],
     organizationId: string,
   ) {
-    for (const allocation of allocations) {
-      // Verify charge exists and get current balance
-      const charge = await this.prisma.charge.findFirst({
-        where: {
-          id: allocation.chargeId,
-          lease: {
-            unit: {
-              property: {
-                organizationId,
+    // Use transaction to ensure all allocations are atomic
+    await this.prisma.$transaction(async (tx) => {
+      for (const allocation of allocations) {
+        // Verify charge exists and get current balance
+        const charge = await tx.charge.findFirst({
+          where: {
+            id: allocation.chargeId,
+            lease: {
+              unit: {
+                property: {
+                  organizationId,
+                },
               },
             },
           },
-        },
-      });
+        });
 
-      if (!charge) {
-        throw new BadRequestException(`Charge ${allocation.chargeId} not found`);
+        if (!charge) {
+          throw new BadRequestException(`Charge ${allocation.chargeId} not found`);
+        }
+
+        const chargeBalance = Number(charge.amount) - Number(charge.amountPaid);
+        if (allocation.amount > chargeBalance) {
+          throw new BadRequestException(
+            `Allocation amount ${allocation.amount} exceeds charge balance ${chargeBalance}`,
+          );
+        }
+
+        // Create allocation
+        await tx.paymentAllocation.create({
+          data: {
+            paymentId,
+            chargeId: allocation.chargeId,
+            amount: allocation.amount,
+          },
+        });
+
+        // Update charge
+        const newAmountPaid = Number(charge.amountPaid) + allocation.amount;
+        await tx.charge.update({
+          where: { id: allocation.chargeId },
+          data: {
+            amountPaid: newAmountPaid,
+            status: newAmountPaid >= Number(charge.amount) ? 'PAID' : 'PARTIALLY_PAID',
+          },
+        });
       }
-
-      const chargeBalance = Number(charge.amount) - Number(charge.amountPaid);
-      if (allocation.amount > chargeBalance) {
-        throw new BadRequestException(
-          `Allocation amount ${allocation.amount} exceeds charge balance ${chargeBalance}`,
-        );
-      }
-
-      // Create allocation
-      await this.prisma.paymentAllocation.create({
-        data: {
-          paymentId,
-          chargeId: allocation.chargeId,
-          amount: allocation.amount,
-        },
-      });
-
-      // Update charge
-      const newAmountPaid = Number(charge.amountPaid) + allocation.amount;
-      await this.prisma.charge.update({
-        where: { id: allocation.chargeId },
-        data: {
-          amountPaid: newAmountPaid,
-          status: newAmountPaid >= Number(charge.amount) ? 'PAID' : 'PARTIALLY_PAID',
-        },
-      });
-    }
+    });
   }
 
   /**
@@ -585,35 +588,38 @@ export class PaymentsService {
 
     let remainingAmount = amount;
 
-    for (const charge of outstandingCharges) {
-      if (remainingAmount <= 0) {
-        break;
+    // Use transaction to ensure all allocations are atomic
+    await this.prisma.$transaction(async (tx) => {
+      for (const charge of outstandingCharges) {
+        if (remainingAmount <= 0) {
+          break;
+        }
+
+        const chargeBalance = Number(charge.amount) - Number(charge.amountPaid);
+        const allocationAmount = Math.min(remainingAmount, chargeBalance);
+
+        // Create allocation
+        await tx.paymentAllocation.create({
+          data: {
+            paymentId,
+            chargeId: charge.id,
+            amount: allocationAmount,
+          },
+        });
+
+        // Update charge
+        const newAmountPaid = Number(charge.amountPaid) + allocationAmount;
+        await tx.charge.update({
+          where: { id: charge.id },
+          data: {
+            amountPaid: newAmountPaid,
+            status: newAmountPaid >= Number(charge.amount) ? 'PAID' : 'PARTIALLY_PAID',
+          },
+        });
+
+        remainingAmount -= allocationAmount;
       }
-
-      const chargeBalance = Number(charge.amount) - Number(charge.amountPaid);
-      const allocationAmount = Math.min(remainingAmount, chargeBalance);
-
-      // Create allocation
-      await this.prisma.paymentAllocation.create({
-        data: {
-          paymentId,
-          chargeId: charge.id,
-          amount: allocationAmount,
-        },
-      });
-
-      // Update charge
-      const newAmountPaid = Number(charge.amountPaid) + allocationAmount;
-      await this.prisma.charge.update({
-        where: { id: charge.id },
-        data: {
-          amountPaid: newAmountPaid,
-          status: newAmountPaid >= Number(charge.amount) ? 'PAID' : 'PARTIALLY_PAID',
-        },
-      });
-
-      remainingAmount -= allocationAmount;
-    }
+    });
 
     // Log any unapplied amount as credit
     if (remainingAmount > 0) {
@@ -639,45 +645,48 @@ export class PaymentsService {
 
     let remainingRefund = refundAmount;
 
-    for (const allocation of allocations) {
-      if (remainingRefund <= 0) {
-        break;
-      }
+    // Use transaction to ensure all reversals are atomic
+    await this.prisma.$transaction(async (tx) => {
+      for (const allocation of allocations) {
+        if (remainingRefund <= 0) {
+          break;
+        }
 
-      const reverseAmount = Math.min(remainingRefund, Number(allocation.amount));
+        const reverseAmount = Math.min(remainingRefund, Number(allocation.amount));
 
-      // Update charge
-      const newAmountPaid = Math.max(0, Number(allocation.charge.amountPaid) - reverseAmount);
-      const chargeAmount = Number(allocation.charge.amount);
+        // Update charge
+        const newAmountPaid = Math.max(0, Number(allocation.charge.amountPaid) - reverseAmount);
+        const chargeAmount = Number(allocation.charge.amount);
 
-      await this.prisma.charge.update({
-        where: { id: allocation.chargeId },
-        data: {
-          amountPaid: newAmountPaid,
-          status:
-            newAmountPaid === 0
-              ? 'POSTED'
-              : newAmountPaid >= chargeAmount
-                ? 'PAID'
-                : 'PARTIALLY_PAID',
-        },
-      });
-
-      // Update or delete allocation
-      if (reverseAmount >= Number(allocation.amount)) {
-        await this.prisma.paymentAllocation.delete({
-          where: { id: allocation.id },
-        });
-      } else {
-        await this.prisma.paymentAllocation.update({
-          where: { id: allocation.id },
+        await tx.charge.update({
+          where: { id: allocation.chargeId },
           data: {
-            amount: Number(allocation.amount) - reverseAmount,
+            amountPaid: newAmountPaid,
+            status:
+              newAmountPaid === 0
+                ? 'POSTED'
+                : newAmountPaid >= chargeAmount
+                  ? 'PAID'
+                  : 'PARTIALLY_PAID',
           },
         });
-      }
 
-      remainingRefund -= reverseAmount;
-    }
+        // Update or delete allocation
+        if (reverseAmount >= Number(allocation.amount)) {
+          await tx.paymentAllocation.delete({
+            where: { id: allocation.id },
+          });
+        } else {
+          await tx.paymentAllocation.update({
+            where: { id: allocation.id },
+            data: {
+              amount: Number(allocation.amount) - reverseAmount,
+            },
+          });
+        }
+
+        remainingRefund -= reverseAmount;
+      }
+    });
   }
 }
