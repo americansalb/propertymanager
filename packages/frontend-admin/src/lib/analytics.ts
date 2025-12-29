@@ -32,9 +32,8 @@ export async function trackEvent(
       }),
       keepalive: true, // Helpful for beacon-like semantics
     });
-  } catch (error) {
+  } catch {
     // Swallow analytics errors – never block UX
-    console.debug('[Analytics] Failed to track event:', name, error);
   }
 }
 

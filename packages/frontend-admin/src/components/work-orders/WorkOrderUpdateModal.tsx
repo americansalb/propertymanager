@@ -139,7 +139,6 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
       setError(
         '⚠️ No work order selected. Please close this modal and select a work order from the list.',
       );
-      console.error('[WorkOrderUpdateModal] Attempted submit without workOrder');
       return;
     }
 
@@ -147,7 +146,6 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
       setError(
         '⚠️ Work order ID is missing. Please close this modal and reopen from the work orders list.',
       );
-      console.error('[WorkOrderUpdateModal] Attempted submit without workOrder.id:', { workOrder });
       return;
     }
 
@@ -155,10 +153,6 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
       setError(
         '⚠️ Work order ID is invalid. Please close this modal and reopen from the work orders list.',
       );
-      console.error('[WorkOrderUpdateModal] Invalid workOrder.id type or length:', {
-        id: workOrder.id,
-        type: typeof workOrder.id,
-      });
       return;
     }
 
@@ -257,8 +251,6 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
       setTouched({});
       onOpenChange(false);
     } catch (error: unknown) {
-      console.error('[WorkOrderUpdateModal] Failed to update work order:', error);
-
       // Extract and format error message from NestJS
       let errorMessage = 'Failed to update work order. Please try again.';
 
@@ -288,10 +280,6 @@ export function WorkOrderUpdateModal({ workOrder, open, onOpenChange }: WorkOrde
 
   // Don't render if work order is invalid
   if (!isValidWorkOrder) {
-    console.warn('[WorkOrderUpdateModal] Attempted to render with invalid work order:', {
-      workOrder,
-      open,
-    });
     return null;
   }
 

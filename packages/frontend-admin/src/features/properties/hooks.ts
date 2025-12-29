@@ -80,16 +80,6 @@ export function useUpdateProperty() {
         description: apiError.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
-
-      // Log correlation ID for debugging
-      if (apiError.correlationId) {
-        console.error('[Property Update Failed]', {
-          correlationId: apiError.correlationId,
-          statusCode: apiError.statusCode,
-          code: apiError.code,
-          errors: apiError.errors,
-        });
-      }
     },
   });
 }

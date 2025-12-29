@@ -338,9 +338,9 @@ export default function ProfilePage() {
                     <p className="text-sm text-gray-500">Add an extra layer of security</p>
                   </div>
                 </div>
-                <Button variant="outline" disabled>
+                <span className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-600">
                   Coming Soon
-                </Button>
+                </span>
               </div>
 
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">

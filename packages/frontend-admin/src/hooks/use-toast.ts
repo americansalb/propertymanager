@@ -22,11 +22,13 @@ export function useToast() {
     const id = Math.random().toString(36).substr(2, 9);
     const newToast: Toast = { id, ...options };
 
-    // For now, just log to console since we don't have a toast UI
-    if (options.variant === 'destructive') {
-      console.error(`[Toast] ${options.title}`, options.description || '');
-    } else {
-      console.log(`[Toast] ${options.title}`, options.description || '');
+    // Log toasts in development only (no toast UI yet)
+    if (import.meta.env.DEV) {
+      if (options.variant === 'destructive') {
+        console.error(`[Toast] ${options.title}`, options.description || '');
+      } else {
+        console.log(`[Toast] ${options.title}`, options.description || '');
+      }
     }
 
     setToasts((prev) => [...prev, newToast]);

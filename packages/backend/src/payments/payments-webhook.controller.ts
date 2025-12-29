@@ -80,8 +80,17 @@ export class PaymentsWebhookController {
   ) {
     // Get raw body for signature verification
     const rawBody = req.rawBody?.toString() || JSON.stringify(event);
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
-    // Verify webhook signature
+    // In production, always require signature if webhook secret is configured
+    if (isProduction && this.webhookSecret && !signature) {
+      this.logger.warn(
+        `Webhook rejected: Missing signature for transaction ${event.transactionId}`,
+      );
+      throw new UnauthorizedException('Webhook signature required');
+    }
+
+    // Verify webhook signature if provided
     if (signature && !this.verifySignature(rawBody, signature)) {
       this.logger.warn(`Invalid webhook signature for transaction ${event.transactionId}`);
       throw new UnauthorizedException('Invalid webhook signature');
