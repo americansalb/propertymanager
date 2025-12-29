@@ -27,7 +27,6 @@
     "@nestjs/throttler": "^5.1.1",
     "@propertymaster/database": "workspace:*",
     "@propertymaster/shared": "workspace:*",
-    "@sendgrid/mail": "^8.1.0",
     "@sentry/node": "^10.26.0",
     "@sentry/profiling-node": "^10.26.0",
     "@types/bcryptjs": "^2.4.6",
