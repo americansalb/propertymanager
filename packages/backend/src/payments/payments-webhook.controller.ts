@@ -1,6 +1,19 @@
-import { Controller, Post, Body, HttpCode, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  Logger,
+  Headers,
+  UnauthorizedException,
+  RawBodyRequest,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { type Request } from 'express';
+import * as crypto from 'crypto';
 
 interface HelcimWebhookEvent {
   event: string;
@@ -16,14 +29,72 @@ interface HelcimWebhookEvent {
 @Controller('payments/webhook')
 export class PaymentsWebhookController {
   private readonly logger = new Logger(PaymentsWebhookController.name);
+  private readonly webhookSecret: string;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+  ) {
+    this.webhookSecret = this.configService.get<string>('HELCIM_WEBHOOK_SECRET') || '';
+    if (!this.webhookSecret) {
+      this.logger.warn('HELCIM_WEBHOOK_SECRET not configured - webhook verification disabled');
+    }
+  }
+
+  /**
+   * Verify Helcim webhook signature using HMAC-SHA256
+   */
+  private verifySignature(payload: string, signature: string): boolean {
+    if (!this.webhookSecret) {
+      // In production without a secret, reject all webhooks for security
+      if (this.configService.get<string>('NODE_ENV') === 'production') {
+        this.logger.error('Webhook rejected: HELCIM_WEBHOOK_SECRET not configured in production');
+        return false;
+      }
+      // In development, log warning but allow (for testing)
+      this.logger.warn('Webhook signature verification skipped - no secret configured');
+      return true;
+    }
+
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', this.webhookSecret)
+        .update(payload)
+        .digest('hex');
+
+      // Use timing-safe comparison to prevent timing attacks
+      return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+    } catch (error) {
+      this.logger.error('Signature verification error', error);
+      return false;
+    }
+  }
 
   @Post('helcim')
   @HttpCode(200)
   @ApiExcludeEndpoint()
-  async handleHelcimWebhook(@Body() event: HelcimWebhookEvent) {
-    this.logger.log(`Helcim webhook received: ${event.event} - Transaction ${event.transactionId}`);
+  async handleHelcimWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('x-helcim-signature') signature: string,
+    @Body() event: HelcimWebhookEvent,
+  ) {
+    // Get raw body for signature verification
+    const rawBody = req.rawBody?.toString() || JSON.stringify(event);
+
+    // Verify webhook signature
+    if (signature && !this.verifySignature(rawBody, signature)) {
+      this.logger.warn(`Invalid webhook signature for transaction ${event.transactionId}`);
+      throw new UnauthorizedException('Invalid webhook signature');
+    }
+
+    // Log with security context
+    this.logger.log({
+      message: 'Helcim webhook received',
+      event: event.event,
+      transactionId: event.transactionId,
+      signatureProvided: !!signature,
+      signatureValid: !!signature,
+    });
 
     // Find the payment by Helcim transaction ID
     const payment = await this.prisma.payment.findFirst({

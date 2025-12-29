@@ -133,28 +133,31 @@ export class AppModule implements NestModule, OnModuleInit {
       this.logger.error(`❌ DB push failed: ${e instanceof Error ? e.message : e}`);
     }
 
-    // Unlock landlord account and set password on every deploy
-    try {
-      const landlordEmail = 'landlord@aalb.org';
-      const landlordPassword = 'bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB';
-      const passwordHash = await bcrypt.hash(landlordPassword, 12);
+    // Unlock admin account and set password on deploy (if configured via env vars)
+    const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
+    const adminPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
 
-      const result = await this.prisma.user.updateMany({
-        where: { email: landlordEmail },
-        data: {
-          passwordHash,
-          lockedUntil: null,
-          failedLoginAttempts: 0,
-        },
-      });
+    if (adminEmail && adminPassword) {
+      try {
+        const passwordHash = await bcrypt.hash(adminPassword, 12);
 
-      if (result.count > 0) {
-        this.logger.log(`✅ Landlord account unlocked and password set`);
+        const result = await this.prisma.user.updateMany({
+          where: { email: adminEmail },
+          data: {
+            passwordHash,
+            lockedUntil: null,
+            failedLoginAttempts: 0,
+          },
+        });
+
+        if (result.count > 0) {
+          this.logger.log(`✅ Admin account (${adminEmail}) unlocked and password set`);
+        }
+      } catch (e: unknown) {
+        this.logger.error(
+          `❌ Failed to update admin account: ${e instanceof Error ? e.message : e}`,
+        );
       }
-    } catch (e: unknown) {
-      this.logger.error(
-        `❌ Failed to update landlord account: ${e instanceof Error ? e.message : e}`,
-      );
     }
 
     this.logger.log('🔧 DATABASE SETUP FINISHED');
