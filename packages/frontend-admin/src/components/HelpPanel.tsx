@@ -102,56 +102,56 @@ const helpArticles: HelpArticle[] = [
     title: 'Getting Started with PropertyMaster',
     description: 'Learn the basics of property management',
     category: 'Getting Started',
-    link: '#',
+    link: '/dashboard',
   },
   {
     id: '2',
     title: 'Managing Properties',
     description: 'Add, edit, and organize your properties',
     category: 'Properties',
-    link: '#',
+    link: '/properties',
   },
   {
     id: '3',
     title: 'Creating and Managing Leases',
     description: 'Set up lease agreements and track renewals',
     category: 'Leases',
-    link: '#',
+    link: '/leases',
   },
   {
     id: '4',
     title: 'Work Order Management',
     description: 'Handle maintenance requests efficiently',
     category: 'Work Orders',
-    link: '#',
+    link: '/work-orders',
   },
   {
     id: '5',
     title: 'Financial Tracking & Reports',
     description: 'Monitor income, expenses, and generate reports',
     category: 'Financial',
-    link: '#',
+    link: '/financial',
   },
   {
     id: '6',
     title: 'Vendor Management',
     description: 'Manage contractors and service providers',
     category: 'Vendors',
-    link: '#',
+    link: '/vendors',
   },
   {
     id: '7',
     title: 'Document Organization',
     description: 'Store and organize property documents',
     category: 'Documents',
-    link: '#',
+    link: '/documents',
   },
   {
     id: '8',
     title: 'Calendar & Scheduling',
     description: 'Schedule inspections, renewals, and tasks',
     category: 'Calendar',
-    link: '#',
+    link: '/calendar',
   },
 ];
 
@@ -466,7 +466,7 @@ export default function HelpPanel() {
                 <h3 className="font-medium text-gray-900 mb-3">Need More Help?</h3>
                 <div className="space-y-2">
                   <a
-                    href="#"
+                    href="mailto:support@aalb.org?subject=PropertyMaster%20Support%20Request"
                     className="flex items-center gap-3 p-3 bg-white rounded-lg hover:shadow-sm transition-shadow"
                   >
                     <MessageCircle className="w-5 h-5 text-primary" />
@@ -476,17 +476,13 @@ export default function HelpPanel() {
                     </div>
                     <ExternalLink className="w-4 h-4 text-gray-400" />
                   </a>
-                  <a
-                    href="#"
-                    className="flex items-center gap-3 p-3 bg-white rounded-lg hover:shadow-sm transition-shadow"
-                  >
+                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg opacity-60 cursor-not-allowed">
                     <Video className="w-5 h-5 text-primary" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">Video Tutorials</p>
-                      <p className="text-xs text-gray-500">Learn with step-by-step videos</p>
+                      <p className="text-xs text-gray-500">Coming soon</p>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400" />
-                  </a>
+                  </div>
                 </div>
               </div>
             </div>
