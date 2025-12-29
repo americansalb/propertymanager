@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import {
   FileText,
   Home,
@@ -16,6 +17,7 @@ import {
   Clock,
   AlertCircle,
   Loader2,
+  CheckCircle,
 } from 'lucide-react';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
@@ -80,6 +82,9 @@ const UNIT_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function LeasePage() {
+  const [downloading, setDownloading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+
   const {
     data: lease,
     isLoading,
@@ -91,6 +96,22 @@ export default function LeasePage() {
       return response.data.data as LeaseDetails;
     },
   });
+
+  const handleDownload = async () => {
+    if (!lease?.documentUrl) {
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      // Open the document URL in a new tab for download
+      window.open(lease.documentUrl, '_blank');
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 3000);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -129,9 +150,15 @@ export default function LeasePage() {
             <p className="text-gray-600">View your lease details and documents</p>
           </div>
           {lease.documentUrl && (
-            <Button variant="outline">
-              <Download className="w-4 h-4 mr-2" />
-              Download Lease
+            <Button variant="outline" onClick={handleDownload} disabled={downloading}>
+              {downloading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : downloadSuccess ? (
+                <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              {downloadSuccess ? 'Downloaded!' : 'Download Lease'}
             </Button>
           )}
         </div>
@@ -364,8 +391,12 @@ export default function LeasePage() {
                     <p className="text-sm text-gray-500">PDF Document</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
+                <Button variant="outline" size="sm" onClick={handleDownload} disabled={downloading}>
+                  {downloading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
                   Download
                 </Button>
               </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import {
@@ -12,6 +12,7 @@ import {
   CheckCircle,
   MapPin,
   Clock,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/services/api';
@@ -56,6 +57,8 @@ const PRIORITIES = [
 export default function NewMaintenanceRequestPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photoPreview, setPhotoPreview] = useState<{ file: File; preview: string }[]>([]);
   const [formData, setFormData] = useState({
     category: '',
     priority: 'MEDIUM',
@@ -66,6 +69,24 @@ export default function NewMaintenanceRequestPage() {
     preferredTimes: '',
     photos: [] as string[],
   });
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const newPhotos = files.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setPhotoPreview((prev) => [...prev, ...newPhotos].slice(0, 5)); // Max 5 photos
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotoPreview((prev) => {
+      const newPhotos = [...prev];
+      URL.revokeObjectURL(newPhotos[index].preview);
+      newPhotos.splice(index, 1);
+      return newPhotos;
+    });
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -340,16 +361,49 @@ export default function NewMaintenanceRequestPage() {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Camera className="w-4 h-4" />
-                    Photos (optional)
+                    Photos (optional, max 5)
                   </Label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoSelect}
+                    className="hidden"
+                  />
+                  {photoPreview.length > 0 && (
+                    <div className="grid grid-cols-3 gap-3 mb-3">
+                      {photoPreview.map((photo, index) => (
+                        <div key={index} className="relative aspect-square">
+                          <img
+                            src={photo.preview}
+                            alt={`Photo ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(index)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div
+                    className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                     <p className="text-sm text-gray-500 mb-2">
-                      Drag and drop photos here, or click to select
+                      {photoPreview.length > 0
+                        ? `${photoPreview.length}/5 photos selected. Click to add more.`
+                        : 'Click to select photos or drag and drop'}
                     </p>
                     <Button variant="outline" size="sm" type="button">
                       <Camera className="w-4 h-4 mr-2" />
-                      Upload Photos
+                      {photoPreview.length > 0 ? 'Add More Photos' : 'Upload Photos'}
                     </Button>
                   </div>
                 </div>

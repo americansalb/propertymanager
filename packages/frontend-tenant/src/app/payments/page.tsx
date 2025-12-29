@@ -124,7 +124,6 @@ export default function PaymentsPage() {
       setAutoPayDialogOpen(false);
     },
     onError: (error: any) => {
-      console.error('Failed to update auto-pay settings:', error);
       alert(
         error?.response?.data?.message || 'Failed to update auto-pay settings. Please try again.',
       );
@@ -570,8 +569,8 @@ export default function PaymentsPage() {
                     setPaymentAmount('');
                   }, 2000);
                 }}
-                onError={(error) => {
-                  console.error('Payment error:', error);
+                onError={() => {
+                  // Error is displayed by HelcimPaymentForm
                 }}
               />
             )}

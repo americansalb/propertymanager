@@ -94,8 +94,8 @@ export default function DocumentsPage() {
 
       // Open in new tab or trigger download
       window.open(url, '_blank');
-    } catch (err) {
-      console.error('Download failed:', err);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Failed to download document. Please try again.');
     } finally {
       setDownloading(null);
     }
