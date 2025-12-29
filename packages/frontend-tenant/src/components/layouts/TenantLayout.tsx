@@ -83,7 +83,7 @@ const phase2Navigation = [
 export default function TenantLayout({ children }: TenantLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { tenant, isAuthenticated, logout } = useAuthStore();
+  const { tenant, isAuthenticated, logout, hasHydrated } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fetch portal configuration to determine which features to show
@@ -143,17 +143,19 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Wait for hydration before redirecting to prevent loops
+    if (hasHydrated && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [hasHydrated, isAuthenticated, router]);
 
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
-  if (!isAuthenticated) {
+  // Show nothing while hydrating or if not authenticated
+  if (!hasHydrated || !isAuthenticated) {
     return null;
   }
 

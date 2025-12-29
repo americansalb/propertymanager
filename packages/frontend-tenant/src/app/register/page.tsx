@@ -33,8 +33,15 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
-  const { validateInvitation, register, isAuthenticated, isLoading, error, clearError } =
-    useAuthStore();
+  const {
+    validateInvitation,
+    register,
+    isAuthenticated,
+    isLoading,
+    error,
+    clearError,
+    hasHydrated,
+  } = useAuthStore();
 
   const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
   const [validating, setValidating] = useState(true);
@@ -56,10 +63,11 @@ function RegisterForm() {
   ];
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Wait for hydration before redirecting
+    if (hasHydrated && isAuthenticated) {
       router.push('/dashboard');
     }
-  }, [isAuthenticated, router]);
+  }, [hasHydrated, isAuthenticated, router]);
 
   useEffect(() => {
     return () => clearError();
