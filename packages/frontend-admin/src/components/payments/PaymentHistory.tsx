@@ -185,8 +185,8 @@ export default function PaymentHistory({
         printWindow.document.close();
         printWindow.print();
       }
-    } catch (error) {
-      console.error('Failed to download receipt:', error);
+    } catch {
+      alert('Failed to download receipt. Please try again.');
     }
   };
 

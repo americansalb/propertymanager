@@ -29,6 +29,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger,
+    rawBody: true, // Preserve raw body for webhook signature verification
   });
 
   // Security middleware - Helmet

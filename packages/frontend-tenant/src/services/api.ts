@@ -6,12 +6,14 @@ const getApiBaseUrl = () => {
     // In browser, use same origin (works for both dev and prod)
     return `${window.location.origin}/api/v1`;
   }
-  // Fallback for SSR/build time
+  // Fallback for SSR/build time - only used during Next.js build
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (envUrl) {
     return `${envUrl.replace(/\/$/, '')}/api/v1`;
   }
-  return 'http://localhost:3001/api/v1';
+  // This fallback only affects build-time rendering, not runtime
+  // Runtime always uses window.location.origin above
+  return '/api/v1';
 };
 
 const api = axios.create({

@@ -227,8 +227,6 @@ export function WorkOrderCreateModal({
       setTouched({});
       onOpenChange(false);
     } catch (error: unknown) {
-      console.error('Failed to create work order:', error);
-
       let errorMessage = 'Failed to create work order. Please try again.';
 
       if (error?.response?.data?.message) {

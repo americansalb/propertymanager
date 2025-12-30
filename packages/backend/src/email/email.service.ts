@@ -26,13 +26,11 @@ export interface EmailResult {
   error?: string;
 }
 
-type EmailProvider = 'gmail' | 'sendgrid' | 'smtp' | 'none';
+type EmailProvider = 'gmail' | 'smtp' | 'none';
 
 @Injectable()
 export class EmailService {
   private transporter: Transporter | null = null;
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-  private sendgridClient: typeof import('@sendgrid/mail') | null = null;
   private gmailAuth: Auth.OAuth2Client | null = null;
   private readonly fromAddress: string;
   private readonly fromName: string;
@@ -51,48 +49,24 @@ export class EmailService {
     this.fromName = this.configService.get<string>('EMAIL_FROM_NAME') || 'PropertyMaster';
     this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
-    // Determine email provider (priority: Gmail API > SendGrid > SMTP)
+    // Determine email provider (priority: SMTP/SES > Gmail API)
+    const smtpHost = this.configService.get<string>('SMTP_HOST');
     const gmailClientId = this.configService.get<string>('GMAIL_CLIENT_ID');
     const gmailClientSecret = this.configService.get<string>('GMAIL_CLIENT_SECRET');
     const gmailRefreshToken = this.configService.get<string>('GMAIL_REFRESH_TOKEN');
-    const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
-    const smtpHost = this.configService.get<string>('SMTP_HOST');
 
-    if (gmailClientId && gmailClientSecret && gmailRefreshToken) {
-      this.provider = 'gmail';
-      this.initializeGmail(gmailClientId, gmailClientSecret, gmailRefreshToken);
-    } else if (sendgridApiKey) {
-      this.provider = 'sendgrid';
-      this.initializeSendGrid(sendgridApiKey);
-    } else if (smtpHost) {
+    if (smtpHost) {
       this.provider = 'smtp';
       this.initializeSmtp();
+    } else if (gmailClientId && gmailClientSecret && gmailRefreshToken) {
+      this.provider = 'gmail';
+      this.initializeGmail(gmailClientId, gmailClientSecret, gmailRefreshToken);
     } else {
       this.provider = 'none';
       this.logger.warn({
         message: 'email.no_provider_configured',
-        hint: 'Set GMAIL_CLIENT_ID/SECRET/REFRESH_TOKEN, SENDGRID_API_KEY, or SMTP_HOST to enable email sending',
+        hint: 'Set SMTP_HOST (for Amazon SES) or GMAIL credentials to enable email sending',
       });
-    }
-  }
-
-  private async initializeSendGrid(apiKey: string): Promise<void> {
-    try {
-      // Dynamic import to avoid issues if package is not installed
-      const sgMail = await import('@sendgrid/mail');
-      sgMail.default.setApiKey(apiKey);
-      this.sendgridClient = sgMail.default;
-
-      this.logger.log({
-        message: 'email.sendgrid_initialized',
-        from: this.fromAddress,
-      });
-    } catch (error) {
-      this.logger.error({
-        message: 'email.sendgrid_init_failed',
-        error: (error as Error).message,
-      });
-      this.sendgridClient = null;
     }
   }
 
@@ -199,8 +173,6 @@ export class EmailService {
 
       if (this.provider === 'gmail' && this.gmailAuth) {
         result = await this.sendViaGmail(options);
-      } else if (this.provider === 'sendgrid' && this.sendgridClient) {
-        result = await this.sendViaSendGrid(options);
       } else if (this.provider === 'smtp' && this.transporter) {
         result = await this.sendViaSmtp(options);
       } else {
@@ -242,39 +214,6 @@ export class EmailService {
       });
       return { success: false, error: errorMessage };
     }
-  }
-
-  private async sendViaSendGrid(options: SendEmailOptions): Promise<EmailResult> {
-    if (!this.sendgridClient) {
-      return { success: false, error: 'SendGrid client not initialized' };
-    }
-
-    const msg = {
-      to: options.to,
-      from: {
-        email: this.fromAddress,
-        name: this.fromName,
-      },
-      subject: options.subject,
-      text: options.text,
-      html: options.html,
-      replyTo: options.replyTo,
-      cc: options.cc,
-      bcc: options.bcc,
-      attachments: options.attachments?.map((att) => ({
-        filename: att.filename,
-        content: typeof att.content === 'string' ? att.content : att.content.toString('base64'),
-        type: att.contentType,
-        disposition: 'attachment' as const,
-      })),
-    };
-
-    const [response] = await this.sendgridClient.send(msg);
-
-    return {
-      success: response.statusCode >= 200 && response.statusCode < 300,
-      messageId: response.headers['x-message-id'] as string,
-    };
   }
 
   private async sendViaGmail(options: SendEmailOptions): Promise<EmailResult> {
@@ -421,11 +360,6 @@ export class EmailService {
         });
         return false;
       }
-    }
-
-    // SendGrid doesn't have a verify method, assume it's working if configured
-    if (this.provider === 'sendgrid' && this.sendgridClient) {
-      return true;
     }
 
     return false;

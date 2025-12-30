@@ -67,7 +67,6 @@ export function FeedbackForm({
       onSuccess?.();
     },
     onError: (error: any) => {
-      console.error('Failed to submit feedback:', error);
       alert(error?.response?.data?.message || 'Failed to submit feedback. Please try again.');
     },
   });
@@ -81,7 +80,6 @@ export function FeedbackForm({
       setShowFollowUp(false);
     },
     onError: (error: any) => {
-      console.error('Failed to request follow-up:', error);
       alert(error?.response?.data?.message || 'Failed to request follow-up. Please try again.');
     },
   });

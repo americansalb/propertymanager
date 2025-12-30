@@ -189,8 +189,7 @@ export default function PropertyEditModal({
       const data = await response.json();
       setAddressSuggestions(data);
       setShowSuggestions(true);
-    } catch (error) {
-      console.error('Failed to fetch address suggestions:', error);
+    } catch {
       setAddressSuggestions([]);
     } finally {
       setIsLoadingSuggestions(false);
@@ -251,8 +250,6 @@ export default function PropertyEditModal({
       onOpenChange(false);
     },
     onError: (error: unknown) => {
-      console.error('Failed to create property:', error);
-
       let errorMessage = 'Failed to create property';
       if (error.response?.data?.message) {
         const msg = error.response.data.message;
@@ -284,8 +281,6 @@ export default function PropertyEditModal({
       onOpenChange(false);
     },
     onError: (error: unknown) => {
-      console.error('Failed to update property:', error);
-
       let errorMessage = 'Failed to update property';
       if (error.response?.data?.message) {
         const msg = error.response.data.message;

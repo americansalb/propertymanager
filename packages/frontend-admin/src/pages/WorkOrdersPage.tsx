@@ -202,7 +202,6 @@ export default function WorkOrdersPage() {
         data: { status: newStatus },
       });
     } catch (error: unknown) {
-      console.error('Failed to update work order status:', error);
       const errorMessage =
         error?.response?.data?.message || 'Failed to update status. Please try again.';
       showNotification('error', 'Update Failed', errorMessage);

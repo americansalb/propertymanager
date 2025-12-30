@@ -362,7 +362,6 @@ export default function AddMarketplaceVendorModal({
       }, 3000);
     },
     onError: (error: unknown) => {
-      console.error('Error creating vendor:', error);
       alert(`Oops! ${error.response?.data?.message || error.message}`);
       setCurrentStep('legal_terms');
     },

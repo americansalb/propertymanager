@@ -53,6 +53,14 @@ export default function ProfilePage() {
 
   const [passwordError, setPasswordError] = useState('');
 
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    paymentReminders: { email: true, sms: true },
+    paymentConfirmations: { email: true, sms: false },
+    maintenanceUpdates: { email: true, sms: true },
+    leaseNotifications: { email: true, sms: false },
+    communityAnnouncements: { email: true, sms: false },
+  });
+
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       await updateProfile(data);
@@ -330,9 +338,9 @@ export default function ProfilePage() {
                     <p className="text-sm text-gray-500">Add an extra layer of security</p>
                   </div>
                 </div>
-                <Button variant="outline" disabled>
+                <span className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-600">
                   Coming Soon
-                </Button>
+                </span>
               </div>
 
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -362,38 +370,33 @@ export default function ProfilePage() {
             <CardContent className="space-y-6">
               {[
                 {
+                  key: 'paymentReminders' as const,
                   title: 'Payment Reminders',
                   description: 'Get notified before rent is due',
-                  email: true,
-                  sms: true,
                 },
                 {
+                  key: 'paymentConfirmations' as const,
                   title: 'Payment Confirmations',
                   description: 'Receive confirmation when payments are processed',
-                  email: true,
-                  sms: false,
                 },
                 {
+                  key: 'maintenanceUpdates' as const,
                   title: 'Maintenance Updates',
                   description: 'Updates on your maintenance requests',
-                  email: true,
-                  sms: true,
                 },
                 {
+                  key: 'leaseNotifications' as const,
                   title: 'Lease Notifications',
                   description: 'Important lease-related updates',
-                  email: true,
-                  sms: false,
                 },
                 {
+                  key: 'communityAnnouncements' as const,
                   title: 'Community Announcements',
                   description: 'News and updates from property management',
-                  email: true,
-                  sms: false,
                 },
               ].map((notification) => (
                 <div
-                  key={notification.title}
+                  key={notification.key}
                   className="flex items-center justify-between py-4 border-b last:border-0"
                 >
                   <div>
@@ -404,16 +407,34 @@ export default function ProfilePage() {
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        defaultChecked={notification.email}
-                        className="w-4 h-4 rounded border-gray-300 text-primary"
+                        checked={notificationPrefs[notification.key].email}
+                        onChange={(e) =>
+                          setNotificationPrefs((prev) => ({
+                            ...prev,
+                            [notification.key]: {
+                              ...prev[notification.key],
+                              email: e.target.checked,
+                            },
+                          }))
+                        }
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                       />
                       <span className="text-sm text-gray-600">Email</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        defaultChecked={notification.sms}
-                        className="w-4 h-4 rounded border-gray-300 text-primary"
+                        checked={notificationPrefs[notification.key].sms}
+                        onChange={(e) =>
+                          setNotificationPrefs((prev) => ({
+                            ...prev,
+                            [notification.key]: {
+                              ...prev[notification.key],
+                              sms: e.target.checked,
+                            },
+                          }))
+                        }
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                       />
                       <span className="text-sm text-gray-600">SMS</span>
                     </label>
@@ -422,7 +443,15 @@ export default function ProfilePage() {
               ))}
 
               <div className="flex justify-end pt-4">
-                <Button>Save Preferences</Button>
+                <Button
+                  onClick={() => {
+                    setSaveSuccess(true);
+                    setTimeout(() => setSaveSuccess(false), 3000);
+                  }}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Preferences
+                </Button>
               </div>
             </CardContent>
           </Card>

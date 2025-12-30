@@ -54,8 +54,7 @@ export default function MarketplaceBrowsePage() {
         params.append('acceptingOnly', 'true'); // Only show vendors accepting jobs
         const response = await api.get(`/marketplace/vendors/browse?${params.toString()}`);
         return response.data.data || [];
-      } catch (error) {
-        console.error('Failed to fetch vendors:', error);
+      } catch {
         return [];
       }
     },

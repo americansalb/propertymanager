@@ -29,6 +29,28 @@ services:
         value: 'https://propertymanager-1.onrender.com'
       - key: COOKIE_DOMAIN
         value: '.onrender.com'
+      # Amazon SES Email Configuration
+      - key: SMTP_HOST
+        value: 'email-smtp.us-east-1.amazonaws.com'
+      - key: SMTP_PORT
+        value: '587'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: 'PropertyMaster'
+      # Helcim Payment Configuration
+      - key: HELCIM_API_TOKEN
+        sync: false
+      - key: HELCIM_ACCOUNT_ID
+        sync: false
+      - key: HELCIM_WEBHOOK_SECRET
+        sync: false
 
   - type: redis
     name: propertymanager-1-redis

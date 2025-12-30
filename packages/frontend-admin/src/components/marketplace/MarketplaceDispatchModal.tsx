@@ -119,7 +119,6 @@ export default function MarketplaceDispatchModal({
       return response.data;
     },
     onError: (error: any) => {
-      console.error('Failed to create marketplace job:', error);
       alert(
         error?.response?.data?.message || 'Failed to create marketplace job. Please try again.',
       );
@@ -139,7 +138,6 @@ export default function MarketplaceDispatchModal({
       resetForm();
     },
     onError: (error: any) => {
-      console.error('Failed to dispatch job:', error);
       alert(error?.response?.data?.message || 'Failed to dispatch job. Please try again.');
     },
   });
@@ -218,8 +216,8 @@ export default function MarketplaceDispatchModal({
           estimatedAmount: estimatedAmount ? parseFloat(estimatedAmount) : undefined,
         },
       });
-    } catch (error) {
-      console.error('Failed to dispatch job:', error);
+    } catch {
+      // Error is handled by mutation's onError callback
     }
   };
 

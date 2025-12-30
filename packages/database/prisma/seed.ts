@@ -2,6 +2,8 @@ import {
   PrismaClient,
   TenantStatus,
   TenantInvitationStatus,
+  UserRole,
+  UserStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -9,53 +11,138 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seed...');
-  console.log('📋 This seed creates a test tenant in your existing organization');
+  console.log('📋 Creating platform admin, test landlord, and test tenant\n');
 
-  // Find the existing admin user (landlord@aalb.org) and their organization
-  const existingAdmin = await prisma.user.findFirst({
-    where: {
-      email: 'landlord@aalb.org'
-    },
-    select: {
-      id: true,
-      organizationId: true,
-      organization: { select: { name: true } }
-    }
+  // Get passwords from env vars or use defaults for development
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@propertymaster.io';
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin123!';
+  const landlordEmail = process.env.TEST_LANDLORD_EMAIL || 'landlord@aalb.org';
+  const landlordPassword = process.env.TEST_LANDLORD_PASSWORD || 'Landlord123!';
+  const tenantEmail = process.env.TEST_TENANT_EMAIL || 'tenant@aalb.org';
+  const tenantPassword = process.env.TEST_TENANT_PASSWORD || 'Tenant123!';
+
+  // ============================================================
+  // 1. CREATE SUPER ADMIN (Platform/Dev Account)
+  // ============================================================
+  const superAdminPasswordHash = await bcrypt.hash(superAdminPassword, 12);
+
+  // Create or get platform organization
+  let platformOrg = await prisma.organization.findFirst({
+    where: { slug: 'propertymaster-platform' }
   });
 
-  if (!existingAdmin) {
-    console.log('❌ No admin user found with email landlord@aalb.org');
-    console.log('   Please ensure your admin account exists first.');
-    return;
+  if (!platformOrg) {
+    platformOrg = await prisma.organization.create({
+      data: {
+        name: 'PropertyMaster Platform',
+        slug: 'propertymaster-platform',
+        type: 'ENTERPRISE',
+        subscriptionPlan: 'ENTERPRISE',
+        subscriptionStatus: 'ACTIVE',
+      },
+    });
+    console.log('✅ Created platform organization');
   }
 
-  console.log(`✅ Found admin in organization: ${existingAdmin.organization?.name}`);
-  const organizationId = existingAdmin.organizationId;
+  // Create or update super admin
+  const existingSuperAdmin = await prisma.user.findUnique({
+    where: { email: superAdminEmail }
+  });
 
-  // Update landlord password and unlock account
-  const landlordPassword = 'bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB';
+  if (existingSuperAdmin) {
+    await prisma.user.update({
+      where: { id: existingSuperAdmin.id },
+      data: {
+        passwordHash: superAdminPasswordHash,
+        role: UserRole.SUPER_ADMIN,
+        status: UserStatus.ACTIVE,
+        lockedUntil: null,
+        failedLoginAttempts: 0,
+      },
+    });
+    console.log('✅ Updated SUPER_ADMIN:', superAdminEmail);
+  } else {
+    await prisma.user.create({
+      data: {
+        email: superAdminEmail,
+        passwordHash: superAdminPasswordHash,
+        firstName: 'Platform',
+        lastName: 'Admin',
+        role: UserRole.SUPER_ADMIN,
+        status: UserStatus.ACTIVE,
+        organizationId: platformOrg.id,
+      },
+    });
+    console.log('✅ Created SUPER_ADMIN:', superAdminEmail);
+  }
+
+  // ============================================================
+  // 2. CREATE TEST LANDLORD (Organization Admin)
+  // ============================================================
   const landlordPasswordHash = await bcrypt.hash(landlordPassword, 12);
-  await prisma.user.update({
-    where: { id: existingAdmin.id },
-    data: {
-      passwordHash: landlordPasswordHash,
-      lockedUntil: null,
-      failedLoginAttempts: 0,
-    },
-  });
-  console.log('✅ Updated landlord@aalb.org password and unlocked account');
 
-  // Check if test tenant already exists (preserves ID to avoid invalidating JWT tokens)
+  // Create or get test landlord organization
+  let landlordOrg = await prisma.organization.findFirst({
+    where: { slug: 'aalb-properties' }
+  });
+
+  if (!landlordOrg) {
+    landlordOrg = await prisma.organization.create({
+      data: {
+        name: 'AALB Properties',
+        slug: 'aalb-properties',
+        type: 'PROPERTY_MANAGER',
+        subscriptionPlan: 'PROFESSIONAL',
+        subscriptionStatus: 'ACTIVE',
+      },
+    });
+    console.log('✅ Created landlord organization: AALB Properties');
+  }
+
+  // Create or update landlord
+  const existingLandlord = await prisma.user.findUnique({
+    where: { email: landlordEmail }
+  });
+
+  if (existingLandlord) {
+    await prisma.user.update({
+      where: { id: existingLandlord.id },
+      data: {
+        passwordHash: landlordPasswordHash,
+        role: UserRole.ORGANIZATION_ADMIN,
+        status: UserStatus.ACTIVE,
+        lockedUntil: null,
+        failedLoginAttempts: 0,
+        organizationId: landlordOrg.id,
+      },
+    });
+    console.log('✅ Updated LANDLORD:', landlordEmail);
+  } else {
+    await prisma.user.create({
+      data: {
+        email: landlordEmail,
+        passwordHash: landlordPasswordHash,
+        firstName: 'Test',
+        lastName: 'Landlord',
+        role: UserRole.ORGANIZATION_ADMIN,
+        status: UserStatus.ACTIVE,
+        organizationId: landlordOrg.id,
+      },
+    });
+    console.log('✅ Created LANDLORD:', landlordEmail);
+  }
+
+  // ============================================================
+  // 3. CREATE TEST TENANT
+  // ============================================================
+  const tenantPasswordHash = await bcrypt.hash(tenantPassword, 10);
+
   const existingTenant = await prisma.tenant.findFirst({
-    where: { email: 'tenant@aalb.org' }
+    where: { email: tenantEmail }
   });
 
-  const tenantPasswordHash = await bcrypt.hash('winner', 10);
-
-  let testTenant;
   if (existingTenant) {
-    // Update existing tenant (preserves ID)
-    testTenant = await prisma.tenant.update({
+    await prisma.tenant.update({
       where: { id: existingTenant.id },
       data: {
         firstName: 'Test',
@@ -66,42 +153,57 @@ async function main() {
         portalPassword: tenantPasswordHash,
         isPrimary: true,
         invitationStatus: TenantInvitationStatus.ACCEPTED,
-        organizationId: organizationId,
+        organizationId: landlordOrg.id,
       },
     });
-    console.log('✅ Updated existing test tenant:', testTenant.email);
+    console.log('✅ Updated TENANT:', tenantEmail);
   } else {
-    // Create new tenant
-    testTenant = await prisma.tenant.create({
+    await prisma.tenant.create({
       data: {
         firstName: 'Test',
         lastName: 'Tenant',
-        email: 'tenant@aalb.org',
+        email: tenantEmail,
         phone: '555-000-0001',
         status: TenantStatus.ACTIVE,
         portalEnabled: true,
         portalPassword: tenantPasswordHash,
         isPrimary: true,
         invitationStatus: TenantInvitationStatus.ACCEPTED,
-        organizationId: organizationId,
-        // NO unitId - landlord will assign from admin portal
+        organizationId: landlordOrg.id,
       },
     });
-    console.log('✅ Created new test tenant:', testTenant.email);
+    console.log('✅ Created TENANT:', tenantEmail);
   }
 
-  console.log('   Tenant ID:', testTenant.id);
-  console.log('   Organization ID:', organizationId);
+  // ============================================================
+  // SUMMARY
+  // ============================================================
+  console.log('\n' + '='.repeat(60));
+  console.log('🎉 Seed completed successfully!');
+  console.log('='.repeat(60));
+  console.log('\n📝 LOGIN CREDENTIALS:\n');
 
-  console.log('\n🎉 Seed completed successfully!');
-  console.log('\n📝 Login credentials:');
-  console.log('   Admin Portal:');
-  console.log('     Email: landlord@aalb.org');
-  console.log('     Password: bytypingthispasswordyouagreetosacrificeyourfirstbornsontoAALB');
-  console.log('\n   Tenant Portal:');
-  console.log('     Email: tenant@aalb.org');
-  console.log('     Password: winner');
-  console.log('     Note: Go to Tenants page and assign to a property/unit');
+  console.log('┌─────────────────────────────────────────────────────────┐');
+  console.log('│ 1. SUPER ADMIN (Platform/Dev)                          │');
+  console.log('│    URL: /admin                                         │');
+  console.log(`│    Email: ${superAdminEmail.padEnd(43)}│`);
+  console.log(`│    Password: ${superAdminPassword.padEnd(40)}│`);
+  console.log('├─────────────────────────────────────────────────────────┤');
+  console.log('│ 2. LANDLORD (Organization Admin)                       │');
+  console.log('│    URL: /login                                         │');
+  console.log(`│    Email: ${landlordEmail.padEnd(43)}│`);
+  console.log(`│    Password: ${landlordPassword.padEnd(40)}│`);
+  console.log('├─────────────────────────────────────────────────────────┤');
+  console.log('│ 3. TENANT                                              │');
+  console.log('│    URL: /tenant/login                                  │');
+  console.log(`│    Email: ${tenantEmail.padEnd(43)}│`);
+  console.log(`│    Password: ${tenantPassword.padEnd(40)}│`);
+  console.log('└─────────────────────────────────────────────────────────┘');
+
+  console.log('\n⚠️  For production, set these env vars:');
+  console.log('   SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD');
+  console.log('   TEST_LANDLORD_EMAIL, TEST_LANDLORD_PASSWORD');
+  console.log('   TEST_TENANT_EMAIL, TEST_TENANT_PASSWORD\n');
 }
 
 main()
