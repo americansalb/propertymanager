@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { PropertyCardSkeleton, EmptyState } from '../components/ui/skeleton';
 import PropertyEditModal from '../components/properties/PropertyEditModal';
 import AddPropertyModal from '../components/properties/AddPropertyModal';
 import { WorkOrderCreateModal } from '../components/work-orders/WorkOrderCreateModal';
@@ -152,9 +151,16 @@ export default function PropertiesPage() {
     navigate(`/work-orders?propertyId=${propertyId}`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-gray-500">Loading properties...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header always visible */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Properties</h1>
@@ -166,17 +172,7 @@ export default function PropertiesPage() {
         </Button>
       </div>
 
-      {/* Loading state with skeletons */}
-      {isLoading && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <PropertyCardSkeleton key={i} />
-          ))}
-        </div>
-      )}
-
-      {/* Data state */}
-      {!isLoading && properties && properties.length > 0 && (
+      {properties && properties.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {properties.map((property: any) => (
             <Card
@@ -318,23 +314,18 @@ export default function PropertiesPage() {
             </Card>
           ))}
         </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && (!properties || properties.length === 0) && (
+      ) : (
         <Card>
           <CardContent className="py-12">
-            <EmptyState
-              icon={Building2}
-              title="No properties yet"
-              description="Get started by adding your first property"
-              action={
-                <Button onClick={handleAddProperty}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Property
-                </Button>
-              }
-            />
+            <div className="text-center">
+              <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No properties yet</h3>
+              <p className="text-gray-500 mb-6">Get started by adding your first property</p>
+              <Button onClick={handleAddProperty}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Property
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
