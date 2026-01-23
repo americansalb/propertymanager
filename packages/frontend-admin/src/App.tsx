@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
+import ErrorBoundary from './components/ErrorBoundary';
+import { Toaster } from './components/ui/toaster';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -36,58 +38,61 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Routes>
-      {/* Public routes - no authentication required */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/admin" element={<AdminLoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/vendor-register" element={<VendorRegisterPage />} />
-      <Route path="/marketplace-browse" element={<MarketplaceBrowsePage />} />
+    <ErrorBoundary>
+      <Routes>
+        {/* Public routes - no authentication required */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin" element={<AdminLoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/vendor-register" element={<VendorRegisterPage />} />
+        <Route path="/marketplace-browse" element={<MarketplaceBrowsePage />} />
 
-      {/* Vendor portal route */}
-      <Route
-        path="/vendor-dashboard"
-        element={
-          <PrivateRoute>
-            <VendorDashboardPage />
-          </PrivateRoute>
-        }
-      />
+        {/* Vendor portal route */}
+        <Route
+          path="/vendor-dashboard"
+          element={
+            <PrivateRoute>
+              <VendorDashboardPage />
+            </PrivateRoute>
+          }
+        />
 
-      {/* Protected admin routes */}
-      <Route
-        path="/dashboard/*"
-        element={
-          <PrivateRoute>
-            <DashboardLayout>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/properties" element={<PropertiesPage />} />
-                <Route path="/properties/:id" element={<PropertyDetailPage />} />
-                <Route path="/leases" element={<LeasesPage />} />
-                <Route path="/leases/:id" element={<LeaseDetailPage />} />
-                <Route path="/tenants" element={<TenantsPage />} />
-                <Route path="/financial" element={<FinancialPage />} />
-                <Route path="/work-orders" element={<WorkOrdersPage />} />
-                <Route path="/vendors" element={<VendorsPage />} />
-                <Route path="/vendors/:id" element={<VendorDetailPage />} />
-                <Route path="/marketplace" element={<MarketplacePage />} />
-                <Route path="/activity" element={<ActivityPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/documents" element={<DocumentsPage />} />
-                <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/tenant-preview" element={<TenantPortalPage />} />
-                <Route path="/export" element={<ExportPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/qa" element={<QADashboard />} />
-              </Routes>
-            </DashboardLayout>
-          </PrivateRoute>
-        }
-      />
-    </Routes>
+        {/* Protected admin routes */}
+        <Route
+          path="/dashboard/*"
+          element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/properties" element={<PropertiesPage />} />
+                  <Route path="/properties/:id" element={<PropertyDetailPage />} />
+                  <Route path="/leases" element={<LeasesPage />} />
+                  <Route path="/leases/:id" element={<LeaseDetailPage />} />
+                  <Route path="/tenants" element={<TenantsPage />} />
+                  <Route path="/financial" element={<FinancialPage />} />
+                  <Route path="/work-orders" element={<WorkOrdersPage />} />
+                  <Route path="/vendors" element={<VendorsPage />} />
+                  <Route path="/vendors/:id" element={<VendorDetailPage />} />
+                  <Route path="/marketplace" element={<MarketplacePage />} />
+                  <Route path="/activity" element={<ActivityPage />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/documents" element={<DocumentsPage />} />
+                  <Route path="/notifications" element={<NotificationsPage />} />
+                  <Route path="/tenant-preview" element={<TenantPortalPage />} />
+                  <Route path="/export" element={<ExportPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/qa" element={<QADashboard />} />
+                </Routes>
+              </DashboardLayout>
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+      <Toaster />
+    </ErrorBoundary>
   );
 }
 
