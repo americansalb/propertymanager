@@ -27,6 +27,7 @@ import api from '../../services/api';
 import { getApiErrorMessage } from '../../lib/utils';
 import { Dialog, DialogContent } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { useToast } from '../../hooks/useToast';
 
 interface AddPropertyModalProps {
   open: boolean;
@@ -105,6 +106,7 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModalProps) {
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
 
   // Step state
   const [step, setStep] = useState<Step>('address');
@@ -385,12 +387,15 @@ export default function AddPropertyModal({ open, onOpenChange }: AddPropertyModa
       const response = await api.post('/properties/setup', payload);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+      success('Property created', `${data.data.name} has been added successfully with ${units.length} unit${units.length !== 1 ? 's' : ''}.`);
       onOpenChange(false);
     },
     onError: (error: unknown) => {
-      setErrors({ submit: getApiErrorMessage(error, 'Failed to create property') });
+      const errorMessage = getApiErrorMessage(error, 'Failed to create property');
+      showError('Creation failed', errorMessage);
+      setErrors({ submit: errorMessage });
     },
   });
 

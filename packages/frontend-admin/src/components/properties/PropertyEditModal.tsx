@@ -15,6 +15,7 @@ import api from '../../services/api';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { useToast } from '../../hooks/useToast';
 
 interface Property {
   id: string;
@@ -105,6 +106,7 @@ export default function PropertyEditModal({
   onOpenChange,
 }: PropertyEditModalProps) {
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [formData, setFormData] = useState<Partial<Property>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
@@ -245,8 +247,9 @@ export default function PropertyEditModal({
       const response = await api.post('/properties', data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+      success('Property created', `${data.data.name} has been added successfully.`);
       onOpenChange(false);
     },
     onError: (error: unknown) => {
@@ -262,6 +265,7 @@ export default function PropertyEditModal({
         errorMessage = error.message;
       }
 
+      showError('Creation failed', errorMessage);
       setErrors({
         submit: errorMessage,
       });
@@ -276,8 +280,9 @@ export default function PropertyEditModal({
       const response = await api.put(`/properties/${property.id}`, data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+      success('Property updated', `${data.data.name} has been updated successfully.`);
       onOpenChange(false);
     },
     onError: (error: unknown) => {
@@ -293,6 +298,7 @@ export default function PropertyEditModal({
         errorMessage = error.message;
       }
 
+      showError('Update failed', errorMessage);
       setErrors({
         submit: errorMessage,
       });

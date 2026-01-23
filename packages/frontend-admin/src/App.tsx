@@ -28,6 +28,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import TenantPortalPage from './pages/TenantPortalPage';
 import ExportPage from './pages/ExportPage';
 import { QADashboard } from './pages/QADashboard';
+import { Toaster } from './components/ui/toaster';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -36,7 +37,8 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Routes>
+    <>
+      <Routes>
       {/* Public routes - no authentication required */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -88,6 +90,8 @@ function App() {
         }
       />
     </Routes>
+    <Toaster />
+    </>
   );
 }
 
