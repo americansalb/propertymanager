@@ -29,6 +29,12 @@ interface Application {
   property: string;
 }
 
+// Must match the config in LakeviewApplicationPage.tsx
+const PROPERTY = {
+  name: 'Lakeview Apartments',
+  address: '4130 N Ashland Ave, Chicago, IL',
+};
+
 const STORAGE_KEY = 'lakeview_applications';
 
 function getStoredApplications(): Application[] {
@@ -68,7 +74,7 @@ export default function ManageApplicantsPage() {
   const [passcodeInput, setPasscodeInput] = useState('');
   const [revealedApplicant, setRevealedApplicant] = useState<Application | null>(null);
   const [passcodeError, setPasscodeError] = useState('');
-  const [selectedProperty] = useState('Lakeview Apartments');
+  const [selectedProperty] = useState(PROPERTY.name);
 
   useEffect(() => {
     setApplications(getStoredApplications());
@@ -171,8 +177,8 @@ export default function ManageApplicantsPage() {
                       <Building2 className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-indigo-900">Lakeview Apartments</p>
-                      <p className="text-sm text-indigo-600">123 Lakeview Drive, Springfield, IL</p>
+                      <p className="font-semibold text-indigo-900">{PROPERTY.name}</p>
+                      <p className="text-sm text-indigo-600">{PROPERTY.address}</p>
                     </div>
                   </div>
                   <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>

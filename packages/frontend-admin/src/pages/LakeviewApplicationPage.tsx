@@ -33,6 +33,20 @@ interface ApplicationFormData {
   additionalNotes: string;
 }
 
+// ============================================================
+// PROPERTY CONFIGURATION - Edit these values for your property
+// ============================================================
+const PROPERTY = {
+  name: 'Lakeview Apartments',
+  address: '4130 N Ashland Ave, Chicago, IL',
+  bedrooms: '2 BR',
+  bathrooms: '1 BA',
+  price: '$1,200/mo',
+  sqft: '1,000',
+  amenities: ['In-Unit Laundry', 'Parking Available', 'Pet Friendly', 'Hardwood Floors', 'Central AC'],
+};
+// ============================================================
+
 const STORAGE_KEY = 'lakeview_applications';
 
 function getStoredApplications() {
@@ -93,7 +107,7 @@ export default function LakeviewApplicationPage() {
         id: crypto.randomUUID(),
         submittedAt: new Date().toISOString(),
         passcode: code,
-        property: 'Lakeview Apartments',
+        property: PROPERTY.name,
       };
       storeApplication(application);
       setPasscode(code);
@@ -112,7 +126,7 @@ export default function LakeviewApplicationPage() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
             <p className="text-gray-600 mb-6">
-              Thank you, {formData.firstName}! Your application for Lakeview Apartments has been received.
+              Thank you, {formData.firstName}! Your application for {PROPERTY.name} has been received.
             </p>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -146,7 +160,7 @@ export default function LakeviewApplicationPage() {
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Lakeview Apartments</h1>
+            <h1 className="text-xl font-bold text-gray-900">{PROPERTY.name}</h1>
             <p className="text-sm text-gray-500">Rental Application</p>
           </div>
         </div>
@@ -158,10 +172,10 @@ export default function LakeviewApplicationPage() {
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white">
             <div className="flex items-start justify-between flex-wrap gap-4">
               <div>
-                <h2 className="text-3xl font-bold mb-2">Lakeview Apartments</h2>
+                <h2 className="text-3xl font-bold mb-2">{PROPERTY.name}</h2>
                 <div className="flex items-center gap-2 text-blue-100">
                   <MapPin className="w-4 h-4" />
-                  <span>123 Lakeview Drive, Springfield, IL</span>
+                  <span>{PROPERTY.address}</span>
                 </div>
               </div>
               <Badge className="bg-green-500 hover:bg-green-500 text-white text-sm px-3 py-1">
@@ -175,34 +189,34 @@ export default function LakeviewApplicationPage() {
                 <BedDouble className="w-5 h-5 text-blue-600" />
                 <div>
                   <p className="text-xs text-gray-500">Bedrooms</p>
-                  <p className="font-semibold">1-3 BR</p>
+                  <p className="font-semibold">{PROPERTY.bedrooms}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <Bath className="w-5 h-5 text-blue-600" />
                 <div>
                   <p className="text-xs text-gray-500">Bathrooms</p>
-                  <p className="font-semibold">1-2 BA</p>
+                  <p className="font-semibold">{PROPERTY.bathrooms}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <DollarSign className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-xs text-gray-500">Starting At</p>
-                  <p className="font-semibold">$1,200/mo</p>
+                  <p className="text-xs text-gray-500">Rent</p>
+                  <p className="font-semibold">{PROPERTY.price}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <Home className="w-5 h-5 text-blue-600" />
                 <div>
                   <p className="text-xs text-gray-500">Sq Ft</p>
-                  <p className="font-semibold">650 - 1,400</p>
+                  <p className="font-semibold">{PROPERTY.sqft}</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {['In-Unit Laundry', 'Parking Available', 'Pet Friendly', 'Lake Views', 'Fitness Center', 'Pool'].map((amenity) => (
+              {PROPERTY.amenities.map((amenity) => (
                 <Badge key={amenity} variant="outline" className="text-gray-600">
                   {amenity}
                 </Badge>
@@ -486,7 +500,7 @@ export default function LakeviewApplicationPage() {
       {/* Footer */}
       <footer className="bg-white border-t mt-12">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-gray-500">
-          <p>Lakeview Apartments - Managed by PropertyMaster</p>
+          <p>{PROPERTY.name} - Managed by PropertyMaster</p>
         </div>
       </footer>
     </div>
