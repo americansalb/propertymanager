@@ -28,6 +28,8 @@ import NotificationsPage from './pages/NotificationsPage';
 import TenantPortalPage from './pages/TenantPortalPage';
 import ExportPage from './pages/ExportPage';
 import { QADashboard } from './pages/QADashboard';
+import LakeviewApplicationPage from './pages/LakeviewApplicationPage';
+import ManageApplicantsPage from './pages/ManageApplicantsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -44,6 +46,8 @@ function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/vendor-register" element={<VendorRegisterPage />} />
       <Route path="/marketplace-browse" element={<MarketplaceBrowsePage />} />
+      <Route path="/lakeview" element={<LakeviewApplicationPage />} />
+      <Route path="/manageapplicants" element={<ManageApplicantsPage />} />
 
       {/* Vendor portal route */}
       <Route
