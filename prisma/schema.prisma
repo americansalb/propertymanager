@@ -1,0 +1,995 @@
+// VillageMembers — complete data model (Phase 1 + Phase 2).
+// All money fields are integer cents. Rates are basis points.
+// LedgerEntry / *StatusHistory are append-only: corrections are new rows, never updates.
+// The app operates exclusively inside the Postgres schema set via ?schema= on
+// DATABASE_URL (default villagemembers_app) — never in public or any other schema.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────── IDENTITY ──────
+// One human = one User. Roles are DERIVED from the existence of:
+//   Membership → LANDLORD, TenantProfile → TENANT, ProProfile → PRO,
+//   isSuperAdmin → ADMIN. A user can hold any combination.
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+model User {
+  id                  String     @id @default(cuid())
+  email               String     @unique
+  passwordHash        String? // null until an invite is accepted
+  firstName           String
+  lastName            String
+  phone               String?
+  avatarUrl           String?
+  status              UserStatus @default(ACTIVE)
+  isSuperAdmin        Boolean    @default(false)
+  emailVerifiedAt     DateTime?
+  failedLoginAttempts Int        @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  memberships   Membership[]
+  tenantProfile TenantProfile?
+  proProfile    ProProfile?
+  sessions      Session[]
+  notifications Notification[]
+}
+
+enum OrgRole {
+  OWNER
+  MANAGER
+  VIEWER
+}
+
+// A landlord business. All PM data is scoped by orgId.
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships    Membership[]
+  properties     Property[]
+  connectAccount ConnectAccount?
+}
+
+model Membership {
+  id     String  @id @default(cuid())
+  userId String
+  orgId  String
+  role   OrgRole @default(OWNER)
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+// One auth flow for every role: opaque token (hashed) in an httpOnly cookie.
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique // sha256(token); raw token lives only in the cookie
+  activeRole  String? // LANDLORD | TENANT | PRO | ADMIN (role switcher)
+  activeOrgId String?
+  expiresAt   DateTime
+  ip          String?
+  userAgent   String?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum InviteKind {
+  TENANT
+  ORG_MEMBER
+}
+
+model Invitation {
+  id              String     @id @default(cuid())
+  kind            InviteKind
+  email           String
+  tokenHash       String     @unique
+  orgId           String
+  leaseId         String? // TENANT invites attach to a lease
+  orgRole         OrgRole?
+  invitedByUserId String
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  createdAt       DateTime   @default(now())
+
+  @@index([email])
+  @@index([orgId])
+}
+
+enum AuthTokenPurpose {
+  PASSWORD_RESET
+  EMAIL_VERIFY
+}
+
+model AuthToken {
+  id        String           @id @default(cuid())
+  userId    String
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, purpose])
+}
+
+// ─────────────────────────────────────────────────────────── PM CORE ───────
+
+enum PropertyType {
+  SINGLE_FAMILY
+  MULTIFAMILY
+  CONDO
+  TOWNHOUSE
+  COMMERCIAL
+  OTHER
+}
+
+model Property {
+  id        String       @id @default(cuid())
+  orgId     String
+  name      String
+  type      PropertyType @default(SINGLE_FAMILY)
+  address1  String
+  address2  String?
+  city      String
+  state     String
+  zipCode   String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  org                 Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  units               Unit[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@index([orgId])
+}
+
+enum UnitStatus {
+  VACANT
+  OCCUPIED
+  NOTICE
+}
+
+model Unit {
+  id          String     @id @default(cuid())
+  propertyId  String
+  orgId       String // denormalized for scoping/index locality
+  unitNumber  String     @default("Main") // single-family = one "Main" unit
+  bedrooms    Int?
+  bathrooms   Decimal?   @db.Decimal(3, 1)
+  squareFeet  Int?
+  marketRentCents Int?
+  status      UnitStatus @default(VACANT)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  property            Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  leases              Lease[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@unique([propertyId, unitNumber])
+  @@index([orgId])
+}
+
+// Person-level tenant data; the tenancy itself is LeaseTenant.
+model TenantProfile {
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  stripeCustomerId      String? @unique
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaseTenants LeaseTenant[]
+}
+
+enum LeaseStatus {
+  DRAFT
+  ACTIVE
+  ENDED
+  TERMINATED
+}
+
+model Lease {
+  id                   String      @id @default(cuid())
+  unitId               String
+  orgId                String
+  status               LeaseStatus @default(DRAFT)
+  startDate            DateTime
+  endDate              DateTime? // null = month-to-month
+  monthlyRentCents     Int
+  securityDepositCents Int         @default(0)
+  rentDueDay           Int         @default(1)
+  lateFeeCents         Int         @default(0)
+  lateFeeGraceDays     Int         @default(5)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  unit    Unit          @relation(fields: [unitId], references: [id])
+  tenants LeaseTenant[]
+  charges Charge[]
+
+  @@index([orgId])
+  @@index([unitId, status])
+}
+
+model LeaseTenant {
+  id              String  @id @default(cuid())
+  leaseId         String
+  tenantProfileId String
+  isPrimary       Boolean @default(true)
+
+  lease         Lease         @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  tenantProfile TenantProfile @relation(fields: [tenantProfileId], references: [id])
+
+  @@unique([leaseId, tenantProfileId])
+  @@index([tenantProfileId])
+}
+
+// ─────────────────────────────────────────────────────────── BILLING ───────
+// Processor-agnostic: provider enum + providerRef, never per-provider columns.
+
+enum ChargeType {
+  RENT
+  LATE_FEE
+  DEPOSIT
+  UTILITY
+  OTHER
+}
+
+enum ChargeStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  VOID
+}
+
+model Charge {
+  id              String       @id @default(cuid())
+  leaseId         String
+  orgId           String
+  type            ChargeType
+  status          ChargeStatus @default(PENDING)
+  amountCents     Int
+  amountPaidCents Int          @default(0)
+  description     String
+  dueDate         DateTime
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  lease       Lease               @relation(fields: [leaseId], references: [id])
+  allocations PaymentAllocation[]
+
+  @@index([orgId])
+  @@index([leaseId, status])
+  @@index([dueDate])
+}
+
+enum PaymentProvider {
+  STRIPE
+  OFFLINE // landlord-recorded cash/check/money order
+}
+
+enum PaymentStatus {
+  REQUIRES_ACTION
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
+}
+
+model Payment {
+  id                  String          @id @default(cuid())
+  orgId               String
+  leaseId             String?
+  payerUserId         String?
+  provider            PaymentProvider
+  providerRef         String?         @unique // e.g. pi_…
+  providerChargeRef   String?
+  method              String? // card | us_bank_account | check | cash
+  status              PaymentStatus
+  amountCents         Int
+  applicationFeeCents Int             @default(0)
+  currency            String          @default("usd")
+  failureCode         String?
+  paidAt              DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  allocations PaymentAllocation[]
+
+  @@index([orgId])
+  @@index([leaseId])
+}
+
+model PaymentAllocation {
+  id          String   @id @default(cuid())
+  paymentId   String
+  chargeId    String
+  amountCents Int
+  createdAt   DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  charge  Charge  @relation(fields: [chargeId], references: [id])
+
+  @@index([paymentId])
+  @@index([chargeId])
+}
+
+// ────────────────────────────────────────────────────────── MAINTENANCE ────
+// One model serves tenant requests AND landlord work items; bridges to Job.
+
+enum MaintCategory {
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  APPLIANCE
+  DOORS_LOCKS
+  PEST
+  FLOORING_WALLS
+  OTHER
+}
+
+enum MaintUrgency {
+  EMERGENCY
+  URGENT
+  NORMAL
+  LOW
+}
+
+enum MaintStatus {
+  SUBMITTED
+  ACKNOWLEDGED
+  SCHEDULED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELLED
+  SENT_TO_MARKETPLACE
+}
+
+model MaintenanceRequest {
+  id                String        @id @default(cuid())
+  orgId             String
+  propertyId        String
+  unitId            String?
+  leaseId           String?
+  createdByUserId   String
+  origin            String        @default("TENANT") // TENANT | LANDLORD
+  category          MaintCategory
+  location          String? // room within the unit
+  title             String
+  description       String
+  urgency           MaintUrgency  @default(NORMAL)
+  status            MaintStatus   @default(SUBMITTED)
+  permissionToEnter Boolean       @default(false)
+  accessNotes       String?
+  hasPets           Boolean       @default(false)
+  preferredTimes    String[]      @default([])
+  resolvedAt        DateTime?
+  resolutionNotes   String?
+  convertedJobId    String?       @unique // ← the one-action marketplace bridge
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  property      Property                   @relation(fields: [propertyId], references: [id])
+  unit          Unit?                      @relation(fields: [unitId], references: [id])
+  statusHistory MaintenanceStatusHistory[]
+
+  @@index([orgId, status])
+  @@index([unitId])
+}
+
+model MaintenanceStatusHistory {
+  id          String       @id @default(cuid())
+  requestId   String
+  fromStatus  MaintStatus?
+  toStatus    MaintStatus
+  actorUserId String
+  note        String?
+  createdAt   DateTime     @default(now())
+
+  request MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+}
+
+// ───────────────────────────────────── STRIPE CONNECT + MONEY INTEGRITY ────
+
+enum ConnectOwner {
+  LANDLORD_ORG
+  PRO
+}
+
+model ConnectAccount {
+  id               String       @id @default(cuid())
+  ownerType        ConnectOwner
+  orgId            String?      @unique
+  proProfileId     String?      @unique
+  stripeAccountId  String       @unique
+  chargesEnabled   Boolean      @default(false)
+  payoutsEnabled   Boolean      @default(false)
+  detailsSubmitted Boolean      @default(false)
+  requirementsDue  Json         @default("[]")
+  lastSyncedAt     DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  org        Organization? @relation(fields: [orgId], references: [id])
+  proProfile ProProfile?   @relation(fields: [proProfileId], references: [id])
+}
+
+enum LedgerAccountType {
+  PLATFORM
+  LANDLORD_ORG
+  PRO
+}
+
+enum LedgerEntryType {
+  RENT_PAYMENT
+  PLATFORM_FEE
+  PROCESSING_FEE
+  REFUND
+  CHARGEBACK
+  ESCROW_FUND
+  ESCROW_RELEASE
+  ESCROW_REFUND
+  TRANSFER_OUT
+  PAYOUT
+  ADJUSTMENT
+  REVERSAL
+}
+
+// APPEND-ONLY. No updatedAt by design. Corrections are REVERSAL rows.
+model LedgerEntry {
+  id                  String            @id @default(cuid())
+  accountType         LedgerAccountType
+  accountId           String // orgId | proProfileId | "platform"
+  type                LedgerEntryType
+  amountCents         Int // signed
+  runningBalanceCents Int // computed inside a SERIALIZABLE tx per account
+  currency            String            @default("usd")
+  description         String
+  paymentId           String?
+  jobId               String?
+  milestoneId         String?
+  escrowIntentId      String?
+  stripeRef           String? // pi_/ch_/tr_/po_/re_
+  reversalOfId        String?           @unique
+  createdAt           DateTime          @default(now())
+
+  @@index([accountType, accountId, createdAt])
+  @@index([jobId])
+  @@index([paymentId])
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  SKIPPED
+}
+
+// Idempotency for inbound webhooks: unique on the provider's event id.
+model WebhookEvent {
+  id          String        @id @default(cuid())
+  provider    String        @default("stripe")
+  eventId     String        @unique
+  type        String
+  apiVersion  String?
+  payload     Json
+  status      WebhookStatus @default(RECEIVED)
+  error       String?
+  processedAt DateTime?
+  receivedAt  DateTime      @default(now())
+
+  @@index([type])
+  @@index([status])
+}
+
+// Client-initiated retry safety (e.g. double-clicked pay button).
+model IdempotencyKey {
+  key          String   @id
+  scope        String
+  responseJson Json?
+  createdAt    DateTime @default(now())
+}
+
+// ──────────────────────────────────── P2: PROS, VERIFICATION, CATALOG ──────
+
+enum Trade {
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  LOCKSMITH
+  HANDYMAN
+  APPLIANCE_REPAIR
+  CLEANING
+  LANDSCAPING
+  PAINTING
+  PEST_CONTROL
+  ROOFING
+  FLOORING
+  GENERAL_CONTRACTOR
+  OTHER
+}
+
+enum ProStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum ProTier {
+  STANDARD
+  VERIFIED
+  PREMIUM
+}
+
+model ProProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  businessName      String
+  dbaName           String?
+  entityType        String? // LLC | CORP | SOLE_PROP | PARTNERSHIP
+  phone             String
+  website           String?
+  bio               String?
+  address1          String?
+  city              String?
+  state             String?
+  zipCode           String?
+  status            ProStatus @default(DRAFT)
+  tier              ProTier   @default(STANDARD)
+  reviewNotes       String?
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  acceptingJobs     Boolean   @default(true)
+  maxConcurrentJobs Int       @default(5)
+  avgRating         Decimal?  @db.Decimal(3, 2)
+  jobsCompleted     Int       @default(0)
+  medianResponseMin Int?
+  w9DocumentId      String?
+  tinMatchStatus    String    @default("PENDING") // PENDING | MATCHED | FAILED
+  firstPayoutHold   Boolean   @default(true) // held until TIN matched + payouts enabled
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id])
+  services       ProService[]
+  areas          ProServiceArea[]
+  verifications  Verification[]
+  bids           Bid[]
+  jobInvites     JobInvite[]
+  reviews        Review[]
+  connectAccount ConnectAccount?
+
+  @@index([status])
+}
+
+// ZIP-code service areas (deliberate: specific ZIPs, not a radius).
+model ProServiceArea {
+  id           String @id @default(cuid())
+  proProfileId String
+  zipCode      String
+
+  proProfile ProProfile @relation(fields: [proProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([proProfileId, zipCode])
+  @@index([zipCode])
+}
+
+// The price-transparency engine: typical ranges per service per region.
+model ServiceCatalogItem {
+  id                 String   @id @default(cuid())
+  trade              Trade
+  name               String
+  slug               String   @unique
+  description        String?
+  region             String   @default("CHICAGO_IL")
+  pricingUnit        String   @default("FLAT") // FLAT | HOURLY | QUOTE
+  typicalLowCents    Int?
+  typicalHighCents   Int?
+  typicalDurationMin Int?
+  requiresLicense    Boolean  @default(true)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  proServices ProService[]
+
+  @@unique([trade, name, region])
+}
+
+model ProService {
+  id            String  @id @default(cuid())
+  proProfileId  String
+  catalogItemId String
+  isActive      Boolean @default(true)
+
+  proProfile  ProProfile         @relation(fields: [proProfileId], references: [id], onDelete: Cascade)
+  catalogItem ServiceCatalogItem @relation(fields: [catalogItemId], references: [id])
+
+  @@unique([proProfileId, catalogItemId])
+}
+
+enum VerificationType {
+  LICENSE
+  INSURANCE
+  W9_TIN
+  BUSINESS_REGISTRATION
+}
+
+enum VerificationStatus {
+  PENDING
+  ACTIVE
+  EXPIRING
+  EXPIRED
+  REJECTED
+  SUSPENDED
+}
+
+// One row per credential; expiry sweeps warn at 30 days and auto-suspend.
+model Verification {
+  id                    String             @id @default(cuid())
+  proProfileId          String
+  type                  VerificationType
+  status                VerificationStatus @default(PENDING)
+  licenseNumber         String?
+  licenseState          String?
+  licenseClassification String?
+  insuranceCarrier      String?
+  policyNumber          String?
+  coverageAmountCents   Int? // $500K minimum enforced in service layer
+  documentId            String? // COI / license photo / W-9 → Attachment
+  issuedAt              DateTime?
+  expiresAt             DateTime?
+  method                String             @default("MANUAL") // MANUAL now; API later
+  verifiedAt            DateTime?
+  verifiedByUserId      String?
+  lastCheckedAt         DateTime?
+  notes                 String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  proProfile ProProfile @relation(fields: [proProfileId], references: [id], onDelete: Cascade)
+
+  @@index([proProfileId, type])
+  @@index([status, expiresAt])
+}
+
+// ──────────────────────────────── P2: JOBS, BIDDING, ESCROW, REVIEWS ───────
+
+enum JobStatus {
+  DRAFT
+  OPEN_FOR_BIDS
+  AWARDED
+  FUNDED
+  SCHEDULED
+  IN_PROGRESS
+  WORK_SUBMITTED
+  APPROVED
+  RELEASED
+  CLOSED
+  DISPUTED
+  CANCELLED
+  EXPIRED
+}
+
+// orgId is NULLABLE by design: the marketplace works standalone.
+model Job {
+  id                         String       @id @default(cuid())
+  orgId                      String?
+  posterUserId               String
+  sourceMaintenanceRequestId String?      @unique // work-order → job bridge
+  propertyId                 String?
+  unitId                     String?
+  address1                   String?
+  city                       String?
+  state                      String?
+  zipCode                    String // always set (copied or entered)
+  trade                      Trade
+  catalogItemId              String?
+  title                      String
+  description                String
+  urgency                    MaintUrgency @default(NORMAL)
+  status                     JobStatus    @default(DRAFT)
+  bidDeadline                DateTime?
+  budgetLowCents             Int?
+  budgetHighCents            Int?
+  permissionToEnter          Boolean      @default(false)
+  accessNotes                String?
+  awardedBidId               String?      @unique
+  takeRateBps                Int          @default(1000)
+  completionNotes            String?
+  completedAt                DateTime?
+  approvedAt                 DateTime?
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
+
+  bids          Bid[]
+  milestones    JobMilestone[]
+  escrows       EscrowIntent[]
+  statusHistory JobStatusHistory[]
+  invites       JobInvite[]
+  reviews       Review[]
+
+  @@index([status, trade, zipCode])
+  @@index([orgId])
+  @@index([posterUserId])
+}
+
+model JobStatusHistory {
+  id          String     @id @default(cuid())
+  jobId       String
+  fromStatus  JobStatus?
+  toStatus    JobStatus
+  actorUserId String?
+  note        String?
+  createdAt   DateTime   @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+}
+
+enum InviteStatus {
+  NOTIFIED
+  VIEWED
+  DECLINED
+  BID
+}
+
+// Lead-feed rows for matched pros.
+model JobInvite {
+  id           String       @id @default(cuid())
+  jobId        String
+  proProfileId String
+  status       InviteStatus @default(NOTIFIED)
+  respondedAt  DateTime?
+  createdAt    DateTime     @default(now())
+
+  job        Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  proProfile ProProfile @relation(fields: [proProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, proProfileId])
+  @@index([proProfileId, status])
+}
+
+enum BidStatus {
+  PENDING
+  WITHDRAWN
+  DECLINED
+  ACCEPTED
+  EXPIRED
+}
+
+model Bid {
+  id                    String    @id @default(cuid())
+  jobId                 String
+  proProfileId          String
+  amountCents           Int
+  includesMaterials     Boolean   @default(true)
+  message               String?
+  estimatedStartDate    DateTime?
+  estimatedDurationDays Int?
+  proposedMilestones    Json? // [{title, amountCents}] for large jobs
+  status                BidStatus @default(PENDING)
+  expiresAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  job        Job        @relation(fields: [jobId], references: [id])
+  proProfile ProProfile @relation(fields: [proProfileId], references: [id])
+
+  @@unique([jobId, proProfileId])
+  @@index([proProfileId, status])
+}
+
+enum MilestoneStatus {
+  PENDING
+  FUNDED
+  IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  RELEASED
+  DISPUTED
+  CANCELLED
+}
+
+// Single milestone for small jobs; N for large.
+model JobMilestone {
+  id          String          @id @default(cuid())
+  jobId       String
+  sequence    Int
+  title       String
+  amountCents Int
+  status      MilestoneStatus @default(PENDING)
+  fundedAt    DateTime?
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  releasedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  job          Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  escrowIntent EscrowIntent?
+
+  @@unique([jobId, sequence])
+}
+
+enum EscrowStatus {
+  REQUIRES_PAYMENT
+  PROCESSING
+  HELD
+  RELEASED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
+  CANCELLED
+}
+
+// The money mirror of a milestone (separate charges & transfers).
+model EscrowIntent {
+  id                      String          @id @default(cuid())
+  jobId                   String
+  milestoneId             String?         @unique
+  payerUserId             String
+  orgId                   String?
+  amountCents             Int
+  applicationFeeCents     Int // platform take, computed at award
+  status                  EscrowStatus    @default(REQUIRES_PAYMENT)
+  provider                PaymentProvider @default(STRIPE)
+  providerPaymentIntentId String?         @unique
+  providerChargeId        String?
+  transferId              String?         @unique
+  refundId                String?
+  fundedAt                DateTime?
+  releasedAt              DateTime?
+  refundedAt              DateTime?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  job       Job           @relation(fields: [jobId], references: [id])
+  milestone JobMilestone? @relation(fields: [milestoneId], references: [id])
+
+  @@index([jobId])
+}
+
+// Two-sided reviews; 5 dimensions ported from the old VendorRating.
+model Review {
+  id             String   @id @default(cuid())
+  jobId          String
+  reviewerUserId String
+  subjectType    String // PRO | POSTER
+  proProfileId   String?
+  overall        Int
+  quality        Int?
+  communication  Int?
+  punctuality    Int?
+  value          Int?
+  text           String?
+  responseText   String?
+  isPublic       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  job        Job         @relation(fields: [jobId], references: [id])
+  proProfile ProProfile? @relation(fields: [proProfileId], references: [id])
+
+  @@unique([jobId, reviewerUserId])
+  @@index([proProfileId])
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_RELEASE
+  RESOLVED_REFUND
+  RESOLVED_SPLIT
+  CLOSED
+}
+
+// Platform dispute (quality) — distinct from a Stripe card dispute.
+model Dispute {
+  id               String        @id @default(cuid())
+  jobId            String
+  milestoneId      String?
+  openedByUserId   String
+  reason           String
+  status           DisputeStatus @default(OPEN)
+  slaDueAt         DateTime
+  resolutionNotes  String?
+  resolvedByUserId String?
+  resolvedAt       DateTime?
+  createdAt        DateTime      @default(now())
+
+  @@index([status, slaDueAt])
+  @@index([jobId])
+}
+
+// ─────────────────────────────────────────────────────────── SHARED ────────
+
+model Attachment {
+  id               String   @id @default(cuid())
+  entityType       String // 'MaintenanceRequest' | 'Job' | 'Verification' | …
+  entityId         String
+  kind             String   @default("PHOTO") // PHOTO | DOCUMENT | COI | W9 | LICENSE
+  storageKey       String   @unique
+  url              String
+  mimeType         String
+  sizeBytes        Int
+  uploadedByUserId String?
+  orgId            String?
+  createdAt        DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  linkUrl   String?
+  channel   NotificationChannel @default(IN_APP)
+  emailedAt DateTime?
+  readAt    DateTime?
+  refType   String?
+  refId     String?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  orgId       String?
+  action      String // 'lease.create' | 'payment.refund' | 'pro.approve' …
+  entityType  String
+  entityId    String
+  ip          String?
+  userAgent   String?
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([orgId, createdAt])
+}

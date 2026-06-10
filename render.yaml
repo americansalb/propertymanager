@@ -1,0 +1,70 @@
+# VillageMembers on the existing Render service.
+# IMPORTANT: the database and redis blocks below are the PRE-EXISTING shared
+# resources — they are intentionally kept verbatim so a Blueprint sync never
+# flags them as removed. The app writes only to its own Postgres schema
+# (APP_DB_SCHEMA) and prefixes Redis keys with vm:.
+
+services:
+  - type: web
+    name: propertymanager-1
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    autoDeploy: true
+    branch: main_property
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: propertymanager-1-db
+          property: connectionString
+      - key: APP_DB_SCHEMA
+        value: villagemembers_app
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: propertymanager-1-redis
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: APP_URL
+        value: 'https://propertymanager-1.onrender.com'
+      - key: BRAND_NAME
+        value: 'VillageMembers'
+      - key: BRAND_DOMAIN
+        value: 'villagemembers.org'
+      - key: EMAIL_FROM
+        value: 'VillageMembers <no-reply@villagemembers.org>'
+      - key: RESEND_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_CONNECT_WEBHOOK_SECRET
+        sync: false
+      - key: PLATFORM_FEE_RENT_BPS
+        value: '0'
+      - key: MARKETPLACE_TAKE_RATE_BPS
+        value: '1000'
+      - key: SUPER_ADMIN_EMAIL
+        value: 'jobs@aalb.org'
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false
+
+  - type: redis
+    name: propertymanager-1-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+databases:
+  - name: propertymanager-1-db
+    databaseName: propertymaster
+    user: propertymaster
+    plan: starter
+    postgresMajorVersion: 15
