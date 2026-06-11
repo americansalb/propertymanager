@@ -1,8 +1,8 @@
-// VillageMembers — complete data model (Phase 1 + Phase 2).
+// VillageKeep — complete data model (Phase 1 + Phase 2).
 // All money fields are integer cents. Rates are basis points.
 // LedgerEntry / *StatusHistory are append-only: corrections are new rows, never updates.
 // The app operates exclusively inside the Postgres schema set via ?schema= on
-// DATABASE_URL (default villagemembers_app) — never in public or any other schema.
+// DATABASE_URL (default villagekeep_app) — never in public or any other schema.
 
 generator client {
   provider = "prisma-client-js"

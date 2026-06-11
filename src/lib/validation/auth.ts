@@ -14,6 +14,8 @@ export const signupSchema = z.object({
   accountType: z.enum(["LANDLORD", "PRO"]),
   // Landlord: organization name. Pro: business name.
   businessName: z.string().min(1).max(120).trim(),
+  // Collected for pros at signup; full onboarding completes the profile (Phase 2).
+  phone: z.string().min(7).max(20).trim().optional(),
 });
 
 export const loginSchema = z.object({

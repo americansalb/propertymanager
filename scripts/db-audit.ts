@@ -7,7 +7,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 
-const APP_SCHEMA = process.env.APP_DB_SCHEMA ?? "villagemembers_app";
+const APP_SCHEMA = process.env.APP_DB_SCHEMA ?? "villagekeep_app";
 
 async function main() {
   const raw = process.env.DATABASE_URL;

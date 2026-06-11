@@ -1,6 +1,6 @@
-# VillageMembers
+# VillageKeep
 
-**Property management & trusted local pros** — villagemembers.org
+**Property management & trusted local pros** — villagekeep.com
 
 Landlords manage properties and collect rent. Tenants report problems through a
 guided wizard. Verified local pros bid on the work, the platform escrows the
@@ -24,7 +24,7 @@ Connect · Resend · Docker on Render.
 ## Database safety
 
 The production Postgres instance is **shared with other services**. This app
-operates exclusively inside its own schema (`villagemembers_app`), appended to
+operates exclusively inside its own schema (`villagekeep_app`), appended to
 `DATABASE_URL` automatically (`src/lib/env.ts`, `docker-entrypoint.sh`). It
 never reads or writes `public` or any other schema. Verify anytime with the
 read-only audit:
@@ -40,7 +40,7 @@ docker compose up -d          # postgres + redis + mailpit
 cp .env.example .env          # fill in as needed
 pnpm install
 pnpm db:generate
-pnpm db:migrate               # creates villagemembers_app schema locally
+pnpm db:migrate               # creates villagekeep_app schema locally
 pnpm db:seed                  # super admin + service catalog (+ SEED_DEMO=true for demo data)
 pnpm dev
 ```

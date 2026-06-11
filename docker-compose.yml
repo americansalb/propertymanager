@@ -3,9 +3,9 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: villagemembers
-      POSTGRES_PASSWORD: villagemembers
-      POSTGRES_DB: villagemembers
+      POSTGRES_USER: villagekeep
+      POSTGRES_PASSWORD: villagekeep
+      POSTGRES_DB: villagekeep
     ports:
       - '5432:5432'
     volumes:

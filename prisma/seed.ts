@@ -5,7 +5,7 @@ import { randomBytes } from "node:crypto";
 // Seed runs inside the app's isolated schema only (DATABASE_URL?schema=…).
 const url = new URL(process.env.DATABASE_URL ?? "");
 if (!url.searchParams.has("schema")) {
-  url.searchParams.set("schema", process.env.APP_DB_SCHEMA ?? "villagemembers_app");
+  url.searchParams.set("schema", process.env.APP_DB_SCHEMA ?? "villagekeep_app");
 }
 const prisma = new PrismaClient({ datasourceUrl: url.toString() });
 

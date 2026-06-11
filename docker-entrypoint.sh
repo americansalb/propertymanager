@@ -3,7 +3,7 @@ set -e
 
 # Pin the app to its isolated Postgres schema. The shared instance hosts other
 # services — migrations and queries must never leave this schema.
-APP_DB_SCHEMA="${APP_DB_SCHEMA:-villagemembers_app}"
+APP_DB_SCHEMA="${APP_DB_SCHEMA:-villagekeep_app}"
 case "$DATABASE_URL" in
   *schema=*) : ;;
   *\?*) export DATABASE_URL="${DATABASE_URL}&schema=${APP_DB_SCHEMA}" ;;

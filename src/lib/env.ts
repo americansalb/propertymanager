@@ -13,14 +13,14 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   // The Postgres schema this app exclusively owns. The shared instance hosts
   // other services — the app must never read or write outside this schema.
-  APP_DB_SCHEMA: z.string().regex(/^[a-z_][a-z0-9_]*$/).default("villagemembers_app"),
+  APP_DB_SCHEMA: z.string().regex(/^[a-z_][a-z0-9_]*$/).default("villagekeep_app"),
   SESSION_SECRET: z.string().min(32).optional(),
   APP_URL: z.string().url().default("http://localhost:3000"),
-  BRAND_NAME: z.string().default("VillageMembers"),
-  BRAND_DOMAIN: z.string().default("villagemembers.org"),
+  BRAND_NAME: z.string().default("VillageKeep"),
+  BRAND_DOMAIN: z.string().default("villagekeep.com"),
   REDIS_URL: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default("VillageMembers <no-reply@villagemembers.org>"),
+  EMAIL_FROM: z.string().default("VillageKeep <no-reply@villagekeep.com>"),
   STRIPE_SECRET_KEY: z.string().optional(),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
@@ -35,7 +35,7 @@ export const env = envSchema.parse(process.env);
  * DATABASE_URL with the app's isolated schema pinned.
  *
  * Render's managed DATABASE_URL has no schema param; appending one scopes
- * Prisma (queries AND migrations) to `villagemembers_app` so the other
+ * Prisma (queries AND migrations) to `villagekeep_app` so the other
  * services sharing this instance are untouched.
  */
 export function databaseUrlWithSchema(): string {

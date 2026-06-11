@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { brand } from "@/lib/brand";
 
 export default function LandingPage() {
@@ -15,10 +16,19 @@ export default function LandingPage() {
           Collect rent, handle maintenance, and hire verified local pros — with payment
           held safely until the job is done.
         </p>
-        <div className="mt-10 flex items-center justify-center gap-4">
-          <span className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white opacity-60">
-            Launching soon
-          </span>
+        <div className="mt-10 flex items-center justify-center gap-3">
+          <Link
+            href="/signup"
+            className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800"
+          >
+            Get started
+          </Link>
+          <Link
+            href="/login"
+            className="rounded-full border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-700 hover:border-stone-400"
+          >
+            Sign in
+          </Link>
         </div>
       </div>
       <footer className="absolute bottom-6 text-xs text-stone-400">

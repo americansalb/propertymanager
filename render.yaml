@@ -1,4 +1,4 @@
-# VillageMembers on the existing Render service.
+# VillageKeep on the existing Render service.
 # IMPORTANT: the database and redis blocks below are the PRE-EXISTING shared
 # resources — they are intentionally kept verbatim so a Blueprint sync never
 # flags them as removed. The app writes only to its own Postgres schema
@@ -21,7 +21,7 @@ services:
           name: propertymanager-1-db
           property: connectionString
       - key: APP_DB_SCHEMA
-        value: villagemembers_app
+        value: villagekeep_app
       - key: REDIS_URL
         fromService:
           type: redis
@@ -32,11 +32,11 @@ services:
       - key: APP_URL
         value: 'https://propertymanager-1.onrender.com'
       - key: BRAND_NAME
-        value: 'VillageMembers'
+        value: 'VillageKeep'
       - key: BRAND_DOMAIN
-        value: 'villagemembers.org'
+        value: 'villagekeep.com'
       - key: EMAIL_FROM
-        value: 'VillageMembers <no-reply@villagemembers.org>'
+        value: 'VillageKeep <no-reply@villagekeep.com>'
       - key: RESEND_API_KEY
         sync: false
       - key: STRIPE_SECRET_KEY
