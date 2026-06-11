@@ -6,11 +6,13 @@ export function PortalShell({
   portalLabel,
   userName,
   contextName,
+  nav,
   children,
 }: {
   portalLabel: string;
   userName: string;
   contextName?: string | null;
+  nav?: Array<{ href: string; label: string }>;
   children: React.ReactNode;
 }) {
   return (
@@ -31,6 +33,19 @@ export function PortalShell({
             <LogoutButton />
           </div>
         </div>
+        {nav && nav.length > 0 && (
+          <nav className="mx-auto flex max-w-6xl gap-1 px-4 pb-2">
+            {nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        )}
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
