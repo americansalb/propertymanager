@@ -1,3 +1,5 @@
+# Identical to ./Dockerfile — kept under the legacy filename in case the
+# existing Render service still points at dockerfilePath: ./Dockerfile.backend.
 # VillageMembers — single-service production image for Render.
 # Stages: deps → build → runner (Next.js standalone output).
 

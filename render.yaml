@@ -2,7 +2,7 @@
 # IMPORTANT: the database and redis blocks below are the PRE-EXISTING shared
 # resources — they are intentionally kept verbatim so a Blueprint sync never
 # flags them as removed. The app writes only to its own Postgres schema
-# (APP_DB_SCHEMA) and prefixes Redis keys with vm:.
+# (APP_DB_SCHEMA) and prefixes Redis keys with vk:.
 
 services:
   - type: web
