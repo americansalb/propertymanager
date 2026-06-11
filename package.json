@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "build:production": "prisma generate && next build",
+    "start": "node scripts/render-start.mjs",
+    "start:prod": "node scripts/render-start.mjs",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
