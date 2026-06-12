@@ -3,102 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatCents } from "@/lib/money";
-import { UTILITY_SUGGESTIONS } from "@/lib/validation/property";
 import { buttonCls, inputCls } from "@/components/ui";
 import { ConfirmButton, useToast } from "@/components/ui-feedback";
-import { EditableRow, useRowPatch } from "@/components/ui-inline";
-import { IconClose, IconPencil, IconPlus } from "@/components/icons";
+import {
+  UnitStatusSelect,
+  unitTitle,
+  type UnitView,
+} from "@/components/landlord/unit-terms";
+import { IconChevronRight, IconClose, IconPlus } from "@/components/icons";
 
-export type UnitView = {
-  id: string;
-  unitNumber: string;
-  bedrooms: number | null;
-  bathrooms: number | null;
-  squareFeet: number | null;
-  marketRentCents: number | null;
-  securityDepositCents: number | null;
-  petDepositCents: number | null;
-  petRentCents: number | null;
-  parkingSpot: string | null;
-  parkingRentCents: number | null;
-  utilitiesIncluded: string[];
-  status: string;
-};
+export type { UnitView };
 
-const STATUS_STYLE: Record<string, string> = {
-  VACANT: "bg-amber-50 text-amber-800",
-  OCCUPIED: "bg-patina-tint text-patina",
-  NOTICE: "bg-stone-100 text-stone-600",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  OCCUPIED: "Occupied",
-  VACANT: "Vacant",
-  NOTICE: "On notice",
-};
-
-/** The status IS the control: tap, pick the truth, the portrait follows. */
-function UnitStatusSelect({
-  unitId,
-  unitNumber,
-  status,
-}: {
-  unitId: string;
-  unitNumber: string;
-  status: string;
-}) {
-  const router = useRouter();
-  const { push: toast } = useToast();
-  const [shown, setShown] = useState(status);
-
-  async function change(next: string) {
-    if (next === shown) return;
-    const previous = shown;
-    setShown(next);
-    const res = await fetch(`/api/v1/landlord/units/${unitId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: next }),
-    });
-    if (!res.ok) {
-      setShown(previous);
-      toast(`Couldn't update ${unitTitle(unitNumber)}.`, "bad");
-      return;
-    }
-    toast(`${unitTitle(unitNumber)} is now ${STATUS_LABEL[next]?.toLowerCase()}.`);
-    router.refresh();
-  }
-
-  return (
-    <select
-      value={shown}
-      onChange={(e) => change(e.target.value)}
-      aria-label="Unit status"
-      className={`cursor-pointer appearance-none rounded-full border-0 py-0.5 pl-2 pr-5 text-xs font-medium transition focus:outline-none focus:ring-1 focus:ring-patina ${STATUS_STYLE[shown] ?? "bg-stone-100 text-stone-600"}`}
-      style={{
-        backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M0 0h8L4 6z' fill='%2378716c'/%3E%3C/svg%3E\")",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "right 6px center",
-        backgroundSize: "7px",
-      }}
-    >
-      {Object.entries(STATUS_LABEL).map(([value, label]) => (
-        <option key={value} value={value}>
-          {label}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function unitTitle(unitNumber: string): string {
-  return /^\d/.test(unitNumber) ? `Unit ${unitNumber}` : unitNumber;
-}
-
-const dollars = (cents: number | null) => (cents != null ? (cents / 100).toString() : null);
-
-/** "$1,850 deposit · pet +$50/mo · parking +$150/mo" */
+/** "$1,850 deposit · pet +$50/mo · parking incl." */
 function termsSubline(u: UnitView): string {
   const parts: string[] = [];
   if (u.securityDepositCents != null) parts.push(`${formatCents(u.securityDepositCents)} deposit`);
@@ -110,15 +26,17 @@ function termsSubline(u: UnitView): string {
   return parts.join(" · ");
 }
 
+/** Compact card: the unit's front door. Click anywhere to enter its profile. */
 function UnitCard({
   unit,
-  onExpand,
+  href,
   onDelete,
 }: {
   unit: UnitView;
-  onExpand: () => void;
+  href: string;
   onDelete: () => void;
 }) {
+  const router = useRouter();
   const occupied = unit.status !== "VACANT";
   const specs = [
     unit.bedrooms != null ? `${unit.bedrooms} bd` : null,
@@ -128,7 +46,15 @@ function UnitCard({
   const terms = termsSubline(unit);
 
   return (
-    <div className="group relative rounded-xl border border-stone-200 bg-white p-4 transition hover:border-patina">
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(href)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") router.push(href);
+      }}
+      className="group relative cursor-pointer rounded-xl border border-stone-200 bg-white p-4 transition hover:border-patina"
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="truncate font-display text-lg font-semibold text-stone-900">
           {unitTitle(unit.unitNumber)}
@@ -136,7 +62,7 @@ function UnitCard({
         <UnitStatusSelect unitId={unit.id} unitNumber={unit.unitNumber} status={unit.status} />
       </div>
 
-      <div className="mt-2 pb-6">
+      <div className="mt-2 pb-5">
         {unit.marketRentCents != null ? (
           <p className="flex items-baseline gap-1.5">
             <span className="font-display text-xl font-semibold tabular-nums text-stone-900">
@@ -145,180 +71,38 @@ function UnitCard({
             <span className="text-xs text-stone-500">/mo {occupied ? "rent" : "asking"}</span>
           </p>
         ) : (
-          <button onClick={onExpand} className="text-sm text-stone-400 transition hover:text-copper-deep">
+          <p className="text-sm text-stone-400 transition group-hover:text-copper-deep">
             <span className="mr-1 font-semibold text-copper">+</span>
             {occupied ? "Set the rent" : "Set asking rent"}
-          </button>
+          </p>
         )}
         {terms && <p className="mt-1 text-xs text-stone-500">{terms}</p>}
         {specs.length > 0 && <p className="mt-1 text-sm text-stone-500">{specs.join(" · ")}</p>}
       </div>
 
-      {/* Reachable everywhere: visible on touch, hover-revealed on desktop. */}
-      <div className="absolute right-3 bottom-3 flex items-center gap-1 transition sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
-        <button
-          onClick={onExpand}
-          title="Edit terms"
-          className="rounded-lg p-1.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
-        >
-          <IconPencil className="h-3.5 w-3.5" />
-        </button>
-        <ConfirmButton
-          onConfirm={onDelete}
-          confirmLabel="Delete"
-          title="Delete unit"
-          className="rounded-lg p-1.5 text-stone-300 transition hover:bg-red-50 hover:text-red-600"
-        >
-          <IconClose className="h-3.5 w-3.5" />
-        </ConfirmButton>
+      <div className="absolute right-3 bottom-3 flex items-center gap-1">
+        <span onClick={(e) => e.stopPropagation()}>
+          <ConfirmButton
+            onConfirm={onDelete}
+            confirmLabel="Delete"
+            title="Delete unit"
+            className="rounded-lg p-1.5 text-stone-300 transition hover:bg-red-50 hover:text-red-600 sm:opacity-0 sm:transition sm:group-hover:opacity-100"
+          >
+            <IconClose className="h-3.5 w-3.5" />
+          </ConfirmButton>
+        </span>
+        <IconChevronRight className="h-3.5 w-3.5 text-stone-300 transition group-hover:translate-x-0.5 group-hover:text-patina" />
       </div>
     </div>
   );
 }
 
-/** Expanded in place: every term is its own self-saving row. */
-function UnitTermsPanel({ unit, onClose }: { unit: UnitView; onClose: () => void }) {
-  const patch = useRowPatch(`/api/v1/landlord/units/${unit.id}`);
-  const occupied = unit.status !== "VACANT";
-
-  const money = (cents: number | null, suffix = "") =>
-    cents != null ? `${formatCents(cents)}${suffix}` : null;
-
-  return (
-    <div className="col-span-full rounded-xl border border-patina bg-white p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-display text-lg font-semibold text-stone-900">
-          {unitTitle(unit.unitNumber)}
-        </p>
-        <div className="flex items-center gap-2">
-          <UnitStatusSelect unitId={unit.id} unitNumber={unit.unitNumber} status={unit.status} />
-          <button onClick={onClose} className={buttonCls("ghost", "sm")}>
-            Done
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-3 grid gap-x-10 sm:grid-cols-2">
-        <dl>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-copper-deep">
-            Money
-          </p>
-          <EditableRow
-            label={occupied ? "Rent" : "Asking rent"}
-            value={dollars(unit.marketRentCents)}
-            display={money(unit.marketRentCents, "/mo")}
-            emptyPrompt={occupied ? "What does it rent for?" : "What should it list at?"}
-            kind={{ kind: "money", placeholder: "1,850" }}
-            onSave={(v) => patch({ marketRentDollars: v })}
-            savedToast="Rent saved."
-          />
-          <EditableRow
-            label="Deposit"
-            value={dollars(unit.securityDepositCents)}
-            display={money(unit.securityDepositCents)}
-            emptyPrompt="Security deposit held."
-            kind={{ kind: "money", placeholder: "1,850" }}
-            onSave={(v) => patch({ securityDepositDollars: v })}
-            savedToast="Deposit saved."
-          />
-          <EditableRow
-            label="Pet deposit"
-            value={dollars(unit.petDepositCents)}
-            display={money(unit.petDepositCents)}
-            emptyPrompt="One-time, if pets move in."
-            kind={{ kind: "money", placeholder: "300" }}
-            onSave={(v) => patch({ petDepositDollars: v })}
-            savedToast="Pet deposit saved."
-          />
-          <EditableRow
-            label="Pet rent"
-            value={dollars(unit.petRentCents)}
-            display={money(unit.petRentCents, "/mo")}
-            emptyPrompt="Monthly, per pet."
-            kind={{ kind: "money", placeholder: "50" }}
-            onSave={(v) => patch({ petRentDollars: v })}
-            savedToast="Pet rent saved."
-          />
-          <EditableRow
-            label="Parking rent"
-            value={dollars(unit.parkingRentCents)}
-            display={
-              unit.parkingRentCents === 0 ? "Included" : money(unit.parkingRentCents, "/mo")
-            }
-            emptyPrompt="Monthly; enter 0 if included."
-            kind={{ kind: "money", placeholder: "150" }}
-            onSave={(v) => patch({ parkingRentDollars: v })}
-            savedToast="Parking rent saved."
-          />
-          <EditableRow
-            label="Utilities"
-            value={unit.utilitiesIncluded}
-            emptyPrompt="Which utilities are included?"
-            kind={{ kind: "chips", suggestions: UTILITY_SUGGESTIONS, placeholder: "Add utility" }}
-            onSave={(v) => patch({ utilitiesIncluded: Array.isArray(v) ? v : [] })}
-            savedToast="Utilities saved."
-          />
-        </dl>
-
-        <dl>
-          <p className="mb-1 mt-4 text-[10px] font-semibold uppercase tracking-widest text-patina sm:mt-0">
-            Home
-          </p>
-          <EditableRow
-            label="Unit name"
-            value={unit.unitNumber}
-            emptyPrompt="Name or number."
-            kind={{ kind: "text", placeholder: "2F, 101, Garden…" }}
-            onSave={(v) => patch({ unitNumber: v })}
-            savedToast="Renamed."
-            required
-          />
-          <EditableRow
-            label="Beds"
-            value={unit.bedrooms?.toString() ?? null}
-            emptyPrompt="How many bedrooms?"
-            kind={{ kind: "number", placeholder: "2" }}
-            onSave={(v) => patch({ bedrooms: v })}
-            savedToast="Saved."
-          />
-          <EditableRow
-            label="Baths"
-            value={unit.bathrooms?.toString() ?? null}
-            emptyPrompt="Half baths count as .5"
-            kind={{ kind: "number", decimal: true, placeholder: "1.5" }}
-            onSave={(v) => patch({ bathrooms: v })}
-            savedToast="Saved."
-          />
-          <EditableRow
-            label="Sq ft"
-            value={unit.squareFeet?.toString() ?? null}
-            emptyPrompt="Approximate is fine."
-            kind={{ kind: "number", placeholder: "850" }}
-            onSave={(v) => patch({ squareFeet: v })}
-            savedToast="Saved."
-          />
-          <EditableRow
-            label="Parking spot"
-            value={unit.parkingSpot}
-            emptyPrompt="Assigned spot, garage, street permit?"
-            kind={{ kind: "text", placeholder: "1 assigned spot, garage" }}
-            onSave={(v) => patch({ parkingSpot: v })}
-            savedToast="Saved."
-          />
-        </dl>
-      </div>
-    </div>
-  );
-}
-
-/** Create stays a tiny one-shot form; terms entry continues in the panel. */
+/** Create is a tiny two-field card; the new unit's profile opens next. */
 function NewUnitCard({
   propertyId,
-  onCreated,
   onClose,
 }: {
   propertyId: string;
-  onCreated: (id: string) => void;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -352,7 +136,7 @@ function NewUnitCard({
       return;
     }
     toast(`${unitTitle(unitNumber.trim())} added.`);
-    onCreated(data.unit.id);
+    router.push(`/landlord/properties/${propertyId}/units/${data.unit.id}`);
     router.refresh();
   }
 
@@ -402,7 +186,7 @@ function NewUnitCard({
 export function UnitsManager({ propertyId, units }: { propertyId: string; units: UnitView[] }) {
   const router = useRouter();
   const { push: toast } = useToast();
-  const [expandedId, setExpandedId] = useState<string | "new" | null>(null);
+  const [adding, setAdding] = useState(false);
 
   async function remove(unit: UnitView) {
     const res = await fetch(`/api/v1/landlord/units/${unit.id}`, { method: "DELETE" });
@@ -421,27 +205,19 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
         Units ({units.length})
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {units.map((u) =>
-          expandedId === u.id ? (
-            <UnitTermsPanel key={u.id} unit={u} onClose={() => setExpandedId(null)} />
-          ) : (
-            <UnitCard
-              key={u.id}
-              unit={u}
-              onExpand={() => setExpandedId(u.id)}
-              onDelete={() => void remove(u)}
-            />
-          ),
-        )}
-        {expandedId === "new" ? (
-          <NewUnitCard
-            propertyId={propertyId}
-            onCreated={(id) => setExpandedId(id)}
-            onClose={() => setExpandedId(null)}
+        {units.map((u) => (
+          <UnitCard
+            key={u.id}
+            unit={u}
+            href={`/landlord/properties/${propertyId}/units/${u.id}`}
+            onDelete={() => void remove(u)}
           />
+        ))}
+        {adding ? (
+          <NewUnitCard propertyId={propertyId} onClose={() => setAdding(false)} />
         ) : (
           <button
-            onClick={() => setExpandedId("new")}
+            onClick={() => setAdding(true)}
             className="flex min-h-28 items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 text-sm font-medium text-stone-400 transition hover:border-patina hover:text-patina"
           >
             <IconPlus className="h-4 w-4" /> Add unit
