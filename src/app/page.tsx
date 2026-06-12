@@ -15,7 +15,7 @@ export default function LandingPage() {
         </h1>
         <p className="mt-6 text-lg leading-8 text-stone-600">{brand.tagline}</p>
         <p className="mt-2 text-stone-500">
-          Collect rent, handle maintenance, and hire verified local pros — with payment
+          Collect rent, handle maintenance, and hire verified local pros - with payment
           held safely until the job is done.
         </p>
         <div className="mt-10 flex items-center justify-center gap-3">

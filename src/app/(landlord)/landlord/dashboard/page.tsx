@@ -39,7 +39,7 @@ export default async function LandlordDashboard() {
         <div className="mt-8 rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center">
           <h2 className="text-lg font-medium text-stone-900">Add your first property</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-stone-500">
-            A single-family home takes about 30 seconds — a building with units, about two
+            A single-family home takes about 30 seconds - a building with units, about two
             minutes. Tenants and rent come next.
           </p>
           <Link

@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * Environment contract.
  *
- * Only DATABASE_URL is hard-required at boot — everything else is validated
+ * Only DATABASE_URL is hard-required at boot - everything else is validated
  * lazily by the feature that needs it (so the health endpoint and first
  * deploy stay green while Stripe/Resend vars are added milestone by
  * milestone).
@@ -12,7 +12,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   // The Postgres schema this app exclusively owns. The shared instance hosts
-  // other services — the app must never read or write outside this schema.
+  // other services - the app must never read or write outside this schema.
   APP_DB_SCHEMA: z.string().regex(/^[a-z_][a-z0-9_]*$/).default("villagekeep_app"),
   SESSION_SECRET: z.string().min(32).optional(),
   APP_URL: z.string().url().default("http://localhost:3000"),

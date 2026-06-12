@@ -1,4 +1,4 @@
-/** The VillageKeep mark — founder's v3 (iron keep, copper home, patina frame). */
+/** The VillageKeep mark - founder's v3 (iron keep, copper home, patina frame). */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 512 512" className={className} aria-hidden="true" focusable="false">

@@ -11,7 +11,7 @@ export type AuthContext = {
   lastName: string;
   roles: Role[];
   activeRole: Role | null;
-  /** Org resolved from MEMBERSHIP — never from client input. */
+  /** Org resolved from MEMBERSHIP - never from client input. */
   activeOrgId: string | null;
   orgs: Array<{ id: string; name: string; role: string }>;
   isSuperAdmin: boolean;

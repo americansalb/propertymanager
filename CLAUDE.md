@@ -1,13 +1,15 @@
-# CLAUDE.md — VillageKeep
+# CLAUDE.md - VillageKeep
 
 Property management + services marketplace (escrow). Brand: **VillageKeep** /
-villagekeep.com — configured via env (`BRAND_NAME`), never hardcoded.
+villagekeep.com - configured via env (`BRAND_NAME`), never hardcoded.
 
 ## Workflow (founder-mandated)
 
-- Develop and push on a working branch — NEVER push directly to `main_property`.
+- Develop and push on a working branch - NEVER push directly to `main_property`.
 - To deploy: **merge** the working branch into `main_property` and push the
   merge. Render auto-deploys `main_property`.
+- Merge verified work into `main_property` PROMPTLY after each completed
+  chunk (tests/lint/build green). Do not wait for per-deploy approval.
 - The Render service `propertymanager-1` is a **native Node service** (not
   Docker). It runs `pnpm install && pnpm run build:production`, then the
   dashboard Start Command (`pnpm start` → `scripts/render-start.mjs`:
@@ -25,11 +27,14 @@ Read-only instance audit: `pnpm db:audit`.
 
 ## Conventions
 
+- NO EM DASHES (U+2014), ever: not in code, UI copy, docs, commit messages,
+  or chat replies. Use a comma, colon, period, or spaced hyphen instead.
+  (`grep -rn $'—' src docs *.md` must stay empty.)
 - Money: integer cents; rates in basis points (`src/lib/money.ts`).
 - Roles derived from data (Membership/TenantProfile/ProProfile/isSuperAdmin),
-  never stored — see `src/lib/authz/roles.ts`.
+  never stored - see `src/lib/authz/roles.ts`.
 - Org scoping: handlers/services take orgId from the session via
-  `requireOrg()` — never from client input.
+  `requireOrg()` - never from client input.
 - Ledger + status-history tables are append-only; corrections are new rows.
 - Route handlers stay thin: zod parse → `src/lib/services/*` → JSON.
 
