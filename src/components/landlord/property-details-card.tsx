@@ -121,15 +121,25 @@ export function PropertyDetailsCard({
             details.accessLocked ? (
               <span className="text-amber-700">Stored, but the encryption key changed.</span>
             ) : (
-              <button
+              // span, not button: this display lives inside the row button
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowCodes((s) => !s);
                 }}
-                className="font-medium text-copper-deep hover:underline"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowCodes((s) => !s);
+                  }
+                }}
+                className="cursor-pointer font-medium text-copper-deep hover:underline"
               >
                 {showCodes ? details.accessCodes : "•••••• tap to reveal"}
-              </button>
+              </span>
             )
           }
           emptyPrompt="Lockbox or gate codes, encrypted, shared per job only."

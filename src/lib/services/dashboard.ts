@@ -21,6 +21,10 @@ export type PortfolioProperty = {
   id: string;
   name: string;
   type: string;
+  portraitSeed: number | null;
+  portraitBody: string | null;
+  portraitRoof: string | null;
+  portraitAccent: string | null;
   units: Array<{ id: string; status: string }>;
 };
 
@@ -59,6 +63,10 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
         id: true,
         name: true,
         type: true,
+        portraitSeed: true,
+        portraitBody: true,
+        portraitRoof: true,
+        portraitAccent: true,
         units: { select: { id: true, status: true }, orderBy: { unitNumber: "asc" } },
       },
     }),
