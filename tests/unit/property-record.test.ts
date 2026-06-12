@@ -85,3 +85,20 @@ describe("propertyDetailsSchema", () => {
     expect(propertyDetailsSchema.parse({ petsAllowed: "unset" }).petsAllowed).toBeNull();
   });
 });
+
+describe("unit partial updates (the not-vacant fix)", () => {
+  it("accepts a status-only patch without touching other fields", async () => {
+    const { unitUpdateSchema, toUnitUpdateData } = await import("@/lib/validation/property");
+    const parsed = unitUpdateSchema.parse({ status: "OCCUPIED" });
+    expect(toUnitUpdateData(parsed)).toEqual({ status: "OCCUPIED" });
+  });
+  it("clears a field only on explicit null", async () => {
+    const { unitUpdateSchema, toUnitUpdateData } = await import("@/lib/validation/property");
+    const parsed = unitUpdateSchema.parse({ bedrooms: null, marketRentDollars: "1850" });
+    expect(toUnitUpdateData(parsed)).toEqual({ bedrooms: null, marketRentCents: 185_000 });
+  });
+  it("rejects an invalid status", async () => {
+    const { unitUpdateSchema } = await import("@/lib/validation/property");
+    expect(unitUpdateSchema.safeParse({ status: "PARTY" }).success).toBe(false);
+  });
+});

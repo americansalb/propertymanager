@@ -26,6 +26,34 @@ export const unitInputSchema = z.object({
   marketRentDollars: z.coerce.number().min(0).max(1_000_000).optional(),
 });
 
+/**
+ * Partial unit update: only provided keys change; explicit null clears.
+ * Status is settable directly until leases derive it (milestone 1.4);
+ * after that, manual status remains the escape hatch for lease-less units.
+ */
+export const unitUpdateSchema = z.object({
+  unitNumber: z.string().min(1).max(24).trim().optional(),
+  bedrooms: z.coerce.number().int().min(0).max(20).nullable().optional(),
+  bathrooms: z.coerce.number().min(0).max(20).multipleOf(0.5).nullable().optional(),
+  squareFeet: z.coerce.number().int().min(1).max(100_000).nullable().optional(),
+  marketRentDollars: z.coerce.number().min(0).max(1_000_000).nullable().optional(),
+  status: z.enum(["VACANT", "OCCUPIED", "NOTICE"]).optional(),
+});
+
+export function toUnitUpdateData(input: UnitUpdateInput): Record<string, unknown> {
+  const data: Record<string, unknown> = {};
+  if (input.unitNumber !== undefined) data.unitNumber = input.unitNumber;
+  if (input.bedrooms !== undefined) data.bedrooms = input.bedrooms;
+  if (input.bathrooms !== undefined) data.bathrooms = input.bathrooms;
+  if (input.squareFeet !== undefined) data.squareFeet = input.squareFeet;
+  if (input.marketRentDollars !== undefined) {
+    data.marketRentCents =
+      input.marketRentDollars === null ? null : dollarsToCents(input.marketRentDollars);
+  }
+  if (input.status !== undefined) data.status = input.status;
+  return data;
+}
+
 export const propertyCreateSchema = z.object({
   name: z.string().min(1).max(120).trim(),
   type: z.enum(["SINGLE_FAMILY", "MULTIFAMILY", "CONDO", "TOWNHOUSE", "COMMERCIAL", "OTHER"]),
@@ -119,3 +147,4 @@ export type PropertyCreateInput = z.infer<typeof propertyCreateSchema>;
 export type PropertyUpdateInput = z.infer<typeof propertyUpdateSchema>;
 export type PropertyDetailsInput = z.infer<typeof propertyDetailsSchema>;
 export type UnitInput = z.infer<typeof unitInputSchema>;
+export type UnitUpdateInput = z.infer<typeof unitUpdateSchema>;
