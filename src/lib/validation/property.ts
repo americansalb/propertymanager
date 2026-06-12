@@ -18,12 +18,27 @@ const stateSchema = z
   .toUpperCase()
   .pipe(z.enum(STATE_CODES, { message: "Use a real 2-letter state code" }));
 
+/** Dollar inputs arrive as "1,850" or "$1850": strip decoration, then coerce. */
+const dollarsField = z.preprocess(
+  (v) => (typeof v === "string" ? v.replace(/[$,\s]/g, "") : v),
+  z.coerce.number().min(0).max(1_000_000),
+);
+
+/** Suggested-but-not-enforced utilities; chips stay free text. */
+export const UTILITY_SUGGESTIONS = ["Water", "Trash", "Heat", "Gas", "Electric", "Internet"];
+
 export const unitInputSchema = z.object({
   unitNumber: z.string().min(1).max(24).trim(),
   bedrooms: z.coerce.number().int().min(0).max(20).optional(),
   bathrooms: z.coerce.number().min(0).max(20).multipleOf(0.5).optional(),
   squareFeet: z.coerce.number().int().min(1).max(100_000).optional(),
-  marketRentDollars: z.coerce.number().min(0).max(1_000_000).optional(),
+  marketRentDollars: dollarsField.optional(),
+  securityDepositDollars: dollarsField.optional(),
+  petDepositDollars: dollarsField.optional(),
+  petRentDollars: dollarsField.optional(),
+  parkingRentDollars: dollarsField.optional(),
+  parkingSpot: z.string().max(120).trim().optional(),
+  utilitiesIncluded: z.array(z.string()).max(20).optional(),
 });
 
 /**
@@ -36,9 +51,29 @@ export const unitUpdateSchema = z.object({
   bedrooms: z.coerce.number().int().min(0).max(20).nullable().optional(),
   bathrooms: z.coerce.number().min(0).max(20).multipleOf(0.5).nullable().optional(),
   squareFeet: z.coerce.number().int().min(1).max(100_000).nullable().optional(),
-  marketRentDollars: z.coerce.number().min(0).max(1_000_000).nullable().optional(),
+  marketRentDollars: dollarsField.nullable().optional(),
+  securityDepositDollars: dollarsField.nullable().optional(),
+  petDepositDollars: dollarsField.nullable().optional(),
+  petRentDollars: dollarsField.nullable().optional(),
+  parkingRentDollars: dollarsField.nullable().optional(),
+  parkingSpot: z
+    .string()
+    .trim()
+    .max(120)
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .optional(),
+  utilitiesIncluded: z.array(z.string()).max(20).optional(),
   status: z.enum(["VACANT", "OCCUPIED", "NOTICE"]).optional(),
 });
+
+const DOLLAR_TO_CENT_FIELDS = [
+  ["marketRentDollars", "marketRentCents"],
+  ["securityDepositDollars", "securityDepositCents"],
+  ["petDepositDollars", "petDepositCents"],
+  ["petRentDollars", "petRentCents"],
+  ["parkingRentDollars", "parkingRentCents"],
+] as const;
 
 export function toUnitUpdateData(input: UnitUpdateInput): Record<string, unknown> {
   const data: Record<string, unknown> = {};
@@ -46,9 +81,13 @@ export function toUnitUpdateData(input: UnitUpdateInput): Record<string, unknown
   if (input.bedrooms !== undefined) data.bedrooms = input.bedrooms;
   if (input.bathrooms !== undefined) data.bathrooms = input.bathrooms;
   if (input.squareFeet !== undefined) data.squareFeet = input.squareFeet;
-  if (input.marketRentDollars !== undefined) {
-    data.marketRentCents =
-      input.marketRentDollars === null ? null : dollarsToCents(input.marketRentDollars);
+  for (const [dollars, cents] of DOLLAR_TO_CENT_FIELDS) {
+    const v = input[dollars];
+    if (v !== undefined) data[cents] = v === null ? null : dollarsToCents(v);
+  }
+  if (input.parkingSpot !== undefined) data.parkingSpot = input.parkingSpot;
+  if (input.utilitiesIncluded !== undefined) {
+    data.utilitiesIncluded = parseUtilities(input.utilitiesIncluded);
   }
   if (input.status !== undefined) data.status = input.status;
   return data;
@@ -81,21 +120,27 @@ export function isSameAddress(
 
 export const propertyUpdateSchema = propertyCreateSchema.omit({ units: true }).partial();
 
-/** Up to 12 short tags; trimmed, deduped case-insensitively, empties dropped. */
-export function parseTags(raw: string[]): string[] {
+/** Chips normalizer: trimmed, deduped case-insensitively, empties dropped. */
+export function parseChips(raw: string[], max = 12, maxLen = 24): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const t of raw) {
-    const tag = t.trim().slice(0, 24);
-    if (!tag) continue;
-    const k = tag.toLowerCase();
+    const chip = t.trim().slice(0, maxLen);
+    if (!chip) continue;
+    const k = chip.toLowerCase();
     if (seen.has(k)) continue;
     seen.add(k);
-    out.push(tag);
-    if (out.length >= 12) break;
+    out.push(chip);
+    if (out.length >= max) break;
   }
   return out;
 }
+
+/** Up to 12 short tags. */
+export const parseTags = (raw: string[]): string[] => parseChips(raw);
+
+/** Utilities included with the unit (free text, suggestions in the UI). */
+export const parseUtilities = (raw: string[]): string[] => parseChips(raw, 10, 24);
 
 const clearableText = (max: number) =>
   z
@@ -133,13 +178,19 @@ export const propertyDetailsSchema = z.object({
 });
 
 export function toUnitData(input: z.infer<typeof unitInputSchema>) {
+  const cents = (v: number | undefined) => (v !== undefined ? dollarsToCents(v) : null);
   return {
     unitNumber: input.unitNumber,
     bedrooms: input.bedrooms ?? null,
     bathrooms: input.bathrooms ?? null,
     squareFeet: input.squareFeet ?? null,
-    marketRentCents:
-      input.marketRentDollars !== undefined ? dollarsToCents(input.marketRentDollars) : null,
+    marketRentCents: cents(input.marketRentDollars),
+    securityDepositCents: cents(input.securityDepositDollars),
+    petDepositCents: cents(input.petDepositDollars),
+    petRentCents: cents(input.petRentDollars),
+    parkingRentCents: cents(input.parkingRentDollars),
+    parkingSpot: input.parkingSpot?.trim() || null,
+    utilitiesIncluded: parseUtilities(input.utilitiesIncluded ?? []),
   };
 }
 

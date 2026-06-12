@@ -102,3 +102,56 @@ describe("unit partial updates (the not-vacant fix)", () => {
     expect(unitUpdateSchema.safeParse({ status: "PARTY" }).success).toBe(false);
   });
 });
+
+describe("unit standing terms (property record v2)", () => {
+  it("strips commas and dollar signs from money fields", async () => {
+    const { unitUpdateSchema, toUnitUpdateData } = await import("@/lib/validation/property");
+    const parsed = unitUpdateSchema.parse({ securityDepositDollars: "$1,850" });
+    expect(toUnitUpdateData(parsed)).toEqual({ securityDepositCents: 185_000 });
+  });
+  it("clears each money term on explicit null", async () => {
+    const { unitUpdateSchema, toUnitUpdateData } = await import("@/lib/validation/property");
+    const parsed = unitUpdateSchema.parse({
+      petDepositDollars: null,
+      petRentDollars: null,
+      parkingRentDollars: null,
+    });
+    expect(toUnitUpdateData(parsed)).toEqual({
+      petDepositCents: null,
+      petRentCents: null,
+      parkingRentCents: null,
+    });
+  });
+  it("treats empty parkingSpot as a clear", async () => {
+    const { unitUpdateSchema, toUnitUpdateData } = await import("@/lib/validation/property");
+    expect(toUnitUpdateData(unitUpdateSchema.parse({ parkingSpot: "" }))).toEqual({
+      parkingSpot: null,
+    });
+  });
+  it("normalizes utilities chips and clears on empty array", async () => {
+    const { unitUpdateSchema, toUnitUpdateData } = await import("@/lib/validation/property");
+    const parsed = unitUpdateSchema.parse({ utilitiesIncluded: [" Water ", "water", "Trash", ""] });
+    expect(toUnitUpdateData(parsed)).toEqual({ utilitiesIncluded: ["Water", "Trash"] });
+    expect(toUnitUpdateData(unitUpdateSchema.parse({ utilitiesIncluded: [] }))).toEqual({
+      utilitiesIncluded: [],
+    });
+  });
+  it("keeps parking rent zero distinct from unset (0 = included)", async () => {
+    const { unitUpdateSchema, toUnitUpdateData } = await import("@/lib/validation/property");
+    expect(toUnitUpdateData(unitUpdateSchema.parse({ parkingRentDollars: "0" }))).toEqual({
+      parkingRentCents: 0,
+    });
+  });
+  it("toUnitData carries terms on create with [] utilities default", async () => {
+    const { unitInputSchema, toUnitData } = await import("@/lib/validation/property");
+    const parsed = unitInputSchema.parse({ unitNumber: "1F", petRentDollars: "50" });
+    const data = toUnitData(parsed);
+    expect(data.petRentCents).toBe(5_000);
+    expect(data.utilitiesIncluded).toEqual([]);
+  });
+  it("parseChips caps and parseTags keeps its old behavior", async () => {
+    const { parseChips, parseTags } = await import("@/lib/validation/property");
+    expect(parseChips(["a", "A", "b"], 2)).toEqual(["a", "b"]);
+    expect(parseTags([" Lakeview ", "lakeview", "LLC-A"])).toEqual(["Lakeview", "LLC-A"]);
+  });
+});
