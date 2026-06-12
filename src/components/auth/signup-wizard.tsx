@@ -1,19 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { OptionCards, WizardShell } from "@/components/wizard/wizard-shell";
-import { IconHome, IconTools } from "@/components/icons";
+import { IconDoor, IconHome, IconMail, IconTenants, IconTools } from "@/components/icons";
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 const continueCls =
   "mt-6 w-full rounded-lg bg-iron px-4 py-3 text-sm font-semibold text-white hover:bg-iron-deep disabled:opacity-50";
 
-type StepId = "type" | "name" | "business" | "phone" | "email" | "password";
+type StepId = "type" | "tenant" | "name" | "business" | "phone" | "email" | "password";
 
 type Draft = {
-  accountType: "LANDLORD" | "PRO" | null;
+  accountType: "LANDLORD" | "PRO" | "TENANT" | null;
   firstName: string;
   lastName: string;
   businessName: string;
@@ -33,6 +34,7 @@ const EMPTY: Draft = {
 };
 
 function stepsFor(d: Draft): StepId[] {
+  if (d.accountType === "TENANT") return ["type", "tenant"];
   return d.accountType === "PRO"
     ? ["type", "name", "business", "phone", "email", "password"]
     : ["type", "name", "business", "email", "password"];
@@ -58,7 +60,13 @@ function validate(id: StepId, d: Draft): string | null {
   }
 }
 
-export function SignupWizard() {
+export function SignupWizard({
+  brandName,
+  brandDomain,
+}: {
+  brandName: string;
+  brandDomain: string;
+}) {
   const router = useRouter();
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [step, setStep] = useState(0);
@@ -126,7 +134,11 @@ export function SignupWizard() {
   const isLandlord = draft.accountType !== "PRO";
 
   const meta: Record<StepId, { title: string; subtitle?: string }> = {
-    type: { title: "What brings you to VillageKeep?", subtitle: "Tenants join via an invitation from their landlord." },
+    type: { title: `What brings you to ${brandName}?` },
+    tenant: {
+      title: "Tenants join by invitation",
+      subtitle: "Your home, lease, and rent are linked the moment you join.",
+    },
     name: { title: "What's your name?" },
     business: isLandlord
       ? { title: "What should we call your portfolio?", subtitle: "Your company or a simple label like \"Smith Rentals\". You can change it anytime." }
@@ -159,12 +171,44 @@ export function SignupWizard() {
               description: "Plumbing, electrical, handyman: get leads and guaranteed payment",
               icon: <IconTools className="h-8 w-8" duo />,
             },
+            {
+              value: "TENANT",
+              label: "I rent my home",
+              description: "Pay rent and request repairs, set up by your landlord",
+              icon: <IconDoor className="h-8 w-8" duo />,
+            },
           ]}
           onSelect={(v) => {
             set("accountType", v as Draft["accountType"]);
             setStep(1);
           }}
         />
+      ) : id === "tenant" ? (
+        <div className="flex flex-1 flex-col">
+          <ul className="space-y-4 text-sm leading-6 text-stone-600">
+            <li className="flex gap-3">
+              <IconMail className="mt-1 h-5 w-5 shrink-0 text-patina" />
+              <span>
+                <span className="font-medium text-stone-900">Already invited?</span> Open the
+                email from {brandName}: your personal link connects you to your lease.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <IconTenants className="mt-1 h-5 w-5 shrink-0 text-patina" />
+              <span>
+                <span className="font-medium text-stone-900">Not yet?</span> Ask your landlord
+                to add you as a tenant. That keeps your rent, deposits, and repairs tied to
+                your actual lease from day one.
+              </span>
+            </li>
+          </ul>
+          <Link href="/login" className={`${continueCls} text-center`}>
+            I already have an account
+          </Link>
+          <p className="mt-4 text-center text-xs text-stone-400">
+            Landlord not on {brandName} yet? Point them to {brandDomain}
+          </p>
+        </div>
       ) : (
         <form onSubmit={next} className="flex flex-1 flex-col">
           {id === "name" && (
