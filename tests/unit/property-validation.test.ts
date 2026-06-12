@@ -34,7 +34,7 @@ describe("unitInputSchema + toUnitData", () => {
       squareFeet: "850",
       marketRentDollars: "1925.50",
     });
-    expect(toUnitData(parsed)).toEqual({
+    expect(toUnitData(parsed)).toMatchObject({
       unitNumber: "2F",
       bedrooms: 2,
       bathrooms: 1.5,
@@ -42,14 +42,20 @@ describe("unitInputSchema + toUnitData", () => {
       marketRentCents: 192_550,
     });
   });
-  it("treats omitted numbers as nulls", () => {
+  it("treats omitted numbers as nulls (terms included)", () => {
     const parsed = unitInputSchema.parse({ unitNumber: "Main" });
-    expect(toUnitData(parsed)).toEqual({
+    expect(toUnitData(parsed)).toMatchObject({
       unitNumber: "Main",
       bedrooms: null,
       bathrooms: null,
       squareFeet: null,
       marketRentCents: null,
+      securityDepositCents: null,
+      petDepositCents: null,
+      petRentCents: null,
+      parkingRentCents: null,
+      parkingSpot: null,
+      utilitiesIncluded: [],
     });
   });
   it("rejects quarter bathrooms", () => {

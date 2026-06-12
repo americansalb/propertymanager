@@ -201,6 +201,15 @@ model Unit {
   squareFeet  Int?
   marketRentCents Int?
   status      UnitStatus @default(VACANT)
+
+  // Standing terms: what this unit rents FOR. Leases (1.4) inherit these.
+  securityDepositCents Int?
+  petDepositCents      Int?
+  petRentCents         Int? // monthly
+  parkingSpot          String? // "1 assigned spot, garage"
+  parkingRentCents     Int? // monthly; null = not set, 0 = included
+  utilitiesIncluded    String[] @default([])
+
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
