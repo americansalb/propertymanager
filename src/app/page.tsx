@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
+import { LogoMark } from "@/components/brand/logo-mark";
 
 export default function LandingPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
       <div className="mx-auto max-w-2xl text-center">
-        <p className="mb-4 text-sm font-medium uppercase tracking-widest text-emerald-700">
+        <LogoMark className="mx-auto mb-6 h-24 w-24" />
+        <p className="mb-4 text-sm font-medium uppercase tracking-widest text-copper-deep">
           {brand.domain}
         </p>
         <h1 className="text-5xl font-semibold tracking-tight text-stone-900 sm:text-6xl">
@@ -19,7 +21,7 @@ export default function LandingPage() {
         <div className="mt-10 flex items-center justify-center gap-3">
           <Link
             href="/signup"
-            className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800"
+            className="rounded-full bg-iron px-5 py-2.5 text-sm font-semibold text-white hover:bg-iron-deep"
           >
             Get started
           </Link>

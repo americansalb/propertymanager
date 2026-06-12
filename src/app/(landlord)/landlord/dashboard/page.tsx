@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireOrg } from "@/lib/authz";
 
@@ -38,12 +39,15 @@ export default async function LandlordDashboard() {
         <div className="mt-8 rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center">
           <h2 className="text-lg font-medium text-stone-900">Add your first property</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-stone-500">
-            Properties, units, and tenant invitations arrive in the next milestone — the
-            foundation you&apos;re standing on is ready for them.
+            A single-family home takes about 30 seconds — a building with units, about two
+            minutes. Tenants and rent come next.
           </p>
-          <span className="mt-4 inline-block cursor-not-allowed rounded-lg bg-stone-200 px-4 py-2 text-sm font-medium text-stone-500">
-            Add property — coming next
-          </span>
+          <Link
+            href="/landlord/properties/new"
+            className="mt-4 inline-block rounded-lg bg-iron px-4 py-2 text-sm font-semibold text-white hover:bg-iron-deep"
+          >
+            Add property
+          </Link>
         </div>
       )}
     </div>

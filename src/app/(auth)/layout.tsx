@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
+import { LogoMark } from "@/components/brand/logo-mark";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-stone-50 px-4 py-12">
-      <Link href="/" className="mb-8 text-2xl font-semibold tracking-tight text-stone-900">
-        {brand.name}
+      <Link href="/" className="mb-8 flex flex-col items-center gap-3">
+        <LogoMark className="h-14 w-14" />
+        <span className="text-2xl font-semibold tracking-tight text-stone-900">{brand.name}</span>
       </Link>
       <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
         {children}
