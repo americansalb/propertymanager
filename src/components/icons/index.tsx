@@ -60,4 +60,5 @@ export const IconChevronRight = createIcon(iconByName("chevron-right"));
 export const IconTools = createIcon(iconByName("tools"));
 export const IconAlert = createIcon(iconByName("alert"));
 export const IconCheck = createIcon(iconByName("check"));
+export const IconPencil = createIcon(iconByName("pencil"));
 export const IconClose = createIcon(iconByName("close"));

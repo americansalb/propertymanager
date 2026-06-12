@@ -264,6 +264,17 @@ export const ICONS: IconDef[] = [
     paths: [{ d: "M4.2 12.9 L9.6 18.3 L19.8 8.1 L17.4 5.7 L9.6 13.5 L6.6 10.5 Z" }],
   },
   {
+    name: "pencil",
+    label: "Pencil: edit in place",
+    paths: [
+      { d: "M3.4 9.9 H6.4 V14.1 H3.4 Z", accent: "copper", transform: "rotate(-45 12 12)" },
+      {
+        d: "M7.4 9.9 H16.2 V14.1 H7.4 Z M16.2 9.9 L20.8 12 L16.2 14.1 Z",
+        transform: "rotate(-45 12 12)",
+      },
+    ],
+  },
+  {
     name: "close",
     label: "Close: dismiss / remove",
     paths: [

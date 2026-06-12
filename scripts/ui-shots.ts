@@ -92,13 +92,14 @@ async function main() {
     if (await editBtn.count()) {
       await editBtn.click();
       await shot(page, "property-detail-unit-editing");
+      await page.locator('button:has-text("Cancel")').first().click();
     }
-    const editHref = page.locator('a:has-text("Edit")').first();
-    if (await editHref.count()) {
-      await editHref.click();
-      await page.waitForLoadState("networkidle");
-      await shot(page, "property-edit-form", true);
-    }
+    // in-place editors: name, then address
+    await page.getByTitle("Rename").click();
+    await shot(page, "property-name-editing");
+    await page.keyboard.press("Escape");
+    await page.getByTitle("Edit address").click();
+    await shot(page, "property-address-editing");
   }
 
   // add-property wizard, every step, never submitted
