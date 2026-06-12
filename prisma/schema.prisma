@@ -162,6 +162,8 @@ model Property {
 
   // Operational record: filled progressively, every field raises quote
   // accuracy for pros and switching cost for us.
+  /// Corner buildings and double lots: the property's other street address.
+  alternateAddress     String?
   yearBuilt            Int?
   parkingNotes         String?
   waterShutoffLocation String?

@@ -4,6 +4,7 @@ import { audit } from "@/lib/audit";
 import { decryptSecret, encryptSecret, isEncrypted } from "@/lib/crypto";
 import { ConflictError, NotFoundError, type OrgCtx } from "@/lib/authz/api";
 import {
+  isSameAddress,
   toUnitData,
   type PropertyCreateInput,
   type PropertyDetailsInput,
@@ -26,6 +27,7 @@ export function listProperties(ctx: OrgCtx, filter: PropertyListFilter = {}) {
     where.OR = [
       { name: { contains: filter.q, mode: "insensitive" } },
       { address1: { contains: filter.q, mode: "insensitive" } },
+      { alternateAddress: { contains: filter.q, mode: "insensitive" } },
       { city: { contains: filter.q, mode: "insensitive" } },
       { zipCode: { contains: filter.q } },
     ];
@@ -49,23 +51,26 @@ export async function getProperty(ctx: OrgCtx, id: string) {
 }
 
 export async function createProperty(ctx: OrgCtx, input: PropertyCreateInput) {
-  // Duplicate-address guard: same street + ZIP in the same org is almost
-  // always a double entry, not a second property.
-  const duplicate = await prisma.property.findFirst({
-    where: {
-      orgId: ctx.orgId,
-      zipCode: input.zipCode,
-      address1: { equals: input.address1, mode: "insensitive" },
-    },
-    select: { name: true },
-  });
-  if (duplicate) {
-    throw new ConflictError(
-      `You already have a property at this address (${duplicate.name}).`,
-    );
-  }
+  const { units, address2, allowDuplicate, ...rest } = input;
 
-  const { units, address2, ...rest } = input;
+  // Duplicate guard compares the FULL address (line 2 counts, so two condos
+  // at one street address are fine) and is overridable: reality wins.
+  if (!allowDuplicate) {
+    const candidates = await prisma.property.findMany({
+      where: {
+        orgId: ctx.orgId,
+        zipCode: input.zipCode,
+        address1: { equals: input.address1, mode: "insensitive" },
+      },
+      select: { name: true, address1: true, address2: true },
+    });
+    const duplicate = candidates.find((c) => isSameAddress(c, input));
+    if (duplicate) {
+      throw new ConflictError(
+        `You already have a property at this exact address (${duplicate.name}).`,
+      );
+    }
+  }
   const unitData =
     units.length > 0
       ? units.map((u) => ({ ...toUnitData(u), orgId: ctx.orgId }))
