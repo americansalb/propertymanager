@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { AttentionItem, SetupState } from "@/lib/attention";
 import type { PortfolioProperty, Pulse } from "@/lib/services/dashboard";
 import { Button, Card, Money } from "@/components/ui";
+import { PropertyPortrait } from "@/components/brand/property-portrait";
 import {
   IconCheck,
   IconDoor,
@@ -160,37 +161,36 @@ export function SetupChain({ setup, showSample }: { setup: SetupState; showSampl
   );
 }
 
-// ── Portfolio strip ─────────────────────────────────────────────────────────
-
-const DOT: Record<string, string> = {
-  OCCUPIED: "bg-patina",
-  VACANT: "bg-amber-400",
-  NOTICE: "bg-stone-300",
-};
+// ── Portfolio strip: your village, building by building ────────────────────
 
 export function PortfolioStrip({ portfolio }: { portfolio: PortfolioProperty[] }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {portfolio.map((p) => (
-        <Link
-          key={p.id}
-          href={`/landlord/properties/${p.id}`}
-          className="rounded-xl border border-stone-200 bg-white p-4 transition hover:border-patina"
-        >
-          <p className="truncate text-sm font-semibold text-stone-900">{p.name}</p>
-          <div className="mt-2 flex items-center gap-1.5">
-            {p.units.map((u) => (
-              <span
-                key={u.id}
-                className={`h-2 w-2 rounded-full ${DOT[u.status] ?? "bg-stone-300"}`}
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {portfolio.map((p) => {
+        const occupied = p.units.filter((u) => u.status === "OCCUPIED").length;
+        return (
+          <Link
+            key={p.id}
+            href={`/landlord/properties/${p.id}`}
+            className="group rounded-xl border border-stone-200 bg-white p-4 transition hover:border-patina"
+          >
+            <div className="flex h-20 items-end justify-center">
+              <PropertyPortrait
+                seedKey={p.id}
+                type={p.type}
+                units={p.units}
+                className="h-full w-auto transition group-hover:-translate-y-0.5"
               />
-            ))}
-            <span className="ml-1 text-xs tabular-nums text-stone-500">
-              {p.units.length} unit{p.units.length === 1 ? "" : "s"}
-            </span>
-          </div>
-        </Link>
-      ))}
+            </div>
+            <p className="mt-3 truncate text-center text-sm font-semibold text-stone-900">
+              {p.name}
+            </p>
+            <p className="mt-0.5 text-center text-xs tabular-nums text-stone-500">
+              {occupied} of {p.units.length} occupied
+            </p>
+          </Link>
+        );
+      })}
     </div>
   );
 }

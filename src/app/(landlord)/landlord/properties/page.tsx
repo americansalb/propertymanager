@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOrg } from "@/lib/authz";
 import { listProperties } from "@/lib/services/property";
 import { Badge, Button, PageTitle } from "@/components/ui";
+import { PropertyPortrait } from "@/components/brand/property-portrait";
 
 export const metadata = { title: "Properties" };
 
@@ -43,28 +44,36 @@ export default async function PropertiesPage() {
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {properties.map((p) => (
-            <Link
-              key={p.id}
-              href={`/landlord/properties/${p.id}`}
-              className="rounded-xl border border-stone-200 bg-white p-5 transition hover:border-patina"
-            >
-              <div className="flex items-start justify-between">
-                <h2 className="font-semibold text-stone-900">{p.name}</h2>
-                <Badge>{TYPE_LABEL[p.type] ?? p.type}</Badge>
-              </div>
-              <p className="mt-1 text-sm text-stone-500">
-                {p.address1}
-                {p.address2 ? `, ${p.address2}` : ""}
-              </p>
-              <p className="text-sm text-stone-500">
-                {p.city}, {p.state} {p.zipCode}
-              </p>
-              <p className="mt-3 text-sm font-medium text-patina">
-                {p._count.units} unit{p._count.units === 1 ? "" : "s"}
-              </p>
-            </Link>
-          ))}
+          {properties.map((p) => {
+            const occupied = p.units.filter((u) => u.status === "OCCUPIED").length;
+            return (
+              <Link
+                key={p.id}
+                href={`/landlord/properties/${p.id}`}
+                className="group rounded-xl border border-stone-200 bg-white p-5 transition hover:border-patina"
+              >
+                <div className="flex h-28 items-end justify-center">
+                  <PropertyPortrait
+                    seedKey={p.id}
+                    type={p.type}
+                    units={p.units}
+                    className="h-full w-auto transition group-hover:-translate-y-0.5"
+                  />
+                </div>
+                <div className="mt-4 flex items-start justify-between gap-2">
+                  <h2 className="truncate font-semibold text-stone-900">{p.name}</h2>
+                  <Badge>{TYPE_LABEL[p.type] ?? p.type}</Badge>
+                </div>
+                <p className="mt-1 truncate text-sm text-stone-500">
+                  {p.address1}
+                  {p.address2 ? `, ${p.address2}` : ""} · {p.city}, {p.state} {p.zipCode}
+                </p>
+                <p className="mt-2 text-sm font-medium tabular-nums text-patina">
+                  {occupied} of {p.units.length} occupied
+                </p>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

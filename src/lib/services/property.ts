@@ -16,7 +16,7 @@ export function listProperties(ctx: OrgCtx) {
   return prisma.property.findMany({
     where: { orgId: ctx.orgId },
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { units: true } } },
+    include: { units: { select: { id: true, status: true }, orderBy: { unitNumber: "asc" } } },
   });
 }
 

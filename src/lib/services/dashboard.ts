@@ -20,6 +20,7 @@ export type Pulse = {
 export type PortfolioProperty = {
   id: string;
   name: string;
+  type: string;
   units: Array<{ id: string; status: string }>;
 };
 
@@ -54,7 +55,12 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
     prisma.property.findMany({
       where: { orgId: ctx.orgId },
       orderBy: { createdAt: "desc" },
-      select: { id: true, name: true, units: { select: { id: true, status: true } } },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        units: { select: { id: true, status: true }, orderBy: { unitNumber: "asc" } },
+      },
     }),
   ]);
 
