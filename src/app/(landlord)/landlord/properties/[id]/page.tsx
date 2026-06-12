@@ -8,6 +8,8 @@ import { PropertyDeleteButton } from "@/components/landlord/property-delete-butt
 import { PropertyDetailsCard } from "@/components/landlord/property-details-card";
 import { PropertyHeaderEditor } from "@/components/landlord/property-header-editor";
 import { PortraitStudio } from "@/components/landlord/portrait-studio";
+import { PhotoStrip } from "@/components/landlord/photo-strip";
+import { listPhotos, PHOTO_LIMITS } from "@/lib/services/photos";
 import { Badge } from "@/components/ui";
 import { IconChevronLeft } from "@/components/icons";
 
@@ -45,6 +47,11 @@ export default async function PropertyDetailPage({
     status: u.status,
   }));
 
+  const photos = await listPhotos(
+    { userId: session.userId, orgId: session.orgId },
+    "Property",
+    property.id,
+  );
   const occupied = units.filter((u) => u.status === "OCCUPIED").length;
   const rentMissing = units.filter((u) => u.marketRentCents == null).length;
   const codes = revealAccessCodes(property.accessCodes);
@@ -112,6 +119,18 @@ export default async function PropertyDetailPage({
           <PropertyDeleteButton propertyId={property.id} />
         </div>
       </div>
+
+      <section className="mt-8">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+          Photos
+        </h2>
+        <PhotoStrip
+          entityType="Property"
+          entityId={property.id}
+          photos={photos}
+          limit={PHOTO_LIMITS.Property}
+        />
+      </section>
 
       <UnitsManager propertyId={property.id} units={units} />
 

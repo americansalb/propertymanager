@@ -88,24 +88,25 @@ async function main() {
     await firstCard.click();
     await page.waitForLoadState("networkidle");
     await shot(page, "property-detail", true);
-    const editBtn = page.getByTitle("Edit terms").first();
-    if (await editBtn.count()) {
-      await editBtn.click();
-      await shot(page, "property-detail-unit-terms", true);
-      await page.locator('button:has-text("Done")').first().click();
-    }
-    const detailsRow = page.locator("dl dd button").first();
-    if (await detailsRow.count()) {
-      await detailsRow.click();
-      await shot(page, "property-detail-row-editing");
-      await page.keyboard.press("Escape");
-    }
     // in-place editors: name, then address
     await page.getByTitle("Rename").click();
     await shot(page, "property-name-editing");
     await page.keyboard.press("Escape");
     await page.getByTitle("Edit address").click();
     await shot(page, "property-address-editing");
+    // unit profile: card click navigates
+    const unitCard = page.locator('[role="link"]').first();
+    if (await unitCard.count()) {
+      await unitCard.click();
+      await page.waitForLoadState("networkidle");
+      await shot(page, "unit-profile", true);
+      const termsRow = page.locator("section button").first();
+      if (await termsRow.count()) {
+        await termsRow.click();
+        await shot(page, "unit-terms-row-editing");
+        await page.keyboard.press("Escape");
+      }
+    }
   }
 
   // add-property wizard, every step, never submitted

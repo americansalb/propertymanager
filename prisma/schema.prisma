@@ -969,6 +969,17 @@ model Dispute {
 
 // ─────────────────────────────────────────────────────────── SHARED ────────
 
+// Photo bytes live here (resized webp, capped counts) inside the app's own
+// schema; Attachment.storageKey points at a row id. Swapping to object
+// storage later means new keys, not a new model.
+model FileBlob {
+  id        String   @id @default(cuid())
+  bytes     Bytes
+  mimeType  String
+  sizeBytes Int
+  createdAt DateTime @default(now())
+}
+
 model Attachment {
   id               String   @id @default(cuid())
   entityType       String // 'MaintenanceRequest' | 'Job' | 'Verification' | …

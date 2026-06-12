@@ -174,6 +174,15 @@ export async function deleteProperty(ctx: OrgCtx, id: string) {
   });
 }
 
+export async function getUnit(ctx: OrgCtx, unitId: string) {
+  const unit = await prisma.unit.findFirst({
+    where: { id: unitId, orgId: ctx.orgId },
+    include: { property: { select: { id: true, name: true } } },
+  });
+  if (!unit) throw new NotFoundError("Unit not found.");
+  return unit;
+}
+
 export async function createUnit(ctx: OrgCtx, propertyId: string, input: UnitInput) {
   await getProperty(ctx, propertyId);
   try {
