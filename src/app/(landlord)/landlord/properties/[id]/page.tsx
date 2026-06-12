@@ -36,6 +36,12 @@ export default async function PropertyDetailPage({
     bathrooms: u.bathrooms != null ? Number(u.bathrooms) : null,
     squareFeet: u.squareFeet,
     marketRentCents: u.marketRentCents,
+    securityDepositCents: u.securityDepositCents,
+    petDepositCents: u.petDepositCents,
+    petRentCents: u.petRentCents,
+    parkingSpot: u.parkingSpot,
+    parkingRentCents: u.parkingRentCents,
+    utilitiesIncluded: u.utilitiesIncluded,
     status: u.status,
   }));
 

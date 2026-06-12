@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Badge, buttonCls, inputCls } from "@/components/ui";
-import { useToast } from "@/components/ui-feedback";
-import { IconPencil } from "@/components/icons";
+import { Badge, buttonCls } from "@/components/ui";
+import { EditableRow, useRowPatch } from "@/components/ui-inline";
 
 export type DetailsView = {
   alternateAddress: string | null;
@@ -21,19 +19,11 @@ export type DetailsView = {
   tags: string[];
 };
 
-const labelCls = "text-xs font-semibold uppercase tracking-wide text-stone-400";
-
-/** Progressive profiling: every empty field explains why it's worth filling. */
-const PROMPTS: Record<string, string> = {
-  alternateAddress: "Corner building or double lot? Add its other street address.",
-  yearBuilt: "When was it built? Pros quote blind without it.",
-  parkingNotes: "Street, garage, permit zone? Pros need to know where to park the van.",
-  waterShutoffLocation: "Your plumber's first question in an emergency.",
-  breakerPanelLocation: "The first thing any electrician asks.",
-  accessCodes: "Lockbox or gate codes, encrypted at rest, shared per job only.",
-  pets: "Pets on site change who takes the job and how they enter.",
-};
-
+/**
+ * The operational record as living rows: every row edits itself in place.
+ * Empty rows pitch their value ("Your plumber's first question..."); the
+ * card stays silent until it has facts, and never becomes a form.
+ */
 export function PropertyDetailsCard({
   propertyId,
   details,
@@ -41,220 +31,220 @@ export function PropertyDetailsCard({
   propertyId: string;
   details: DetailsView;
 }) {
-  const router = useRouter();
-  const { push: toast } = useToast();
-  const [editing, setEditing] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const patch = useRowPatch(`/api/v1/landlord/properties/${propertyId}/details`);
+  const [revealed, setRevealed] = useState(false);
   const [showCodes, setShowCodes] = useState(false);
-  const [form, setForm] = useState({
-    alternateAddress: details.alternateAddress ?? "",
-    yearBuilt: details.yearBuilt?.toString() ?? "",
-    parkingNotes: details.parkingNotes ?? "",
-    waterShutoffLocation: details.waterShutoffLocation ?? "",
-    breakerPanelLocation: details.breakerPanelLocation ?? "",
-    accessCodes: details.accessCodes ?? "",
-    petsAllowed: details.petsAllowed === null ? "unset" : details.petsAllowed ? "yes" : "no",
-    petNotes: details.petNotes ?? "",
-    notes: details.notes ?? "",
-    tags: details.tags.join(", "),
-  });
 
-  function set<K extends keyof typeof form>(key: K, value: string) {
-    setForm((f) => ({ ...f, [key]: value }));
-    setError(null);
-  }
+  const pets =
+    details.petsAllowed === null ? null : details.petsAllowed ? "Allowed" : "Not allowed";
 
-  async function save() {
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`/api/v1/landlord/properties/${propertyId}/details`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        alternateAddress: form.alternateAddress,
-        yearBuilt: form.yearBuilt.trim(),
-        parkingNotes: form.parkingNotes,
-        waterShutoffLocation: form.waterShutoffLocation,
-        breakerPanelLocation: form.breakerPanelLocation,
-        accessCodes: form.accessCodes,
-        petsAllowed: form.petsAllowed,
-        petNotes: form.petNotes,
-        notes: form.notes,
-        tags: form.tags.split(","),
-      }),
-    });
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Something went wrong.");
-      return;
-    }
-    setEditing(false);
-    toast("Details saved.");
-    router.refresh();
-  }
-
-  const rows: Array<{ label: string; value: string | null; prompt: string }> = [
-    // prompt strings are used only for the editor's placeholder hints now
-
+  type Row = { filled: boolean; node: React.ReactNode };
+  const rows: Row[] = [
     {
-      label: "Also known as",
-      value: details.alternateAddress,
-      prompt: PROMPTS.alternateAddress!,
-    },
-    { label: "Year built", value: details.yearBuilt?.toString() ?? null, prompt: PROMPTS.yearBuilt! },
-    { label: "Parking", value: details.parkingNotes, prompt: PROMPTS.parkingNotes! },
-    {
-      label: "Water shutoff",
-      value: details.waterShutoffLocation,
-      prompt: PROMPTS.waterShutoffLocation!,
+      filled: details.alternateAddress != null,
+      node: (
+        <EditableRow
+          key="aka"
+          label="Also known as"
+          value={details.alternateAddress}
+          emptyPrompt="Corner building? Add its other street address."
+          kind={{ kind: "text", placeholder: "850 W Belmont Ave entrance" }}
+          onSave={(v) => patch({ alternateAddress: v })}
+          savedToast="Saved."
+        />
+      ),
     },
     {
-      label: "Breaker panel",
-      value: details.breakerPanelLocation,
-      prompt: PROMPTS.breakerPanelLocation!,
+      filled: details.yearBuilt != null,
+      node: (
+        <EditableRow
+          key="year"
+          label="Year built"
+          value={details.yearBuilt?.toString() ?? null}
+          emptyPrompt="When was it built? Pros quote blind without it."
+          kind={{ kind: "number", placeholder: "1924" }}
+          onSave={(v) => patch({ yearBuilt: v })}
+          savedToast="Saved."
+        />
+      ),
     },
     {
-      label: "Pets",
-      value:
-        details.petsAllowed === null
-          ? null
-          : `${details.petsAllowed ? "Allowed" : "Not allowed"}${details.petNotes ? ` · ${details.petNotes}` : ""}`,
-      prompt: PROMPTS.pets!,
+      filled: details.parkingNotes != null,
+      node: (
+        <EditableRow
+          key="parking"
+          label="Parking"
+          value={details.parkingNotes}
+          emptyPrompt="Where does the van park? Pros ask first."
+          kind={{ kind: "text", placeholder: "Permit zone 383; alley spot behind" }}
+          onSave={(v) => patch({ parkingNotes: v })}
+          savedToast="Saved."
+        />
+      ),
+    },
+    {
+      filled: details.waterShutoffLocation != null,
+      node: (
+        <EditableRow
+          key="water"
+          label="Water shutoff"
+          value={details.waterShutoffLocation}
+          emptyPrompt="Your plumber's first question in an emergency."
+          kind={{ kind: "text", placeholder: "Basement, NE corner by the meter" }}
+          onSave={(v) => patch({ waterShutoffLocation: v })}
+          savedToast="Saved."
+        />
+      ),
+    },
+    {
+      filled: details.breakerPanelLocation != null,
+      node: (
+        <EditableRow
+          key="breaker"
+          label="Breaker panel"
+          value={details.breakerPanelLocation}
+          emptyPrompt="The first thing any electrician asks."
+          kind={{ kind: "text", placeholder: "Rear stairwell, gray box" }}
+          onSave={(v) => patch({ breakerPanelLocation: v })}
+          savedToast="Saved."
+        />
+      ),
+    },
+    {
+      filled: details.accessCodes != null || details.accessLocked,
+      node: (
+        <EditableRow
+          key="codes"
+          label="Access codes"
+          value={details.accessCodes}
+          display={
+            details.accessLocked ? (
+              <span className="text-amber-700">Stored, but the encryption key changed.</span>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCodes((s) => !s);
+                }}
+                className="font-medium text-copper-deep hover:underline"
+              >
+                {showCodes ? details.accessCodes : "•••••• tap to reveal"}
+              </button>
+            )
+          }
+          emptyPrompt="Lockbox or gate codes, encrypted, shared per job only."
+          kind={{ kind: "text", placeholder: "Lockbox 4417; gate #2290" }}
+          onSave={(v) => patch({ accessCodes: v })}
+          savedToast="Encrypted and saved."
+        />
+      ),
+    },
+    {
+      filled: details.petsAllowed != null,
+      node: (
+        <EditableRow
+          key="pets"
+          label="Pets"
+          value={details.petsAllowed === null ? null : details.petsAllowed ? "yes" : "no"}
+          display={pets}
+          emptyPrompt="Pets on site change who takes the job."
+          kind={{
+            kind: "select",
+            options: [
+              { value: "unset", label: "Not decided" },
+              { value: "yes", label: "Allowed" },
+              { value: "no", label: "Not allowed" },
+            ],
+          }}
+          onSave={(v) => patch({ petsAllowed: v ?? "unset" })}
+          savedToast="Saved."
+        />
+      ),
+    },
+    {
+      filled: details.petNotes != null,
+      node: (
+        <EditableRow
+          key="petNotes"
+          label="Pet notes"
+          value={details.petNotes}
+          emptyPrompt="Conditions, breeds, weight limits."
+          kind={{ kind: "text", placeholder: "Cats ok, dogs under 30 lbs" }}
+          onSave={(v) => patch({ petNotes: v })}
+          savedToast="Saved."
+        />
+      ),
+    },
+    {
+      filled: details.notes != null,
+      node: (
+        <EditableRow
+          key="notes"
+          label="Notes"
+          value={details.notes}
+          emptyPrompt="Anything the next person at the door should know."
+          kind={{ kind: "text", rows: 3, placeholder: "Boiler serviced March 2026..." }}
+          onSave={(v) => patch({ notes: v })}
+          savedToast="Saved."
+        />
+      ),
+    },
+    {
+      filled: details.tags.length > 0,
+      node: (
+        <EditableRow
+          key="tags"
+          label="Tags"
+          value={details.tags}
+          display={
+            <span className="flex flex-wrap gap-1.5">
+              {details.tags.map((t) => (
+                <Badge key={t}>{t}</Badge>
+              ))}
+            </span>
+          }
+          emptyPrompt="Organize your way: Lakeview, LLC-A, Section 8."
+          kind={{ kind: "chips", placeholder: "Add a tag" }}
+          onSave={(v) => patch({ tags: Array.isArray(v) ? v : [] })}
+          savedToast="Tags saved."
+        />
+      ),
     },
   ];
 
-  const empty =
-    rows.every((r) => !r.value) &&
-    !details.accessCodes &&
-    !details.accessLocked &&
-    !details.notes &&
-    details.tags.length === 0;
+  const filledRows = rows.filter((r) => r.filled);
+  const hiddenCount = rows.length - filledRows.length;
+  const empty = filledRows.length === 0;
+  const visible = empty || revealed ? rows : filledRows;
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white">
       <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
         <h2 className="text-sm font-semibold text-stone-900">Details &amp; access</h2>
-        {!editing && !empty && (
-          <button onClick={() => setEditing(true)} className={buttonCls("secondary", "sm")}>
-            <IconPencil className="mr-1 h-3 w-3" /> Edit
-          </button>
-        )}
       </div>
 
-      {editing ? (
-        <div className="space-y-3 p-4">
-          <div>
-            <label className={labelCls}>Also known as (second address)</label>
-            <input value={form.alternateAddress} onChange={(e) => set("alternateAddress", e.target.value)} placeholder="850 W Belmont Ave entrance" className={inputCls} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Year built</label>
-              <input value={form.yearBuilt} onChange={(e) => set("yearBuilt", e.target.value)} inputMode="numeric" placeholder="1924" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Pets</label>
-              <select value={form.petsAllowed} onChange={(e) => set("petsAllowed", e.target.value)} className={inputCls}>
-                <option value="unset">Not decided</option>
-                <option value="yes">Allowed</option>
-                <option value="no">Not allowed</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Pet notes</label>
-            <input value={form.petNotes} onChange={(e) => set("petNotes", e.target.value)} placeholder="Cats ok, dogs under 30 lbs" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Parking</label>
-            <input value={form.parkingNotes} onChange={(e) => set("parkingNotes", e.target.value)} placeholder="Permit zone 383; visitor spot behind the building" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Water shutoff</label>
-            <input value={form.waterShutoffLocation} onChange={(e) => set("waterShutoffLocation", e.target.value)} placeholder="Basement, NE corner by the meter" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Breaker panel</label>
-            <input value={form.breakerPanelLocation} onChange={(e) => set("breakerPanelLocation", e.target.value)} placeholder="Rear stairwell, gray box" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Access codes (encrypted)</label>
-            <input value={form.accessCodes} onChange={(e) => set("accessCodes", e.target.value)} placeholder="Lockbox 4417; gate #2290" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Notes</label>
-            <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} placeholder="Anything the next person at the door should know" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Tags (comma separated)</label>
-            <input value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="Lakeview, LLC-A, Section 8" className={inputCls} />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex gap-2 pt-1">
-            <button onClick={save} disabled={busy} className={buttonCls("primary", "sm")}>
-              {busy ? "Saving…" : "Save details"}
-            </button>
-            <button onClick={() => setEditing(false)} disabled={busy} className={buttonCls("ghost", "sm")}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : empty ? (
-        // No interrogation: one quiet line until there's something to say.
+      {empty && !revealed ? (
         <div className="flex flex-wrap items-center justify-between gap-3 p-4">
           <p className="text-sm text-stone-500">
             Nothing recorded yet. Pros will ask for the year built, parking, shutoff
             locations, pets, and access codes.
           </p>
-          <button onClick={() => setEditing(true)} className={buttonCls("secondary", "sm")}>
+          <button onClick={() => setRevealed(true)} className={buttonCls("secondary", "sm")}>
             Add details
           </button>
         </div>
       ) : (
-        <div className="p-4">
-          <dl className="grid grid-cols-[7.5rem_1fr] items-baseline gap-x-4 gap-y-2.5">
-            {rows
-              .filter((r) => r.value)
-              .map((r) => (
-                <div key={r.label} className="contents">
-                  <dt className={`${labelCls} leading-5`}>{r.label}</dt>
-                  <dd className="text-sm leading-5 text-stone-800">{r.value}</dd>
-                </div>
-              ))}
-            {(details.accessCodes || details.accessLocked) && (
-              <>
-                <dt className={`${labelCls} leading-5`}>Access codes</dt>
-                <dd className="text-sm leading-5">
-                  {details.accessLocked ? (
-                    <span className="text-amber-700">Stored, but the encryption key changed.</span>
-                  ) : (
-                    <button
-                      onClick={() => setShowCodes((s) => !s)}
-                      className="font-medium text-copper-deep hover:underline"
-                    >
-                      {showCodes ? details.accessCodes : "•••••• tap to reveal"}
-                    </button>
-                  )}
-                </dd>
-              </>
-            )}
-          </dl>
-
-          {details.notes && (
-            <p className="mt-4 border-t border-stone-100 pt-3 text-sm leading-6 text-stone-600">
-              {details.notes}
-            </p>
+        <dl className="p-4">
+          {visible.map((r) => r.node)}
+          {!revealed && hiddenCount > 0 && (
+            <button
+              onClick={() => setRevealed(true)}
+              className="mt-2 text-xs font-medium text-stone-400 transition hover:text-copper-deep"
+            >
+              + {hiddenCount} more detail{hiddenCount === 1 ? "" : "s"} pros will ask about
+            </button>
           )}
-          {details.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {details.tags.map((t) => (
-                <Badge key={t}>{t}</Badge>
-              ))}
-            </div>
-          )}
-        </div>
+        </dl>
       )}
     </div>
   );
