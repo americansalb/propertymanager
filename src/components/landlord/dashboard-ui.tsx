@@ -13,30 +13,34 @@ import { CreateSampleButton, RemoveSampleButton } from "./sample-buttons";
 
 // ── Pulse bar ───────────────────────────────────────────────────────────────
 
+/** The ledger bar: money engraved on iron. */
 export function PulseBar({ pulse }: { pulse: Pulse }) {
   return (
-    <Card className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4">
-      <span className="flex items-center gap-2 text-sm">
-        <IconRent className="h-4 w-4 text-copper-deep" />
-        <span className="font-semibold text-stone-900">
-          <Money cents={pulse.marketRentTotalCents} />
-          /mo
+    <div className="cut flex flex-wrap items-center gap-x-10 gap-y-3 bg-iron px-6 py-5">
+      <span className="flex items-baseline gap-2.5">
+        <IconRent className="h-4 w-4 self-center text-copper" />
+        <Money
+          cents={pulse.marketRentTotalCents}
+          className="font-display text-2xl font-semibold text-copper"
+        />
+        <span className="text-sm text-stone-400">/mo market rent</span>
+      </span>
+      <span className="flex items-baseline gap-2.5">
+        <IconDoor className="h-4 w-4 self-center text-patina-bright" />
+        <span className="font-display text-2xl font-semibold tabular-nums text-white">
+          {pulse.occupiedCount}
+          <span className="text-stone-400"> / {pulse.unitCount}</span>
         </span>
-        <span className="text-stone-500">market rent</span>
+        <span className="text-sm text-stone-400">occupied</span>
       </span>
-      <span className="flex items-center gap-2 text-sm">
-        <IconDoor className="h-4 w-4 text-patina" />
-        <span className="font-semibold tabular-nums text-stone-900">
-          {pulse.occupiedCount} of {pulse.unitCount}
+      <span className="flex items-baseline gap-2.5">
+        <IconWrench className="h-4 w-4 self-center text-stone-400" />
+        <span className="font-display text-2xl font-semibold tabular-nums text-white">
+          {pulse.openMaintenance}
         </span>
-        <span className="text-stone-500">occupied</span>
+        <span className="text-sm text-stone-400">open maintenance</span>
       </span>
-      <span className="flex items-center gap-2 text-sm">
-        <IconWrench className="h-4 w-4 text-stone-400" />
-        <span className="font-semibold tabular-nums text-stone-900">{pulse.openMaintenance}</span>
-        <span className="text-stone-500">open maintenance</span>
-      </span>
-    </Card>
+    </div>
   );
 }
 

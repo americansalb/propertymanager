@@ -19,8 +19,8 @@ export function NavLinks({ items }: { items: NavItem[] }) {
             aria-current={active ? "page" : undefined}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
               active
-                ? "bg-patina-tint text-patina"
-                : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+                ? "bg-patina text-white"
+                : "text-stone-300 hover:bg-white/10 hover:text-white"
             }`}
           >
             {item.icon}

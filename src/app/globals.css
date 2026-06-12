@@ -11,6 +11,7 @@
   --color-copper-tint: #f6e7d7;
   --color-patina: #3e7c66;
   --color-patina-tint: #e9f1ec;
+  --color-patina-bright: #74b399; /* patina legible on iron */
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
@@ -58,6 +59,16 @@ body {
     calc(100% - 6px) 100%,
     0 100%,
     0 6px
+  );
+}
+
+/* Battlement edge: iron teeth descending from a fortress header. */
+.crenel {
+  height: 6px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-iron) 0 16px,
+    transparent 16px 28px
   );
 }
 
