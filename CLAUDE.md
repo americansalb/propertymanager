@@ -8,6 +8,8 @@ villagekeep.com - configured via env (`BRAND_NAME`), never hardcoded.
 - Develop and push on a working branch - NEVER push directly to `main_property`.
 - To deploy: **merge** the working branch into `main_property` and push the
   merge. Render auto-deploys `main_property`.
+- Merge verified work into `main_property` PROMPTLY after each completed
+  chunk (tests/lint/build green). Do not wait for per-deploy approval.
 - The Render service `propertymanager-1` is a **native Node service** (not
   Docker). It runs `pnpm install && pnpm run build:production`, then the
   dashboard Start Command (`pnpm start` → `scripts/render-start.mjs`:
