@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { IconClose } from "@/components/icons";
+import { buttonCls } from "@/components/ui";
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
@@ -153,7 +154,7 @@ export function PropertyForm({
             <button
               type="button"
               onClick={() => setUnits((r) => [...r, emptyUnit()])}
-              className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-stone-400"
+              className={buttonCls("secondary", "sm")}
             >
               + Add unit
             </button>
@@ -180,14 +181,14 @@ export function PropertyForm({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-iron px-5 py-2.5 text-sm font-semibold text-white hover:bg-iron-deep disabled:opacity-50"
-        >
+        <button type="submit" disabled={busy} className={`${buttonCls("primary")} px-5 py-2.5`}>
           {busy ? "Saving…" : mode === "create" ? "Create property" : "Save changes"}
         </button>
-        <button type="button" onClick={() => router.back()} className="rounded-lg border border-stone-300 px-5 py-2.5 text-sm font-medium text-stone-700 hover:border-stone-400">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className={`${buttonCls("secondary")} px-5 py-2.5`}
+        >
           Cancel
         </button>
       </div>

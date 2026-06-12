@@ -49,7 +49,7 @@ export function WizardShell({
       </div>
 
       <div key={step} className="animate-step flex flex-1 flex-col">
-        <h1 className="text-xl font-semibold text-stone-900">{title}</h1>
+        <h1 className="font-display text-xl font-semibold text-stone-900">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-stone-500">{subtitle}</p>}
         <div className="mt-6 flex flex-1 flex-col">{children}</div>
       </div>

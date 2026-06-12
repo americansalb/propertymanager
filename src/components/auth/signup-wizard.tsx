@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { OptionCards, WizardShell } from "@/components/wizard/wizard-shell";
 import { IconDoor, IconHome, IconMail, IconTenants, IconTools } from "@/components/icons";
+import { buttonCls } from "@/components/ui";
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
-const continueCls =
-  "mt-6 w-full rounded-lg bg-iron px-4 py-3 text-sm font-semibold text-white hover:bg-iron-deep disabled:opacity-50";
+const continueCls = `${buttonCls("primary")} mt-6 w-full py-3`;
 
 type StepId = "type" | "tenant" | "name" | "business" | "phone" | "email" | "password";
 

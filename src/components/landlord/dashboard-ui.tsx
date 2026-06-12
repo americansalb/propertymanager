@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { AttentionItem, SetupState } from "@/lib/attention";
 import type { PortfolioProperty, Pulse } from "@/lib/services/dashboard";
-import { formatCents } from "@/lib/money";
+import { Button, Card, Money } from "@/components/ui";
 import {
   IconCheck,
   IconDoor,
@@ -15,27 +15,28 @@ import { CreateSampleButton, RemoveSampleButton } from "./sample-buttons";
 
 export function PulseBar({ pulse }: { pulse: Pulse }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-stone-200 bg-white px-5 py-4">
+    <Card className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4">
       <span className="flex items-center gap-2 text-sm">
         <IconRent className="h-4 w-4 text-copper-deep" />
         <span className="font-semibold text-stone-900">
-          {formatCents(pulse.marketRentTotalCents)}/mo
+          <Money cents={pulse.marketRentTotalCents} />
+          /mo
         </span>
         <span className="text-stone-500">market rent</span>
       </span>
       <span className="flex items-center gap-2 text-sm">
         <IconDoor className="h-4 w-4 text-patina" />
-        <span className="font-semibold text-stone-900">
+        <span className="font-semibold tabular-nums text-stone-900">
           {pulse.occupiedCount} of {pulse.unitCount}
         </span>
         <span className="text-stone-500">occupied</span>
       </span>
       <span className="flex items-center gap-2 text-sm">
         <IconWrench className="h-4 w-4 text-stone-400" />
-        <span className="font-semibold text-stone-900">{pulse.openMaintenance}</span>
+        <span className="font-semibold tabular-nums text-stone-900">{pulse.openMaintenance}</span>
         <span className="text-stone-500">open maintenance</span>
       </span>
-    </div>
+    </Card>
   );
 }
 
@@ -57,9 +58,9 @@ const CLS_CHIP: Record<AttentionItem["cls"], string> = {
 
 export function AttentionCard({ item }: { item: AttentionItem }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-stone-200 bg-white p-4">
+    <Card className="flex items-center gap-4 p-4">
       <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${CLS_CHIP[item.cls]}`}
+        className={`cut-sm flex h-9 w-9 shrink-0 items-center justify-center ${CLS_CHIP[item.cls]}`}
       >
         {KIND_ICON[item.kind]}
       </span>
@@ -69,30 +70,27 @@ export function AttentionCard({ item }: { item: AttentionItem }) {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {item.kind === "sample" && item.refId && <RemoveSampleButton propertyId={item.refId} />}
-        <Link
-          href={item.action.href}
-          className="rounded-lg bg-iron px-3 py-1.5 text-xs font-semibold text-white hover:bg-iron-deep"
-        >
+        <Button href={item.action.href} size="sm">
           {item.action.label}
-        </Link>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
 export function AllQuiet({ unitCount }: { unitCount: number }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-stone-200 bg-white p-5">
+    <Card className="flex items-center gap-4 p-5">
       <span className="flex h-10 w-10 items-center justify-center rounded-full bg-patina-tint text-patina">
         <IconCheck className="h-5 w-5" />
       </span>
       <div>
-        <p className="text-sm font-semibold text-stone-900">All quiet.</p>
+        <p className="font-display text-sm font-semibold text-stone-900">All quiet.</p>
         <p className="text-sm text-stone-500">
           {unitCount} unit{unitCount === 1 ? "" : "s"}, nothing needs you.
         </p>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -101,8 +99,8 @@ export function AllQuiet({ unitCount }: { unitCount: number }) {
 export function SetupChain({ setup, showSample }: { setup: SetupState; showSample: boolean }) {
   const current = setup.steps.find((s) => !s.done && !s.soon);
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-6">
-      <h2 className="text-lg font-semibold text-stone-900">
+    <Card className="p-6">
+      <h2 className="font-display text-lg font-semibold text-stone-900">
         Let&apos;s get your first rent flowing
       </h2>
       <p className="mt-1 text-sm text-stone-500">
@@ -122,7 +120,7 @@ export function SetupChain({ setup, showSample }: { setup: SetupState; showSampl
             }`}
           >
             <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+              className={`cut-sm flex h-6 w-6 items-center justify-center text-xs font-semibold ${
                 step.done
                   ? "bg-patina text-white"
                   : step.soon
@@ -150,16 +148,11 @@ export function SetupChain({ setup, showSample }: { setup: SetupState; showSampl
 
       {current && (
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Link
-            href={current.href ?? "/landlord/properties"}
-            className="rounded-lg bg-iron px-4 py-2 text-sm font-semibold text-white hover:bg-iron-deep"
-          >
-            {current.label}
-          </Link>
+          <Button href={current.href ?? "/landlord/properties"}>{current.label}</Button>
           {showSample && current.key === "property" && <CreateSampleButton />}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -188,7 +181,7 @@ export function PortfolioStrip({ portfolio }: { portfolio: PortfolioProperty[] }
                 className={`h-2 w-2 rounded-full ${DOT[u.status] ?? "bg-stone-300"}`}
               />
             ))}
-            <span className="ml-1 text-xs text-stone-500">
+            <span className="ml-1 text-xs tabular-nums text-stone-500">
               {p.units.length} unit{p.units.length === 1 ? "" : "s"}
             </span>
           </div>

@@ -1,5 +1,6 @@
 import { requireOrg } from "@/lib/authz";
 import { getDashboard } from "@/lib/services/dashboard";
+import { PageTitle, SectionHeading } from "@/components/ui";
 import {
   AllQuiet,
   AttentionCard,
@@ -25,7 +26,7 @@ export default async function LandlordDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-stone-900">Welcome, {session.firstName}</h1>
+        <PageTitle>Welcome, {session.firstName}</PageTitle>
         <p className="mt-1 text-sm text-stone-500">
           {setup.complete
             ? "Here's what needs you."
@@ -39,9 +40,7 @@ export default async function LandlordDashboard() {
 
       {(visibleItems.length > 0 || setup.complete) && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
-            Needs you
-          </h2>
+          <SectionHeading>Needs you</SectionHeading>
           {visibleItems.length > 0 ? (
             visibleItems.map((item) => <AttentionCard key={item.id} item={item} />)
           ) : (
@@ -52,9 +51,7 @@ export default async function LandlordDashboard() {
 
       {portfolio.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
-            Portfolio
-          </h2>
+          <SectionHeading>Portfolio</SectionHeading>
           <PortfolioStrip portfolio={portfolio} />
         </section>
       )}

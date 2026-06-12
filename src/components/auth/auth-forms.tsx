@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { buttonCls } from "@/components/ui";
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 const labelCls = "mb-1 block text-sm font-medium text-stone-700";
-const buttonCls =
-  "w-full rounded-lg bg-iron px-4 py-2.5 text-sm font-semibold text-white hover:bg-iron-deep disabled:opacity-50";
+const submitCls = `${buttonCls("primary")} w-full py-2.5`;
 
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, {
@@ -54,7 +54,7 @@ export function LoginForm({ next }: { next?: string }) {
         <input id="password" name="password" type="password" required autoComplete="current-password" className={inputCls} />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button type="submit" disabled={busy} className={buttonCls}>
+      <button type="submit" disabled={busy} className={submitCls}>
         {busy ? "Signing in…" : "Sign in"}
       </button>
     </form>

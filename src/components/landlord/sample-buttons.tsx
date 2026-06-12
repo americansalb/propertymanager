@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { buttonCls } from "@/components/ui";
 
 /** Loads the sample duplex and refreshes: the dashboard lights up in place. */
 export function CreateSampleButton() {
@@ -16,11 +17,7 @@ export function CreateSampleButton() {
   }
 
   return (
-    <button
-      onClick={create}
-      disabled={busy}
-      className="rounded-lg px-4 py-2 text-sm font-medium text-stone-500 hover:bg-stone-100 hover:text-stone-700 disabled:opacity-50"
-    >
+    <button onClick={create} disabled={busy} className={buttonCls("ghost")}>
       {busy ? "Setting up…" : "or explore with a sample duplex"}
     </button>
   );
@@ -38,11 +35,7 @@ export function RemoveSampleButton({ propertyId }: { propertyId: string }) {
   }
 
   return (
-    <button
-      onClick={remove}
-      disabled={busy}
-      className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-600 hover:border-stone-400 disabled:opacity-50"
-    >
+    <button onClick={remove} disabled={busy} className={buttonCls("secondary", "sm")}>
       {busy ? "Removing…" : "Remove sample"}
     </button>
   );
