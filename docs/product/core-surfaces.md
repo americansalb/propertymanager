@@ -129,6 +129,39 @@ On day 0 the answers are setup gaps; in year 3 they are operations
 exceptions. Inventory never lives on the dashboard; it lives in
 Properties, Tenants, Money, Maintenance.
 
+### One engine, three renderings (standalone + integrated marketplace)
+
+The marketplace ships standalone AND inside the PM tool. That is a
+composition rule, not two dashboards. The dashboard renders zones based
+on what the account has; roles are already derived from data, and the
+dashboard follows the same philosophy.
+
+1. PM LANDLORD (org with properties): full attention engine below.
+   Marketplace is a verb inside their workflow, not a place: "Get bids"
+   on a maintenance request, then bids/funding/release events surface as
+   attention items and pulse segments. A "Find a pro" entry exists for
+   proactive hiring (e.g. seasonal gutter cleaning) without a
+   maintenance request.
+2. STANDALONE POSTER (jobs, no org): the same engine minus the PM zones.
+   "Post a job" as the permanent primary action; jobs-in-flight cards
+   (status, who is on it, the one next step); the same Needs-you queue
+   restricted to marketplace item types (bids in, fund award, confirm
+   schedule, review and release); past jobs per address with one-tap
+   re-hire. No rent pulse, no portfolio strip.
+3. PRO: unchanged by the dual mode. PM-originated and standalone demand
+   pool into ONE lead feed; supply never knows or cares where the job
+   was born. That pooling is the point: integrated demand subsidizes
+   standalone liquidity and vice versa.
+
+The strategic hinge: a standalone poster's address plus job history is a
+shadow property profile (the repair log accrues from job one). Upgrading
+to the PM tool is therefore a data unlock ("you've hired 3 pros for 1247
+W Oakdale; track rent and leases there too?"), not a migration. The
+standalone marketplace is top-of-funnel for property management, and the
+funnel is the same database row. For the standalone signup itself:
+describe-the-job-first, create-the-account-last (classic marketplace
+conversion order), which the wizard machinery already supports.
+
 ### Zones (single column, mobile-first)
 
 1. PULSE BAR: "June rent: $7,400 of $9,200 in · 3 of 5 paid · next payout
