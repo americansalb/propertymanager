@@ -44,7 +44,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/signup"
-              className="cut-sm inline-flex items-center bg-copper px-4 py-2 text-sm font-semibold text-iron-deep transition hover:bg-[#dd9a55] active:translate-y-px"
+              className="cut-sm facet-soft inline-flex items-center bg-copper px-4 py-2 text-sm font-semibold text-iron-deep transition hover:bg-[#dd9a55] active:translate-y-px"
             >
               Get started
             </Link>
@@ -70,7 +70,7 @@ export default function LandingPage() {
           <div className="mt-10 flex items-center justify-center gap-3">
             <Link
               href="/signup"
-              className="cut inline-flex items-center bg-iron px-7 py-3 text-base font-semibold text-white transition hover:bg-iron-deep active:translate-y-px"
+              className="cut facet inline-flex items-center bg-iron px-7 py-3 text-base font-semibold text-white transition hover:bg-iron-deep active:translate-y-px"
             >
               Start free
             </Link>

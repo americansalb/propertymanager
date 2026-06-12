@@ -16,8 +16,8 @@ const BTN_BASE =
   "active:translate-y-px disabled:pointer-events-none disabled:opacity-50";
 
 const BTN_VARIANT: Record<ButtonVariant, string> = {
-  // The forged signature: chamfer + solid iron. No border, no radius.
-  primary: "cut-sm bg-iron text-white hover:bg-iron-deep",
+  // The forged signature: chamfer + solid iron + the shimmer facet.
+  primary: "cut-sm facet bg-iron text-white hover:bg-iron-deep",
   secondary:
     "rounded-lg border border-stone-300 text-stone-700 hover:border-patina hover:text-stone-900",
   ghost: "rounded-lg text-stone-500 hover:bg-stone-100 hover:text-stone-700",

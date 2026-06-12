@@ -38,6 +38,20 @@ is recognizable at a glance:
   patina; press nudges 1px down (stamped, tactile).
 - OCTAGONS AND DIAMONDS continue wherever a generic product would use a
   circle or a dot.
+- THE SHIMMER. The mark's roof is two flat coppers meeting at a hard edge,
+  and it reads as metal catching light. Systemized: every gabled roof in
+  the skyline and portraits splits at its apex, light face left, deep face
+  right (copper/copper-deep, patina/patina-deep, iron/iron-deep,
+  glow/#E6CFB4). Always a hard stop, never a gradient ramp. Buttons carry
+  it as a 115deg translucent overlay (.facet 16%, .facet-soft 10%) so
+  hover colors compose and labels keep contrast: true copper-deep under
+  text drops below AA (~2.9:1), which is why button facets are overlays
+  and the literal two-tone pairs stay reserved for artwork.
+- THE VILLAGE IS BRICK. Building bodies are warm Chicago common brick
+  (#9A5B43) with deeper red (#7C4334) seeded in and the occasional iron
+  block for rhythm. The keep and castle elements stay iron, always.
+  Windows, doors, and roofs keep the metal palette; brick walls stay flat
+  (no brick facet: shimmer belongs to metal).
 
 ## Typography
 

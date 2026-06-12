@@ -1,25 +1,53 @@
 /**
  * Generative property portrait: VillageKeep draws every property in the
- * village style. The geometry is the DATA: the building form comes from the
- * property type, windows are the actual units, occupied units glow warm,
- * vacant ones sit dark, notice burns amber. Seeded by the property id so
- * each portrait is unique and stable. Zero curves, flat fills.
+ * village style. The geometry is the DATA: the building form follows the
+ * property TYPE truthfully (a 2-unit multifamily is a small building, never
+ * a cottage; a condo is one lit unit inside a larger building), windows are
+ * the actual units (occupied glows, vacant sits dark, notice burns amber),
+ * bodies are Chicago brick with seeded variety, and every gable carries the
+ * shimmer: light face left of the apex, deep face right. Zero curves.
  */
-
-const IRON = "#34383F";
-const IRON_DEEP = "#1d2024";
-const COPPER = "#D08A45";
-const COPPER_DEEP = "#9E5B23";
-const PATINA = "#3E7C66";
-const GLOW = "#F6E7D7";
-const NOTICE = "#D9A441";
+import {
+  BODY_MIX,
+  COPPER,
+  COPPER_DEEP,
+  GLOW,
+  IRON,
+  IRON_DEEP,
+  NOTICE,
+  PATINA,
+  ROOF_PAIRS,
+} from "./palette";
 
 export type PortraitUnit = { status: string };
+
+export type PortraitVariant = "house" | "rowhouse" | "condo" | "building";
+
+/** Type-truth, founder-locked: multifamily and commercial are ALWAYS buildings. */
+export function pickVariant(type: string, unitCount: number): PortraitVariant {
+  switch (type) {
+    case "SINGLE_FAMILY":
+      return "house";
+    case "TOWNHOUSE":
+      return "rowhouse";
+    case "CONDO":
+      return "condo";
+    case "MULTIFAMILY":
+    case "COMMERCIAL":
+      return "building";
+    default:
+      return unitCount <= 2 ? "house" : "building";
+  }
+}
 
 function hashSeed(s: string): number {
   let h = 0;
   for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;
   return Math.abs(h);
+}
+
+export function pickBody(seed: number): string {
+  return BODY_MIX[(seed >> 2) % BODY_MIX.length]!;
 }
 
 function paneFill(status: string): string {
@@ -28,7 +56,29 @@ function paneFill(status: string): string {
   return IRON_DEEP;
 }
 
-const ACCENTS = [COPPER, PATINA, COPPER_DEEP];
+/** A gable split at its apex: the logo's shimmer on every roof. */
+function FacetGable({
+  leftX,
+  apexX,
+  rightX,
+  eaveY,
+  apexY,
+  pair,
+}: {
+  leftX: number;
+  apexX: number;
+  rightX: number;
+  eaveY: number;
+  apexY: number;
+  pair: readonly [string, string];
+}) {
+  return (
+    <g>
+      <polygon points={`${leftX},${eaveY} ${apexX},${apexY} ${apexX},${eaveY}`} fill={pair[0]} />
+      <polygon points={`${apexX},${eaveY} ${apexX},${apexY} ${rightX},${eaveY}`} fill={pair[1]} />
+    </g>
+  );
+}
 
 export function PropertyPortrait({
   seedKey,
@@ -42,10 +92,10 @@ export function PropertyPortrait({
   className?: string;
 }) {
   const seed = hashSeed(seedKey);
-  const accent = ACCENTS[seed % 3]!;
-  const accent2 = ACCENTS[(seed + 1) % 3]!;
-  const isHouse =
-    type === "SINGLE_FAMILY" || type === "CONDO" || type === "TOWNHOUSE" || units.length <= 2;
+  const variant = pickVariant(type, units.length);
+  const body = pickBody(seed);
+  const roofPair = ROOF_PAIRS[seed % ROOF_PAIRS.length]!;
+  const accent2 = seed % 2 === 0 ? PATINA : COPPER_DEEP;
 
   return (
     <svg
@@ -55,10 +105,15 @@ export function PropertyPortrait({
       focusable="false"
       preserveAspectRatio="xMidYMax meet"
     >
-      {isHouse ? (
-        <House seed={seed} type={type} units={units} accent={accent} accent2={accent2} />
-      ) : (
-        <Building seed={seed} type={type} units={units} accent={accent} accent2={accent2} />
+      {variant === "house" && (
+        <House seed={seed} units={units} body={body} roofPair={roofPair} accent2={accent2} flat={false} />
+      )}
+      {variant === "rowhouse" && (
+        <House seed={seed} units={units} body={body} roofPair={roofPair} accent2={accent2} flat />
+      )}
+      {variant === "condo" && <Condo seed={seed} units={units} body={body} />}
+      {variant === "building" && (
+        <Building seed={seed} type={type} units={units} body={body} roofPair={roofPair} accent2={accent2} />
       )}
     </svg>
   );
@@ -66,31 +121,32 @@ export function PropertyPortrait({
 
 function House({
   seed,
-  type,
   units,
-  accent,
+  body,
+  roofPair,
   accent2,
+  flat,
 }: {
   seed: number;
-  type: string;
   units: PortraitUnit[];
-  accent: string;
+  body: string;
+  roofPair: readonly [string, string];
   accent2: string;
+  flat: boolean;
 }) {
-  const flatTop = type === "TOWNHOUSE";
-  const chimney = !flatTop && seed % 2 === 0;
+  const chimney = !flat && seed % 2 === 0;
   const shown = units.slice(0, 2);
-  // One window per unit for a duplex; both windows follow the single unit.
   const left = shown[0] ?? { status: "VACANT" };
   const right = shown[1] ?? left;
 
   return (
     <g>
-      {flatTop ? (
+      {flat ? (
         <g>
-          <rect x="44" y="60" width="72" height="8" fill={accent} />
-          <rect x="48" y="54" width="12" height="6" fill={accent} />
-          <rect x="100" y="54" width="12" height="6" fill={accent} />
+          <rect x="44" y="60" width="72" height="8" fill={roofPair[0]} />
+          <rect x="80" y="60" width="36" height="8" fill={roofPair[1]} />
+          <rect x="48" y="54" width="12" height="6" fill={roofPair[0]} />
+          <rect x="100" y="54" width="12" height="6" fill={roofPair[1]} />
         </g>
       ) : (
         <g>
@@ -100,10 +156,10 @@ function House({
               <rect x="96" y="41" width="13" height="4" fill={IRON} />
             </g>
           )}
-          <polygon points="42,68 80,38 118,68" fill={accent} />
+          <FacetGable leftX={42} apexX={80} rightX={118} eaveY={68} apexY={38} pair={roofPair} />
         </g>
       )}
-      <rect x="48" y="68" width="64" height="44" fill={IRON} />
+      <rect x="48" y="68" width="64" height="44" fill={body} />
       <rect x="54" y="76" width="13" height="13" fill={paneFill(left.status)} />
       <rect x="93" y="76" width="13" height="13" fill={paneFill(right.status)} />
       <rect x="73" y="86" width="14" height="26" fill={accent2} />
@@ -112,22 +168,60 @@ function House({
   );
 }
 
+/** A condo is one home INSIDE a building: our window glows in its frame. */
+function Condo({ seed, units, body }: { seed: number; units: PortraitUnit[]; body: string }) {
+  const ours = seed % 9;
+  const status = units[0]?.status ?? "VACANT";
+  const bx = 44;
+  const W = 72;
+  const by = 28;
+
+  return (
+    <g>
+      <rect x={bx - 4} y={by - 6} width={W + 8} height="6" fill={IRON} />
+      <rect x={bx + 2} y={by - 11} width="9" height="5" fill={IRON} />
+      <rect x={77} y={by - 11} width="9" height="5" fill={IRON} />
+      <rect x={bx + W - 11} y={by - 11} width="9" height="5" fill={IRON} />
+      <rect x={bx} y={by} width={W} height={112 - by} fill={body} />
+      {Array.from({ length: 9 }).map((_, i) => {
+        const c = i % 3;
+        const r = Math.floor(i / 3);
+        const x = bx + 11 + c * 18;
+        const y = by + 9 + r * 17;
+        if (i === ours) {
+          return (
+            <g key={i}>
+              <rect x={x - 1.5} y={y - 1.5} width="13" height="13" fill={COPPER} />
+              <rect x={x} y={y} width="10" height="10" fill={paneFill(status)} />
+            </g>
+          );
+        }
+        return <rect key={i} x={x} y={y} width="10" height="10" fill="#3F444C" />;
+      })}
+      <rect x="73" y="90" width="14" height="22" fill={COPPER_DEEP} />
+      <rect x={bx - 6} y="112" width={W + 12} height="3" fill={IRON} />
+    </g>
+  );
+}
+
 function Building({
   seed,
   type,
   units,
-  accent,
+  body,
+  roofPair,
   accent2,
 }: {
   seed: number;
   type: string;
   units: PortraitUnit[];
-  accent: string;
+  body: string;
+  roofPair: readonly [string, string];
   accent2: string;
 }) {
   const shown = units.slice(0, 18);
   const cols = shown.length <= 4 ? 2 : shown.length <= 9 ? 3 : shown.length <= 16 ? 4 : 5;
-  const rows = Math.ceil(shown.length / cols);
+  const rows = Math.max(1, Math.ceil(shown.length / cols));
   const W = cols * 16 + 24;
   const topPad = 10;
   const groundH = 28;
@@ -141,7 +235,6 @@ function Building({
 
   return (
     <g>
-      {/* roof */}
       {roof === 0 && (
         <g>
           <rect x={bx - 4} y={by - 6} width={W + 8} height="6" fill={IRON} />
@@ -151,15 +244,19 @@ function Building({
         </g>
       )}
       {roof === 1 && (
-        <polygon
-          points={`${bx - 2},${by} 80,${roofTopY} ${bx + W + 2},${by}`}
-          fill={accent}
+        <FacetGable
+          leftX={bx - 2}
+          apexX={80}
+          rightX={bx + W + 2}
+          eaveY={by}
+          apexY={roofTopY}
+          pair={roofPair}
         />
       )}
       {roof === 2 && (
         <polygon
           points={`${bx - 2},${by} ${bx + W + 2},${by} ${bx + W + 2},${by - 12}`}
-          fill={accent}
+          fill={roofPair[1]}
         />
       )}
       {pennant && (
@@ -172,8 +269,7 @@ function Building({
         </g>
       )}
 
-      {/* body */}
-      <rect x={bx} y={by} width={W} height={H} fill={IRON} />
+      <rect x={bx} y={by} width={W} height={H} fill={body} />
 
       {/* unit windows: the occupancy IS the picture */}
       {shown.map((u, i) => {
@@ -191,7 +287,6 @@ function Building({
         );
       })}
 
-      {/* ground floor: storefront left of the door for commercial */}
       {commercial && (
         <g>
           <rect x={bx + 6} y={112 - groundH + 2} width={Math.max(24, 65 - bx)} height="5" fill={accent2} />
