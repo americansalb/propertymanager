@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600";
+  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 const labelCls = "mb-1 block text-sm font-medium text-stone-700";
 
 type UnitRow = {
@@ -182,7 +182,7 @@ export function PropertyForm({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-lg bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+          className="rounded-lg bg-iron px-5 py-2.5 text-sm font-semibold text-white hover:bg-iron-deep disabled:opacity-50"
         >
           {busy ? "Saving…" : mode === "create" ? "Create property" : "Save changes"}
         </button>

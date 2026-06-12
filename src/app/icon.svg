@@ -1,0 +1,8 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <title>VillageKeep small mark (favicon/app icon)</title>
+  <desc>Simplified for 16-64px: solid copper house held in the iron keep; no halo, band, or tone split.</desc>
+  <g transform="translate(256,260) scale(3.55)">
+    <path d="M -62 62 L -41 -46 L -41 -62 L -14 -62 L -14 -42 L 14 -42 L 14 -62 L 41 -62 L 41 -46 L 62 62 Z" fill="#34383F"/>
+    <path d="M -27 44 L -27 2 L 0 -24 L 27 2 L 27 44 Z" fill="#D08A45"/>
+  </g>
+</svg>

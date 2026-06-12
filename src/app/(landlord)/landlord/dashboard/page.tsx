@@ -44,7 +44,7 @@ export default async function LandlordDashboard() {
           </p>
           <Link
             href="/landlord/properties/new"
-            className="mt-4 inline-block rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            className="mt-4 inline-block rounded-lg bg-iron px-4 py-2 text-sm font-semibold text-white hover:bg-iron-deep"
           >
             Add property
           </Link>

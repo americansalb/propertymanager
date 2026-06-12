@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600";
+  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 const labelCls = "mb-1 block text-sm font-medium text-stone-700";
 const buttonCls =
-  "w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50";
+  "w-full rounded-lg bg-iron px-4 py-2.5 text-sm font-semibold text-white hover:bg-iron-deep disabled:opacity-50";
 
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, {
@@ -93,7 +93,7 @@ export function SignupForm() {
   const typeBtn = (active: boolean) =>
     `flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
       active
-        ? "border-emerald-700 bg-emerald-50 text-emerald-800"
+        ? "border-patina bg-patina-tint text-patina"
         : "border-stone-300 text-stone-600 hover:border-stone-400"
     }`;
 

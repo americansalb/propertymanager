@@ -5,7 +5,7 @@ import { useState } from "react";
 import { formatCents } from "@/lib/money";
 
 const inputCls =
-  "w-full rounded-lg border border-stone-300 px-2 py-1.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600";
+  "w-full rounded-lg border border-stone-300 px-2 py-1.5 text-sm text-stone-900 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 
 export type UnitView = {
   id: string;
@@ -45,7 +45,7 @@ function draftPayload(d: Draft) {
 
 const STATUS_BADGE: Record<string, string> = {
   VACANT: "bg-amber-50 text-amber-800",
-  OCCUPIED: "bg-emerald-50 text-emerald-800",
+  OCCUPIED: "bg-patina-tint text-patina",
   NOTICE: "bg-stone-100 text-stone-600",
 };
 
@@ -105,7 +105,7 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
       <td className="px-3 py-2"><input value={draft.marketRentDollars} onChange={(e) => setDraft({ ...draft, marketRentDollars: e.target.value })} inputMode="decimal" placeholder="$" className={inputCls} /></td>
       <td className="px-3 py-2" />
       <td className="px-3 py-2 text-right whitespace-nowrap">
-        <button onClick={save} disabled={busy || draft.unitNumber.trim() === ""} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
+        <button onClick={save} disabled={busy || draft.unitNumber.trim() === ""} className="rounded-lg bg-iron px-3 py-1.5 text-xs font-semibold text-white hover:bg-iron-deep disabled:opacity-50">
           {busy ? "Saving…" : "Save"}
         </button>
         <button onClick={() => setEditingId(null)} className="ml-2 text-xs text-stone-500 hover:text-stone-700">Cancel</button>
@@ -151,7 +151,7 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
                   </span>
                 </td>
                 <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                  <button onClick={() => startEdit(u)} className="text-xs font-medium text-emerald-700 hover:underline">Edit</button>
+                  <button onClick={() => startEdit(u)} className="text-xs font-medium text-copper-deep hover:underline">Edit</button>
                   <button onClick={() => remove(u.id)} className="ml-3 text-xs text-stone-400 hover:text-red-600">Delete</button>
                 </td>
               </tr>

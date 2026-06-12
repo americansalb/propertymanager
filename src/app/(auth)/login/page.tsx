@@ -22,7 +22,7 @@ export default async function LoginPage({
       <LoginForm next={next} />
       <p className="mt-6 text-center text-sm text-stone-500">
         New here?{" "}
-        <Link href="/signup" className="font-medium text-emerald-700 hover:underline">
+        <Link href="/signup" className="font-medium text-copper-deep hover:underline">
           Create an account
         </Link>
       </p>
