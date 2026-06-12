@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/authz";
-import { getProperty } from "@/lib/services/property";
+import { getProperty, revealAccessCodes } from "@/lib/services/property";
 import { NotFoundError } from "@/lib/authz/api";
 import { UnitsManager, type UnitView } from "@/components/landlord/units-manager";
 import { PropertyDeleteButton } from "@/components/landlord/property-delete-button";
+import { PropertyDetailsCard } from "@/components/landlord/property-details-card";
 import { PropertyPortrait } from "@/components/brand/property-portrait";
 import { Badge, Card } from "@/components/ui";
 import { IconChevronLeft } from "@/components/icons";
@@ -48,6 +49,19 @@ export default async function PropertyDetailPage({
 
   const occupied = units.filter((u) => u.status === "OCCUPIED").length;
   const rentMissing = units.filter((u) => u.marketRentCents == null).length;
+  const codes = revealAccessCodes(property.accessCodes);
+  const details = {
+    yearBuilt: property.yearBuilt,
+    parkingNotes: property.parkingNotes,
+    waterShutoffLocation: property.waterShutoffLocation,
+    breakerPanelLocation: property.breakerPanelLocation,
+    accessCodes: codes.value,
+    accessLocked: codes.locked,
+    petsAllowed: property.petsAllowed,
+    petNotes: property.petNotes,
+    notes: property.notes,
+    tags: property.tags,
+  };
 
   return (
     <div>
@@ -100,6 +114,10 @@ export default async function PropertyDetailPage({
       </div>
 
       <UnitsManager propertyId={property.id} units={units} />
+
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
+        <PropertyDetailsCard propertyId={property.id} details={details} />
+      </div>
     </div>
   );
 }

@@ -2,6 +2,22 @@ import { z } from "zod";
 
 const dollarsToCents = (v: number) => Math.round(v * 100);
 
+/** Real places only: 50 states, DC, and the territories USPS serves. */
+export const STATE_CODES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+  "DC", "PR", "VI", "GU", "AS", "MP",
+] as const;
+
+const stateSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .pipe(z.enum(STATE_CODES, { message: "Use a real 2-letter state code" }));
+
 export const unitInputSchema = z.object({
   unitNumber: z.string().min(1).max(24).trim(),
   bedrooms: z.coerce.number().int().min(0).max(20).optional(),
@@ -16,11 +32,7 @@ export const propertyCreateSchema = z.object({
   address1: z.string().min(1).max(160).trim(),
   address2: z.string().max(160).trim().optional().or(z.literal("")),
   city: z.string().min(1).max(80).trim(),
-  state: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z]{2}$/, "Use the 2-letter state code"),
+  state: stateSchema,
   zipCode: z
     .string()
     .trim()
@@ -29,6 +41,56 @@ export const propertyCreateSchema = z.object({
 });
 
 export const propertyUpdateSchema = propertyCreateSchema.omit({ units: true }).partial();
+
+/** Up to 12 short tags; trimmed, deduped case-insensitively, empties dropped. */
+export function parseTags(raw: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of raw) {
+    const tag = t.trim().slice(0, 24);
+    if (!tag) continue;
+    const k = tag.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(tag);
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+const clearableText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .optional();
+
+/** The operational record: progressive fields, all individually optional. */
+export const propertyDetailsSchema = z.object({
+  yearBuilt: z
+    .union([
+      z.literal("").transform(() => null),
+      z.null(),
+      z.coerce.number().int().min(1800).max(2030),
+    ])
+    .optional(),
+  parkingNotes: clearableText(240),
+  waterShutoffLocation: clearableText(240),
+  breakerPanelLocation: clearableText(240),
+  accessCodes: clearableText(240),
+  petsAllowed: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.enum(["yes", "no", "unset"]).transform((v) => (v === "unset" ? null : v === "yes")),
+    ])
+    .optional(),
+  petNotes: clearableText(240),
+  notes: clearableText(2000),
+  tags: z.array(z.string()).max(50).transform(parseTags).optional(),
+});
 
 export function toUnitData(input: z.infer<typeof unitInputSchema>) {
   return {
@@ -43,4 +105,5 @@ export function toUnitData(input: z.infer<typeof unitInputSchema>) {
 
 export type PropertyCreateInput = z.infer<typeof propertyCreateSchema>;
 export type PropertyUpdateInput = z.infer<typeof propertyUpdateSchema>;
+export type PropertyDetailsInput = z.infer<typeof propertyDetailsSchema>;
 export type UnitInput = z.infer<typeof unitInputSchema>;

@@ -159,6 +159,20 @@ model Property {
   city      String
   state     String
   zipCode   String
+
+  // Operational record: filled progressively, every field raises quote
+  // accuracy for pros and switching cost for us.
+  yearBuilt            Int?
+  parkingNotes         String?
+  waterShutoffLocation String?
+  breakerPanelLocation String?
+  /// AES-256-GCM via lib/crypto (enc1: prefix); never stored in plaintext.
+  accessCodes          String?
+  petsAllowed          Boolean?
+  petNotes             String?
+  notes                String?
+  tags                 String[]     @default([])
+
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
