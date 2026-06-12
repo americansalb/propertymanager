@@ -1,0 +1,47 @@
+import { NextResponse } from "next/server";
+import { handleServiceError, requireOrgApi } from "@/lib/authz/api";
+import { propertyUpdateSchema } from "@/lib/validation/property";
+import { deleteProperty, getProperty, updateProperty } from "@/lib/services/property";
+
+type Params = { params: Promise<{ id: string }> };
+
+export async function GET(_req: Request, { params }: Params) {
+  const auth = await requireOrgApi();
+  if (!auth.ok) return auth.res;
+  try {
+    const property = await getProperty(auth.ctx, (await params).id);
+    return NextResponse.json({ property });
+  } catch (e) {
+    return handleServiceError(e);
+  }
+}
+
+export async function PATCH(req: Request, { params }: Params) {
+  const auth = await requireOrgApi();
+  if (!auth.ok) return auth.res;
+  const body = await req.json().catch(() => null);
+  const parsed = propertyUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Invalid input." },
+      { status: 400 },
+    );
+  }
+  try {
+    const property = await updateProperty(auth.ctx, (await params).id, parsed.data);
+    return NextResponse.json({ property });
+  } catch (e) {
+    return handleServiceError(e);
+  }
+}
+
+export async function DELETE(_req: Request, { params }: Params) {
+  const auth = await requireOrgApi();
+  if (!auth.ok) return auth.res;
+  try {
+    await deleteProperty(auth.ctx, (await params).id);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return handleServiceError(e);
+  }
+}

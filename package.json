@@ -1,66 +1,46 @@
 {
-  "name": "@propertymaster/root",
+  "name": "villagekeep",
   "version": "0.1.0",
   "private": true,
-  "description": "PropertyMaster - World-Class Property Management System",
-  "workspaces": [
-    "packages/*"
-  ],
+  "packageManager": "pnpm@11.5.2",
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "build:production": "pnpm --filter @propertymaster/database build && test -f packages/database/dist/index.js && pnpm --filter @propertymaster/shared build && pnpm --filter @propertymaster/frontend-admin build && pnpm --filter @propertymaster/frontend-tenant build && pnpm --filter @propertymaster/backend build",
-    "start": "pnpm db:migrate:deploy && node packages/backend/dist/main.js",
-    "start:prod": "pnpm db:migrate:deploy && node packages/backend/dist/main.js",
-    "test": "turbo run test",
-    "lint": "turbo run lint",
-    "lint:fix": "turbo run lint -- --fix",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "type-check": "turbo run type-check",
-    "clean": "turbo run clean && rm -rf node_modules",
-    "db:generate": "cd packages/database && PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate",
-    "db:push": "cd packages/database && npx prisma db push --accept-data-loss",
-    "db:seed": "cd packages/database && npx tsx prisma/seed.ts",
-    "db:migrate": "cd packages/database && npx prisma migrate dev",
-    "db:migrate:deploy": "cd packages/database && (npx prisma migrate resolve --applied \"20241124000000_initial_schema\" || true) && (npx prisma migrate resolve --rolled-back \"20241202000000_add_vendor_approval_workflow\" || true) && npx prisma migrate deploy",
-    "db:studio": "cd packages/database && npx prisma studio",
-    "docker:build": "docker-compose build",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "prepare": "[ \"$NODE_ENV\" = \"production\" ] || husky"
+    "dev": "next dev",
+    "build": "next build",
+    "build:production": "prisma generate && next build",
+    "start": "node scripts/render-start.mjs",
+    "start:prod": "node scripts/render-start.mjs",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:audit": "tsx scripts/db-audit.ts",
+    "design:icons": "tsx scripts/gen-icon-sheet.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "tsx": "^4.7.0",
-    "turbo": "^1.11.0"
+    "@node-rs/argon2": "^2.0.2",
+    "@prisma/client": "^6.8.2",
+    "next": "^15.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
-    "prettier": "^3.1.0",
-    "typescript": "^5.3.0"
-  },
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.11.0",
-  "lint-staged": {
-    "packages/backend/src/**/*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "packages/frontend-**/src/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "packages/shared/src/**/*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,yml,yaml}": [
-      "prettier --write"
-    ]
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.3.3",
+    "prisma": "^6.8.2",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
   }
 }

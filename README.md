@@ -1,134 +1,56 @@
-# PropertyMaster
+# VillageKeep
 
-**World-Class Property Management System** - The Open, AI-Powered, FinTech-Enabled Property Operating System
+**Property management & trusted local pros** - villagekeep.com
 
-## Overview
+Landlords manage properties and collect rent. Tenants report problems through a
+guided wizard. Verified local pros bid on the work, the platform escrows the
+payment, and funds release when the job is done.
 
-PropertyMaster is a next-generation property management platform designed to fundamentally redefine asset value for property owners and operators. Built on a foundation of:
+> The previous codebase is preserved at
+> [`archive/main-2026-06-09`](https://github.com/americansalb/propertymanager/tree/archive/main-2026-06-09).
 
-- **Open API Ecosystem**: API-first architecture enabling best-in-class integrations
-- **Embedded FinTech**: Native payment processing, insurance, and financial services
-- **AI-Powered Automation**: Intelligent workflows reducing operational overhead by 90%
-- **Consumer-Grade UX**: Role-based interfaces designed for delight
+## Status
 
-## Architecture
+- ✅ Phase 0 - scaffold, schema, deploy skeleton (this)
+- ⬜ Phase 1 - PM core (auth, properties, tenants, leases, maintenance, rent via Stripe)
+- ⬜ Phase 2 - marketplace (pros, verification, bidding, escrow, reviews)
+- ⬜ Phase 3 - AI layer + growth
 
-This is a modern TypeScript monorepo managed with **pnpm workspaces** and **Turborepo**.
+## Stack
 
-```
-propertymanager/
-├── packages/
-│   ├── backend/          # NestJS API (GraphQL + REST)
-│   ├── frontend-admin/   # PM Command Center (React)
-│   ├── frontend-tenant/  # Tenant Portal (Next.js)
-│   ├── mobile/           # Field App (React Native)
-│   ├── database/         # Prisma Schema & Migrations
-│   └── shared/           # Shared TypeScript types & utilities
-├── docker-compose.yml    # Local development environment
-└── turbo.json           # Build pipeline configuration
-```
+Next.js (App Router, TypeScript) · Tailwind v4 · Prisma + PostgreSQL · Stripe
+Connect · Resend · Docker on Render.
 
-## Tech Stack
+## Database safety
 
-### Backend
-
-- **Runtime**: Node.js 20+ with TypeScript
-- **Framework**: NestJS (modular, enterprise-grade)
-- **Database**: PostgreSQL (ACID-compliant)
-- **ORM**: Prisma (type-safe queries)
-- **APIs**: GraphQL (primary) + REST (legacy/webhooks)
-- **Auth**: JWT + RBAC
-- **Payments**: Stripe Connect
-
-### Frontend
-
-- **Admin Dashboard**: React 18 + TypeScript + TailwindCSS
-- **Tenant Portal**: Next.js 14 (App Router)
-- **Mobile**: React Native + Expo
-- **UI Library**: shadcn/ui
-- **State**: Zustand
-
-### Infrastructure
-
-- **Containerization**: Docker + Docker Compose
-- **CI/CD**: GitHub Actions
-- **Testing**: Jest + Supertest + React Testing Library
-- **Documentation**: OpenAPI 3.0 + Swagger UI
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js 20+
-- pnpm 8+
-- Docker & Docker Compose
-- PostgreSQL 15+
-
-### Installation
+The production Postgres instance is **shared with other services**. This app
+operates exclusively inside its own schema (`villagekeep_app`), appended to
+`DATABASE_URL` automatically (`src/lib/env.ts`, `docker-entrypoint.sh`). It
+never reads or writes `public` or any other schema. Verify anytime with the
+read-only audit:
 
 ```bash
-# Install dependencies
+DATABASE_URL=... pnpm db:audit
+```
+
+## Local development
+
+```bash
+docker compose up -d          # postgres + redis + mailpit
+cp .env.example .env          # fill in as needed
 pnpm install
-
-# Start infrastructure (PostgreSQL, Redis)
-pnpm docker:up
-
-# Generate Prisma Client
 pnpm db:generate
-
-# Run migrations
-pnpm db:migrate
-
-# Start all services in development mode
+pnpm db:migrate               # creates villagekeep_app schema locally
+pnpm db:seed                  # super admin + service catalog (+ SEED_DEMO=true for demo data)
 pnpm dev
 ```
 
-### Development
+Checks: `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm build`
 
-```bash
-# Run specific package
-cd packages/backend && pnpm dev
-cd packages/frontend-admin && pnpm dev
+## Deployment
 
-# Database Studio (GUI)
-pnpm db:studio
-
-# Run tests
-pnpm test
-
-# Lint & format
-pnpm lint
-pnpm format
-```
-
-## Phase 1 MVP Focus
-
-### Core Financial Engine
-
-- Multi-entity General Ledger (accrual-based)
-- Automated AP/AR with bank reconciliation
-- Trust accounting (state-compliant)
-- Native payment processing
-
-### Operations Hub
-
-- Work order lifecycle management
-- Vendor management & compliance tracking
-- Mobile-first maintenance app
-
-### Target: Mid-Market PMs (100-2,000 units)
-
-## Strategic Differentiators
-
-1. **Open Ecosystem**: Public API from day one
-2. **FinTech-First**: Embedded payments as core, not bolt-on
-3. **AI Layer**: Intelligent automation across all modules
-4. **Consumer-Grade UX**: Role-based interfaces designed for specific workflows
-
-## License
-
-Proprietary - All Rights Reserved
-
-## Contact
-
-For inquiries: contact@propertymaster.io
+Pushes to `main_property` auto-deploy the Docker image to the Render service
+`propertymanager-1` (health check: `GET /api/v1/health`). The container
+entrypoint runs `prisma migrate deploy` scoped to the app schema, then starts
+the server. `render.yaml` keeps the pre-existing shared database/redis blocks
+verbatim so Blueprint syncs never flag them.

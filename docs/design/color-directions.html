@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VillageKeep - Color Direction Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #111; color: #eee; }
+  .intro { max-width: 880px; margin: 0 auto; padding: 48px 24px 8px; }
+  .intro h1 { font-size: 26px; letter-spacing: -0.02em; }
+  .intro p { color: #aaa; margin-top: 8px; font-size: 14px; line-height: 1.6; }
+  section { padding: 56px 24px; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 18px; }
+  .hero h2 { font-size: 40px; letter-spacing: -0.025em; line-height: 1.05; }
+  .hero .tagline { margin-top: 10px; font-size: 17px; }
+  .hero .sub { margin-top: 6px; font-size: 14px; max-width: 520px; line-height: 1.6; }
+  .btns { margin-top: 22px; display: flex; gap: 10px; }
+  .btn { display: inline-block; padding: 10px 20px; border-radius: 999px; font-size: 14px; font-weight: 600; text-decoration: none; }
+  .cards { margin-top: 30px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .card { border-radius: 14px; padding: 16px; }
+  .card .label { font-size: 12.5px; }
+  .card .value { font-size: 26px; font-weight: 650; margin-top: 2px; }
+  .card .delta { font-size: 11.5px; margin-top: 6px; display: inline-block; padding: 2px 8px; border-radius: 999px; }
+  .swatches { margin-top: 26px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw { width: 108px; border-radius: 10px; overflow: hidden; font-size: 10.5px; border: 1px solid rgba(128,128,128,.25); }
+  .sw .chip { height: 44px; }
+  .sw .meta { padding: 6px 8px; background: rgba(255,255,255,.92); color: #333; }
+  .sw .meta b { display: block; font-size: 10.5px; }
+  .verdict { margin-top: 22px; font-size: 13px; line-height: 1.65; max-width: 640px; border-left: 3px solid; padding-left: 14px; }
+  @media (max-width: 640px) { .cards { grid-template-columns: 1fr; } .hero h2 { font-size: 32px; } }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>VillageKeep - four color directions</h1>
+  <p>Each band below is the same product wearing a different palette: landing hero, buttons, and dashboard cards.
+  Squint test: which one would you trust with $2,000 of escrow - and still feel friendly on a tenant's phone at 11pm?</p>
+</div>
+
+<!-- ─────────────── A: KEEP & HEARTH (current - emerald + stone) ─────────────── -->
+<section style="background:#fafaf8;">
+  <div class="wrap hero" style="color:#1c1917;">
+    <span class="tag" style="background:#ecfdf5;color:#047857;">A · Keep &amp; Hearth - emerald + stone (current)</span>
+    <h2>VillageKeep</h2>
+    <p class="tagline" style="color:#57534e;">Property management &amp; trusted local pros</p>
+    <p class="sub" style="color:#78716c;">Collect rent, handle maintenance, and hire verified local pros - with payment held safely until the job is done.</p>
+    <div class="btns">
+      <a class="btn" style="background:#047857;color:#fff;">Get started</a>
+      <a class="btn" style="border:1px solid #d6d3d1;color:#44403c;">Sign in</a>
+    </div>
+    <div class="cards">
+      <div class="card" style="background:#fff;border:1px solid #e7e5e4;"><div class="label" style="color:#78716c;">Properties</div><div class="value" style="color:#1c1917;">12</div><span class="delta" style="background:#ecfdf5;color:#047857;">+2 this month</span></div>
+      <div class="card" style="background:#fff;border:1px solid #e7e5e4;"><div class="label" style="color:#78716c;">Rent collected</div><div class="value" style="color:#1c1917;">$18,450</div><span class="delta" style="background:#ecfdf5;color:#047857;">98% on time</span></div>
+      <div class="card" style="background:#fff;border:1px solid #e7e5e4;"><div class="label" style="color:#78716c;">Open maintenance</div><div class="value" style="color:#1c1917;">3</div><span class="delta" style="background:#fffbeb;color:#b45309;">1 urgent</span></div>
+    </div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#047857;"></div><div class="meta"><b>Emerald 700</b>#047857 · primary</div></div>
+      <div class="sw"><div class="chip" style="background:#065f46;"></div><div class="meta"><b>Emerald 800</b>#065f46 · hover</div></div>
+      <div class="sw"><div class="chip" style="background:#1c1917;"></div><div class="meta"><b>Stone 900</b>#1c1917 · text</div></div>
+      <div class="sw"><div class="chip" style="background:#fafaf8;"></div><div class="meta"><b>Warm white</b>#fafaf8 · bg</div></div>
+      <div class="sw"><div class="chip" style="background:#b45309;"></div><div class="meta"><b>Amber 700</b>#b45309 · status</div></div>
+    </div>
+    <p class="verdict" style="color:#57534e;border-color:#047857;">Money-green trust without bank-blue sameness; natural “village green” warmth. The safe, solid incumbent - its only sin is that green fintech isn’t rare.</p>
+  </div>
+</section>
+
+<!-- ─────────────── B: THE STRONGHOLD (navy + copper - your logo's direction) ─────────────── -->
+<section style="background:#fbf9f4;">
+  <div class="wrap hero" style="color:#15233f;">
+    <span class="tag" style="background:#e8edf6;color:#1d3461;">B · The Stronghold - navy + copper (your logo’s direction)</span>
+    <h2 style="color:#15233f;">VillageKeep</h2>
+    <p class="tagline" style="color:#4a5874;">Property management &amp; trusted local pros</p>
+    <p class="sub" style="color:#67738c;">Collect rent, handle maintenance, and hire verified local pros - with payment held safely until the job is done.</p>
+    <div class="btns">
+      <a class="btn" style="background:#1d3461;color:#fff;">Get started</a>
+      <a class="btn" style="border:1px solid #c9c2b4;color:#3d4a66;">Sign in</a>
+    </div>
+    <div class="cards">
+      <div class="card" style="background:#fff;border:1px solid #e6e1d5;"><div class="label" style="color:#67738c;">Properties</div><div class="value" style="color:#15233f;">12</div><span class="delta" style="background:#e8edf6;color:#1d3461;">+2 this month</span></div>
+      <div class="card" style="background:#fff;border:1px solid #e6e1d5;"><div class="label" style="color:#67738c;">Rent collected</div><div class="value" style="color:#15233f;">$18,450</div><span class="delta" style="background:#f7ece2;color:#b06a2e;">98% on time</span></div>
+      <div class="card" style="background:#fff;border:1px solid #e6e1d5;"><div class="label" style="color:#67738c;">Open maintenance</div><div class="value" style="color:#15233f;">3</div><span class="delta" style="background:#f7ece2;color:#b06a2e;">1 urgent</span></div>
+    </div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#1d3461;"></div><div class="meta"><b>Keep navy</b>#1d3461 · primary</div></div>
+      <div class="sw"><div class="chip" style="background:#15233f;"></div><div class="meta"><b>Ink navy</b>#15233f · text</div></div>
+      <div class="sw"><div class="chip" style="background:#b06a2e;"></div><div class="meta"><b>Copper</b>#b06a2e · accent</div></div>
+      <div class="sw"><div class="chip" style="background:#fbf9f4;"></div><div class="meta"><b>Parchment</b>#fbf9f4 · bg</div></div>
+      <div class="sw"><div class="chip" style="background:#e8edf6;"></div><div class="meta"><b>Mist blue</b>#e8edf6 · tint</div></div>
+    </div>
+    <p class="verdict" style="color:#4a5874;border-color:#b06a2e;">Maximum escrow-trust: reads like an institution that holds money for a living, warmed by copper so it doesn’t go full bank. Matches the heraldic logo instinct you already showed me.</p>
+  </div>
+</section>
+
+<!-- ─────────────── C: VILLAGE BRICK (terracotta + cream + forest) ─────────────── -->
+<section style="background:#faf6ef;">
+  <div class="wrap hero" style="color:#2d2a26;">
+    <span class="tag" style="background:#f6e3da;color:#b5532f;">C · Village Brick - terracotta + cream + forest</span>
+    <h2 style="color:#2d2a26;">VillageKeep</h2>
+    <p class="tagline" style="color:#6b6259;">Property management &amp; trusted local pros</p>
+    <p class="sub" style="color:#857b70;">Collect rent, handle maintenance, and hire verified local pros - with payment held safely until the job is done.</p>
+    <div class="btns">
+      <a class="btn" style="background:#b5532f;color:#fff;">Get started</a>
+      <a class="btn" style="border:1px solid #d9cfc0;color:#5c534a;">Sign in</a>
+    </div>
+    <div class="cards">
+      <div class="card" style="background:#fffdf9;border:1px solid #eadfce;"><div class="label" style="color:#857b70;">Properties</div><div class="value" style="color:#2d2a26;">12</div><span class="delta" style="background:#e9efe9;color:#2f4a3e;">+2 this month</span></div>
+      <div class="card" style="background:#fffdf9;border:1px solid #eadfce;"><div class="label" style="color:#857b70;">Rent collected</div><div class="value" style="color:#2d2a26;">$18,450</div><span class="delta" style="background:#e9efe9;color:#2f4a3e;">98% on time</span></div>
+      <div class="card" style="background:#fffdf9;border:1px solid #eadfce;"><div class="label" style="color:#857b70;">Open maintenance</div><div class="value" style="color:#2d2a26;">3</div><span class="delta" style="background:#f6e3da;color:#b5532f;">1 urgent</span></div>
+    </div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#b5532f;"></div><div class="meta"><b>Terracotta</b>#b5532f · primary</div></div>
+      <div class="sw"><div class="chip" style="background:#94422a;"></div><div class="meta"><b>Brick deep</b>#94422a · hover</div></div>
+      <div class="sw"><div class="chip" style="background:#2f4a3e;"></div><div class="meta"><b>Forest</b>#2f4a3e · support</div></div>
+      <div class="sw"><div class="chip" style="background:#faf6ef;"></div><div class="meta"><b>Cream</b>#faf6ef · bg</div></div>
+      <div class="sw"><div class="chip" style="background:#2d2a26;"></div><div class="meta"><b>Espresso</b>#2d2a26 · text</div></div>
+    </div>
+    <p class="verdict" style="color:#6b6259;border-color:#b5532f;">Rooftops, brick, “it takes a village” - by far the most distinctive and human; nobody in proptech looks like this. Trade-off: red-family primaries need care around money UI (we’d keep payment confirmations green/forest).</p>
+  </div>
+</section>
+
+<!-- ─────────────── D: MODERN KEEP (charcoal + honey gold) ─────────────── -->
+<section style="background:#171513;">
+  <div class="wrap hero" style="color:#f4f1ec;">
+    <span class="tag" style="background:#2c2825;color:#d9a441;">D · Modern Keep - charcoal + honey gold</span>
+    <h2 style="color:#f4f1ec;">VillageKeep</h2>
+    <p class="tagline" style="color:#b0a89d;">Property management &amp; trusted local pros</p>
+    <p class="sub" style="color:#8d857a;">Collect rent, handle maintenance, and hire verified local pros - with payment held safely until the job is done.</p>
+    <div class="btns">
+      <a class="btn" style="background:#d9a441;color:#171513;">Get started</a>
+      <a class="btn" style="border:1px solid #4a443e;color:#d8d2c8;">Sign in</a>
+    </div>
+    <div class="cards">
+      <div class="card" style="background:#211e1b;border:1px solid #322e29;"><div class="label" style="color:#8d857a;">Properties</div><div class="value" style="color:#f4f1ec;">12</div><span class="delta" style="background:#2c2825;color:#d9a441;">+2 this month</span></div>
+      <div class="card" style="background:#211e1b;border:1px solid #322e29;"><div class="label" style="color:#8d857a;">Rent collected</div><div class="value" style="color:#f4f1ec;">$18,450</div><span class="delta" style="background:#22301f;color:#8fbf6f;">98% on time</span></div>
+      <div class="card" style="background:#211e1b;border:1px solid #322e29;"><div class="label" style="color:#8d857a;">Open maintenance</div><div class="value" style="color:#f4f1ec;">3</div><span class="delta" style="background:#332414;color:#d9a441;">1 urgent</span></div>
+    </div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#171513;"></div><div class="meta"><b>Charcoal</b>#171513 · bg</div></div>
+      <div class="sw"><div class="chip" style="background:#d9a441;"></div><div class="meta"><b>Honey gold</b>#d9a441 · primary</div></div>
+      <div class="sw"><div class="chip" style="background:#f4f1ec;"></div><div class="meta"><b>Bone</b>#f4f1ec · text</div></div>
+      <div class="sw"><div class="chip" style="background:#211e1b;"></div><div class="meta"><b>Surface</b>#211e1b · cards</div></div>
+      <div class="sw"><div class="chip" style="background:#8fbf6f;"></div><div class="meta"><b>Moss</b>#8fbf6f · success</div></div>
+    </div>
+    <p class="verdict" style="color:#b0a89d;border-color:#d9a441;">Premium, craftsman, lantern-light-on-stone. Striking for marketing pages - but dark-first UIs are the hardest to keep readable across a whole product (forms, tables, emails). Best used as a marketing skin over A or B.</p>
+  </div>
+</section>
+
+<div style="max-width:880px;margin:0 auto;padding:32px 24px 64px;color:#888;font-size:13px;line-height:1.6;">
+  Whichever direction wins, it gets implemented as design tokens (CSS variables) - so future tweaks are one-line changes, and the logo work inherits the same palette.
+</div>
+
+</body>
+</html>

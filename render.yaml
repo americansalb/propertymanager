@@ -1,55 +1,59 @@
+# VillageKeep on the existing Render service.
+# IMPORTANT: the database and redis blocks below are the PRE-EXISTING shared
+# resources - they are intentionally kept verbatim so a Blueprint sync never
+# flags them as removed. The app writes only to its own Postgres schema
+# (APP_DB_SCHEMA) and prefixes Redis keys with vk:.
+
 services:
-  # Single service that serves API + Admin Frontend + Tenant Frontend
   - type: web
     name: propertymanager-1
     runtime: docker
-    dockerfilePath: ./Dockerfile.backend
+    dockerfilePath: ./Dockerfile
     plan: starter
     autoDeploy: true
+    branch: main_property
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: API_PORT
-        value: 3001
       - key: DATABASE_URL
         fromDatabase:
           name: propertymanager-1-db
           property: connectionString
-      - key: JWT_SECRET
-        generateValue: true
-      - key: STRIPE_SECRET_KEY
-        sync: false
+      - key: APP_DB_SCHEMA
+        value: villagekeep_app
       - key: REDIS_URL
         fromService:
           type: redis
           name: propertymanager-1-redis
           property: connectionString
-      - key: ALLOWED_ORIGINS
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: APP_URL
         value: 'https://propertymanager-1.onrender.com'
-      - key: COOKIE_DOMAIN
-        value: '.onrender.com'
-      # Amazon SES Email Configuration
-      - key: SMTP_HOST
-        value: 'email-smtp.us-east-1.amazonaws.com'
-      - key: SMTP_PORT
-        value: '587'
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: SMTP_FROM
-        sync: false
+      - key: BRAND_NAME
+        value: 'VillageKeep'
+      - key: BRAND_DOMAIN
+        value: 'villagekeep.com'
       - key: EMAIL_FROM
+        value: 'VillageKeep <no-reply@villagekeep.com>'
+      - key: RESEND_API_KEY
         sync: false
-      - key: EMAIL_FROM_NAME
-        value: 'PropertyMaster'
-      # Helcim Payment Configuration
-      - key: HELCIM_API_TOKEN
+      - key: STRIPE_SECRET_KEY
         sync: false
-      - key: HELCIM_ACCOUNT_ID
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
         sync: false
-      - key: HELCIM_WEBHOOK_SECRET
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_CONNECT_WEBHOOK_SECRET
+        sync: false
+      - key: PLATFORM_FEE_RENT_BPS
+        value: '0'
+      - key: MARKETPLACE_TAKE_RATE_BPS
+        value: '1000'
+      - key: SUPER_ADMIN_EMAIL
+        value: 'jobs@aalb.org'
+      - key: SUPER_ADMIN_PASSWORD
         sync: false
 
   - type: redis

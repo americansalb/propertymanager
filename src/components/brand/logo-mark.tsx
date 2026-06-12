@@ -1,0 +1,19 @@
+/** The VillageKeep mark - founder's v3 (iron keep, copper home, patina frame). */
+export function LogoMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 512 512" className={className} aria-hidden="true" focusable="false">
+      <g transform="translate(256,260) scale(3.55)">
+        <path
+          d="M -62 62 L -41 -46 L -41 -62 L -19 -62 L -19 -46 L -11 -46 L -11 -62 L 11 -62 L 11 -46 L 19 -46 L 19 -62 L 41 -62 L 41 -46 L 62 62 Z"
+          fill="#34383F"
+        />
+        <path d="M -31 62 L -31 4 L 0 -26 L 31 4 L 31 62 Z" fill="#3E7C66" />
+        <path d="M 0 -20 L -26 6 L 0 6 Z" fill="#D08A45" />
+        <path d="M 0 -20 L 26 6 L 0 6 Z" fill="#9E5B23" />
+        <rect x="-26" y="6" width="52" height="7" fill="#3E7C66" />
+        <rect x="-26" y="13" width="26" height="42" fill="#D08A45" />
+        <rect x="0" y="13" width="26" height="42" fill="#9E5B23" />
+      </g>
+    </svg>
+  );
+}
