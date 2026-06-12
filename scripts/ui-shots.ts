@@ -88,11 +88,17 @@ async function main() {
     await firstCard.click();
     await page.waitForLoadState("networkidle");
     await shot(page, "property-detail", true);
-    const editBtn = page.getByTitle("Edit unit").first();
+    const editBtn = page.getByTitle("Edit terms").first();
     if (await editBtn.count()) {
       await editBtn.click();
-      await shot(page, "property-detail-unit-editing");
-      await page.locator('button:has-text("Cancel")').first().click();
+      await shot(page, "property-detail-unit-terms", true);
+      await page.locator('button:has-text("Done")').first().click();
+    }
+    const detailsRow = page.locator("dl dd button").first();
+    if (await detailsRow.count()) {
+      await detailsRow.click();
+      await shot(page, "property-detail-row-editing");
+      await page.keyboard.press("Escape");
     }
     // in-place editors: name, then address
     await page.getByTitle("Rename").click();
