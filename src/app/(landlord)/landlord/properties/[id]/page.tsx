@@ -6,20 +6,12 @@ import { NotFoundError } from "@/lib/authz/api";
 import { UnitsManager, type UnitView } from "@/components/landlord/units-manager";
 import { PropertyDeleteButton } from "@/components/landlord/property-delete-button";
 import { PropertyDetailsCard } from "@/components/landlord/property-details-card";
+import { PropertyHeaderEditor } from "@/components/landlord/property-header-editor";
 import { PropertyPortrait } from "@/components/brand/property-portrait";
 import { Badge, Card } from "@/components/ui";
 import { IconChevronLeft } from "@/components/icons";
 
 export const metadata = { title: "Property" };
-
-const TYPE_LABEL: Record<string, string> = {
-  SINGLE_FAMILY: "Single family",
-  MULTIFAMILY: "Multifamily",
-  CONDO: "Condo",
-  TOWNHOUSE: "Townhouse",
-  COMMERCIAL: "Commercial",
-  OTHER: "Other",
-};
 
 export default async function PropertyDetailPage({
   params,
@@ -82,34 +74,32 @@ export default async function PropertyDetailPage({
             className="h-auto w-full"
           />
         </Card>
-        <div className="min-w-0 flex-1">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-stone-900">
-            {property.name}
-          </h1>
-          <p className="mt-1 text-sm text-stone-500">
-            {property.address1}
-            {property.address2 ? `, ${property.address2}` : ""} · {property.city},{" "}
-            {property.state} {property.zipCode}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge>{TYPE_LABEL[property.type] ?? property.type}</Badge>
-            <Badge tone={occupied === units.length && units.length > 0 ? "patina" : "amber"}>
-              {occupied} of {units.length} occupied
-            </Badge>
-            {rentMissing > 0 && (
-              <Badge tone="copper">
-                rent not set on {rentMissing} unit{rentMissing === 1 ? "" : "s"}
+        <PropertyHeaderEditor
+          property={{
+            id: property.id,
+            name: property.name,
+            type: property.type,
+            address1: property.address1,
+            address2: property.address2,
+            city: property.city,
+            state: property.state,
+            zipCode: property.zipCode,
+            alternateAddress: property.alternateAddress,
+          }}
+          chips={
+            <>
+              <Badge tone={occupied === units.length && units.length > 0 ? "patina" : "amber"}>
+                {occupied} of {units.length} occupied
               </Badge>
-            )}
-          </div>
-        </div>
+              {rentMissing > 0 && (
+                <Badge tone="copper">
+                  rent not set on {rentMissing} unit{rentMissing === 1 ? "" : "s"}
+                </Badge>
+              )}
+            </>
+          }
+        />
         <div className="flex shrink-0 items-center gap-3">
-          <Link
-            href={`/landlord/properties/${property.id}/edit`}
-            className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-patina hover:text-stone-900"
-          >
-            Edit
-          </Link>
           <PropertyDeleteButton propertyId={property.id} />
         </div>
       </div>

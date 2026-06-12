@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 804" width="1040" height="804">
-<rect width="1040" height="804" fill="#FAF8F4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 940" width="1040" height="940">
+<rect width="1040" height="940" fill="#FAF8F4"/>
 <text x="20" y="38" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#34383F">VillageKeep icon set v1 (proprietary)</text>
 <text x="20" y="60" font-family="system-ui, sans-serif" font-size="12" fill="#8A857C">Forged language: solid fills, zero curves, 45-degree chamfers. Octagons instead of circles, diamonds instead of dots.</text>
 <text x="20" y="76" font-family="system-ui, sans-serif" font-size="12" fill="#8A857C">Per icon: 64px two-tone (copper/patina accents), 36px mono, 36px reversed on iron, 16px nav size.</text>
@@ -171,11 +171,18 @@
 <g transform="translate(722,714) scale(0.6666666666666666)"><path d="M4.2 12.9 L9.6 18.3 L19.8 8.1 L17.4 5.7 L9.6 13.5 L6.6 10.5 Z" fill="#34383F" fill-rule="evenodd"/></g>
 <text x="632" y="742" font-family="system-ui, sans-serif" font-size="11" fill="#34383F" font-weight="600">check</text>
 <text x="632" y="756" font-family="system-ui, sans-serif" font-size="9.5" fill="#8A857C">Check: done / success</text>
-<g transform="translate(832,654) scale(2.6666666666666665)"><path d="M12 9.7 L17.5 4.2 L19.8 6.5 L14.3 12 L19.8 17.5 L17.5 19.8 L12 14.3 L6.5 19.8 L4.2 17.5 L9.7 12 L4.2 6.5 L6.5 4.2 Z" fill="#34383F" fill-rule="evenodd"/></g>
-<g transform="translate(912,668) scale(1.5)"><path d="M12 9.7 L17.5 4.2 L19.8 6.5 L14.3 12 L19.8 17.5 L17.5 19.8 L12 14.3 L6.5 19.8 L4.2 17.5 L9.7 12 L4.2 6.5 L6.5 4.2 Z" fill="#34383F" fill-rule="evenodd"/></g>
+<g transform="translate(832,654) scale(2.6666666666666665)"><path d="M3.4 9.9 H6.4 V14.1 H3.4 Z" fill="#D08A45" fill-rule="evenodd" transform="rotate(-45 12 12)"/><path d="M7.4 9.9 H16.2 V14.1 H7.4 Z M16.2 9.9 L20.8 12 L16.2 14.1 Z" fill="#34383F" fill-rule="evenodd" transform="rotate(-45 12 12)"/></g>
+<g transform="translate(912,668) scale(1.5)"><path d="M3.4 9.9 H6.4 V14.1 H3.4 Z" fill="#34383F" fill-rule="evenodd" transform="rotate(-45 12 12)"/><path d="M7.4 9.9 H16.2 V14.1 H7.4 Z M16.2 9.9 L20.8 12 L16.2 14.1 Z" fill="#34383F" fill-rule="evenodd" transform="rotate(-45 12 12)"/></g>
 <rect x="960" y="664" width="44" height="44" rx="6" fill="#34383F"/>
-<g transform="translate(964,668) scale(1.5)"><path d="M12 9.7 L17.5 4.2 L19.8 6.5 L14.3 12 L19.8 17.5 L17.5 19.8 L12 14.3 L6.5 19.8 L4.2 17.5 L9.7 12 L4.2 6.5 L6.5 4.2 Z" fill="#FAF8F4" fill-rule="evenodd"/></g>
-<g transform="translate(922,714) scale(0.6666666666666666)"><path d="M12 9.7 L17.5 4.2 L19.8 6.5 L14.3 12 L19.8 17.5 L17.5 19.8 L12 14.3 L6.5 19.8 L4.2 17.5 L9.7 12 L4.2 6.5 L6.5 4.2 Z" fill="#34383F" fill-rule="evenodd"/></g>
-<text x="832" y="742" font-family="system-ui, sans-serif" font-size="11" fill="#34383F" font-weight="600">close</text>
-<text x="832" y="756" font-family="system-ui, sans-serif" font-size="9.5" fill="#8A857C">Close: dismiss / remove</text>
+<g transform="translate(964,668) scale(1.5)"><path d="M3.4 9.9 H6.4 V14.1 H3.4 Z" fill="#D08A45" fill-rule="evenodd" transform="rotate(-45 12 12)"/><path d="M7.4 9.9 H16.2 V14.1 H7.4 Z M16.2 9.9 L20.8 12 L16.2 14.1 Z" fill="#FAF8F4" fill-rule="evenodd" transform="rotate(-45 12 12)"/></g>
+<g transform="translate(922,714) scale(0.6666666666666666)"><path d="M3.4 9.9 H6.4 V14.1 H3.4 Z" fill="#34383F" fill-rule="evenodd" transform="rotate(-45 12 12)"/><path d="M7.4 9.9 H16.2 V14.1 H7.4 Z M16.2 9.9 L20.8 12 L16.2 14.1 Z" fill="#34383F" fill-rule="evenodd" transform="rotate(-45 12 12)"/></g>
+<text x="832" y="742" font-family="system-ui, sans-serif" font-size="11" fill="#34383F" font-weight="600">pencil</text>
+<text x="832" y="756" font-family="system-ui, sans-serif" font-size="9.5" fill="#8A857C">Pencil: edit in place</text>
+<g transform="translate(32,790) scale(2.6666666666666665)"><path d="M12 9.7 L17.5 4.2 L19.8 6.5 L14.3 12 L19.8 17.5 L17.5 19.8 L12 14.3 L6.5 19.8 L4.2 17.5 L9.7 12 L4.2 6.5 L6.5 4.2 Z" fill="#34383F" fill-rule="evenodd"/></g>
+<g transform="translate(112,804) scale(1.5)"><path d="M12 9.7 L17.5 4.2 L19.8 6.5 L14.3 12 L19.8 17.5 L17.5 19.8 L12 14.3 L6.5 19.8 L4.2 17.5 L9.7 12 L4.2 6.5 L6.5 4.2 Z" fill="#34383F" fill-rule="evenodd"/></g>
+<rect x="160" y="800" width="44" height="44" rx="6" fill="#34383F"/>
+<g transform="translate(164,804) scale(1.5)"><path d="M12 9.7 L17.5 4.2 L19.8 6.5 L14.3 12 L19.8 17.5 L17.5 19.8 L12 14.3 L6.5 19.8 L4.2 17.5 L9.7 12 L4.2 6.5 L6.5 4.2 Z" fill="#FAF8F4" fill-rule="evenodd"/></g>
+<g transform="translate(122,850) scale(0.6666666666666666)"><path d="M12 9.7 L17.5 4.2 L19.8 6.5 L14.3 12 L19.8 17.5 L17.5 19.8 L12 14.3 L6.5 19.8 L4.2 17.5 L9.7 12 L4.2 6.5 L6.5 4.2 Z" fill="#34383F" fill-rule="evenodd"/></g>
+<text x="32" y="878" font-family="system-ui, sans-serif" font-size="11" fill="#34383F" font-weight="600">close</text>
+<text x="32" y="892" font-family="system-ui, sans-serif" font-size="9.5" fill="#8A857C">Close: dismiss / remove</text>
 </svg>
