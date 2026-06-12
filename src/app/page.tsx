@@ -2,21 +2,21 @@ import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { VillageSkyline } from "@/components/brand/village-skyline";
-import { IconEscrow, IconRent, IconWrench } from "@/components/icons";
+import { SpotEscrow, SpotRent, SpotTools } from "@/components/icons/spots";
 
 const FEATURES = [
   {
-    icon: <IconRent className="h-6 w-6" duo />,
+    icon: <SpotRent className="h-14 w-14" />,
     title: "Rent that arrives itself",
     body: "Tenants pay online, rent lands on the 1st, and the ledger writes itself. Late fees follow your rules, not your patience.",
   },
   {
-    icon: <IconWrench className="h-6 w-6" duo />,
+    icon: <SpotTools className="h-14 w-14" />,
     title: "Maintenance off your plate",
     body: "Tenants report with photos. Vetted local pros bid with up-front prices. You approve from your phone.",
   },
   {
-    icon: <IconEscrow className="h-6 w-6" duo />,
+    icon: <SpotEscrow className="h-14 w-14" />,
     title: "Money that can't get lost",
     body: "Payment for every job sits in escrow until you approve the finished work. No deposits vanishing, no chasing refunds.",
   },
@@ -86,10 +86,8 @@ export default function LandingPage() {
         <section className="mx-auto grid max-w-5xl gap-4 px-6 pb-24 sm:grid-cols-3">
           {FEATURES.map((f) => (
             <div key={f.title} className="rounded-xl border border-stone-200 bg-white p-6">
-              <span className="cut-sm flex h-11 w-11 items-center justify-center bg-copper-tint text-iron">
-                {f.icon}
-              </span>
-              <h2 className="mt-4 font-display text-lg font-semibold text-stone-900">{f.title}</h2>
+              {f.icon}
+              <h2 className="mt-5 font-display text-lg font-semibold text-stone-900">{f.title}</h2>
               <p className="mt-2 text-sm leading-6 text-stone-600">{f.body}</p>
             </div>
           ))}
