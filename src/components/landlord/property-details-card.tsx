@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, buttonCls, inputCls } from "@/components/ui";
+import { IconPencil } from "@/components/icons";
 
 export type DetailsView = {
   alternateAddress: string | null;
@@ -92,6 +93,8 @@ export function PropertyDetailsCard({
   }
 
   const rows: Array<{ label: string; value: string | null; prompt: string }> = [
+    // prompt strings are used only for the editor's placeholder hints now
+
     {
       label: "Also known as",
       value: details.alternateAddress,
@@ -119,13 +122,20 @@ export function PropertyDetailsCard({
     },
   ];
 
+  const empty =
+    rows.every((r) => !r.value) &&
+    !details.accessCodes &&
+    !details.accessLocked &&
+    !details.notes &&
+    details.tags.length === 0;
+
   return (
     <div className="rounded-xl border border-stone-200 bg-white">
       <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
         <h2 className="text-sm font-semibold text-stone-900">Details &amp; access</h2>
-        {!editing && (
+        {!editing && !empty && (
           <button onClick={() => setEditing(true)} className={buttonCls("secondary", "sm")}>
-            Edit
+            <IconPencil className="mr-1 h-3 w-3" /> Edit
           </button>
         )}
       </div>
@@ -188,48 +198,45 @@ export function PropertyDetailsCard({
             </button>
           </div>
         </div>
+      ) : empty ? (
+        // No interrogation: one quiet line until there's something to say.
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="text-sm text-stone-500">
+            Nothing recorded yet. Pros will ask for the year built, parking, shutoff
+            locations, pets, and access codes.
+          </p>
+          <button onClick={() => setEditing(true)} className={buttonCls("secondary", "sm")}>
+            Add details
+          </button>
+        </div>
       ) : (
         <div className="p-4">
           <dl className="grid grid-cols-[7.5rem_1fr] items-baseline gap-x-4 gap-y-2.5">
-            {rows.map((r) => (
-              <div key={r.label} className="contents">
-                <dt className={`${labelCls} leading-5`}>{r.label}</dt>
+            {rows
+              .filter((r) => r.value)
+              .map((r) => (
+                <div key={r.label} className="contents">
+                  <dt className={`${labelCls} leading-5`}>{r.label}</dt>
+                  <dd className="text-sm leading-5 text-stone-800">{r.value}</dd>
+                </div>
+              ))}
+            {(details.accessCodes || details.accessLocked) && (
+              <>
+                <dt className={`${labelCls} leading-5`}>Access codes</dt>
                 <dd className="text-sm leading-5">
-                  {r.value ? (
-                    <span className="text-stone-800">{r.value}</span>
+                  {details.accessLocked ? (
+                    <span className="text-amber-700">Stored, but the encryption key changed.</span>
                   ) : (
                     <button
-                      onClick={() => setEditing(true)}
-                      className="text-left text-stone-400 transition hover:text-copper-deep"
+                      onClick={() => setShowCodes((s) => !s)}
+                      className="font-medium text-copper-deep hover:underline"
                     >
-                      <span className="mr-1 font-semibold text-copper">+</span>
-                      {r.prompt}
+                      {showCodes ? details.accessCodes : "•••••• tap to reveal"}
                     </button>
                   )}
                 </dd>
-              </div>
-            ))}
-            <dt className={`${labelCls} leading-5`}>Access codes</dt>
-            <dd className="text-sm leading-5">
-              {details.accessLocked ? (
-                <span className="text-amber-700">Stored, but the encryption key changed.</span>
-              ) : details.accessCodes ? (
-                <button
-                  onClick={() => setShowCodes((s) => !s)}
-                  className="font-medium text-copper-deep hover:underline"
-                >
-                  {showCodes ? details.accessCodes : "•••••• tap to reveal"}
-                </button>
-              ) : (
-                <button
-                  onClick={() => setEditing(true)}
-                  className="text-left text-stone-400 transition hover:text-copper-deep"
-                >
-                  <span className="mr-1 font-semibold text-copper">+</span>
-                  {PROMPTS.accessCodes}
-                </button>
-              )}
-            </dd>
+              </>
+            )}
           </dl>
 
           {details.notes && (

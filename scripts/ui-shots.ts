@@ -88,7 +88,7 @@ async function main() {
     await firstCard.click();
     await page.waitForLoadState("networkidle");
     await shot(page, "property-detail", true);
-    const editBtn = page.locator('tbody button:has-text("Edit")').first();
+    const editBtn = page.getByTitle("Edit unit").first();
     if (await editBtn.count()) {
       await editBtn.click();
       await shot(page, "property-detail-unit-editing");

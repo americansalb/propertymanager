@@ -3,10 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatCents } from "@/lib/money";
-import { buttonCls } from "@/components/ui";
-
-const inputCls =
-  "w-full rounded-lg border border-stone-300 px-2 py-1.5 text-sm text-stone-900 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
+import { buttonCls, inputCls } from "@/components/ui";
+import { IconClose, IconPencil, IconPlus } from "@/components/icons";
 
 export type UnitView = {
   id: string;
@@ -36,9 +34,9 @@ const toDraft = (u?: UnitView): Draft => ({
 
 // Create omits blanks; update sends explicit nulls so clearing a field works.
 function draftPayload(d: Draft, mode: "create" | "update") {
-  const num = (v: string) => (v === "" ? (mode === "update" ? null : undefined) : v);
+  const num = (v: string) => (v === "" ? (mode === "update" ? null : undefined) : v.replace(/,/g, ""));
   const payload: Record<string, unknown> = {
-    unitNumber: d.unitNumber,
+    unitNumber: d.unitNumber.trim(),
     bedrooms: num(d.bedrooms),
     bathrooms: num(d.bathrooms),
     squareFeet: num(d.squareFeet),
@@ -55,16 +53,12 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  VACANT: "Vacant",
   OCCUPIED: "Occupied",
+  VACANT: "Vacant",
   NOTICE: "On notice",
 };
 
-/**
- * The answer to "how do I make it not vacant": the status IS the control.
- * One tap on the badge, pick the truth, the portrait windows follow.
- * Leases will set this automatically in 1.4; this stays as the manual lever.
- */
+/** The status IS the control: tap, pick the truth, the portrait follows. */
 function UnitStatusSelect({ unitId, status }: { unitId: string; status: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -105,25 +99,107 @@ function UnitStatusSelect({ unitId, status }: { unitId: string; status: string }
   );
 }
 
-export function UnitsManager({ propertyId, units }: { propertyId: string; units: UnitView[] }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | "new" | null>(null);
-  const [draft, setDraft] = useState<Draft>(toDraft());
-  const [busy, setBusy] = useState(false);
+function unitTitle(unitNumber: string): string {
+  return /^\d/.test(unitNumber) ? `Unit ${unitNumber}` : unitNumber;
+}
 
-  function startEdit(u?: UnitView) {
+function UnitCard({
+  unit,
+  onEdit,
+  onDelete,
+}: {
+  unit: UnitView;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const occupied = unit.status !== "VACANT";
+  const specs = [
+    unit.bedrooms != null ? `${unit.bedrooms} bd` : null,
+    unit.bathrooms != null ? `${unit.bathrooms} ba` : null,
+    unit.squareFeet != null ? `${unit.squareFeet.toLocaleString()} sqft` : null,
+  ].filter(Boolean);
+
+  return (
+    <div className="group relative rounded-xl border border-stone-200 bg-white p-4 transition hover:border-patina">
+      <div className="flex items-start justify-between gap-2">
+        <p className="truncate font-display text-lg font-semibold text-stone-900">
+          {unitTitle(unit.unitNumber)}
+        </p>
+        <UnitStatusSelect unitId={unit.id} status={unit.status} />
+      </div>
+
+      <div className="mt-2">
+        {unit.marketRentCents != null ? (
+          <p className="flex items-baseline gap-1.5">
+            <span className="font-display text-xl font-semibold tabular-nums text-stone-900">
+              {formatCents(unit.marketRentCents)}
+            </span>
+            <span className="text-xs text-stone-500">/mo {occupied ? "rent" : "asking"}</span>
+          </p>
+        ) : (
+          <button
+            onClick={onEdit}
+            className="text-sm text-stone-400 transition hover:text-copper-deep"
+          >
+            <span className="mr-1 font-semibold text-copper">+</span>
+            {occupied ? "Set the rent" : "Set asking rent"}
+          </button>
+        )}
+        {specs.length > 0 && <p className="mt-1 text-sm text-stone-500">{specs.join(" · ")}</p>}
+      </div>
+
+      <div className="absolute right-3 bottom-3 flex gap-1 opacity-0 transition group-hover:opacity-100">
+        <button
+          onClick={onEdit}
+          title="Edit unit"
+          className="rounded-lg p-1.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
+        >
+          <IconPencil className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={onDelete}
+          title="Delete unit"
+          className="rounded-lg p-1.5 text-stone-300 transition hover:bg-red-50 hover:text-red-600"
+        >
+          <IconClose className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function UnitForm({
+  propertyId,
+  unit,
+  occupied,
+  onClose,
+}: {
+  propertyId: string;
+  unit?: UnitView;
+  occupied?: boolean;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [draft, setDraft] = useState<Draft>(toDraft(unit));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isNew = !unit;
+
+  const set = (k: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDraft((d) => ({ ...d, [k]: e.target.value }));
     setError(null);
-    setEditingId(u ? u.id : "new");
-    setDraft(toDraft(u));
-  }
+  };
 
   async function save() {
+    if (draft.unitNumber.trim() === "") {
+      setError("Give the unit a name or number.");
+      return;
+    }
     setBusy(true);
-    setError(null);
-    const isNew = editingId === "new";
     const res = await fetch(
-      isNew ? `/api/v1/landlord/properties/${propertyId}/units` : `/api/v1/landlord/units/${editingId}`,
+      isNew
+        ? `/api/v1/landlord/properties/${propertyId}/units`
+        : `/api/v1/landlord/units/${unit.id}`,
       {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -136,94 +212,88 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
       setError(data.error ?? "Something went wrong.");
       return;
     }
-    setEditingId(null);
+    onClose();
     router.refresh();
   }
 
-  async function remove(unitId: string) {
-    if (!window.confirm("Delete this unit?")) return;
-    setError(null);
-    const res = await fetch(`/api/v1/landlord/units/${unitId}`, { method: "DELETE" });
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) {
-      setError(data.error ?? "Something went wrong.");
-      return;
-    }
-    router.refresh();
-  }
-
-  const editorRow = (
-    <tr className="bg-stone-50">
-      <td className="px-3 py-2"><input value={draft.unitNumber} onChange={(e) => setDraft({ ...draft, unitNumber: e.target.value })} placeholder="Unit #" className={inputCls} /></td>
-      <td className="px-3 py-2"><input value={draft.bedrooms} onChange={(e) => setDraft({ ...draft, bedrooms: e.target.value })} inputMode="numeric" className={inputCls} /></td>
-      <td className="px-3 py-2"><input value={draft.bathrooms} onChange={(e) => setDraft({ ...draft, bathrooms: e.target.value })} inputMode="decimal" className={inputCls} /></td>
-      <td className="px-3 py-2"><input value={draft.squareFeet} onChange={(e) => setDraft({ ...draft, squareFeet: e.target.value })} inputMode="numeric" className={inputCls} /></td>
-      <td className="px-3 py-2"><input value={draft.marketRentDollars} onChange={(e) => setDraft({ ...draft, marketRentDollars: e.target.value })} inputMode="decimal" placeholder="$" className={inputCls} /></td>
-      <td className="px-3 py-2" />
-      <td className="px-3 py-2 text-right whitespace-nowrap">
-        <button onClick={save} disabled={busy || draft.unitNumber.trim() === ""} className={buttonCls("primary", "sm")}>
-          {busy ? "Saving…" : "Save"}
-        </button>
-        <button onClick={() => setEditingId(null)} className="ml-2 text-xs text-stone-500 hover:text-stone-700">Cancel</button>
-      </td>
-    </tr>
-  );
+  const fieldLabel = "text-[10px] font-semibold uppercase tracking-wide text-stone-400";
 
   return (
-    <div className="mt-6 rounded-xl border border-stone-200 bg-white">
-      <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
-        <h2 className="text-sm font-semibold text-stone-900">Units ({units.length})</h2>
-        <button onClick={() => startEdit()} className={buttonCls("secondary", "sm")}>
-          + Add unit
+    <div className="rounded-xl border border-patina bg-white p-4">
+      <div className="space-y-2.5">
+        <div>
+          <label className={fieldLabel}>Unit name or number</label>
+          <input autoFocus value={draft.unitNumber} onChange={set("unitNumber")} placeholder="2F, 101, Garden…" aria-label="Unit name or number" className={inputCls} />
+        </div>
+        <div>
+          <label className={fieldLabel}>{occupied ?? unit?.status !== "VACANT" ? "Monthly rent" : "Asking rent"}</label>
+          <div className="relative">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-stone-400">$</span>
+            <input value={draft.marketRentDollars} onChange={set("marketRentDollars")} inputMode="decimal" placeholder="1,850" aria-label="Monthly rent" className={`${inputCls} pl-7`} />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className={fieldLabel}>Beds</label>
+            <input value={draft.bedrooms} onChange={set("bedrooms")} inputMode="numeric" aria-label="Bedrooms" className={inputCls} />
+          </div>
+          <div>
+            <label className={fieldLabel}>Baths</label>
+            <input value={draft.bathrooms} onChange={set("bathrooms")} inputMode="decimal" aria-label="Bathrooms" className={inputCls} />
+          </div>
+          <div>
+            <label className={fieldLabel}>Sq ft</label>
+            <input value={draft.squareFeet} onChange={set("squareFeet")} inputMode="numeric" aria-label="Square feet" className={inputCls} />
+          </div>
+        </div>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      <div className="mt-3 flex gap-2">
+        <button onClick={save} disabled={busy} className={buttonCls("primary", "sm")}>
+          {busy ? "Saving…" : isNew ? "Add unit" : "Save"}
+        </button>
+        <button onClick={onClose} disabled={busy} className={buttonCls("ghost", "sm")}>
+          Cancel
         </button>
       </div>
-      {error && <p className="px-4 pt-3 text-sm text-red-600">{error}</p>}
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="text-[11px] uppercase tracking-wide text-stone-400">
-            <th className="px-3 py-2 font-medium">Unit</th>
-            <th className="px-3 py-2 font-medium">Beds</th>
-            <th className="px-3 py-2 font-medium">Baths</th>
-            <th className="px-3 py-2 font-medium">Sq ft</th>
-            <th className="px-3 py-2 font-medium">Market rent</th>
-            <th className="px-3 py-2 font-medium">Status</th>
-            <th className="px-3 py-2" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-stone-100">
-          {units.map((u) =>
-            editingId === u.id ? (
-              <UnitEditorKeyed key={u.id}>{editorRow}</UnitEditorKeyed>
-            ) : (
-              <tr key={u.id}>
-                <td className="px-3 py-2.5 font-medium text-stone-900">{u.unitNumber}</td>
-                <td className="px-3 py-2.5 text-stone-600">{u.bedrooms ?? "-"}</td>
-                <td className="px-3 py-2.5 text-stone-600">{u.bathrooms ?? "-"}</td>
-                <td className="px-3 py-2.5 text-stone-600">{u.squareFeet?.toLocaleString() ?? "-"}</td>
-                <td className="px-3 py-2.5 tabular-nums text-stone-600">{u.marketRentCents != null ? formatCents(u.marketRentCents) : "-"}</td>
-                <td className="px-3 py-2.5">
-                  <UnitStatusSelect unitId={u.id} status={u.status} />
-                </td>
-                <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                  <button onClick={() => startEdit(u)} className="text-xs font-medium text-copper-deep hover:underline">Edit</button>
-                  <button onClick={() => remove(u.id)} className="ml-3 text-xs text-stone-400 hover:text-red-600">Delete</button>
-                </td>
-              </tr>
-            ),
-          )}
-          {editingId === "new" && editorRow}
-          {units.length === 0 && editingId !== "new" && (
-            <tr>
-              <td colSpan={7} className="px-3 py-6 text-center text-sm text-stone-400">No units yet.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
     </div>
   );
 }
 
-// Table rows can't be fragments with keys inline; tiny wrapper keeps types happy.
-function UnitEditorKeyed({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+export function UnitsManager({ propertyId, units }: { propertyId: string; units: UnitView[] }) {
+  const router = useRouter();
+  const [editingId, setEditingId] = useState<string | "new" | null>(null);
+
+  async function remove(unitId: string) {
+    if (!window.confirm("Delete this unit?")) return;
+    const res = await fetch(`/api/v1/landlord/units/${unitId}`, { method: "DELETE" });
+    if (res.ok) router.refresh();
+  }
+
+  return (
+    <section className="mt-8">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+        Units ({units.length})
+      </h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {units.map((u) =>
+          editingId === u.id ? (
+            <UnitForm key={u.id} propertyId={propertyId} unit={u} onClose={() => setEditingId(null)} />
+          ) : (
+            <UnitCard key={u.id} unit={u} onEdit={() => setEditingId(u.id)} onDelete={() => void remove(u.id)} />
+          ),
+        )}
+        {editingId === "new" ? (
+          <UnitForm propertyId={propertyId} occupied={false} onClose={() => setEditingId(null)} />
+        ) : (
+          <button
+            onClick={() => setEditingId("new")}
+            className="flex min-h-28 items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 text-sm font-medium text-stone-400 transition hover:border-patina hover:text-patina"
+          >
+            <IconPlus className="h-4 w-4" /> Add unit
+          </button>
+        )}
+      </div>
+    </section>
+  );
 }
