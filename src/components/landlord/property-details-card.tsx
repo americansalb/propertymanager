@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Badge, buttonCls, inputCls } from "@/components/ui";
 
 export type DetailsView = {
+  alternateAddress: string | null;
   yearBuilt: number | null;
   parkingNotes: string | null;
   waterShutoffLocation: string | null;
@@ -22,6 +23,7 @@ const labelCls = "text-xs font-semibold uppercase tracking-wide text-stone-400";
 
 /** Progressive profiling: every empty field explains why it's worth filling. */
 const PROMPTS: Record<string, string> = {
+  alternateAddress: "Corner building or double lot? Add its other street address.",
   yearBuilt: "When was it built? Pros quote blind without it.",
   parkingNotes: "Street, garage, permit zone? Pros need to know where to park the van.",
   waterShutoffLocation: "Your plumber's first question in an emergency.",
@@ -43,6 +45,7 @@ export function PropertyDetailsCard({
   const [error, setError] = useState<string | null>(null);
   const [showCodes, setShowCodes] = useState(false);
   const [form, setForm] = useState({
+    alternateAddress: details.alternateAddress ?? "",
     yearBuilt: details.yearBuilt?.toString() ?? "",
     parkingNotes: details.parkingNotes ?? "",
     waterShutoffLocation: details.waterShutoffLocation ?? "",
@@ -66,6 +69,7 @@ export function PropertyDetailsCard({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        alternateAddress: form.alternateAddress,
         yearBuilt: form.yearBuilt.trim(),
         parkingNotes: form.parkingNotes,
         waterShutoffLocation: form.waterShutoffLocation,
@@ -88,6 +92,11 @@ export function PropertyDetailsCard({
   }
 
   const rows: Array<{ label: string; value: string | null; prompt: string }> = [
+    {
+      label: "Also known as",
+      value: details.alternateAddress,
+      prompt: PROMPTS.alternateAddress!,
+    },
     { label: "Year built", value: details.yearBuilt?.toString() ?? null, prompt: PROMPTS.yearBuilt! },
     { label: "Parking", value: details.parkingNotes, prompt: PROMPTS.parkingNotes! },
     {
@@ -123,6 +132,10 @@ export function PropertyDetailsCard({
 
       {editing ? (
         <div className="space-y-3 p-4">
+          <div>
+            <label className={labelCls}>Also known as (second address)</label>
+            <input value={form.alternateAddress} onChange={(e) => set("alternateAddress", e.target.value)} placeholder="850 W Belmont Ave entrance" className={inputCls} />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Year built</label>

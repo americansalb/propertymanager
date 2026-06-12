@@ -38,7 +38,18 @@ export const propertyCreateSchema = z.object({
     .trim()
     .regex(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code"),
   units: z.array(unitInputSchema).max(200).default([]),
+  /** Same full address twice is usually a slip, but reality wins on demand. */
+  allowDuplicate: z.boolean().optional(),
 });
+
+/** Full-line comparison: line 2 counts, so "Apt 1" and "Apt 2" differ. */
+export function isSameAddress(
+  a: { address1: string; address2?: string | null },
+  b: { address1: string; address2?: string | null },
+): boolean {
+  const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  return norm(a.address1) === norm(b.address1) && norm(a.address2) === norm(b.address2);
+}
 
 export const propertyUpdateSchema = propertyCreateSchema.omit({ units: true }).partial();
 
@@ -69,6 +80,7 @@ const clearableText = (max: number) =>
 
 /** The operational record: progressive fields, all individually optional. */
 export const propertyDetailsSchema = z.object({
+  alternateAddress: clearableText(160),
   yearBuilt: z
     .union([
       z.literal("").transform(() => null),

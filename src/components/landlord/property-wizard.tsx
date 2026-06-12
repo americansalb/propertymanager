@@ -73,6 +73,7 @@ export function PropertyWizard() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [duplicateBlocked, setDuplicateBlocked] = useState(false);
 
   const steps = stepsFor(draft);
   const id = steps[step]!;
@@ -82,6 +83,7 @@ export function PropertyWizard() {
   function set<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
     setError(null);
+    setDuplicateBlocked(false);
   }
 
   function back() {
@@ -89,7 +91,7 @@ export function PropertyWizard() {
     setStep((s) => Math.max(0, s - 1));
   }
 
-  async function submit() {
+  async function submit(allowDuplicate = false) {
     setBusy(true);
     setError(null);
     const rent = draft.rentDollars.replace(/,/g, "").trim();
@@ -112,6 +114,7 @@ export function PropertyWizard() {
         state: draft.state.trim().toUpperCase(),
         zipCode: draft.zipCode.trim(),
         units: unitNumbers,
+        allowDuplicate,
       }),
     });
     const data = (await res.json().catch(() => ({}))) as {
@@ -121,8 +124,10 @@ export function PropertyWizard() {
     if (!res.ok) {
       setBusy(false);
       if (res.status === 409) {
-        // Duplicate address: send them back to the address step with context.
+        // Duplicate address: back to the address step, with an override,
+        // because two condos in one building is reality, not a mistake.
         setStep(steps.indexOf("address"));
+        setDuplicateBlocked(true);
       }
       setError(data.error ?? "Something went wrong.");
       return;
@@ -320,6 +325,16 @@ export function PropertyWizard() {
           )}
 
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          {duplicateBlocked && (
+            <button
+              type="button"
+              onClick={() => void submit(true)}
+              disabled={busy}
+              className={`${buttonCls("secondary")} mt-3 w-full`}
+            >
+              It really is a second property here: create it anyway
+            </button>
+          )}
 
           <button type="submit" disabled={busy} className={`${buttonCls("primary")} mt-6 w-full py-3`}>
             {busy ? "Creating…" : isLast ? "Create property" : "Continue"}

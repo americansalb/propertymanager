@@ -51,6 +51,7 @@ export default async function PropertyDetailPage({
   const rentMissing = units.filter((u) => u.marketRentCents == null).length;
   const codes = revealAccessCodes(property.accessCodes);
   const details = {
+    alternateAddress: property.alternateAddress,
     yearBuilt: property.yearBuilt,
     parkingNotes: property.parkingNotes,
     waterShutoffLocation: property.waterShutoffLocation,

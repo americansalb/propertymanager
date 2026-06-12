@@ -4,9 +4,28 @@ process.env.DATABASE_URL ??= "postgresql://test:test@localhost:5432/test";
 process.env.SESSION_SECRET ??= "test-secret-test-secret-test-secret-1234";
 
 const { encryptSecret, decryptSecret, isEncrypted } = await import("@/lib/crypto");
-const { parseTags, propertyCreateSchema, propertyDetailsSchema } = await import(
+const { isSameAddress, parseTags, propertyCreateSchema, propertyDetailsSchema } = await import(
   "@/lib/validation/property"
 );
+
+describe("isSameAddress (full-line duplicate detection)", () => {
+  it("treats line 2 as significant: two condos at one street address differ", () => {
+    expect(
+      isSameAddress(
+        { address1: "4130 N Ashland Ave", address2: "Apartment 1" },
+        { address1: "4130 N Ashland Ave", address2: "Apartment 2" },
+      ),
+    ).toBe(false);
+  });
+  it("matches case- and whitespace-insensitively", () => {
+    expect(
+      isSameAddress(
+        { address1: "4130  N Ashland Ave", address2: null },
+        { address1: "4130 n ashland ave", address2: "" },
+      ),
+    ).toBe(true);
+  });
+});
 
 describe("crypto: secrets at rest", () => {
   it("round-trips and never stores plaintext", () => {
