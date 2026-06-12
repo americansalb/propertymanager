@@ -20,3 +20,18 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Wizard step entrance */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-step {
+  animation: step-in 0.28s ease;
+}
