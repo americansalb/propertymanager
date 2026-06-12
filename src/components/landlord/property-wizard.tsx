@@ -120,6 +120,10 @@ export function PropertyWizard() {
     };
     if (!res.ok) {
       setBusy(false);
+      if (res.status === 409) {
+        // Duplicate address: send them back to the address step with context.
+        setStep(steps.indexOf("address"));
+      }
       setError(data.error ?? "Something went wrong.");
       return;
     }
