@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatCents } from "@/lib/money";
 import { buttonCls, inputCls } from "@/components/ui";
+import { ConfirmButton, useToast } from "@/components/ui-feedback";
 import { IconClose, IconPencil, IconPlus } from "@/components/icons";
 
 export type UnitView = {
@@ -58,30 +59,47 @@ const STATUS_LABEL: Record<string, string> = {
   NOTICE: "On notice",
 };
 
-/** The status IS the control: tap, pick the truth, the portrait follows. */
-function UnitStatusSelect({ unitId, status }: { unitId: string; status: string }) {
+/**
+ * The status IS the control: tap, pick the truth, the portrait follows.
+ * Optimistic: the pill flips instantly; a failure flips it back and says so.
+ */
+function UnitStatusSelect({
+  unitId,
+  unitNumber,
+  status,
+}: {
+  unitId: string;
+  unitNumber: string;
+  status: string;
+}) {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const { push: toast } = useToast();
+  const [shown, setShown] = useState(status);
 
   async function change(next: string) {
-    if (next === status) return;
-    setBusy(true);
+    if (next === shown) return;
+    const previous = shown;
+    setShown(next);
     const res = await fetch(`/api/v1/landlord/units/${unitId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next }),
     });
-    setBusy(false);
-    if (res.ok) router.refresh();
+    if (!res.ok) {
+      setShown(previous);
+      toast(`Couldn't update ${unitTitle(unitNumber)}.`, "bad");
+      return;
+    }
+    toast(`${unitTitle(unitNumber)} is now ${STATUS_LABEL[next]?.toLowerCase()}.`);
+    router.refresh();
   }
 
   return (
     <select
-      value={status}
+      value={shown}
       onChange={(e) => change(e.target.value)}
-      disabled={busy}
       aria-label="Unit status"
-      className={`cursor-pointer appearance-none rounded-full border-0 py-0.5 pl-2 pr-5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-patina disabled:opacity-50 ${STATUS_STYLE[status] ?? "bg-stone-100 text-stone-600"}`}
+      className={`cursor-pointer appearance-none rounded-full border-0 py-0.5 pl-2 pr-5 text-xs font-medium transition focus:outline-none focus:ring-1 focus:ring-patina ${STATUS_STYLE[shown] ?? "bg-stone-100 text-stone-600"}`}
       style={{
         backgroundImage:
           "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M0 0h8L4 6z' fill='%2378716c'/%3E%3C/svg%3E\")",
@@ -125,7 +143,7 @@ function UnitCard({
         <p className="truncate font-display text-lg font-semibold text-stone-900">
           {unitTitle(unit.unitNumber)}
         </p>
-        <UnitStatusSelect unitId={unit.id} status={unit.status} />
+        <UnitStatusSelect unitId={unit.id} unitNumber={unit.unitNumber} status={unit.status} />
       </div>
 
       <div className="mt-2">
@@ -148,7 +166,9 @@ function UnitCard({
         {specs.length > 0 && <p className="mt-1 text-sm text-stone-500">{specs.join(" · ")}</p>}
       </div>
 
-      <div className="absolute right-3 bottom-3 flex gap-1 opacity-0 transition group-hover:opacity-100">
+      {/* Reachable everywhere: visible on touch, hover-revealed on desktop,
+          and focus brings them back for keyboards. */}
+      <div className="absolute right-3 bottom-3 flex items-center gap-1 transition sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
         <button
           onClick={onEdit}
           title="Edit unit"
@@ -156,13 +176,14 @@ function UnitCard({
         >
           <IconPencil className="h-3.5 w-3.5" />
         </button>
-        <button
-          onClick={onDelete}
+        <ConfirmButton
+          onConfirm={onDelete}
+          confirmLabel="Delete"
           title="Delete unit"
           className="rounded-lg p-1.5 text-stone-300 transition hover:bg-red-50 hover:text-red-600"
         >
           <IconClose className="h-3.5 w-3.5" />
-        </button>
+        </ConfirmButton>
       </div>
     </div>
   );
@@ -262,12 +283,18 @@ function UnitForm({
 
 export function UnitsManager({ propertyId, units }: { propertyId: string; units: UnitView[] }) {
   const router = useRouter();
+  const { push: toast } = useToast();
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
 
-  async function remove(unitId: string) {
-    if (!window.confirm("Delete this unit?")) return;
-    const res = await fetch(`/api/v1/landlord/units/${unitId}`, { method: "DELETE" });
-    if (res.ok) router.refresh();
+  async function remove(unit: UnitView) {
+    const res = await fetch(`/api/v1/landlord/units/${unit.id}`, { method: "DELETE" });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      toast(data.error ?? `Couldn't delete ${unitTitle(unit.unitNumber)}.`, "bad");
+      return;
+    }
+    toast(`${unitTitle(unit.unitNumber)} deleted.`);
+    router.refresh();
   }
 
   return (
@@ -280,7 +307,7 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
           editingId === u.id ? (
             <UnitForm key={u.id} propertyId={propertyId} unit={u} onClose={() => setEditingId(null)} />
           ) : (
-            <UnitCard key={u.id} unit={u} onEdit={() => setEditingId(u.id)} onDelete={() => void remove(u.id)} />
+            <UnitCard key={u.id} unit={u} onEdit={() => setEditingId(u.id)} onDelete={() => void remove(u)} />
           ),
         )}
         {editingId === "new" ? (

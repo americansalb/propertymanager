@@ -125,6 +125,34 @@ async function main() {
   await page.getByText("Single-family home").click();
   await shot(page, "prop-new-4-rent");
 
+  // ── Mobile walk (390x844): the laws say mobile-first, so we look ─────────
+  const mobAnon = await (
+    await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
+  ).newPage();
+  await goto(mobAnon, "/");
+  await shot(mobAnon, "m-landing", true);
+  await goto(mobAnon, "/signup");
+  await shot(mobAnon, "m-signup");
+
+  const mobCtx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+  });
+  await mobCtx.addCookies([{ name: "session", value: token, url: BASE }]);
+  const mob = await mobCtx.newPage();
+  await goto(mob, "/landlord/dashboard");
+  await shot(mob, "m-dashboard", true);
+  await goto(mob, "/landlord/properties");
+  await shot(mob, "m-properties", true);
+  const mFirst = mob.locator('a[href^="/landlord/properties/c"]').first();
+  if (await mFirst.count()) {
+    await mFirst.click();
+    await mob.waitForLoadState("networkidle");
+    await shot(mob, "m-property-detail", true);
+  }
+  await goto(mob, "/landlord/properties/new");
+  await shot(mob, "m-prop-new");
+
   await browser.close();
   console.log(`done: ${count} screenshots in ${OUT}`);
 }

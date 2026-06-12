@@ -1,33 +1,32 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { ConfirmButton, useToast } from "@/components/ui-feedback";
 
 export function PropertyDeleteButton({ propertyId }: { propertyId: string }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const { push: toast } = useToast();
 
   async function remove() {
-    if (!window.confirm("Delete this property and all of its units? This cannot be undone.")) return;
     const res = await fetch(`/api/v1/landlord/properties/${propertyId}`, { method: "DELETE" });
     const data = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {
-      setError(data.error ?? "Something went wrong.");
+      toast(data.error ?? "Couldn't delete this property.", "bad");
       return;
     }
+    toast("Property deleted.");
     router.push("/landlord/properties");
     router.refresh();
   }
 
   return (
-    <span>
-      <button
-        onClick={remove}
-        className="rounded-lg px-2 py-1 text-sm text-stone-400 transition hover:bg-red-50 hover:text-red-600"
-      >
-        Delete property
-      </button>
-      {error && <span className="ml-3 text-sm text-red-600">{error}</span>}
-    </span>
+    <ConfirmButton
+      onConfirm={remove}
+      confirmLabel="Delete property"
+      title="Delete property and all of its units"
+      className="rounded-lg px-2 py-1 text-sm text-stone-400 transition hover:bg-red-50 hover:text-red-600"
+    >
+      Delete property
+    </ConfirmButton>
   );
 }
