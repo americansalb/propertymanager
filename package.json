@@ -18,6 +18,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:audit": "tsx scripts/db-audit.ts",
     "design:icons": "tsx scripts/gen-icon-sheet.ts",
+    "design:portraits": "tsx scripts/gen-portrait-sheet.mts",
     "design:shots": "tsx scripts/ui-shots.ts"
   },
   "prisma": {

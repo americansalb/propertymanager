@@ -5,12 +5,18 @@
  * never for nav.
  */
 
-const IRON = "#34383F";
-const COPPER = "#D08A45";
-const COPPER_DEEP = "#9E5B23";
-const PATINA = "#3E7C66";
-const PATINA_DEEP = "#2F6350";
-const GLOW = "#F6E7D7";
+import {
+  COPPER,
+  COPPER_DEEP,
+  GLOW,
+  IRON,
+  IRON_DEEP,
+  PATINA,
+  PATINA_DEEP,
+} from "@/components/brand/palette";
+
+/** One step deeper than GLOW: the shimmer's dark face on lit shapes. */
+const GLOW_DEEP = "#E6CFB4";
 
 type SpotProps = { className?: string };
 
@@ -27,8 +33,9 @@ export function SpotRent({ className }: SpotProps) {
         d="M23.7 11.2 H34.3 L41.8 18.7 V29.3 L34.3 36.8 H23.7 L16.2 29.3 V18.7 Z"
         fill={COPPER}
       />
-      {/* the home, embossed in iron with a lit door */}
+      {/* the home, embossed in iron with a lit door; roof carries the shimmer */}
       <path d="M29 15.5 L38.5 24 L36.7 25.9 L36 25.3 V33 H22 V25.3 L21.3 25.9 L19.5 24 Z" fill={IRON} />
+      <polygon points="29,15.5 38.5,24 29,24" fill={IRON_DEEP} />
       <rect x="26.6" y="26.5" width="4.8" height="6.5" fill={GLOW} />
     </svg>
   );
@@ -65,8 +72,9 @@ export function SpotEscrow({ className }: SpotProps) {
       {/* shield: deep rim + patina face */}
       <path d="M24 3 L42 9.5 V24.5 L24 45 L6 24.5 V9.5 Z" fill={PATINA_DEEP} />
       <path d="M24 6.6 L38.8 12 V23.4 L24 40.2 L9.2 23.4 V12 Z" fill={PATINA} />
-      {/* the home, lit */}
+      {/* the home, lit; roof carries the shimmer */}
       <path d="M24 12.5 L33.5 21 L31.7 22.9 L31 22.3 V30 H17 V22.3 L16.3 22.9 L14.5 21 Z" fill={GLOW} />
+      <polygon points="24,12.5 33.5,21 24,21" fill={GLOW_DEEP} />
       <rect x="21.6" y="23.6" width="4.8" height="6.4" fill={COPPER} />
       {/* the coin, kept */}
       <path d="M29.4 28.4 H35.6 L40 32.8 V39 L35.6 43.4 H29.4 L25 39 V32.8 Z" fill={COPPER_DEEP} />
