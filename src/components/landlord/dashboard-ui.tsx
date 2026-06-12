@@ -179,6 +179,7 @@ export function PortfolioStrip({ portfolio }: { portfolio: PortfolioProperty[] }
                 seedKey={p.id}
                 type={p.type}
                 units={p.units}
+                prefs={p}
                 className="h-full w-auto transition group-hover:-translate-y-0.5"
               />
             </div>

@@ -9,6 +9,8 @@
  */
 import {
   BODY_MIX,
+  BRICK,
+  BRICK_DEEP,
   COPPER,
   COPPER_DEEP,
   GLOW,
@@ -50,6 +52,36 @@ export function pickBody(seed: number): string {
   return BODY_MIX[(seed >> 2) % BODY_MIX.length]!;
 }
 
+/** Owner-chosen looks from the portrait studio; null/undefined = seeded. */
+export type PortraitPrefs = {
+  portraitSeed?: number | null;
+  portraitBody?: string | null;
+  portraitRoof?: string | null;
+  portraitAccent?: string | null;
+};
+
+const BODY_BY_NAME: Record<string, string> = {
+  BRICK,
+  BRICK_DEEP,
+  IRON,
+};
+
+const ROOF_INDEX: Record<string, number> = { PARAPET: 0, GABLE: 1, SHED: 2 };
+
+export function resolvePortrait(seedKey: string, prefs?: PortraitPrefs | null) {
+  const seed = prefs?.portraitSeed ?? hashSeed(seedKey);
+  const body = (prefs?.portraitBody && BODY_BY_NAME[prefs.portraitBody]) || pickBody(seed);
+  const roofPair =
+    prefs?.portraitAccent === "COPPER"
+      ? ROOF_PAIRS[0]!
+      : prefs?.portraitAccent === "PATINA"
+        ? ROOF_PAIRS[1]!
+        : ROOF_PAIRS[seed % ROOF_PAIRS.length]!;
+  const roofStyle =
+    prefs?.portraitRoof != null ? (ROOF_INDEX[prefs.portraitRoof] ?? null) : null;
+  return { seed, body, roofPair, roofStyle };
+}
+
 function paneFill(status: string): string {
   if (status === "OCCUPIED") return GLOW;
   if (status === "NOTICE") return NOTICE;
@@ -85,16 +117,16 @@ export function PropertyPortrait({
   type,
   units,
   className,
+  prefs,
 }: {
   seedKey: string;
   type: string;
   units: PortraitUnit[];
   className?: string;
+  prefs?: PortraitPrefs | null;
 }) {
-  const seed = hashSeed(seedKey);
+  const { seed, body, roofPair, roofStyle } = resolvePortrait(seedKey, prefs);
   const variant = pickVariant(type, units.length);
-  const body = pickBody(seed);
-  const roofPair = ROOF_PAIRS[seed % ROOF_PAIRS.length]!;
   const accent2 = seed % 2 === 0 ? PATINA : COPPER_DEEP;
 
   return (
@@ -113,7 +145,15 @@ export function PropertyPortrait({
       )}
       {variant === "condo" && <Condo seed={seed} units={units} body={body} />}
       {variant === "building" && (
-        <Building seed={seed} type={type} units={units} body={body} roofPair={roofPair} accent2={accent2} />
+        <Building
+          seed={seed}
+          type={type}
+          units={units}
+          body={body}
+          roofPair={roofPair}
+          accent2={accent2}
+          roofStyle={roofStyle}
+        />
       )}
     </svg>
   );
@@ -211,6 +251,7 @@ function Building({
   body,
   roofPair,
   accent2,
+  roofStyle,
 }: {
   seed: number;
   type: string;
@@ -218,6 +259,7 @@ function Building({
   body: string;
   roofPair: readonly [string, string];
   accent2: string;
+  roofStyle: number | null;
 }) {
   const shown = units.slice(0, 18);
   const cols = shown.length <= 4 ? 2 : shown.length <= 9 ? 3 : shown.length <= 16 ? 4 : 5;
@@ -228,7 +270,7 @@ function Building({
   const H = topPad + rows * 15 + groundH;
   const bx = 80 - W / 2;
   const by = 112 - H;
-  const roof = seed % 3; // 0 parapet, 1 gable, 2 shed
+  const roof = roofStyle ?? seed % 3; // 0 parapet, 1 gable, 2 shed
   const pennant = seed % 4 === 0;
   const commercial = type === "COMMERCIAL";
   const roofTopY = roof === 1 ? by - Math.min(24, W * 0.26) : by - 11;

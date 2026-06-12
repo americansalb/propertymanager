@@ -161,27 +161,36 @@ export function EditableRow({
     setDraft("");
   }
 
+  // The WHOLE row is the button: label included, generous height, and the
+  // pencil stays visible on touch where hover does not exist.
+  if (!editing) {
+    return (
+      <button
+        ref={rowButton}
+        onClick={open}
+        className="group -mx-2 grid w-[calc(100%+1rem)] min-h-10 grid-cols-[7.5rem_1fr] items-baseline gap-x-4 rounded-lg px-2 py-2 text-left transition hover:bg-stone-50 focus-visible:bg-stone-50"
+      >
+        <span className={`${labelCls} leading-5`}>{label}</span>
+        <span className="flex min-w-0 items-start justify-between gap-2 text-sm leading-5">
+          {isEmpty ? (
+            <span className="text-stone-400 transition group-hover:text-copper-deep">
+              <span className="mr-1 font-semibold text-copper">+</span>
+              {emptyPrompt}
+            </span>
+          ) : (
+            <span className="min-w-0 text-stone-800">{display ?? formatPlain(current)}</span>
+          )}
+          <IconPencil className="mt-0.5 h-3 w-3 shrink-0 text-stone-300 transition sm:opacity-0 sm:group-hover:opacity-100" />
+        </span>
+      </button>
+    );
+  }
+
   return (
-    <div className="grid min-h-11 grid-cols-[7.5rem_1fr] items-baseline gap-x-4 py-1">
-      <dt className={`${labelCls} leading-5`}>{label}</dt>
-      <dd className="min-w-0 text-sm leading-5">
-        {!editing ? (
-          <button
-            ref={rowButton}
-            onClick={open}
-            className="group flex w-full items-start justify-between gap-2 rounded-lg text-left transition hover:bg-stone-50"
-          >
-            {isEmpty ? (
-              <span className="text-stone-400 transition group-hover:text-copper-deep">
-                <span className="mr-1 font-semibold text-copper">+</span>
-                {emptyPrompt}
-              </span>
-            ) : (
-              <span className="min-w-0 text-stone-800">{display ?? formatPlain(current)}</span>
-            )}
-            <IconPencil className="mt-0.5 h-3 w-3 shrink-0 text-stone-300 opacity-0 transition group-hover:opacity-100" />
-          </button>
-        ) : kind.kind === "select" ? (
+    <div className="grid min-h-10 grid-cols-[7.5rem_1fr] items-baseline gap-x-4 px-0 py-1.5">
+      <span className={`${labelCls} leading-5`}>{label}</span>
+      <span className="min-w-0 text-sm leading-5">
+        {kind.kind === "select" ? (
           <select
             autoFocus
             defaultValue={typeof current === "string" ? current : ""}
@@ -304,7 +313,7 @@ export function EditableRow({
             />
           </div>
         )}
-      </dd>
+      </span>
     </div>
   );
 }

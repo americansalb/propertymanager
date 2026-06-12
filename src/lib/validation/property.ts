@@ -154,6 +154,11 @@ const clearableText = (max: number) =>
 /** The operational record: progressive fields, all individually optional. */
 export const propertyDetailsSchema = z.object({
   alternateAddress: clearableText(160),
+  // Portrait studio: null resets to the seeded default.
+  portraitSeed: z.coerce.number().int().min(0).max(2_147_483_647).nullable().optional(),
+  portraitBody: z.enum(["BRICK", "BRICK_DEEP", "IRON"]).nullable().optional(),
+  portraitRoof: z.enum(["PARAPET", "GABLE", "SHED"]).nullable().optional(),
+  portraitAccent: z.enum(["COPPER", "PATINA"]).nullable().optional(),
   yearBuilt: z
     .union([
       z.literal("").transform(() => null),

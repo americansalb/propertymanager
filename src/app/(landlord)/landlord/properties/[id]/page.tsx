@@ -7,8 +7,8 @@ import { UnitsManager, type UnitView } from "@/components/landlord/units-manager
 import { PropertyDeleteButton } from "@/components/landlord/property-delete-button";
 import { PropertyDetailsCard } from "@/components/landlord/property-details-card";
 import { PropertyHeaderEditor } from "@/components/landlord/property-header-editor";
-import { PropertyPortrait } from "@/components/brand/property-portrait";
-import { Badge, Card } from "@/components/ui";
+import { PortraitStudio } from "@/components/landlord/portrait-studio";
+import { Badge } from "@/components/ui";
 import { IconChevronLeft } from "@/components/icons";
 
 export const metadata = { title: "Property" };
@@ -72,14 +72,17 @@ export default async function PropertyDetailPage({
       </Link>
 
       <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-start">
-        <Card className="w-44 shrink-0 px-3 pt-4 pb-3">
-          <PropertyPortrait
-            seedKey={property.id}
-            type={property.type}
-            units={units}
-            className="h-auto w-full"
-          />
-        </Card>
+        <PortraitStudio
+          propertyId={property.id}
+          type={property.type}
+          units={units}
+          prefs={{
+            portraitSeed: property.portraitSeed,
+            portraitBody: property.portraitBody,
+            portraitRoof: property.portraitRoof,
+            portraitAccent: property.portraitAccent,
+          }}
+        />
         <PropertyHeaderEditor
           property={{
             id: property.id,

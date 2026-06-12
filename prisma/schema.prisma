@@ -164,6 +164,12 @@ model Property {
   // accuracy for pros and switching cost for us.
   /// Corner buildings and double lots: the property's other street address.
   alternateAddress     String?
+
+  // Portrait studio: owner-chosen looks override the seeded defaults.
+  portraitSeed   Int?
+  portraitBody   String? // BRICK | BRICK_DEEP | IRON
+  portraitRoof   String? // PARAPET | GABLE | SHED (buildings only)
+  portraitAccent String? // COPPER | PATINA
   yearBuilt            Int?
   parkingNotes         String?
   waterShutoffLocation String?
