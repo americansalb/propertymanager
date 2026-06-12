@@ -5,6 +5,7 @@ import { getProperty } from "@/lib/services/property";
 import { NotFoundError } from "@/lib/authz/api";
 import { UnitsManager, type UnitView } from "@/components/landlord/units-manager";
 import { PropertyDeleteButton } from "@/components/landlord/property-delete-button";
+import { IconChevronLeft } from "@/components/icons";
 
 export const metadata = { title: "Property" };
 
@@ -36,8 +37,11 @@ export default async function PropertyDetailPage({
 
   return (
     <div>
-      <Link href="/landlord/properties" className="text-sm text-stone-500 hover:text-stone-700">
-        ← Properties
+      <Link
+        href="/landlord/properties"
+        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700"
+      >
+        <IconChevronLeft className="h-3 w-3" /> Properties
       </Link>
       <div className="mt-2 flex items-start justify-between">
         <div>

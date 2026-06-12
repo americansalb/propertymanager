@@ -13,7 +13,7 @@ export function PortalShell({
   portalLabel: string;
   userName: string;
   contextName?: string | null;
-  nav?: Array<{ href: string; label: string }>;
+  nav?: Array<{ href: string; label: string; icon?: React.ReactNode }>;
   children: React.ReactNode;
 }) {
   return (
@@ -41,8 +41,9 @@ export function PortalShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900"
               >
+                {item.icon}
                 {item.label}
               </Link>
             ))}

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { OptionCards, WizardShell } from "@/components/wizard/wizard-shell";
+import { IconHome, IconTools } from "@/components/icons";
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
@@ -150,13 +151,13 @@ export function SignupWizard() {
               value: "LANDLORD",
               label: "I own or manage rentals",
               description: "Collect rent, handle maintenance, hire trusted pros",
-              icon: "🏠",
+              icon: <IconHome className="h-8 w-8" duo />,
             },
             {
               value: "PRO",
               label: "I'm a service pro",
               description: "Plumbing, electrical, handyman: get leads and guaranteed payment",
-              icon: "🛠️",
+              icon: <IconTools className="h-8 w-8" duo />,
             },
           ]}
           onSelect={(v) => {

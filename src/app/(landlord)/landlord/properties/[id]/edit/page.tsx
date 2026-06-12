@@ -4,6 +4,7 @@ import { requireOrg } from "@/lib/authz";
 import { getProperty } from "@/lib/services/property";
 import { NotFoundError } from "@/lib/authz/api";
 import { PropertyForm } from "@/components/landlord/property-form";
+import { IconChevronLeft } from "@/components/icons";
 
 export const metadata = { title: "Edit property" };
 
@@ -25,8 +26,11 @@ export default async function EditPropertyPage({
 
   return (
     <div>
-      <Link href={`/landlord/properties/${id}`} className="text-sm text-stone-500 hover:text-stone-700">
-        ← {property.name}
+      <Link
+        href={`/landlord/properties/${id}`}
+        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700"
+      >
+        <IconChevronLeft className="h-3 w-3" /> {property.name}
       </Link>
       <h1 className="mt-2 mb-6 text-2xl font-semibold text-stone-900">Edit property</h1>
       <PropertyForm

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { IconClose } from "@/components/icons";
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
@@ -169,7 +170,7 @@ export function PropertyForm({
                   <input value={u.bathrooms} onChange={(e) => setUnit(i, { bathrooms: e.target.value })} inputMode="decimal" className={inputCls} />
                   <input value={u.squareFeet} onChange={(e) => setUnit(i, { squareFeet: e.target.value })} inputMode="numeric" className={inputCls} />
                   <input value={u.marketRentDollars} onChange={(e) => setUnit(i, { marketRentDollars: e.target.value })} inputMode="decimal" className={inputCls} />
-                  <button type="button" onClick={() => setUnits((r) => r.filter((_, idx) => idx !== i))} aria-label="Remove unit" className="text-stone-400 hover:text-red-600">✕</button>
+                  <button type="button" onClick={() => setUnits((r) => r.filter((_, idx) => idx !== i))} aria-label="Remove unit" className="text-stone-400 hover:text-red-600"><IconClose className="h-3.5 w-3.5" /></button>
                 </div>
               ))}
             </div>

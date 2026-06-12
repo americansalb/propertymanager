@@ -1,5 +1,7 @@
 "use client";
 
+import { IconChevronLeft, IconChevronRight } from "@/components/icons";
+
 /**
  * One-decision-per-page wizard machinery (signup now; maintenance and job
  * posting wizards reuse this later). Progress dots, ghost back button,
@@ -27,9 +29,9 @@ export function WizardShell({
           <button
             type="button"
             onClick={onBack}
-            className="-ml-2 rounded-lg px-2 py-1 text-sm text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+            className="-ml-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-stone-400 hover:bg-stone-100 hover:text-stone-600"
           >
-            ← Back
+            <IconChevronLeft className="h-3 w-3" /> Back
           </button>
         ) : (
           <span />
@@ -71,7 +73,7 @@ export function OptionCards({
           onClick={() => onSelect(o.value)}
           className="group flex items-center gap-4 rounded-xl border border-stone-200 bg-white p-4 text-left transition hover:border-patina hover:bg-patina-tint/40"
         >
-          {o.icon && <span className="text-2xl">{o.icon}</span>}
+          {o.icon && <span className="shrink-0 text-iron">{o.icon}</span>}
           <span>
             <span className="block font-medium text-stone-900 group-hover:text-stone-950">
               {o.label}
@@ -81,7 +83,7 @@ export function OptionCards({
             )}
           </span>
           <span className="ml-auto text-stone-300 transition group-hover:translate-x-0.5 group-hover:text-patina">
-            →
+            <IconChevronRight className="h-4 w-4" />
           </span>
         </button>
       ))}
