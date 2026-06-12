@@ -190,32 +190,46 @@ export function PropertyDetailsCard({
         </div>
       ) : (
         <div className="p-4">
-          <dl className="space-y-3">
+          <dl className="grid grid-cols-[7.5rem_1fr] items-baseline gap-x-4 gap-y-2.5">
             {rows.map((r) => (
-              <div key={r.label} className="flex items-baseline justify-between gap-4">
-                <dt className={labelCls}>{r.label}</dt>
-                <dd className={`text-right text-sm ${r.value ? "text-stone-800" : "text-stone-400"}`}>
-                  {r.value ?? r.prompt}
+              <div key={r.label} className="contents">
+                <dt className={`${labelCls} leading-5`}>{r.label}</dt>
+                <dd className="text-sm leading-5">
+                  {r.value ? (
+                    <span className="text-stone-800">{r.value}</span>
+                  ) : (
+                    <button
+                      onClick={() => setEditing(true)}
+                      className="text-left text-stone-400 transition hover:text-copper-deep"
+                    >
+                      <span className="mr-1 font-semibold text-copper">+</span>
+                      {r.prompt}
+                    </button>
+                  )}
                 </dd>
               </div>
             ))}
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className={labelCls}>Access codes</dt>
-              <dd className="text-right text-sm">
-                {details.accessLocked ? (
-                  <span className="text-amber-700">Stored, but the encryption key changed.</span>
-                ) : details.accessCodes ? (
-                  <button
-                    onClick={() => setShowCodes((s) => !s)}
-                    className="font-medium text-copper-deep hover:underline"
-                  >
-                    {showCodes ? details.accessCodes : "•••••• (tap to reveal)"}
-                  </button>
-                ) : (
-                  <span className="text-stone-400">{PROMPTS.accessCodes}</span>
-                )}
-              </dd>
-            </div>
+            <dt className={`${labelCls} leading-5`}>Access codes</dt>
+            <dd className="text-sm leading-5">
+              {details.accessLocked ? (
+                <span className="text-amber-700">Stored, but the encryption key changed.</span>
+              ) : details.accessCodes ? (
+                <button
+                  onClick={() => setShowCodes((s) => !s)}
+                  className="font-medium text-copper-deep hover:underline"
+                >
+                  {showCodes ? details.accessCodes : "•••••• tap to reveal"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-left text-stone-400 transition hover:text-copper-deep"
+                >
+                  <span className="mr-1 font-semibold text-copper">+</span>
+                  {PROMPTS.accessCodes}
+                </button>
+              )}
+            </dd>
           </dl>
 
           {details.notes && (

@@ -6,10 +6,12 @@ import { ConflictError, NotFoundError, type OrgCtx } from "@/lib/authz/api";
 import {
   isSameAddress,
   toUnitData,
+  toUnitUpdateData,
   type PropertyCreateInput,
   type PropertyDetailsInput,
   type PropertyUpdateInput,
   type UnitInput,
+  type UnitUpdateInput,
 } from "@/lib/validation/property";
 
 // Every query in this service is scoped by ctx.orgId. Cross-org access
@@ -195,11 +197,14 @@ export async function createUnit(ctx: OrgCtx, propertyId: string, input: UnitInp
   }
 }
 
-export async function updateUnit(ctx: OrgCtx, unitId: string, input: UnitInput) {
+export async function updateUnit(ctx: OrgCtx, unitId: string, input: UnitUpdateInput) {
   const existing = await prisma.unit.findFirst({ where: { id: unitId, orgId: ctx.orgId } });
   if (!existing) throw new NotFoundError("Unit not found.");
   try {
-    const unit = await prisma.unit.update({ where: { id: unitId }, data: toUnitData(input) });
+    const unit = await prisma.unit.update({
+      where: { id: unitId },
+      data: toUnitUpdateData(input),
+    });
     void audit({
       actorUserId: ctx.userId,
       orgId: ctx.orgId,
@@ -210,7 +215,9 @@ export async function updateUnit(ctx: OrgCtx, unitId: string, input: UnitInput) 
     return unit;
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      throw new ConflictError(`Unit "${input.unitNumber}" already exists on this property.`);
+      throw new ConflictError(
+        `Unit "${input.unitNumber ?? existing.unitNumber}" already exists on this property.`,
+      );
     }
     throw e;
   }

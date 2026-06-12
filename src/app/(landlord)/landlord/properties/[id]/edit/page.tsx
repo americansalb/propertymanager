@@ -25,29 +25,34 @@ export default async function EditPropertyPage({
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-xl">
       <Link
         href={`/landlord/properties/${id}`}
         className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700"
       >
         <IconChevronLeft className="h-3 w-3" /> {property.name}
       </Link>
-      <h1 className="mt-2 mb-6 font-display text-2xl font-semibold tracking-tight text-stone-900">
-        Edit property
-      </h1>
-      <PropertyForm
-        mode="edit"
-        propertyId={id}
-        initial={{
-          name: property.name,
-          type: property.type,
-          address1: property.address1,
-          address2: property.address2 ?? "",
-          city: property.city,
-          state: property.state,
-          zipCode: property.zipCode,
-        }}
-      />
+      <div className="mt-3 rounded-2xl border border-stone-200 bg-white p-8">
+        <h1 className="font-display text-xl font-semibold tracking-tight text-stone-900">
+          Edit property
+        </h1>
+        <p className="mt-1 mb-6 text-sm text-stone-500">
+          The name is yours to change; everything else should match the deed.
+        </p>
+        <PropertyForm
+          mode="edit"
+          propertyId={id}
+          initial={{
+            name: property.name,
+            type: property.type,
+            address1: property.address1,
+            address2: property.address2 ?? "",
+            city: property.city,
+            state: property.state,
+            zipCode: property.zipCode,
+          }}
+        />
+      </div>
     </div>
   );
 }

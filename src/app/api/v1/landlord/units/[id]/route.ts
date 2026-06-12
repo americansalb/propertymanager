@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { handleServiceError, requireOrgApi } from "@/lib/authz/api";
-import { unitInputSchema } from "@/lib/validation/property";
+import { unitUpdateSchema } from "@/lib/validation/property";
 import { deleteUnit, updateUnit } from "@/lib/services/property";
 
 type Params = { params: Promise<{ id: string }> };
@@ -9,7 +9,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const auth = await requireOrgApi();
   if (!auth.ok) return auth.res;
   const body = await req.json().catch(() => null);
-  const parsed = unitInputSchema.safeParse(body);
+  const parsed = unitUpdateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? "Invalid input." },

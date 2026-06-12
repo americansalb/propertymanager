@@ -34,21 +34,76 @@ const toDraft = (u?: UnitView): Draft => ({
   marketRentDollars: u?.marketRentCents != null ? (u.marketRentCents / 100).toString() : "",
 });
 
-function draftPayload(d: Draft) {
-  return {
+// Create omits blanks; update sends explicit nulls so clearing a field works.
+function draftPayload(d: Draft, mode: "create" | "update") {
+  const num = (v: string) => (v === "" ? (mode === "update" ? null : undefined) : v);
+  const payload: Record<string, unknown> = {
     unitNumber: d.unitNumber,
-    ...(d.bedrooms !== "" ? { bedrooms: d.bedrooms } : {}),
-    ...(d.bathrooms !== "" ? { bathrooms: d.bathrooms } : {}),
-    ...(d.squareFeet !== "" ? { squareFeet: d.squareFeet } : {}),
-    ...(d.marketRentDollars !== "" ? { marketRentDollars: d.marketRentDollars } : {}),
+    bedrooms: num(d.bedrooms),
+    bathrooms: num(d.bathrooms),
+    squareFeet: num(d.squareFeet),
+    marketRentDollars: num(d.marketRentDollars),
   };
+  for (const k of Object.keys(payload)) if (payload[k] === undefined) delete payload[k];
+  return payload;
 }
 
-const STATUS_BADGE: Record<string, string> = {
+const STATUS_STYLE: Record<string, string> = {
   VACANT: "bg-amber-50 text-amber-800",
   OCCUPIED: "bg-patina-tint text-patina",
   NOTICE: "bg-stone-100 text-stone-600",
 };
+
+const STATUS_LABEL: Record<string, string> = {
+  VACANT: "Vacant",
+  OCCUPIED: "Occupied",
+  NOTICE: "On notice",
+};
+
+/**
+ * The answer to "how do I make it not vacant": the status IS the control.
+ * One tap on the badge, pick the truth, the portrait windows follow.
+ * Leases will set this automatically in 1.4; this stays as the manual lever.
+ */
+function UnitStatusSelect({ unitId, status }: { unitId: string; status: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function change(next: string) {
+    if (next === status) return;
+    setBusy(true);
+    const res = await fetch(`/api/v1/landlord/units/${unitId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: next }),
+    });
+    setBusy(false);
+    if (res.ok) router.refresh();
+  }
+
+  return (
+    <select
+      value={status}
+      onChange={(e) => change(e.target.value)}
+      disabled={busy}
+      aria-label="Unit status"
+      className={`cursor-pointer appearance-none rounded-full border-0 py-0.5 pl-2 pr-5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-patina disabled:opacity-50 ${STATUS_STYLE[status] ?? "bg-stone-100 text-stone-600"}`}
+      style={{
+        backgroundImage:
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M0 0h8L4 6z' fill='%2378716c'/%3E%3C/svg%3E\")",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "right 6px center",
+        backgroundSize: "7px",
+      }}
+    >
+      {Object.entries(STATUS_LABEL).map(([value, label]) => (
+        <option key={value} value={value}>
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 export function UnitsManager({ propertyId, units }: { propertyId: string; units: UnitView[] }) {
   const router = useRouter();
@@ -72,7 +127,7 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
       {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draftPayload(draft)),
+        body: JSON.stringify(draftPayload(draft, isNew ? "create" : "update")),
       },
     );
     const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -145,11 +200,9 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
                 <td className="px-3 py-2.5 text-stone-600">{u.bedrooms ?? "-"}</td>
                 <td className="px-3 py-2.5 text-stone-600">{u.bathrooms ?? "-"}</td>
                 <td className="px-3 py-2.5 text-stone-600">{u.squareFeet?.toLocaleString() ?? "-"}</td>
-                <td className="px-3 py-2.5 text-stone-600">{u.marketRentCents != null ? formatCents(u.marketRentCents) : "-"}</td>
+                <td className="px-3 py-2.5 tabular-nums text-stone-600">{u.marketRentCents != null ? formatCents(u.marketRentCents) : "-"}</td>
                 <td className="px-3 py-2.5">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[u.status] ?? "bg-stone-100 text-stone-600"}`}>
-                    {u.status.toLowerCase()}
-                  </span>
+                  <UnitStatusSelect unitId={u.id} status={u.status} />
                 </td>
                 <td className="px-3 py-2.5 text-right whitespace-nowrap">
                   <button onClick={() => startEdit(u)} className="text-xs font-medium text-copper-deep hover:underline">Edit</button>
