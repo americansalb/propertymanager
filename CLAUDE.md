@@ -29,7 +29,7 @@ Read-only instance audit: `pnpm db:audit`.
 
 - NO EM DASHES (U+2014), ever: not in code, UI copy, docs, commit messages,
   or chat replies. Use a comma, colon, period, or spaced hyphen instead.
-  (`grep -rn $'—' src docs *.md` must stay empty.)
+  (`grep -rn $'\u2014' src docs *.md` must stay empty.)
 - Money: integer cents; rates in basis points (`src/lib/money.ts`).
 - Roles derived from data (Membership/TenantProfile/ProProfile/isSuperAdmin),
   never stored - see `src/lib/authz/roles.ts`.
