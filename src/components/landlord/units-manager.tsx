@@ -141,10 +141,10 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
             ) : (
               <tr key={u.id}>
                 <td className="px-3 py-2.5 font-medium text-stone-900">{u.unitNumber}</td>
-                <td className="px-3 py-2.5 text-stone-600">{u.bedrooms ?? "—"}</td>
-                <td className="px-3 py-2.5 text-stone-600">{u.bathrooms ?? "—"}</td>
-                <td className="px-3 py-2.5 text-stone-600">{u.squareFeet?.toLocaleString() ?? "—"}</td>
-                <td className="px-3 py-2.5 text-stone-600">{u.marketRentCents != null ? formatCents(u.marketRentCents) : "—"}</td>
+                <td className="px-3 py-2.5 text-stone-600">{u.bedrooms ?? "-"}</td>
+                <td className="px-3 py-2.5 text-stone-600">{u.bathrooms ?? "-"}</td>
+                <td className="px-3 py-2.5 text-stone-600">{u.squareFeet?.toLocaleString() ?? "-"}</td>
+                <td className="px-3 py-2.5 text-stone-600">{u.marketRentCents != null ? formatCents(u.marketRentCents) : "-"}</td>
                 <td className="px-3 py-2.5">
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[u.status] ?? "bg-stone-100 text-stone-600"}`}>
                     {u.status.toLowerCase()}

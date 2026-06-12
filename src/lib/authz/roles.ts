@@ -1,7 +1,7 @@
 export type Role = "LANDLORD" | "TENANT" | "PRO" | "ADMIN";
 
 /**
- * Roles are derived from data, never stored as a column — one human can hold
+ * Roles are derived from data, never stored as a column - one human can hold
  * any combination (the old app's single-role flaw, fixed).
  */
 export function computeRoles(user: {

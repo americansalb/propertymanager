@@ -10,7 +10,7 @@ import {
 } from "@/lib/validation/property";
 
 // Every query in this service is scoped by ctx.orgId. Cross-org access
-// surfaces as NotFoundError (404) — existence is never revealed.
+// surfaces as NotFoundError (404) - existence is never revealed.
 
 export function listProperties(ctx: OrgCtx) {
   return prisma.property.findMany({

@@ -2,7 +2,7 @@
  * READ-ONLY audit of the Postgres instance.
  *
  * Lists every schema with table counts and sizes so the founder can see
- * exactly what shares the instance before/after deploys. Runs only SELECTs —
+ * exactly what shares the instance before/after deploys. Runs only SELECTs -
  * never DDL, never writes. Usage: DATABASE_URL=... pnpm db:audit
  */
 import { PrismaClient } from "@prisma/client";

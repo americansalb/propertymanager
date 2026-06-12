@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* VillageKeep design tokens — derived from the logo's metallurgy:
+/* VillageKeep design tokens - derived from the logo's metallurgy:
    iron (strength), copper (warmth/craft), patina (aged copper = trust). */
 @theme {
   --color-iron: #34383f;

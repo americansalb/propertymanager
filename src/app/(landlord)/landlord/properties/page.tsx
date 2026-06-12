@@ -38,7 +38,7 @@ export default async function PropertiesPage() {
         <div className="mt-8 rounded-xl border border-dashed border-stone-300 bg-white p-10 text-center">
           <h2 className="text-lg font-medium text-stone-900">No properties yet</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-stone-500">
-            Add your first property — a single-family home takes about 30 seconds, a building
+            Add your first property - a single-family home takes about 30 seconds, a building
             with units about two minutes.
           </p>
           <Link

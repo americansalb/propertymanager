@@ -5,7 +5,7 @@ export type OrgCtx = { userId: string; orgId: string };
 
 /**
  * API-route guard (JSON, no redirects): authenticated landlord with an
- * active org. orgId always comes from the session — never from the client.
+ * active org. orgId always comes from the session - never from the client.
  */
 export async function requireOrgApi(): Promise<
   { ok: true; ctx: OrgCtx } | { ok: false; res: NextResponse }

@@ -1,5 +1,5 @@
 /**
- * In-memory sliding-window rate limiter — per-instance only, which is fine
+ * In-memory sliding-window rate limiter - per-instance only, which is fine
  * for the single-container deploy. Swap the store for Redis (vk: prefix)
  * when the app scales horizontally.
  */

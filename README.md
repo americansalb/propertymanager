@@ -1,6 +1,6 @@
 # VillageKeep
 
-**Property management & trusted local pros** — villagekeep.com
+**Property management & trusted local pros** - villagekeep.com
 
 Landlords manage properties and collect rent. Tenants report problems through a
 guided wizard. Verified local pros bid on the work, the platform escrows the
@@ -11,10 +11,10 @@ payment, and funds release when the job is done.
 
 ## Status
 
-- ✅ Phase 0 — scaffold, schema, deploy skeleton (this)
-- ⬜ Phase 1 — PM core (auth, properties, tenants, leases, maintenance, rent via Stripe)
-- ⬜ Phase 2 — marketplace (pros, verification, bidding, escrow, reviews)
-- ⬜ Phase 3 — AI layer + growth
+- ✅ Phase 0 - scaffold, schema, deploy skeleton (this)
+- ⬜ Phase 1 - PM core (auth, properties, tenants, leases, maintenance, rent via Stripe)
+- ⬜ Phase 2 - marketplace (pros, verification, bidding, escrow, reviews)
+- ⬜ Phase 3 - AI layer + growth
 
 ## Stack
 
