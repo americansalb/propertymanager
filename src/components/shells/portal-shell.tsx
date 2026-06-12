@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { ToastProvider } from "@/components/ui-feedback";
 import { LogoutButton } from "./logout-button";
 import { NavLinks, type NavItem } from "./nav-links";
 
@@ -50,7 +51,9 @@ export function PortalShell({
         )}
       </header>
       <div className="crenel" />
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <ToastProvider>{children}</ToastProvider>
+      </main>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, buttonCls, inputCls } from "@/components/ui";
+import { useToast } from "@/components/ui-feedback";
 import { IconPencil } from "@/components/icons";
 
 export type DetailsView = {
@@ -41,6 +42,7 @@ export function PropertyDetailsCard({
   details: DetailsView;
 }) {
   const router = useRouter();
+  const { push: toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +91,7 @@ export function PropertyDetailsCard({
       return;
     }
     setEditing(false);
+    toast("Details saved.");
     router.refresh();
   }
 

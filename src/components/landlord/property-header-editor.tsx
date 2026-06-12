@@ -126,7 +126,7 @@ function NameEditor({
       className="group -mx-2 flex max-w-full items-center gap-2 rounded-lg px-2 py-0.5 text-left transition hover:bg-stone-100"
       title="Rename"
     >
-      <span className="truncate font-display text-2xl font-semibold tracking-tight text-stone-900">
+      <span className="font-display text-2xl font-semibold tracking-tight text-stone-900 sm:truncate">
         {name}
       </span>
       <IconPencil className="h-4 w-4 shrink-0 text-stone-300 opacity-0 transition group-hover:opacity-100" />
@@ -205,7 +205,7 @@ function AddressEditor({
         className="group mt-0.5 flex max-w-full items-center gap-1.5 text-left text-sm text-stone-500 transition hover:text-stone-700"
         title="Edit address"
       >
-        <span className="truncate">{line}</span>
+        <span className="sm:truncate">{line}</span>
         <IconPencil className="h-3 w-3 shrink-0 text-stone-300 opacity-0 transition group-hover:opacity-100" />
       </button>
     );
