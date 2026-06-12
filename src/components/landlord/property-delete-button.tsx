@@ -21,7 +21,10 @@ export function PropertyDeleteButton({ propertyId }: { propertyId: string }) {
 
   return (
     <span>
-      <button onClick={remove} className="text-sm text-stone-400 hover:text-red-600">
+      <button
+        onClick={remove}
+        className="rounded-lg px-2 py-1 text-sm text-stone-400 transition hover:bg-red-50 hover:text-red-600"
+      >
         Delete property
       </button>
       {error && <span className="ml-3 text-sm text-red-600">{error}</span>}

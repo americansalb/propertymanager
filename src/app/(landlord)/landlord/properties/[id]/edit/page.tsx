@@ -32,7 +32,9 @@ export default async function EditPropertyPage({
       >
         <IconChevronLeft className="h-3 w-3" /> {property.name}
       </Link>
-      <h1 className="mt-2 mb-6 text-2xl font-semibold text-stone-900">Edit property</h1>
+      <h1 className="mt-2 mb-6 font-display text-2xl font-semibold tracking-tight text-stone-900">
+        Edit property
+      </h1>
       <PropertyForm
         mode="edit"
         propertyId={id}

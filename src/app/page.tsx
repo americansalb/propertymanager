@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { Button } from "@/components/ui";
 
 export default function LandingPage() {
   return (
@@ -10,7 +10,7 @@ export default function LandingPage() {
         <p className="mb-4 text-sm font-medium uppercase tracking-widest text-copper-deep">
           {brand.domain}
         </p>
-        <h1 className="text-5xl font-semibold tracking-tight text-stone-900 sm:text-6xl">
+        <h1 className="font-display text-5xl font-semibold tracking-tight text-stone-900 sm:text-6xl">
           {brand.name}
         </h1>
         <p className="mt-6 text-lg leading-8 text-stone-600">{brand.tagline}</p>
@@ -19,18 +19,12 @@ export default function LandingPage() {
           held safely until the job is done.
         </p>
         <div className="mt-10 flex items-center justify-center gap-3">
-          <Link
-            href="/signup"
-            className="rounded-full bg-iron px-5 py-2.5 text-sm font-semibold text-white hover:bg-iron-deep"
-          >
+          <Button href="/signup" className="px-6 py-2.5">
             Get started
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-full border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-700 hover:border-stone-400"
-          >
+          </Button>
+          <Button href="/login" variant="secondary" className="px-6 py-2.5">
             Sign in
-          </Link>
+          </Button>
         </div>
       </div>
       <footer className="absolute bottom-6 text-xs text-stone-400">

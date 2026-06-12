@@ -45,7 +45,9 @@ export default async function PropertyDetailPage({
       </Link>
       <div className="mt-2 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-900">{property.name}</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-stone-900">
+            {property.name}
+          </h1>
           <p className="mt-1 text-sm text-stone-500">
             {property.address1}
             {property.address2 ? `, ${property.address2}` : ""} · {property.city},{" "}
@@ -55,7 +57,7 @@ export default async function PropertyDetailPage({
         <div className="flex items-center gap-4">
           <Link
             href={`/landlord/properties/${property.id}/edit`}
-            className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:border-stone-400"
+            className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-patina hover:text-stone-900"
           >
             Edit
           </Link>

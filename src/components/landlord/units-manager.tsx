@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatCents } from "@/lib/money";
+import { buttonCls } from "@/components/ui";
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-2 py-1.5 text-sm text-stone-900 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
@@ -105,7 +106,7 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
       <td className="px-3 py-2"><input value={draft.marketRentDollars} onChange={(e) => setDraft({ ...draft, marketRentDollars: e.target.value })} inputMode="decimal" placeholder="$" className={inputCls} /></td>
       <td className="px-3 py-2" />
       <td className="px-3 py-2 text-right whitespace-nowrap">
-        <button onClick={save} disabled={busy || draft.unitNumber.trim() === ""} className="rounded-lg bg-iron px-3 py-1.5 text-xs font-semibold text-white hover:bg-iron-deep disabled:opacity-50">
+        <button onClick={save} disabled={busy || draft.unitNumber.trim() === ""} className={buttonCls("primary", "sm")}>
           {busy ? "Saving…" : "Save"}
         </button>
         <button onClick={() => setEditingId(null)} className="ml-2 text-xs text-stone-500 hover:text-stone-700">Cancel</button>
@@ -117,7 +118,7 @@ export function UnitsManager({ propertyId, units }: { propertyId: string; units:
     <div className="mt-6 rounded-xl border border-stone-200 bg-white">
       <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
         <h2 className="text-sm font-semibold text-stone-900">Units ({units.length})</h2>
-        <button onClick={() => startEdit()} className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-stone-400">
+        <button onClick={() => startEdit()} className={buttonCls("secondary", "sm")}>
           + Add unit
         </button>
       </div>

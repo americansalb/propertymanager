@@ -6,12 +6,12 @@ const NAV = [
   {
     href: "/landlord/dashboard",
     label: "Dashboard",
-    icon: <IconKeep className="h-4 w-4 text-stone-400" />,
+    icon: <IconKeep className="h-4 w-4" />,
   },
   {
     href: "/landlord/properties",
     label: "Properties",
-    icon: <IconProperty className="h-4 w-4 text-stone-400" />,
+    icon: <IconProperty className="h-4 w-4" />,
   },
 ];
 
