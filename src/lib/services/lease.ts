@@ -88,6 +88,55 @@ export async function deleteLease(ctx: OrgCtx, id: string) {
   });
 }
 
+export type UnitTenancySummary = {
+  tenantNames: string[];
+  pendingInviteEmail: string | null;
+};
+
+/** Per-unit tenant lines for a property's unit cards. */
+export async function getUnitTenancyByProperty(
+  ctx: OrgCtx,
+  propertyId: string,
+): Promise<Record<string, UnitTenancySummary>> {
+  const leases = await prisma.lease.findMany({
+    where: { orgId: ctx.orgId, unit: { propertyId }, status: { in: [...CURRENT_STATUSES] } },
+    select: {
+      id: true,
+      unitId: true,
+      tenants: {
+        orderBy: { isPrimary: "desc" },
+        select: {
+          tenantProfile: {
+            select: { user: { select: { firstName: true, lastName: true } } },
+          },
+        },
+      },
+    },
+  });
+  if (leases.length === 0) return {};
+
+  const pending = await prisma.invitation.findMany({
+    where: {
+      orgId: ctx.orgId,
+      leaseId: { in: leases.map((l) => l.id) },
+      acceptedAt: null,
+    },
+    orderBy: { createdAt: "desc" },
+    select: { leaseId: true, email: true },
+  });
+
+  const out: Record<string, UnitTenancySummary> = {};
+  for (const lease of leases) {
+    out[lease.unitId] = {
+      tenantNames: lease.tenants.map(
+        (t) => `${t.tenantProfile.user.firstName} ${t.tenantProfile.user.lastName}`,
+      ),
+      pendingInviteEmail: pending.find((p) => p.leaseId === lease.id)?.email ?? null,
+    };
+  }
+  return out;
+}
+
 /** Everything the unit page's "Lease & tenant" section renders. */
 export async function getUnitLeasePanel(ctx: OrgCtx, unitId: string) {
   const lease = await prisma.lease.findFirst({
