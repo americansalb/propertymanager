@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { dollarsField, parseUtilities } from "./property";
-import { parseDateOnly } from "@/lib/leases";
+import { LEASE_SHARE_FIELDS, parseDateOnly } from "@/lib/leases";
 
 const dollarsToCents = (v: number) => Math.round(v * 100);
 
@@ -40,6 +40,7 @@ export const leaseUpdateSchema = z.object({
     .optional(),
   utilitiesIncluded: z.array(z.string()).max(20).optional(),
   shareWithTenant: z.boolean().optional(),
+  sharedFields: z.array(z.enum(LEASE_SHARE_FIELDS)).max(LEASE_SHARE_FIELDS.length).optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ENDED", "TERMINATED"]).optional(),
 });
 
@@ -81,6 +82,10 @@ export function toLeaseUpdateData(input: LeaseUpdateInput): Record<string, unkno
   if (input.rentDueDay !== undefined) data.rentDueDay = input.rentDueDay;
   if (input.lateFeeGraceDays !== undefined) data.lateFeeGraceDays = input.lateFeeGraceDays;
   if (input.shareWithTenant !== undefined) data.shareWithTenant = input.shareWithTenant;
+  if (input.sharedFields !== undefined) {
+    // Dedupe into canonical order so the stored array is always tidy.
+    data.sharedFields = LEASE_SHARE_FIELDS.filter((f) => input.sharedFields!.includes(f));
+  }
   if (input.status !== undefined) data.status = input.status;
   return data;
 }

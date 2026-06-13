@@ -74,9 +74,12 @@ describe("date plumbing", () => {
   });
 });
 
+const ALL_FIELDS = ["RENT", "TERM", "DEPOSIT", "PETS", "PARKING", "UTILITIES"];
+
 const lease: TenantLeaseSource = {
   status: "ACTIVE",
   shareWithTenant: true,
+  sharedFields: ALL_FIELDS,
   startDate: parseDateOnly("2026-01-01"),
   endDate: parseDateOnly("2026-12-31"),
   monthlyRentCents: 185_000,
@@ -94,7 +97,7 @@ describe("tenantLeaseTerms", () => {
     expect(tenantLeaseTerms({ ...lease, shareWithTenant: false })).toBeNull();
   });
 
-  it("builds the shared view", () => {
+  it("builds the fully shared view", () => {
     const t = tenantLeaseTerms(lease)!;
     expect(t.rentCents).toBe(185_000);
     expect(t.rentDueLabel).toBe("Due on the 1st");
@@ -103,6 +106,21 @@ describe("tenantLeaseTerms", () => {
     expect(t.petLabel).toBe("$50.00/mo, $300.00 deposit");
     expect(t.parkingLabel).toBe("Spot 4 (included)");
     expect(t.utilities).toEqual(["Water", "Trash"]);
+  });
+
+  it("per-field sharing: hidden groups never cross, shown ones do", () => {
+    const t = tenantLeaseTerms({ ...lease, sharedFields: ["TERM", "PARKING"] })!;
+    expect(t.rentCents).toBeNull();
+    expect(t.rentDueLabel).toBeNull();
+    expect(t.depositLabel).toBeNull();
+    expect(t.petLabel).toBeNull();
+    expect(t.utilities).toEqual([]);
+    expect(t.termLabel).toBe("Jan 1, 2026 to Dec 31, 2026");
+    expect(t.parkingLabel).toBe("Spot 4 (included)");
+  });
+
+  it("shares nothing when the switch is on but every group is off", () => {
+    expect(tenantLeaseTerms({ ...lease, sharedFields: [] })).toBeNull();
   });
 
   it("prices parking when it rents separately and hides zero deposits", () => {

@@ -199,8 +199,8 @@ export type InvitePreview =
         portraitAccent: string | null;
         unitStatuses: string[];
       };
-      /** Term preview, only when the landlord shares the lease. */
-      preview: { monthlyRentCents: number; startDate: Date } | null;
+      /** Term preview honoring per-field sharing; null when nothing shows. */
+      preview: { monthlyRentCents: number | null; startDate: Date | null } | null;
       /** The email already has an account with a password: log in to accept. */
       accountExists: boolean;
     };
@@ -273,9 +273,16 @@ export async function previewInvitation(rawToken: string): Promise<InvitePreview
       portraitAccent: property.portraitAccent,
       unitStatuses: property.units.map((u) => u.status),
     },
-    preview: lease.shareWithTenant
-      ? { monthlyRentCents: lease.monthlyRentCents, startDate: lease.startDate }
-      : null,
+    preview:
+      lease.shareWithTenant &&
+      (lease.sharedFields.includes("RENT") || lease.sharedFields.includes("TERM"))
+        ? {
+            monthlyRentCents: lease.sharedFields.includes("RENT")
+              ? lease.monthlyRentCents
+              : null,
+            startDate: lease.sharedFields.includes("TERM") ? lease.startDate : null,
+          }
+        : null,
     accountExists: Boolean(existing?.passwordHash),
   };
 }

@@ -84,8 +84,16 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         </p>
         {preview.preview && (
           <p className="mt-3 text-sm text-stone-600">
-            {formatCents(preview.preview.monthlyRentCents)}/mo · starts{" "}
-            {formatLeaseDate(preview.preview.startDate)}
+            {[
+              preview.preview.monthlyRentCents != null
+                ? `${formatCents(preview.preview.monthlyRentCents)}/mo`
+                : null,
+              preview.preview.startDate != null
+                ? `starts ${formatLeaseDate(preview.preview.startDate)}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         )}
       </div>

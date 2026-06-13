@@ -3,7 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatCents } from "@/lib/money";
-import { formatLeaseDate, leaseTermLabel, ordinal, parseDateOnly } from "@/lib/leases";
+import {
+  formatLeaseDate,
+  LEASE_SHARE_FIELDS,
+  leaseTermLabel,
+  ordinal,
+  parseDateOnly,
+  SHARE_FIELD_LABEL,
+  type LeaseShareField,
+} from "@/lib/leases";
 import { inviteDaysLeft } from "@/lib/invites";
 import { UTILITY_SUGGESTIONS } from "@/lib/validation/property";
 import { Badge, buttonCls, inputCls } from "@/components/ui";
@@ -33,6 +41,7 @@ export type LeaseView = {
   parkingRentCents: number | null;
   utilitiesIncluded: string[];
   shareWithTenant: boolean;
+  sharedFields: string[];
 };
 
 export type TenantLine = { id: string; name: string; email: string; isPrimary: boolean };
@@ -86,6 +95,72 @@ function emailStatusLine(status: EmailStatus, email: string): string {
 }
 
 type IssuedLink = { inviteId: string; email: string; link: string; emailStatus: EmailStatus };
+
+/**
+ * Per-field sharing: pills the landlord taps to choose exactly which term
+ * groups the tenant sees. Optimistic; the PATCH carries the whole list.
+ */
+function ShareFieldPills({
+  leaseId,
+  sharedFields,
+}: {
+  leaseId: string;
+  sharedFields: string[];
+}) {
+  const router = useRouter();
+  const { push: toast } = useToast();
+  const [shown, setShown] = useState<string[]>(sharedFields);
+  const [busy, setBusy] = useState(false);
+
+  async function toggle(field: LeaseShareField) {
+    const next = shown.includes(field)
+      ? shown.filter((f) => f !== field)
+      : [...shown, field];
+    const previous = shown;
+    setShown(next);
+    setBusy(true);
+    const res = await fetch(`/api/v1/landlord/leases/${leaseId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sharedFields: next }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setShown(previous);
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      toast(data.error ?? "Something went wrong.", "bad");
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <div className="mt-2">
+      <p className="text-xs text-stone-400">They see:</p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {LEASE_SHARE_FIELDS.map((field) => {
+          const on = shown.includes(field);
+          return (
+            <button
+              key={field}
+              onClick={() => void toggle(field)}
+              disabled={busy}
+              aria-pressed={on}
+              className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition disabled:opacity-60 ${
+                on
+                  ? "border-patina bg-patina-tint text-patina"
+                  : "border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-500"
+              }`}
+            >
+              {on ? "✓ " : ""}
+              {SHARE_FIELD_LABEL[field]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function InviteBlock({
   leaseId,
@@ -461,9 +536,7 @@ function LeasePanel({
           label="Lease visibility"
           value={lease.shareWithTenant ? "SHOWN" : "HIDDEN"}
           display={
-            lease.shareWithTenant
-              ? "Tenant sees rent, dates, and what's included"
-              : "Hidden from the tenant"
+            lease.shareWithTenant ? "Shown to the tenant" : "Hidden from the tenant"
           }
           emptyPrompt="Shown or hidden?"
           kind={{
@@ -477,6 +550,9 @@ function LeasePanel({
           savedToast="Visibility saved."
           required
         />
+        {lease.shareWithTenant && (
+          <ShareFieldPills leaseId={lease.id} sharedFields={lease.sharedFields} />
+        )}
         <div className="mt-3">
           <InviteBlock leaseId={lease.id} tenants={tenants} invitations={invitations} />
         </div>
