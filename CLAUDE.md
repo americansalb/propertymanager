@@ -48,7 +48,9 @@ Local infra: `docker compose up -d` (postgres/redis/mailpit).
 
 Phase 1 of the founding plan. Done: Phase 0 scaffold + 1.1 (auth/orgs/portals)
 + 1.2 (properties & units) + brand (founder's logo `public/brand/logo.svg`,
-iron/copper/patina tokens in `globals.css` @theme). Next: 1.3 tenant invites →
-1.4 leases/charges → 1.5 maintenance wizard → 1.6 rent via Stripe Connect
+iron/copper/patina tokens in `globals.css` @theme) + 1.3 (tenant invites +
+leases: lease panel on the unit page, invite links with optional Resend
+email, public accept page, tenant home behind one shareWithTenant switch).
+Next: 1.4 charges → 1.5 maintenance wizard → 1.6 rent via Stripe Connect
 (landlords = Connect accounts; escrow = separate charges & transfers) → 1.7
 emails/polish. Phase 2 = marketplace. Old codebase: `archive/main-2026-06-09`.

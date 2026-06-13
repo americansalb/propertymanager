@@ -52,6 +52,6 @@ describe("tenantInviteEmail", () => {
 
   it("contains no em dashes anywhere", () => {
     const { subject, html, text } = tenantInviteEmail(input);
-    expect(`${subject}${html}${text}`).not.toMatch(/—/);
+    expect(`${subject}${html}${text}`).not.toMatch(/\u2014/);
   });
 });
