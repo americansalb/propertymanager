@@ -19,7 +19,7 @@ const stateSchema = z
   .pipe(z.enum(STATE_CODES, { message: "Use a real 2-letter state code" }));
 
 /** Dollar inputs arrive as "1,850" or "$1850": strip decoration, then coerce. */
-const dollarsField = z.preprocess(
+export const dollarsField = z.preprocess(
   (v) => (typeof v === "string" ? v.replace(/[$,\s]/g, "") : v),
   z.coerce.number().min(0).max(1_000_000),
 );

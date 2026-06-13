@@ -101,6 +101,10 @@ export type SetupState = { steps: SetupStep[]; complete: boolean };
 export function computeSetup(input: {
   propertyCount: number;
   unitsWithRent: number;
+  /** TENANT invitations ever sent (accepted ones included). */
+  tenantInvites: number;
+  /** Tenants actually linked to a lease. */
+  tenantsJoined: number;
 }): SetupState {
   const steps: SetupStep[] = [
     {
@@ -115,7 +119,12 @@ export function computeSetup(input: {
       done: input.unitsWithRent > 0,
       href: "/landlord/properties",
     },
-    { key: "invite", label: "Invite your tenant", done: false, soon: true },
+    {
+      key: "invite",
+      label: "Invite your tenant",
+      done: input.tenantInvites > 0 || input.tenantsJoined > 0,
+      href: "/landlord/properties",
+    },
     { key: "bank", label: "Connect your bank", done: false, soon: true },
   ];
   // Complete = everything buildable today is done; "soon" steps re-open the

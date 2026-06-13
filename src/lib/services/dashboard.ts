@@ -36,7 +36,8 @@ export type DashboardData = {
 };
 
 export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
-  const [propertyCount, units, openMaintenance, sample, portfolio] = await Promise.all([
+  const [propertyCount, units, openMaintenance, sample, portfolio, tenantInvites, tenantsJoined] =
+    await Promise.all([
     prisma.property.count({ where: { orgId: ctx.orgId } }),
     prisma.unit.findMany({
       where: { orgId: ctx.orgId },
@@ -70,6 +71,8 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
         units: { select: { id: true, status: true }, orderBy: { unitNumber: "asc" } },
       },
     }),
+    prisma.invitation.count({ where: { orgId: ctx.orgId, kind: "TENANT" } }),
+    prisma.leaseTenant.count({ where: { lease: { orgId: ctx.orgId } } }),
   ]);
 
   const pulse: Pulse = {
@@ -82,6 +85,8 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
   const setup = computeSetup({
     propertyCount,
     unitsWithRent: units.filter((u) => u.marketRentCents != null).length,
+    tenantInvites,
+    tenantsJoined,
   });
 
   const vacancyItems = buildVacancyItems(
