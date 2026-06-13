@@ -1,6 +1,6 @@
 import { PrismaClient, Trade } from "@prisma/client";
 import { hash } from "@node-rs/argon2";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 // Seed runs inside the app's isolated schema only (DATABASE_URL?schema=…).
 const url = new URL(process.env.DATABASE_URL ?? "");
@@ -188,6 +188,62 @@ async function main() {
         tenants: { create: { tenantProfileId: tenantProfile.id, isPrimary: true } },
       },
     });
+    // Lease term snapshot (idempotent): what the tenant portal renders.
+    lease = await prisma.lease.update({
+      where: { id: lease.id },
+      data: {
+        rentDueDay: 1,
+        petRentCents: 5_000,
+        parkingSpot: "Street parking",
+        parkingRentCents: 0,
+        utilitiesIncluded: ["Water", "Trash"],
+        shareWithTenant: true,
+      },
+    });
+
+    // 2F shows the pending-invite state: a draft lease + an open invitation.
+    const unit2 = await prisma.unit.findFirstOrThrow({
+      where: { propertyId: property.id, unitNumber: "2F" },
+    });
+    let draft = await prisma.lease.findFirst({
+      where: { unitId: unit2.id, status: { in: ["DRAFT", "ACTIVE"] } },
+    });
+    if (!draft) {
+      const now = new Date();
+      const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+      const end = new Date(Date.UTC(start.getUTCFullYear() + 1, start.getUTCMonth(), 0));
+      draft = await prisma.lease.create({
+        data: {
+          unitId: unit2.id,
+          orgId: org.id,
+          status: "DRAFT",
+          startDate: start,
+          endDate: end,
+          monthlyRentCents: 192_500,
+          securityDepositCents: 192_500,
+          utilitiesIncluded: ["Water", "Trash"],
+        },
+      });
+    }
+    const pending = await prisma.invitation.findFirst({
+      where: { leaseId: draft.id, acceptedAt: null },
+    });
+    if (!pending) {
+      const token = randomBytes(32).toString("base64url");
+      await prisma.invitation.create({
+        data: {
+          kind: "TENANT",
+          email: "renter@demo.test",
+          tokenHash: createHash("sha256").update(token).digest("hex"),
+          orgId: org.id,
+          leaseId: draft.id,
+          invitedByUserId: landlord.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+      const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+      console.log(`Demo invite (renter@demo.test): ${appUrl}/invite/${token}`);
+    }
 
     const pro = await prisma.user.upsert({
       where: { email: "pro@demo.test" },
