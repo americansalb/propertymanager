@@ -64,6 +64,15 @@ describe("leaseUpdateSchema", () => {
     });
   });
 
+  it("canonicalizes shared fields and rejects unknown ones", () => {
+    const parsed = parse({ sharedFields: ["PARKING", "RENT", "RENT", "TERM"] });
+    expect(parsed.success).toBe(true);
+    expect(toLeaseUpdateData(parsed.data!)).toEqual({
+      sharedFields: ["RENT", "TERM", "PARKING"],
+    });
+    expect(parse({ sharedFields: ["RENT", "SECRETS"] }).success).toBe(false);
+  });
+
   it("only touches provided keys", () => {
     const parsed = parse({});
     expect(parsed.success).toBe(true);

@@ -267,8 +267,11 @@ model Lease {
   parkingRentCents  Int? // monthly; null = not set, 0 = included
   utilitiesIncluded String[] @default([])
 
-  /// One switch: whether the tenant portal shows this lease's terms.
+  /// Master switch: whether the tenant portal shows this lease at all.
   shareWithTenant Boolean @default(true)
+  /// When shown, which term groups the tenant sees (per-field sharing):
+  /// RENT | TERM | DEPOSIT | PETS | PARKING | UTILITIES. Default: all.
+  sharedFields String[] @default(["RENT", "TERM", "DEPOSIT", "PETS", "PARKING", "UTILITIES"])
 
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt

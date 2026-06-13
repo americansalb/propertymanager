@@ -91,18 +91,36 @@ export default async function TenantDashboard() {
         <Card className="mt-4 p-5 text-sm text-stone-500">Your lease here has ended.</Card>
       ) : home.terms ? (
         <Card className="mt-4 p-5">
-          <div className="flex flex-wrap items-baseline gap-x-2">
-            <Money
-              cents={home.terms.rentCents}
-              className="font-display text-3xl font-semibold text-stone-900"
-            />
-            <span className="text-sm text-stone-500">
-              /mo · {home.terms.rentDueLabel.toLowerCase()}
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-stone-500">{home.terms.termLabel}</p>
+          {home.terms.rentCents != null && (
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <Money
+                cents={home.terms.rentCents}
+                className="font-display text-3xl font-semibold text-stone-900"
+              />
+              <span className="text-sm text-stone-500">
+                /mo{home.terms.rentDueLabel ? ` · ${home.terms.rentDueLabel.toLowerCase()}` : ""}
+              </span>
+            </div>
+          )}
+          {home.terms.termLabel && (
+            <p
+              className={
+                home.terms.rentCents != null
+                  ? "mt-1 text-sm text-stone-500"
+                  : "text-sm text-stone-700"
+              }
+            >
+              {home.terms.termLabel}
+            </p>
+          )}
           {included.length > 0 && (
-            <dl className="mt-4 space-y-1.5 border-t border-stone-100 pt-4">
+            <dl
+              className={`space-y-1.5 ${
+                home.terms.rentCents != null || home.terms.termLabel
+                  ? "mt-4 border-t border-stone-100 pt-4"
+                  : ""
+              }`}
+            >
               {included.map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-4 text-sm">
                   <dt className="text-stone-500">{label}</dt>

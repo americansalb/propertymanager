@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Lease" ADD COLUMN     "sharedFields" TEXT[] DEFAULT ARRAY['RENT', 'TERM', 'DEPOSIT', 'PETS', 'PARKING', 'UTILITIES']::TEXT[];

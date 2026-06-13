@@ -62,6 +62,7 @@ export default async function UnitProfilePage({
         parkingRentCents: panel.lease.parkingRentCents,
         utilitiesIncluded: panel.lease.utilitiesIncluded,
         shareWithTenant: panel.lease.shareWithTenant,
+        sharedFields: panel.lease.sharedFields,
       }
     : null;
   const tenantLines: TenantLine[] =

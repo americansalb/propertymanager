@@ -73,9 +73,31 @@ export function leaseDefaultsFromUnit(unit: LeaseSeedUnit, today = new Date()) {
 
 // ── Tenant-facing view ──────────────────────────────────────────────────────
 
+/** Per-field sharing: the term groups a landlord can show the tenant. */
+export const LEASE_SHARE_FIELDS = [
+  "RENT",
+  "TERM",
+  "DEPOSIT",
+  "PETS",
+  "PARKING",
+  "UTILITIES",
+] as const;
+
+export type LeaseShareField = (typeof LEASE_SHARE_FIELDS)[number];
+
+export const SHARE_FIELD_LABEL: Record<LeaseShareField, string> = {
+  RENT: "Rent",
+  TERM: "Dates",
+  DEPOSIT: "Deposit",
+  PETS: "Pets",
+  PARKING: "Parking",
+  UTILITIES: "Utilities",
+};
+
 export type TenantLeaseSource = {
   status: string;
   shareWithTenant: boolean;
+  sharedFields: string[];
   startDate: Date;
   endDate: Date | null;
   monthlyRentCents: number;
@@ -89,9 +111,9 @@ export type TenantLeaseSource = {
 };
 
 export type TenantLeaseTerms = {
-  rentCents: number;
-  rentDueLabel: string;
-  termLabel: string;
+  rentCents: number | null;
+  rentDueLabel: string | null;
+  termLabel: string | null;
   depositLabel: string | null;
   petLabel: string | null;
   parkingLabel: string | null;
@@ -99,36 +121,53 @@ export type TenantLeaseTerms = {
 };
 
 /**
- * What the tenant portal may show of a lease. Returns null when the landlord
- * keeps the lease hidden - the caller renders the quiet "not shared" state
- * and no money fields ever cross the wire.
+ * What the tenant portal may show of a lease: nothing while the master
+ * switch is off, otherwise exactly the field groups the landlord shares.
+ * Returns null when there is nothing to show at all - the caller renders
+ * the quiet "not shared" state and no hidden value ever crosses the wire.
  */
 export function tenantLeaseTerms(lease: TenantLeaseSource): TenantLeaseTerms | null {
   if (!lease.shareWithTenant) return null;
+  const shared = new Set(lease.sharedFields);
 
   const petParts: string[] = [];
-  if (lease.petRentCents != null) petParts.push(`${formatCents(lease.petRentCents)}/mo`);
-  if (lease.petDepositCents != null) {
-    petParts.push(`${formatCents(lease.petDepositCents)} deposit`);
+  if (shared.has("PETS")) {
+    if (lease.petRentCents != null) petParts.push(`${formatCents(lease.petRentCents)}/mo`);
+    if (lease.petDepositCents != null) {
+      petParts.push(`${formatCents(lease.petDepositCents)} deposit`);
+    }
   }
 
   let parkingLabel: string | null = null;
-  if (lease.parkingRentCents === 0) {
-    parkingLabel = lease.parkingSpot ? `${lease.parkingSpot} (included)` : "Included";
-  } else if (lease.parkingRentCents != null) {
-    parkingLabel = `${lease.parkingSpot ?? "Parking"} at ${formatCents(lease.parkingRentCents)}/mo`;
-  } else if (lease.parkingSpot) {
-    parkingLabel = lease.parkingSpot;
+  if (shared.has("PARKING")) {
+    if (lease.parkingRentCents === 0) {
+      parkingLabel = lease.parkingSpot ? `${lease.parkingSpot} (included)` : "Included";
+    } else if (lease.parkingRentCents != null) {
+      parkingLabel = `${lease.parkingSpot ?? "Parking"} at ${formatCents(lease.parkingRentCents)}/mo`;
+    } else if (lease.parkingSpot) {
+      parkingLabel = lease.parkingSpot;
+    }
   }
 
-  return {
-    rentCents: lease.monthlyRentCents,
-    rentDueLabel: `Due on the ${ordinal(lease.rentDueDay)}`,
-    termLabel: leaseTermLabel(lease.startDate, lease.endDate),
+  const terms: TenantLeaseTerms = {
+    rentCents: shared.has("RENT") ? lease.monthlyRentCents : null,
+    rentDueLabel: shared.has("RENT") ? `Due on the ${ordinal(lease.rentDueDay)}` : null,
+    termLabel: shared.has("TERM") ? leaseTermLabel(lease.startDate, lease.endDate) : null,
     depositLabel:
-      lease.securityDepositCents > 0 ? formatCents(lease.securityDepositCents) : null,
+      shared.has("DEPOSIT") && lease.securityDepositCents > 0
+        ? formatCents(lease.securityDepositCents)
+        : null,
     petLabel: petParts.length > 0 ? petParts.join(", ") : null,
     parkingLabel,
-    utilities: lease.utilitiesIncluded,
+    utilities: shared.has("UTILITIES") ? lease.utilitiesIncluded : [],
   };
+
+  const empty =
+    terms.rentCents == null &&
+    terms.termLabel == null &&
+    terms.depositLabel == null &&
+    terms.petLabel == null &&
+    terms.parkingLabel == null &&
+    terms.utilities.length === 0;
+  return empty ? null : terms;
 }
