@@ -2,10 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/authz";
 import { getUnit } from "@/lib/services/property";
+import { getUnitLeasePanel } from "@/lib/services/lease";
 import { listPhotos, PHOTO_LIMITS } from "@/lib/services/photos";
 import { NotFoundError } from "@/lib/authz/api";
+import { isoDateOnly } from "@/lib/leases";
 import { Card } from "@/components/ui";
 import { PhotoStrip } from "@/components/landlord/photo-strip";
+import {
+  LeaseSection,
+  type InviteLine,
+  type LeaseView,
+  type TenantLine,
+} from "@/components/landlord/lease-panel";
 import {
   UnitStatusSelect,
   UnitTermsGrid,
@@ -31,11 +39,44 @@ export default async function UnitProfilePage({
     if (e instanceof NotFoundError) notFound();
     throw e;
   }
-  const photos = await listPhotos(
-    { userId: session.userId, orgId: session.orgId },
-    "Unit",
-    unit.id,
-  );
+  const ctx = { userId: session.userId, orgId: session.orgId };
+  const [photos, panel] = await Promise.all([
+    listPhotos(ctx, "Unit", unit.id),
+    getUnitLeasePanel(ctx, unit.id),
+  ]);
+
+  const leaseView: LeaseView | null = panel
+    ? {
+        id: panel.lease.id,
+        status: panel.lease.status,
+        startDate: isoDateOnly(panel.lease.startDate),
+        endDate: panel.lease.endDate ? isoDateOnly(panel.lease.endDate) : null,
+        monthlyRentCents: panel.lease.monthlyRentCents,
+        securityDepositCents: panel.lease.securityDepositCents,
+        rentDueDay: panel.lease.rentDueDay,
+        lateFeeCents: panel.lease.lateFeeCents,
+        lateFeeGraceDays: panel.lease.lateFeeGraceDays,
+        petDepositCents: panel.lease.petDepositCents,
+        petRentCents: panel.lease.petRentCents,
+        parkingSpot: panel.lease.parkingSpot,
+        parkingRentCents: panel.lease.parkingRentCents,
+        utilitiesIncluded: panel.lease.utilitiesIncluded,
+        shareWithTenant: panel.lease.shareWithTenant,
+      }
+    : null;
+  const tenantLines: TenantLine[] =
+    panel?.lease.tenants.map((t) => ({
+      id: t.id,
+      isPrimary: t.isPrimary,
+      name: `${t.tenantProfile.user.firstName} ${t.tenantProfile.user.lastName}`,
+      email: t.tenantProfile.user.email,
+    })) ?? [];
+  const inviteLines: InviteLine[] =
+    panel?.invitations.map((i) => ({
+      id: i.id,
+      email: i.email,
+      expiresAt: i.expiresAt.toISOString(),
+    })) ?? [];
 
   const view: UnitView = {
     id: unit.id,
@@ -97,8 +138,23 @@ export default async function UnitProfilePage({
         </Card>
       </section>
 
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+          Lease &amp; tenant
+        </h2>
+        <Card className="p-5">
+          <LeaseSection
+            unitId={unit.id}
+            occupied={unit.status !== "VACANT"}
+            lease={leaseView}
+            tenants={tenantLines}
+            invitations={inviteLines}
+          />
+        </Card>
+      </section>
+
       <p className="mt-6 text-xs text-stone-400">
-        Lease, tenant, and payment history live here next: they arrive with tenant invites.
+        Rent collection and payment history land here next.
       </p>
     </div>
   );

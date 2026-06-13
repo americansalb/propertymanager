@@ -78,6 +78,17 @@ function UnitCard({
         )}
         {terms && <p className="mt-1 text-xs text-stone-500">{terms}</p>}
         {specs.length > 0 && <p className="mt-1 text-sm text-stone-500">{specs.join(" · ")}</p>}
+        {unit.tenantNames && unit.tenantNames.length > 0 ? (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-stone-600">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-patina" />
+            {unit.tenantNames.join(" · ")}
+          </p>
+        ) : unit.pendingInviteEmail ? (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-stone-500">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-copper" />
+            Invited {unit.pendingInviteEmail}
+          </p>
+        ) : null}
       </div>
 
       <div className="absolute right-3 bottom-3 flex items-center gap-1">

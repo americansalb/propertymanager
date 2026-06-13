@@ -6,7 +6,10 @@
  *
  * Env: VK_SHOTS_URL (default http://127.0.0.1:3306), VK_SHOTS_OUT
  * (default /tmp/ui-shots), VK_SHOTS_EMAIL / VK_SHOTS_PASSWORD for the authed
- * walk. Read-only by design: wizards are stepped through but never submitted.
+ * walk, VK_SHOTS_TENANT_EMAIL / VK_SHOTS_TENANT_PASSWORD for the tenant walk
+ * (skipped when that login fails), VK_SHOTS_INVITE_URL for the public invite
+ * page (optional; seed demo data prints one). Read-only by design: wizards
+ * are stepped through but never submitted.
  */
 import { mkdirSync } from "node:fs";
 import { chromium, type Page } from "playwright-core";
@@ -16,6 +19,18 @@ const OUT = process.env.VK_SHOTS_OUT ?? "/tmp/ui-shots";
 const EXE = process.env.VK_SHOTS_BROWSER;
 const EMAIL = process.env.VK_SHOTS_EMAIL ?? "dana@test.local";
 const PASSWORD = process.env.VK_SHOTS_PASSWORD ?? "Test1234";
+const TENANT_EMAIL = process.env.VK_SHOTS_TENANT_EMAIL ?? "tenant@demo.test";
+const TENANT_PASSWORD = process.env.VK_SHOTS_TENANT_PASSWORD ?? "Demo1234!";
+const INVITE_URL = process.env.VK_SHOTS_INVITE_URL;
+
+async function loginToken(email: string, password: string): Promise<string | null> {
+  const res = await fetch(`${BASE}/api/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  return /session=([^;]+)/.exec(res.headers.get("set-cookie") ?? "")?.[1] ?? null;
+}
 
 let count = 0;
 async function shot(page: Page, name: string, fullPage = false) {
@@ -32,12 +47,7 @@ async function main() {
   mkdirSync(OUT, { recursive: true });
   if (!EXE) throw new Error("Set VK_SHOTS_BROWSER to a chromium executable");
 
-  const loginRes = await fetch(`${BASE}/api/v1/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
-  });
-  const token = /session=([^;]+)/.exec(loginRes.headers.get("set-cookie") ?? "")?.[1];
+  const token = await loginToken(EMAIL, PASSWORD);
   if (!token) throw new Error("Login failed; set VK_SHOTS_EMAIL/PASSWORD");
 
   const browser = await chromium.launch({ executablePath: EXE, args: ["--no-sandbox"] });
@@ -71,6 +81,12 @@ async function main() {
   await goto(anon, "/signup");
   await anon.getByText("I rent my home").click();
   await shot(anon, "signup-tenant-explainer");
+
+  // public invite page (the tenant's first sight of the brand)
+  if (INVITE_URL) {
+    await anon.goto(INVITE_URL, { waitUntil: "networkidle" });
+    await shot(anon, "invite-accept", true);
+  }
 
   // ── Authed walk: every landlord surface + wizard steps + edit states ─────
   const authedCtx = await browser.newContext({ viewport, deviceScaleFactor: 1.5 });
@@ -131,6 +147,27 @@ async function main() {
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByText("Single-family home").click();
   await shot(page, "prop-new-4-rent");
+
+  // ── Tenant walk: the home, desktop and mobile ────────────────────────────
+  const tenantToken = await loginToken(TENANT_EMAIL, TENANT_PASSWORD);
+  if (tenantToken) {
+    const tenantCtx = await browser.newContext({ viewport, deviceScaleFactor: 1.5 });
+    await tenantCtx.addCookies([{ name: "session", value: tenantToken, url: BASE }]);
+    const tenant = await tenantCtx.newPage();
+    await goto(tenant, "/tenant/dashboard");
+    await shot(tenant, "tenant-home", true);
+
+    const tenantMobCtx = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    await tenantMobCtx.addCookies([{ name: "session", value: tenantToken, url: BASE }]);
+    const tenantMob = await tenantMobCtx.newPage();
+    await goto(tenantMob, "/tenant/dashboard");
+    await shot(tenantMob, "m-tenant-home", true);
+  } else {
+    console.log("tenant walk skipped: no login (set VK_SHOTS_TENANT_EMAIL/PASSWORD)");
+  }
 
   // ── Mobile walk (390x844): the laws say mobile-first, so we look ─────────
   const mobAnon = await (

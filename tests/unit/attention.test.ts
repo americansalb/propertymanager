@@ -8,23 +8,37 @@ import {
 } from "@/lib/attention";
 
 describe("computeSetup", () => {
+  const empty = { propertyCount: 0, unitsWithRent: 0, tenantInvites: 0, tenantsJoined: 0 };
+
   it("starts at the first step for an empty org", () => {
-    const s = computeSetup({ propertyCount: 0, unitsWithRent: 0 });
+    const s = computeSetup(empty);
     expect(s.complete).toBe(false);
     expect(s.steps[0]).toMatchObject({ key: "property", done: false });
   });
 
   it("advances to rents once a property exists", () => {
-    const s = computeSetup({ propertyCount: 1, unitsWithRent: 0 });
+    const s = computeSetup({ ...empty, propertyCount: 1 });
     expect(s.steps[0]!.done).toBe(true);
     expect(s.steps[1]!.done).toBe(false);
     expect(s.complete).toBe(false);
   });
 
+  it("counts the invite step done once an invite is sent OR a tenant joined", () => {
+    const sent = computeSetup({ ...empty, tenantInvites: 1 });
+    expect(sent.steps.find((x) => x.key === "invite")).toMatchObject({
+      done: true,
+      href: "/landlord/properties",
+    });
+    const joined = computeSetup({ ...empty, tenantsJoined: 1 });
+    expect(joined.steps.find((x) => x.key === "invite")!.done).toBe(true);
+  });
+
   it("is complete when all buildable steps are done (soon steps excluded)", () => {
-    const s = computeSetup({ propertyCount: 1, unitsWithRent: 2 });
-    expect(s.complete).toBe(true);
-    expect(s.steps.filter((x) => x.soon)).toHaveLength(2);
+    const s = computeSetup({ propertyCount: 1, unitsWithRent: 2, tenantInvites: 0, tenantsJoined: 0 });
+    expect(s.complete).toBe(false); // invite step is live now and not done
+    const done = computeSetup({ propertyCount: 1, unitsWithRent: 2, tenantInvites: 1, tenantsJoined: 0 });
+    expect(done.complete).toBe(true);
+    expect(done.steps.filter((x) => x.soon)).toHaveLength(1); // bank remains
   });
 });
 

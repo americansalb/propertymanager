@@ -22,6 +22,9 @@ export type UnitView = {
   parkingRentCents: number | null;
   utilitiesIncluded: string[];
   status: string;
+  /** Card subline: who lives here / who's been invited (property page only). */
+  tenantNames?: string[];
+  pendingInviteEmail?: string | null;
 };
 
 export const STATUS_LABEL: Record<string, string> = {

@@ -258,6 +258,18 @@ model Lease {
   rentDueDay           Int         @default(1)
   lateFeeCents         Int         @default(0)
   lateFeeGraceDays     Int         @default(5)
+
+  // Snapshot of the unit's standing terms at lease time: the unit keeps
+  // evolving, the lease is the record of what was agreed.
+  petDepositCents   Int?
+  petRentCents      Int? // monthly
+  parkingSpot       String?
+  parkingRentCents  Int? // monthly; null = not set, 0 = included
+  utilitiesIncluded String[] @default([])
+
+  /// One switch: whether the tenant portal shows this lease's terms.
+  shareWithTenant Boolean @default(true)
+
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
 

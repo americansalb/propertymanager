@@ -21,6 +21,7 @@ export type RowKind =
   | { kind: "text"; placeholder?: string; rows?: number }
   | { kind: "money"; placeholder?: string; suffix?: string }
   | { kind: "number"; placeholder?: string; decimal?: boolean }
+  | { kind: "date" }
   | { kind: "select"; options: Array<{ value: string; label: string }> }
   | { kind: "chips"; suggestions?: string[]; placeholder?: string };
 
@@ -296,7 +297,8 @@ export function EditableRow({
               autoFocus
               value={draft}
               disabled={busy}
-              placeholder={kind.kind === "text" ? kind.placeholder : (kind.placeholder ?? "")}
+              type={kind.kind === "date" ? "date" : "text"}
+              placeholder={"placeholder" in kind ? kind.placeholder : undefined}
               inputMode={
                 kind.kind === "money"
                   ? "decimal"

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/authz";
 import { getProperty, revealAccessCodes } from "@/lib/services/property";
+import { getUnitTenancyByProperty } from "@/lib/services/lease";
 import { NotFoundError } from "@/lib/authz/api";
 import { UnitsManager, type UnitView } from "@/components/landlord/units-manager";
 import { PropertyDeleteButton } from "@/components/landlord/property-delete-button";
@@ -31,6 +32,10 @@ export default async function PropertyDetailPage({
     throw e;
   }
 
+  const tenancy = await getUnitTenancyByProperty(
+    { userId: session.userId, orgId: session.orgId },
+    property.id,
+  );
   const units: UnitView[] = property.units.map((u) => ({
     id: u.id,
     unitNumber: u.unitNumber,
@@ -45,6 +50,8 @@ export default async function PropertyDetailPage({
     parkingRentCents: u.parkingRentCents,
     utilitiesIncluded: u.utilitiesIncluded,
     status: u.status,
+    tenantNames: tenancy[u.id]?.tenantNames ?? [],
+    pendingInviteEmail: tenancy[u.id]?.pendingInviteEmail ?? null,
   }));
 
   const photos = await listPhotos(
