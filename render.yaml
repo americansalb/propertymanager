@@ -47,6 +47,8 @@ services:
         sync: false
       - key: STRIPE_CONNECT_WEBHOOK_SECRET
         sync: false
+      - key: CRON_SECRET
+        sync: false
       - key: PLATFORM_FEE_RENT_BPS
         value: '0'
       - key: MARKETPLACE_TAKE_RATE_BPS
@@ -61,6 +63,23 @@ services:
     plan: starter
     maxmemoryPolicy: allkeys-lru
     ipAllowList: []
+
+  # Background tick. Render cron does not build the app: it just pokes the
+  # secured in-service endpoint, so the work runs in the web service's existing
+  # pool (zero extra connections on the shared Postgres). The live job is also
+  # configured in the Render dashboard; this stanza is for portability.
+  - type: cron
+    name: propertymanager-1-cron
+    runtime: image
+    image:
+      url: curlimages/curl:latest
+    schedule: '*/2 * * * *'
+    startCommand: 'curl -fsS -X POST -H "x-cron-secret: $CRON_SECRET" "$APP_URL/api/internal/cron/tick"'
+    envVars:
+      - key: APP_URL
+        value: 'https://propertymanager-1.onrender.com'
+      - key: CRON_SECRET
+        sync: false
 
 databases:
   - name: propertymanager-1-db

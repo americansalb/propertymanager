@@ -14,6 +14,9 @@ const envSchema = z.object({
   // The Postgres schema this app exclusively owns. The shared instance hosts
   // other services - the app must never read or write outside this schema.
   APP_DB_SCHEMA: z.string().regex(/^[a-z_][a-z0-9_]*$/).default("villagekeep_app"),
+  // Cap our Prisma pool: the Postgres instance is shared with other services,
+  // so keep our connection footprint small and predictable.
+  DB_CONNECTION_LIMIT: z.coerce.number().int().min(1).max(50).default(5),
   SESSION_SECRET: z.string().min(32).optional(),
   APP_URL: z.string().url().default("http://localhost:3000"),
   BRAND_NAME: z.string().default("VillageKeep"),
@@ -25,6 +28,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_CONNECT_WEBHOOK_SECRET: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
   PLATFORM_FEE_RENT_BPS: z.coerce.number().int().min(0).max(2000).default(0),
   MARKETPLACE_TAKE_RATE_BPS: z.coerce.number().int().min(0).max(2000).default(1000),
 });
@@ -42,6 +46,9 @@ export function databaseUrlWithSchema(): string {
   const url = new URL(env.DATABASE_URL);
   if (!url.searchParams.has("schema")) {
     url.searchParams.set("schema", env.APP_DB_SCHEMA);
+  }
+  if (!url.searchParams.has("connection_limit")) {
+    url.searchParams.set("connection_limit", String(env.DB_CONNECTION_LIMIT));
   }
   return url.toString();
 }
