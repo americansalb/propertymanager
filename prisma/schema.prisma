@@ -515,6 +515,9 @@ enum LedgerEntryType {
 
 // APPEND-ONLY. No updatedAt by design. Corrections are REVERSAL rows.
 model LedgerEntry {
+  // Monotonic per-row sequence: createdAt alone ties because Postgres now()
+  // is the transaction start time, so "latest entry per account" orders by seq.
+  seq                 BigInt            @default(autoincrement())
   id                  String            @id @default(cuid())
   accountType         LedgerAccountType
   accountId           String // orgId | proProfileId | "platform"
@@ -531,7 +534,7 @@ model LedgerEntry {
   reversalOfId        String?           @unique
   createdAt           DateTime          @default(now())
 
-  @@index([accountType, accountId, createdAt])
+  @@index([accountType, accountId, seq])
   @@index([jobId])
   @@index([paymentId])
 }
