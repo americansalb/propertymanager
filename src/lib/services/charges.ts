@@ -37,6 +37,13 @@ async function createChargeIfNew(args: {
   type: "RENT" | "LATE_FEE";
   spec: ChargeSpec;
 }): Promise<boolean> {
+  // Check first so the common "already generated this period" path on every
+  // tick does not log a unique-violation; the catch stays as a race backstop.
+  const existing = await prisma.charge.findFirst({
+    where: { leaseId: args.leaseId, type: args.type, periodKey: args.spec.periodKey },
+    select: { id: true },
+  });
+  if (existing) return false;
   try {
     await prisma.charge.create({
       data: {

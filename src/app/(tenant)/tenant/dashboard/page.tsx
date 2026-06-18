@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/authz";
 import { getTenantHome } from "@/lib/services/tenant";
 import { getTenantBilling } from "@/lib/services/charges";
@@ -7,7 +8,7 @@ import { formatLeaseDate } from "@/lib/leases";
 import { Badge, Card, Money } from "@/components/ui";
 import { PropertyPortrait } from "@/components/brand/property-portrait";
 import { unitTitle } from "@/lib/units";
-import { IconWrench } from "@/components/icons";
+import { IconChevronRight, IconWrench } from "@/components/icons";
 
 export const metadata = { title: "Home" };
 
@@ -141,59 +142,43 @@ export default async function TenantDashboard() {
       )}
 
       {billing && (
-        <Card className="mt-4 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-copper-deep">
-              {billing.summary.balanceCents > 0 ? "You owe" : "Balance"}
-            </p>
-            {billing.summary.pastDueCents > 0 && (
-              <Badge tone="red">{formatCents(billing.summary.pastDueCents)} past due</Badge>
-            )}
-          </div>
-          <div className="mt-1 flex flex-wrap items-baseline gap-x-3">
-            <Money
-              cents={billing.summary.balanceCents}
-              className="font-display text-3xl font-semibold text-stone-900"
-            />
-            {billing.summary.balanceCents === 0 ? (
-              <span className="text-sm font-medium text-patina">You&apos;re all paid up</span>
-            ) : billing.summary.pastDueCents === 0 && billing.summary.nextDueDate ? (
-              <span className="text-sm text-stone-500">
-                due {formatLeaseDate(billing.summary.nextDueDate)}
-              </span>
-            ) : null}
-          </div>
-          {billing.charges.length > 0 && (
-            <ul className="mt-4 space-y-2 border-t border-stone-100 pt-4">
-              {billing.charges.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-4 text-sm">
-                  <div className="min-w-0">
-                    <p className="truncate text-stone-800">{c.description}</p>
-                    <p className={c.overdue ? "text-xs text-red-700" : "text-xs text-stone-400"}>
-                      {c.overdue ? "Past due " : "Due "}
-                      {formatLeaseDate(c.dueDate)}
-                    </p>
-                  </div>
-                  <Money cents={c.openCents} className="shrink-0 font-medium text-stone-900" />
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="mt-4 text-xs text-stone-400">
-            Paying online through {brand.name} is coming soon. Until then, pay {home.orgName} the way
-            you do today.
-          </p>
-        </Card>
+        <Link href="/tenant/payments" className="mt-4 block">
+          <Card className="flex items-center justify-between gap-4 p-5 transition hover:border-stone-300">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-copper-deep">
+                {billing.summary.balanceCents > 0 ? "You owe" : "Balance"}
+              </p>
+              <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <Money
+                  cents={billing.summary.balanceCents}
+                  className="font-display text-2xl font-semibold text-stone-900"
+                />
+                {billing.summary.pastDueCents > 0 ? (
+                  <Badge tone="red">{formatCents(billing.summary.pastDueCents)} past due</Badge>
+                ) : billing.summary.balanceCents === 0 ? (
+                  <span className="text-sm font-medium text-patina">All paid up</span>
+                ) : billing.summary.nextDueDate ? (
+                  <span className="text-sm text-stone-500">
+                    due {formatLeaseDate(billing.summary.nextDueDate)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <IconChevronRight className="h-5 w-5 shrink-0 text-stone-300" />
+          </Card>
+        </Link>
       )}
-      <Card className="mt-3 flex items-center gap-4 p-4">
-        <IconWrench className="h-6 w-6 shrink-0 text-stone-400" />
-        <div>
-          <p className="text-sm font-semibold text-stone-900">Report a problem</p>
-          <p className="text-sm text-stone-500">
-            Photos, a time that works, no phone tag. Coming soon.
-          </p>
-        </div>
-      </Card>
+
+      <Link href="/tenant/maintenance" className="mt-3 block">
+        <Card className="flex items-center gap-4 p-4 transition hover:border-stone-300">
+          <IconWrench className="h-6 w-6 shrink-0 text-stone-400" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-stone-900">Report a problem</p>
+            <p className="text-sm text-stone-500">Photos, a time that works, no phone tag.</p>
+          </div>
+          <IconChevronRight className="h-5 w-5 shrink-0 text-stone-300" />
+        </Card>
+      </Link>
 
       <p className="mt-5 text-center text-xs text-stone-400">
         {homeTitle} is managed by {home.orgName} on {brand.name}.
