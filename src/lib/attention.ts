@@ -28,7 +28,7 @@ export const CLASS_ORDER: Record<AttentionClass, number> = {
 
 export type AttentionItem = {
   id: string;
-  kind: "vacancy" | "sample";
+  kind: "vacancy" | "sample" | "late-rent";
   cls: AttentionClass;
   title: string;
   meta?: string;
@@ -70,6 +70,32 @@ export function buildVacancyItems(vacant: VacantUnitInput[]): AttentionItem[] {
     stakeCents: u.marketRentCents ?? 0,
     action: { label: "View unit", href: `/landlord/properties/${u.propertyId}` },
     refId: u.propertyId,
+  }));
+}
+
+export type LateRentInput = {
+  leaseId: string;
+  unitNumber: string;
+  propertyId: string;
+  propertyName: string;
+  tenantName: string | null;
+  openCents: number;
+  daysLate: number;
+};
+
+/** Overdue rent: the "money owed to you" cards on the dashboard. */
+export function buildLateRentItems(late: LateRentInput[]): AttentionItem[] {
+  return late.map((l) => ({
+    id: `late-rent:${l.leaseId}`,
+    kind: "late-rent" as const,
+    cls: "MONEY_TO_YOU" as const,
+    title: l.tenantName
+      ? `${l.tenantName} · ${l.unitNumber} at ${l.propertyName}`
+      : `${l.unitNumber} at ${l.propertyName}`,
+    meta: `${formatCents(l.openCents)} · ${l.daysLate} day${l.daysLate === 1 ? "" : "s"} late`,
+    stakeCents: l.openCents,
+    action: { label: "View", href: `/landlord/properties/${l.propertyId}` },
+    refId: l.propertyId,
   }));
 }
 

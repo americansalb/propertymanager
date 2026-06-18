@@ -26,6 +26,7 @@ export type TenantHome = {
     portraitAccent: string | null;
     unitStatuses: string[];
   };
+  leaseId: string;
   leaseStatus: string;
   /** null = the landlord keeps the lease hidden. */
   terms: TenantLeaseTerms | null;
@@ -105,6 +106,7 @@ export async function getTenantHome(userId: string): Promise<TenantHome | null> 
       portraitAccent: property.portraitAccent,
       unitStatuses: property.units.map((u) => u.status),
     },
+    leaseId: lease.id,
     leaseStatus: lease.status,
     terms: tenantLeaseTerms(lease),
   };

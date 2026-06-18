@@ -50,6 +50,7 @@ export function PulseBar({ pulse }: { pulse: Pulse }) {
 const KIND_ICON: Record<AttentionItem["kind"], React.ReactNode> = {
   vacancy: <IconDoor className="h-4.5 w-4.5" />,
   sample: <IconKeep className="h-4.5 w-4.5" />,
+  "late-rent": <IconRent className="h-4.5 w-4.5" />,
 };
 
 const CLS_CHIP: Record<AttentionItem["cls"], string> = {

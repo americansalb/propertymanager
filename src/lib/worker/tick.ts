@@ -12,16 +12,29 @@
 import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/email/send";
 import { notificationEmail, shouldRetryEmail } from "@/lib/notifications";
+import { generateRentCharges, applyLateFees } from "@/lib/services/charges";
 
-export type TickSummary = { emailsSent: number; emailsFailed: number };
+export type TickSummary = {
+  rentChargesCreated: number;
+  lateFeesCreated: number;
+  emailsSent: number;
+  emailsFailed: number;
+};
 
 const DEFAULT_EMAIL_BATCH = 25;
 
 export async function runTick(opts?: { emailBatch?: number }): Promise<TickSummary> {
-  return flushPendingEmails(opts?.emailBatch ?? DEFAULT_EMAIL_BATCH);
+  // Idempotent generators, safe to run every tick: each charge is created at
+  // most once by its (lease, type, period) unique.
+  const rentChargesCreated = await generateRentCharges();
+  const lateFeesCreated = await applyLateFees();
+  const emails = await flushPendingEmails(opts?.emailBatch ?? DEFAULT_EMAIL_BATCH);
+  return { rentChargesCreated, lateFeesCreated, ...emails };
 }
 
-async function flushPendingEmails(limit: number): Promise<TickSummary> {
+async function flushPendingEmails(
+  limit: number,
+): Promise<{ emailsSent: number; emailsFailed: number }> {
   const pending = await prisma.notification.findMany({
     where: { channel: "EMAIL", emailedAt: null },
     orderBy: { createdAt: "asc" },
