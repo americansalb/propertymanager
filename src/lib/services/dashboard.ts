@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { OrgCtx } from "@/lib/authz/api";
 import {
+  buildLateRentItems,
   buildSampleItem,
   buildVacancyItems,
   computeSetup,
@@ -9,6 +10,7 @@ import {
   type SetupState,
 } from "@/lib/attention";
 import { findSample } from "@/lib/services/sample";
+import { getOrgLateRent } from "@/lib/services/charges";
 
 export type Pulse = {
   unitCount: number;
@@ -36,7 +38,7 @@ export type DashboardData = {
 };
 
 export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
-  const [propertyCount, units, openMaintenance, sample, portfolio, tenantInvites, tenantsJoined] =
+  const [propertyCount, units, openMaintenance, sample, portfolio, tenantInvites, tenantsJoined, lateRent] =
     await Promise.all([
     prisma.property.count({ where: { orgId: ctx.orgId } }),
     prisma.unit.findMany({
@@ -73,6 +75,7 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
     }),
     prisma.invitation.count({ where: { orgId: ctx.orgId, kind: "TENANT" } }),
     prisma.leaseTenant.count({ where: { lease: { orgId: ctx.orgId } } }),
+    getOrgLateRent(ctx.orgId),
   ]);
 
   const pulse: Pulse = {
@@ -102,6 +105,7 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
   );
 
   const items = sortAttention([
+    ...buildLateRentItems(lateRent),
     ...vacancyItems,
     ...(sample ? [buildSampleItem(sample)] : []),
   ]);

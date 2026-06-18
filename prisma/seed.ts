@@ -193,6 +193,8 @@ async function main() {
       where: { id: lease.id },
       data: {
         rentDueDay: 1,
+        lateFeeCents: 7_500,
+        lateFeeGraceDays: 5,
         petRentCents: 5_000,
         parkingSpot: "Street parking",
         parkingRentCents: 0,

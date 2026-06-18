@@ -324,6 +324,7 @@ model Charge {
   amountCents     Int
   amountPaidCents Int          @default(0)
   description     String
+  periodKey       String? // "2026-07": makes recurring RENT/LATE_FEE generation idempotent
   dueDate         DateTime
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -331,6 +332,9 @@ model Charge {
   lease       Lease               @relation(fields: [leaseId], references: [id])
   allocations PaymentAllocation[]
 
+  // One recurring charge per lease, type, and period. Ad-hoc charges leave
+  // periodKey null, which Postgres treats as always-distinct (no collision).
+  @@unique([leaseId, type, periodKey])
   @@index([orgId])
   @@index([leaseId, status])
   @@index([dueDate])
