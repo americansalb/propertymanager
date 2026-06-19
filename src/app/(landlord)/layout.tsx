@@ -1,6 +1,6 @@
 import { requireOrg } from "@/lib/authz";
 import { PortalShell } from "@/components/shells/portal-shell";
-import { IconKeep, IconProperty, IconWrench } from "@/components/icons";
+import { IconKeep, IconMail, IconProperty, IconWrench } from "@/components/icons";
 
 const NAV = [
   {
@@ -17,6 +17,11 @@ const NAV = [
     href: "/landlord/maintenance",
     label: "Maintenance",
     icon: <IconWrench className="h-4 w-4" />,
+  },
+  {
+    href: "/landlord/messages",
+    label: "Messages",
+    icon: <IconMail className="h-4 w-4" />,
   },
 ];
 

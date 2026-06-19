@@ -61,7 +61,7 @@ export async function PortalShell({
           </div>
         </div>
         {nav && nav.length > 0 && (
-          <nav className="mx-auto flex max-w-6xl gap-1 px-4 pb-2.5">
+          <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2.5">
             <NavLinks items={nav} />
           </nav>
         )}

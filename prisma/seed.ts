@@ -304,6 +304,36 @@ async function main() {
       });
     }
 
+    // Demo messages so the conversation thread has content.
+    if ((await prisma.message.count({ where: { leaseId: lease.id } })) === 0) {
+      const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
+      await prisma.message.createMany({
+        data: [
+          {
+            leaseId: lease.id,
+            orgId: org.id,
+            senderUserId: tenant.id,
+            body: "Hi Dana, the kitchen faucet has been dripping. Not urgent, just letting you know.",
+            createdAt: hoursAgo(72),
+          },
+          {
+            leaseId: lease.id,
+            orgId: org.id,
+            senderUserId: landlord.id,
+            body: "Thanks Tom! I'll add it to the plumber's list for this week.",
+            createdAt: hoursAgo(71),
+          },
+          {
+            leaseId: lease.id,
+            orgId: org.id,
+            senderUserId: tenant.id,
+            body: "Perfect, thank you!",
+            createdAt: hoursAgo(70),
+          },
+        ],
+      });
+    }
+
     // 2F shows the pending-invite state: a draft lease + an open invitation.
     const unit2 = await prisma.unit.findFirstOrThrow({
       where: { propertyId: property.id, unitNumber: "2F" },
