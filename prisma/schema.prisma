@@ -279,6 +279,7 @@ model Lease {
   unit    Unit          @relation(fields: [unitId], references: [id])
   tenants LeaseTenant[]
   charges Charge[]
+  messages Message[]
 
   @@index([orgId])
   @@index([unitId, status])
@@ -295,6 +296,21 @@ model LeaseTenant {
 
   @@unique([leaseId, tenantProfileId])
   @@index([tenantProfileId])
+}
+
+// Direct landlord<->tenant messages, threaded per lease (append-only).
+model Message {
+  id           String   @id @default(cuid())
+  leaseId      String
+  orgId        String
+  senderUserId String
+  body         String
+  createdAt    DateTime @default(now())
+
+  lease Lease @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  @@index([leaseId, createdAt])
+  @@index([orgId])
 }
 
 // ─────────────────────────────────────────────────────────── BILLING ───────
