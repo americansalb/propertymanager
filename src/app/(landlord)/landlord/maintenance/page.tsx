@@ -26,6 +26,13 @@ const URGENCY_CHIP: Record<string, string> = {
   LOW: "bg-stone-100 text-stone-400",
 };
 
+const URGENCY_PREFIX: Record<string, string> = {
+  EMERGENCY: "Emergency · ",
+  URGENT: "Urgent · ",
+  NORMAL: "",
+  LOW: "",
+};
+
 function ageLabel(d: Date): string {
   const days = Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
   if (days <= 0) return "today";
@@ -39,7 +46,11 @@ function RequestList({ rows }: { rows: OrgMaintenanceRow[] }) {
       {rows.map((r) => (
         <li key={r.id}>
           <Link href={`/landlord/maintenance/${r.id}`}>
-            <Card className="flex items-center gap-4 p-4 transition hover:border-patina">
+            <Card
+              className={`flex items-center gap-3 p-4 transition hover:border-patina ${
+                r.urgency === "EMERGENCY" ? "border-red-200" : ""
+              }`}
+            >
               <span
                 className={`cut-sm flex h-9 w-9 shrink-0 items-center justify-center ${
                   URGENCY_CHIP[r.urgency] ?? "bg-stone-100 text-stone-500"
@@ -48,20 +59,20 @@ function RequestList({ rows }: { rows: OrgMaintenanceRow[] }) {
                 <IconWrench className="h-4.5 w-4.5" />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-medium text-stone-900">{r.title}</p>
-                  {r.urgency === "EMERGENCY" && <Badge tone="red">Emergency</Badge>}
-                </div>
+                <p className="truncate font-medium text-stone-900">{r.title}</p>
                 <p className="mt-0.5 truncate text-xs text-stone-500">
+                  {URGENCY_PREFIX[r.urgency] ?? ""}
                   {r.unitNumber ? `${unitTitle(r.unitNumber)} · ` : ""}
                   {r.propertyName}
                   {r.tenantName ? ` · ${r.tenantName}` : ""} · {ageLabel(r.createdAt)}
                 </p>
               </div>
-              <Badge tone={STATUS_TONE[r.status] ?? "stone"}>
-                {MAINT_STATUS_LABEL_LANDLORD[r.status] ?? r.status}
-              </Badge>
-              <IconChevronRight className="h-5 w-5 shrink-0 text-stone-300" />
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge tone={STATUS_TONE[r.status] ?? "stone"}>
+                  {MAINT_STATUS_LABEL_LANDLORD[r.status] ?? r.status}
+                </Badge>
+                <IconChevronRight className="h-5 w-5 text-stone-300" />
+              </div>
             </Card>
           </Link>
         </li>

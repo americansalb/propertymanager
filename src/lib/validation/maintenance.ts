@@ -95,3 +95,14 @@ export const maintenanceRespondSchema = z
   });
 
 export type MaintenanceRespondInput = z.infer<typeof maintenanceRespondSchema>;
+
+/** Tenant-facing verb phrases for timeline updates (reads naturally). */
+export const MAINT_TENANT_UPDATE_VERB: Record<string, string> = {
+  ACKNOWLEDGED: "saw your request",
+  SCHEDULED: "scheduled a visit",
+  IN_PROGRESS: "started work",
+  RESOLVED: "marked this resolved",
+  CLOSED: "closed this request",
+  CANCELLED: "cancelled this request",
+  SENT_TO_MARKETPLACE: "is finding a pro",
+};

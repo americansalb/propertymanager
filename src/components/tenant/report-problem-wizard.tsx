@@ -10,6 +10,7 @@ import {
   MAINTENANCE_CATEGORIES,
   MAINTENANCE_URGENCIES,
   MAINT_STATUS_LABEL,
+  MAINT_TENANT_UPDATE_VERB,
   URGENCY_LABEL,
 } from "@/lib/validation/maintenance";
 
@@ -401,7 +402,7 @@ export function MaintenanceClient({ requests }: { requests: TenantRequest[] }) {
                           </span>
                           {u.changed && u.status !== "SUBMITTED" && (
                             <span className="ml-2 text-stone-600">
-                              marked {(MAINT_STATUS_LABEL[u.status] ?? u.status).toLowerCase()}
+                              {MAINT_TENANT_UPDATE_VERB[u.status] ?? "updated this"}
                             </span>
                           )}
                           {u.note && <p className="mt-0.5 text-stone-700">{u.note}</p>}
