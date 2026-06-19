@@ -98,7 +98,7 @@ export async function createTenantMaintenanceRequest(userId: string, input: Main
       type: "maintenance.submitted",
       title: `${input.urgency === "EMERGENCY" ? "EMERGENCY: " : ""}New maintenance request`,
       body: `${who} reported a ${CATEGORY_LABEL[input.category]} issue at ${unitTitle(lease.unit.unitNumber)}: ${input.title}`,
-      linkUrl: `/landlord/properties/${lease.unit.propertyId}`,
+      linkUrl: `/landlord/maintenance/${request.id}`,
       refType: "MaintenanceRequest",
       refId: request.id,
     });
