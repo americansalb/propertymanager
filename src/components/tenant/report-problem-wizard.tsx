@@ -10,6 +10,7 @@ import {
   MAINTENANCE_CATEGORIES,
   MAINTENANCE_URGENCIES,
   MAINT_STATUS_LABEL,
+  MAINT_TENANT_UPDATE_VERB,
   URGENCY_LABEL,
 } from "@/lib/validation/maintenance";
 
@@ -28,6 +29,14 @@ export type TenantRequest = {
   urgency: string;
   status: string;
   createdAt: Date;
+  updates: Array<{
+    id: string;
+    status: string;
+    note: string | null;
+    at: Date;
+    fromLandlord: boolean;
+    changed: boolean;
+  }>;
 };
 
 const CATEGORY_HINT: Record<Cat, string> = {
@@ -381,6 +390,26 @@ export function MaintenanceClient({ requests }: { requests: TenantRequest[] }) {
                   </Badge>
                 </div>
                 <p className="mt-2 line-clamp-2 text-sm text-stone-600">{r.description}</p>
+                {r.updates.filter((u) => u.note || (u.changed && u.status !== "SUBMITTED")).length >
+                  0 && (
+                  <ul className="mt-3 space-y-2 border-t border-stone-100 pt-3">
+                    {r.updates
+                      .filter((u) => u.note || (u.changed && u.status !== "SUBMITTED"))
+                      .map((u) => (
+                        <li key={u.id} className="text-sm">
+                          <span className="text-xs text-stone-400">
+                            {u.fromLandlord ? "Landlord" : "You"} · {fmtDate(u.at)}
+                          </span>
+                          {u.changed && u.status !== "SUBMITTED" && (
+                            <span className="ml-2 text-stone-600">
+                              {MAINT_TENANT_UPDATE_VERB[u.status] ?? "updated this"}
+                            </span>
+                          )}
+                          {u.note && <p className="mt-0.5 text-stone-700">{u.note}</p>}
+                        </li>
+                      ))}
+                  </ul>
+                )}
               </Card>
             </li>
           ))}

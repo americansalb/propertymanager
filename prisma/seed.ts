@@ -203,6 +203,65 @@ async function main() {
       },
     });
 
+    // Maintenance: a couple of requests so the inbox and tenant timeline have life.
+    const existingReq = await prisma.maintenanceRequest.findFirst({ where: { leaseId: lease.id } });
+    if (!existingReq) {
+      const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000);
+      const oneDayAgo = new Date(Date.now() - 1 * 86_400_000);
+      const leak = await prisma.maintenanceRequest.create({
+        data: {
+          orgId: org.id,
+          propertyId: property.id,
+          unitId: unit1.id,
+          leaseId: lease.id,
+          createdByUserId: tenant.id,
+          origin: "TENANT",
+          category: "PLUMBING",
+          title: "Kitchen sink leaks",
+          description: "Water pools under the kitchen sink after running it. Started a few days ago.",
+          urgency: "NORMAL",
+          status: "ACKNOWLEDGED",
+          permissionToEnter: true,
+          accessNotes: "Spare key with the neighbor in 1R.",
+          preferredTimes: ["Weekday mornings"],
+          createdAt: twoDaysAgo,
+        },
+      });
+      await prisma.maintenanceStatusHistory.createMany({
+        data: [
+          { requestId: leak.id, toStatus: "SUBMITTED", actorUserId: tenant.id, createdAt: twoDaysAgo },
+          {
+            requestId: leak.id,
+            fromStatus: "SUBMITTED",
+            toStatus: "ACKNOWLEDGED",
+            actorUserId: landlord.id,
+            note: "Thanks Tom, I'll get a plumber out this week.",
+            createdAt: oneDayAgo,
+          },
+        ],
+      });
+
+      const heat = await prisma.maintenanceRequest.create({
+        data: {
+          orgId: org.id,
+          propertyId: property.id,
+          unitId: unit1.id,
+          leaseId: lease.id,
+          createdByUserId: tenant.id,
+          origin: "TENANT",
+          category: "HVAC",
+          title: "No hot water",
+          description: "No hot water since this morning across the whole unit.",
+          urgency: "EMERGENCY",
+          status: "SUBMITTED",
+          permissionToEnter: false,
+        },
+      });
+      await prisma.maintenanceStatusHistory.create({
+        data: { requestId: heat.id, toStatus: "SUBMITTED", actorUserId: tenant.id },
+      });
+    }
+
     // 2F shows the pending-invite state: a draft lease + an open invitation.
     const unit2 = await prisma.unit.findFirstOrThrow({
       where: { propertyId: property.id, unitNumber: "2F" },
