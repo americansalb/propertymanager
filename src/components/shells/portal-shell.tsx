@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
+import { getSession } from "@/lib/authz";
+import { listNotifications, unreadCount } from "@/lib/services/notification";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { ToastProvider } from "@/components/ui-feedback";
 import { LogoutButton } from "./logout-button";
 import { NavLinks, type NavItem } from "./nav-links";
+import { NotificationBell } from "./notification-bell";
 
 /** Fortress header: iron band, patina nav, battlement edge. */
-export function PortalShell({
+export async function PortalShell({
   portalLabel,
   userName,
   contextName,
@@ -19,6 +22,18 @@ export function PortalShell({
   nav?: NavItem[];
   children: React.ReactNode;
 }) {
+  const session = await getSession();
+  const notes = session ? await listNotifications(session.userId, 12) : [];
+  const initialUnread = session ? await unreadCount(session.userId) : 0;
+  const initialItems = notes.map((n) => ({
+    id: n.id,
+    type: n.type,
+    title: n.title,
+    body: n.body,
+    linkUrl: n.linkUrl,
+    readAt: n.readAt ? n.readAt.toISOString() : null,
+    createdAt: n.createdAt.toISOString(),
+  }));
   return (
     <div className="min-h-screen">
       <header className="bg-iron">
@@ -40,6 +55,7 @@ export function PortalShell({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell initialItems={initialItems} initialUnread={initialUnread} />
             <span className="hidden text-sm text-stone-300 sm:inline">{userName}</span>
             <LogoutButton />
           </div>

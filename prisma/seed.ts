@@ -260,6 +260,48 @@ async function main() {
       await prisma.maintenanceStatusHistory.create({
         data: { requestId: heat.id, toStatus: "SUBMITTED", actorUserId: tenant.id },
       });
+
+      // In-app notifications so the bell has content (mirrors what the live app
+      // produces: landlords alerted on new requests, tenants on updates).
+      await prisma.notification.createMany({
+        data: [
+          {
+            userId: landlord.id,
+            type: "maintenance.submitted",
+            title: "EMERGENCY: New maintenance request",
+            body: "Tom Tenant reported a Heating & cooling issue at Unit 1F: No hot water",
+            linkUrl: `/landlord/maintenance/${heat.id}`,
+            channel: "EMAIL",
+            emailedAt: new Date(),
+            refType: "MaintenanceRequest",
+            refId: heat.id,
+          },
+          {
+            userId: landlord.id,
+            type: "maintenance.submitted",
+            title: "New maintenance request",
+            body: "Tom Tenant reported a Plumbing issue at Unit 1F: Kitchen sink leaks",
+            linkUrl: `/landlord/maintenance/${leak.id}`,
+            channel: "EMAIL",
+            emailedAt: twoDaysAgo,
+            readAt: oneDayAgo,
+            createdAt: twoDaysAgo,
+            refType: "MaintenanceRequest",
+            refId: leak.id,
+          },
+          {
+            userId: tenant.id,
+            type: "maintenance.update",
+            title: "Update: Kitchen sink leaks",
+            body: "Thanks Tom, I'll get a plumber out this week.",
+            linkUrl: "/tenant/maintenance",
+            channel: "IN_APP",
+            createdAt: oneDayAgo,
+            refType: "MaintenanceRequest",
+            refId: leak.id,
+          },
+        ],
+      });
     }
 
     // 2F shows the pending-invite state: a draft lease + an open invitation.
