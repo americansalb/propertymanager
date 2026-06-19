@@ -54,3 +54,44 @@ export const MAINT_STATUS_LABEL: Record<string, string> = {
   CANCELLED: "Cancelled",
   SENT_TO_MARKETPLACE: "Finding a pro",
 };
+
+/** Landlord-facing status wording (neutral; the tenant sees softer labels). */
+export const MAINT_STATUS_LABEL_LANDLORD: Record<string, string> = {
+  SUBMITTED: "New",
+  ACKNOWLEDGED: "Acknowledged",
+  SCHEDULED: "Scheduled",
+  IN_PROGRESS: "In progress",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+  CANCELLED: "Cancelled",
+  SENT_TO_MARKETPLACE: "Sent to marketplace",
+};
+
+/** Statuses a landlord can set when responding to a request. */
+export const MAINT_LANDLORD_STATUSES = [
+  "ACKNOWLEDGED",
+  "SCHEDULED",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "CANCELLED",
+] as const;
+
+/** Verb-first labels for the landlord's status actions. */
+export const MAINT_ACTION_LABEL: Record<(typeof MAINT_LANDLORD_STATUSES)[number], string> = {
+  ACKNOWLEDGED: "Acknowledge",
+  SCHEDULED: "Mark scheduled",
+  IN_PROGRESS: "Mark in progress",
+  RESOLVED: "Mark resolved",
+  CANCELLED: "Cancel request",
+};
+
+export const maintenanceRespondSchema = z
+  .object({
+    toStatus: z.enum(MAINT_LANDLORD_STATUSES).optional(),
+    note: z.string().trim().min(1).max(2000).optional(),
+  })
+  .refine((d) => d.toStatus !== undefined || d.note !== undefined, {
+    message: "Add a note or change the status.",
+  });
+
+export type MaintenanceRespondInput = z.infer<typeof maintenanceRespondSchema>;

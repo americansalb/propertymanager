@@ -7,9 +7,14 @@
 import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { notify } from "@/lib/services/notification";
-import { NotFoundError } from "@/lib/authz/api";
+import { NotFoundError, type OrgCtx } from "@/lib/authz/api";
 import { unitTitle } from "@/lib/units";
-import { CATEGORY_LABEL, type MaintenanceRequestInput } from "@/lib/validation/maintenance";
+import {
+  CATEGORY_LABEL,
+  MAINT_STATUS_LABEL,
+  type MaintenanceRequestInput,
+  type MaintenanceRespondInput,
+} from "@/lib/validation/maintenance";
 
 /** The lease a tenant's requests attach to (active preferred, else most recent). */
 async function tenantActiveLease(userId: string) {
@@ -109,12 +114,20 @@ export type TenantRequestRow = {
   urgency: string;
   status: string;
   createdAt: Date;
+  updates: Array<{
+    id: string;
+    status: string;
+    note: string | null;
+    at: Date;
+    fromLandlord: boolean;
+    changed: boolean;
+  }>;
 };
 
 export async function listTenantMaintenanceRequests(userId: string): Promise<TenantRequestRow[]> {
   const lease = await tenantActiveLease(userId);
   if (!lease) return [];
-  return prisma.maintenanceRequest.findMany({
+  const reqs = await prisma.maintenanceRequest.findMany({
     where: { leaseId: lease.id },
     orderBy: { createdAt: "desc" },
     select: {
@@ -125,6 +138,232 @@ export async function listTenantMaintenanceRequests(userId: string): Promise<Ten
       urgency: true,
       status: true,
       createdAt: true,
+      statusHistory: {
+        orderBy: { createdAt: "asc" },
+        select: { id: true, fromStatus: true, toStatus: true, note: true, createdAt: true, actorUserId: true },
+      },
     },
   });
+  return reqs.map((r) => ({
+    id: r.id,
+    category: r.category,
+    title: r.title,
+    description: r.description,
+    urgency: r.urgency,
+    status: r.status,
+    createdAt: r.createdAt,
+    updates: r.statusHistory.map((h) => ({
+      id: h.id,
+      status: h.toStatus,
+      note: h.note,
+      at: h.createdAt,
+      fromLandlord: h.actorUserId !== userId,
+      changed: h.fromStatus !== h.toStatus,
+    })),
+  }));
+}
+
+// ── Landlord side: inbox, detail, respond ───────────────────────────────────
+
+const OPEN_MAINT_STATUSES = ["SUBMITTED", "ACKNOWLEDGED", "SCHEDULED", "IN_PROGRESS"] as const;
+const URGENCY_RANK: Record<string, number> = { EMERGENCY: 0, URGENT: 1, NORMAL: 2, LOW: 3 };
+
+/** Resolve a set of userIds to "First Last" display names. */
+async function userNames(ids: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return new Map();
+  const users = await prisma.user.findMany({
+    where: { id: { in: unique } },
+    select: { id: true, firstName: true, lastName: true },
+  });
+  return new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName}`]));
+}
+
+export type OrgMaintenanceRow = {
+  id: string;
+  title: string;
+  category: string;
+  urgency: string;
+  status: string;
+  open: boolean;
+  createdAt: Date;
+  unitNumber: string | null;
+  propertyId: string;
+  propertyName: string;
+  tenantName: string | null;
+};
+
+/** Every maintenance request across the org, open ones first, for the inbox. */
+export async function listOrgMaintenance(ctx: OrgCtx): Promise<OrgMaintenanceRow[]> {
+  const reqs = await prisma.maintenanceRequest.findMany({
+    where: { orgId: ctx.orgId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      category: true,
+      urgency: true,
+      status: true,
+      createdAt: true,
+      createdByUserId: true,
+      property: { select: { id: true, name: true } },
+      unit: { select: { unitNumber: true } },
+    },
+  });
+  const names = await userNames(reqs.map((r) => r.createdByUserId));
+  const rows: OrgMaintenanceRow[] = reqs.map((r) => ({
+    id: r.id,
+    title: r.title,
+    category: r.category,
+    urgency: r.urgency,
+    status: r.status,
+    open: (OPEN_MAINT_STATUSES as readonly string[]).includes(r.status),
+    createdAt: r.createdAt,
+    unitNumber: r.unit?.unitNumber ?? null,
+    propertyId: r.property.id,
+    propertyName: r.property.name,
+    tenantName: names.get(r.createdByUserId) ?? null,
+  }));
+  return rows.sort(
+    (a, b) =>
+      Number(b.open) - Number(a.open) ||
+      (URGENCY_RANK[a.urgency] ?? 9) - (URGENCY_RANK[b.urgency] ?? 9) ||
+      b.createdAt.getTime() - a.createdAt.getTime(),
+  );
+}
+
+export type MaintenanceTimelineEntry = {
+  id: string;
+  fromStatus: string | null;
+  toStatus: string;
+  note: string | null;
+  at: Date;
+  actorName: string | null;
+  byMe: boolean;
+};
+
+export type OrgMaintenanceDetail = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  urgency: string;
+  status: string;
+  createdAt: Date;
+  permissionToEnter: boolean;
+  accessNotes: string | null;
+  preferredTimes: string[];
+  unitNumber: string | null;
+  propertyId: string;
+  propertyName: string;
+  reporterName: string | null;
+  timeline: MaintenanceTimelineEntry[];
+};
+
+/** One request with its full timeline, org-scoped (cross-org reads as 404). */
+export async function getOrgMaintenanceRequest(
+  ctx: OrgCtx,
+  id: string,
+): Promise<OrgMaintenanceDetail> {
+  const req = await prisma.maintenanceRequest.findFirst({
+    where: { id, orgId: ctx.orgId },
+    include: {
+      property: { select: { id: true, name: true } },
+      unit: { select: { unitNumber: true } },
+      statusHistory: { orderBy: { createdAt: "asc" } },
+    },
+  });
+  if (!req) throw new NotFoundError("Request not found.");
+  const names = await userNames([
+    req.createdByUserId,
+    ...req.statusHistory.map((h) => h.actorUserId),
+  ]);
+  return {
+    id: req.id,
+    title: req.title,
+    description: req.description,
+    category: req.category,
+    urgency: req.urgency,
+    status: req.status,
+    createdAt: req.createdAt,
+    permissionToEnter: req.permissionToEnter,
+    accessNotes: req.accessNotes,
+    preferredTimes: req.preferredTimes,
+    unitNumber: req.unit?.unitNumber ?? null,
+    propertyId: req.property.id,
+    propertyName: req.property.name,
+    reporterName: names.get(req.createdByUserId) ?? null,
+    timeline: req.statusHistory.map((h) => ({
+      id: h.id,
+      fromStatus: h.fromStatus,
+      toStatus: h.toStatus,
+      note: h.note,
+      at: h.createdAt,
+      actorName: names.get(h.actorUserId) ?? null,
+      byMe: h.actorUserId === ctx.userId,
+    })),
+  };
+}
+
+/** Landlord responds: optional status change and/or a note; the tenant is notified. */
+export async function respondToMaintenance(
+  ctx: OrgCtx,
+  id: string,
+  input: MaintenanceRespondInput,
+): Promise<{ id: string; status: string }> {
+  const req = await prisma.maintenanceRequest.findFirst({
+    where: { id, orgId: ctx.orgId },
+    select: { id: true, status: true, title: true, createdByUserId: true },
+  });
+  if (!req) throw new NotFoundError("Request not found.");
+
+  const note = input.note?.trim() || null;
+  const nextStatus = input.toStatus ?? req.status;
+  const changed = input.toStatus !== undefined && input.toStatus !== req.status;
+
+  await prisma.$transaction(async (tx) => {
+    if (changed) {
+      await tx.maintenanceRequest.update({
+        where: { id },
+        data: {
+          status: input.toStatus!,
+          ...(input.toStatus === "RESOLVED"
+            ? { resolvedAt: new Date(), ...(note ? { resolutionNotes: note } : {}) }
+            : {}),
+        },
+      });
+    }
+    await tx.maintenanceStatusHistory.create({
+      data: {
+        requestId: id,
+        fromStatus: req.status,
+        toStatus: nextStatus,
+        actorUserId: ctx.userId,
+        note,
+      },
+    });
+  });
+
+  const statusLabel = MAINT_STATUS_LABEL[nextStatus] ?? nextStatus;
+  await notify({
+    userId: req.createdByUserId,
+    channel: "IN_APP",
+    type: "maintenance.update",
+    title: changed ? `Update: ${req.title}` : `Note on: ${req.title}`,
+    body: note ?? `Your landlord marked this ${statusLabel.toLowerCase()}.`,
+    linkUrl: "/tenant/maintenance",
+    refType: "MaintenanceRequest",
+    refId: id,
+  });
+
+  void audit({
+    actorUserId: ctx.userId,
+    orgId: ctx.orgId,
+    action: "maintenance.respond",
+    entityType: "MaintenanceRequest",
+    entityId: id,
+    meta: { toStatus: input.toStatus ?? null, note: Boolean(note) },
+  });
+
+  return { id, status: nextStatus };
 }
