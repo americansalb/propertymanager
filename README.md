@@ -11,8 +11,11 @@ payment, and funds release when the job is done.
 
 ## Status
 
-- ✅ Phase 0 - scaffold, schema, deploy skeleton (this)
-- ⬜ Phase 1 - PM core (auth, properties, tenants, leases, maintenance, rent via Stripe)
+- ✅ Phase 0 - scaffold, schema, deploy skeleton
+- 🚧 Phase 1 - PM core. Shipped: auth/orgs/portals, properties & units, leases
+  & tenant invites, charges (rent + late fees), the maintenance loop,
+  notifications, messaging. Remaining: settling payments, account recovery,
+  and launch hardening. See [`docs/product/mvp-launch-plan.md`](docs/product/mvp-launch-plan.md).
 - ⬜ Phase 2 - marketplace (pros, verification, bidding, escrow, reviews)
 - ⬜ Phase 3 - AI layer + growth
 
