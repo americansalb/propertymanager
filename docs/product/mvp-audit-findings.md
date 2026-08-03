@@ -76,7 +76,10 @@ Vacant, which PATCHes only `unit.status` and never touches the lease
 The error instructs the landlord to perform an action the application does not
 implement. Effort: 1 day including deposit disposition.
 
-### 1.3 The dashboard says "All quiet" while emergency maintenance is open
+### 1.3 Emergency maintenance never reaches the attention queue
+
+**Rendered in a real browser; see `docs/product/ux-shots/`. The original wording
+of this finding was wrong and is corrected here.**
 
 `getDashboard` (`src/lib/services/dashboard.ts:107`) composes the attention queue
 from exactly three sources:
@@ -93,15 +96,23 @@ Maintenance is counted in the pulse bar and never becomes an attention item. The
 `AttentionItem` kind union in `src/lib/attention.ts` is
 `"vacancy" | "sample" | "late-rent"`, with no maintenance member.
 
-**Failure scenario.** A tenant files an EMERGENCY request: no heat, water coming
-through the ceiling. The landlord opens the dashboard. Setup is complete, no late
-rent, no vacancy. The queue renders **"All quiet. 4 units, nothing needs you."**
-while the pulse bar directly above it reads "1 open maintenance."
+**What the browser actually shows.** With an open EMERGENCY request ("no hot
+water, water coming through the ceiling"), the dashboard renders:
 
-The product's stated thesis is that the dashboard is an attention engine and that
-the empty state is the product. This is that promise inverted, on the highest
-severity class the system models. Effort: 2 hours, the builder pattern already
-exists.
+- pulse bar: **"3 open maintenance"**
+- NEEDS YOU: late rent, then vacancy. **The emergency is absent.**
+
+So the dashboard did *not* say "All quiet", because unrelated items happened to
+fill the queue. My original phrasing was wrong. The defect is real and slightly
+different: **an EMERGENCY request is invisible in the attention queue**, present
+only as a number in the pulse bar and an entry in the notification bell. The
+"All quiet" wording is reachable only when there is also no late rent and no
+vacancy, which is precisely the well-run portfolio the empty state is designed
+to reward.
+
+The product's thesis is that the dashboard is an attention engine. The single
+highest-severity class it models is the one class it cannot surface.
+Effort: 2 hours, the builder pattern already exists.
 
 ### 1.4 Onboarding an existing tenant fabricates backdated past-due rent
 
@@ -552,11 +563,33 @@ stays disabled reading "Sending..." with no error and no retry short of a reload
 green checks for a landlord who has done neither, and the dashboard's headline
 scheduled-rent figure includes fictional money.
 
-### 5.8 Zero error boundaries (BLOCKER, listed in Part 1 context)
+### 5.8 Error boundaries: real, but milder than I claimed (MEDIUM, was BLOCKER)
 
-No `error.tsx`, `not-found.tsx`, `loading.tsx`, or `global-error.tsx` anywhere
-under `src/app`. Any server exception or `notFound()` renders stock Next.js
-chrome with no header, no nav, no logo, and no route back into the product.
+No `error.tsx`, `not-found.tsx`, `loading.tsx`, or `global-error.tsx` exists
+anywhere under `src/app`. That part is true.
+
+**Corrected by rendering it** (`ux-shots/07-not-found-page.png`): I said "no
+header, no nav, no logo, and no route back". Wrong. The route-group layout still
+wraps the boundary, so `/landlord/properties/<bad-id>` keeps the full VillageKeep
+header, the portal nav, and the notification bell. The user is not stranded, and
+a bad lease id under `/landlord/messages/` returns a clean HTTP 404 the same way.
+
+What does render inside that shell is Next.js's stock unstyled
+`404 | This page could not be found.`, centred in roughly 1,500px of bare white,
+with the parchment background and every type token dropped. Jarring and
+off-brand, not a dead end. Severity BLOCKER to MEDIUM. Still worth a styled
+boundary so the design language survives an error. Effort: half a day.
+
+### 5.8b RETRACTED: "the setup chain has a step that can never complete"
+
+I claimed every landlord stares forever at an unfinishable "Connect your bank"
+step, and recommended hiding it as a 15-minute win. **Rendering the day-0
+dashboard shows I was wrong on both counts**
+(`ux-shots/21-day0-landlord-dashboard.png`). The step is greyed, carries an
+explicit `soon` chip, sits last in a four-step chain headed "Let's get your first
+rent flowing", and the whole chain disappears once setup completes. It is honest
+roadmap signalling, competently executed. Hiding it would be a downgrade.
+**No action.**
 
 ### 5.9 Navigation dead ends (MEDIUM)
 
@@ -628,7 +661,6 @@ Ranked by harm per day of work, which is not the milestone order.
 | Finding | Effort |
 | --- | --- |
 | 3.2 open redirect on login | 15 min |
-| 5.7 / setup chain: hide unbuildable "Connect your bank" step | 15 min |
 | 3.1 rate-limit header bypass | 1 hour |
 | 4.11 pin the schema in `db:migrate` / `db:deploy` | 1 hour |
 
@@ -637,8 +669,8 @@ Ranked by harm per day of work, which is not the milestone order.
 | Finding | Effort |
 | --- | --- |
 | 1.1 landlord can activate a lease | half day |
+| 5.2 tenant sees rent the landlord hid (screenshotted) | 2 hours |
 | 1.3 maintenance in the attention queue | 2 hours |
-| 5.8 error and not-found boundaries | half day |
 | 5.1 ended-lease tenants see their balance | 1 hour |
 | 5.3 fix `tenantActiveLease` fallback | 1 hour |
 | 5.5 16px inputs | 30 min |

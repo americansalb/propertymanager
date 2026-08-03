@@ -1,0 +1,61 @@
+[
+  {
+    "claim": "Landing page sells features that do not exist",
+    "verdict": "CONFIRMED",
+    "detail": "Tenants pay online, rent lands on the 1st, and the ledger writes itself. Late fees follow your rules, not your patience. | Tenants report with photos. Vetted local pros bid with up-front prices. You approve from your phone. | Payment for every job sits in escrow until you approve the finished work. No deposits vanishing, no chasing refunds.",
+    "shot": "01-landing-desktop.png"
+  },
+  {
+    "claim": "Landing page horizontal overflow at 390px",
+    "verdict": "REFUTED",
+    "detail": "scrollWidth=390 innerWidth=390",
+    "shot": "02-landing-phone.png"
+  },
+  {
+    "claim": "Dashboard says 'All quiet' while emergency maintenance is open",
+    "verdict": "REFUTED",
+    "detail": "allQuietRendered=false; pulse bar reports \"3 open maintenance\"; body mentions the emergency title=true",
+    "shot": "03-landlord-dashboard-desktop.png"
+  },
+  {
+    "claim": "Setup chain shows an unfinishable 'Connect your bank' step",
+    "verdict": "REFUTED",
+    "detail": "not present"
+  },
+  {
+    "claim": "Inputs below 16px make iOS Safari zoom the viewport on focus",
+    "verdict": "CONFIRMED",
+    "detail": "2/3 focusable inputs under 16px. Sizes seen: 12px, 16px, 14px",
+    "shot": "06-lease-panel-phone.png"
+  },
+  {
+    "claim": "No not-found boundary: 404 renders stock Next.js chrome with no nav",
+    "verdict": "PARTIAL",
+    "detail": "brandingPresent=true navLinks=true text=\"requestAnimationFrame(function(){$RT=performance.now()});document.querySelectorAll('body link[rel=\"icon\"], body link[rel\"",
+    "shot": "07-not-found-page.png"
+  },
+  {
+    "claim": "Tenant sees charge amounts while the landlord has the lease hidden",
+    "verdict": "CONFIRMED",
+    "detail": "\"lease not shared\" message present=true; dollar amount rendered=true; amounts=$1,850.00 $1,850.00 $1 $1 $1",
+    "shot": "08-tenant-dashboard-lease-hidden.png"
+  },
+  {
+    "claim": "Tenant payments page offers no way to pay",
+    "verdict": "CONFIRMED",
+    "detail": "00Paying online through VillageKeep is coming soon.",
+    "shot": "09-tenant-payments-phone.png"
+  },
+  {
+    "claim": "Report-a-problem wizard has no photo upload despite the promise",
+    "verdict": "CONFIRMED",
+    "detail": "input[type=file] count in the wizard: 0",
+    "shot": "11-tenant-report-wizard-phone.png"
+  },
+  {
+    "claim": "Pro signup dead-ends on a stub page",
+    "verdict": "CONFIRMED",
+    "detail": "VillageKeepProPat PlumberSign outSmith Plumbing CoYour pro account is saved. Verification, the lead feed, and bidding open with the marketplace launch - we'll email you the moment onboarding is availa",
+    "shot": "12-pro-dashboard-dead-end.png"
+  }
+]

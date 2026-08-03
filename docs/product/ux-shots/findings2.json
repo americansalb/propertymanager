@@ -1,0 +1,32 @@
+[
+  {
+    "claim": "Day-0 setup chain shows an unfinishable 'Connect your bank' step",
+    "verdict": "CONFIRMED",
+    "detail": "soon-step present=true; allQuiet=false",
+    "shot": "21-day0-landlord-dashboard.png"
+  },
+  {
+    "claim": "Server exception on a bad lease id renders an unstyled error",
+    "verdict": "HTTP 404",
+    "detail": "requestAnimationFrame(function(){$RT=performance.now()});document.querySelectorAll('body link[rel=\"icon\"], body link[rel=\"apple-touch-icon\"]').forEach(el => document.head.appendChild(el))$RB=[];$RV=fu",
+    "shot": "24-bad-lease-id.png"
+  },
+  {
+    "claim": "Login form inputs under 16px (iOS zoom on the very first screen)",
+    "verdict": "CONFIRMED",
+    "detail": "login input font sizes: 14px, 14px",
+    "shot": "26-login-phone.png"
+  },
+  {
+    "claim": "Property page horizontal overflow at 390px",
+    "verdict": "REFUTED",
+    "detail": "scrollWidth=390 innerWidth=390",
+    "shot": "27-property-page-phone.png"
+  },
+  {
+    "claim": "Maintenance detail shows cost capture",
+    "verdict": "HAS $",
+    "detail": "landlord respond surface",
+    "shot": "28-maintenance-detail.png"
+  }
+]
