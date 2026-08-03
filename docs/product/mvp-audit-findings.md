@@ -1,361 +1,612 @@
 # VillageKeep: MVP audit findings
 
 Companion to `mvp-launch-plan.md`. That document says what to build; this one
-says what is already broken. Every finding here was verified by reading the code
-at `5834c5e`, and each cites the file and the exact failure scenario.
+says what is already broken. Everything here was verified by reading the code at
+`5834c5e` and cites the file, the line, and a concrete failure scenario.
 
-Scope note: missing Phase 2 surfaces (marketplace, bidding, escrow, pro portal)
-are out of scope. This is about defects in shipped code and gaps that block a
-pilot with real tenants.
+Method: seven parallel specialist audits (money correctness, authorization and
+security, schema and migrations, user journeys, production and performance, test
+coverage, Chicago rental law), each finding then re-checked against the source
+by an independent adversarial pass whose job was to refute it. Claims that could
+not survive that pass were dropped. Where an auditor overstated a claim, the
+correction is noted inline.
+
+Out of scope: Phase 2 surfaces (marketplace, bidding, escrow, pro portal). This
+is about defects in shipped code and gaps that block a pilot with real tenants.
 
 ---
 
-## A. Money defects
+## Part 1: The blockers
 
-These are the highest severity class in the product, because the cron tick acts
-on them automatically every two minutes with the landlord's name attached.
+Six things make a real pilot impossible. Four of them are not in the original
+launch plan, because they are not missing features. They are shipped code that
+does the wrong thing.
 
-### A1. Mid-month leases are billed a full month, retroactively overdue (BLOCKER)
+### 1.1 A lease can only become ACTIVE if the tenant clicks an email link
 
-`src/lib/charges.ts:60` `rentChargeForPeriod` decides billability by asking only
-whether the calendar month overlaps the lease at all:
+`src/lib/services/invite.ts:386` is the **only** line in the codebase that sets a
+lease to ACTIVE. There is no landlord override anywhere in the UI or the API.
+
+`generateRentCharges` selects `where: { status: "ACTIVE" }`
+(`src/lib/services/charges.ts:70`).
+
+**Failure scenario.** A pilot landlord onboards a tenant of nine years who does
+not use email, or whose address was mistyped, or who lets the 7-day invite link
+expire. The landlord fills in the lease, sets $1,850 rent, due day 1, and waits.
+The lease sits at DRAFT permanently. No rent charge is ever generated. The
+landlord's rent roll silently does not exist, and nothing in the product tells
+them why.
+
+This is the deepest blocker in the audit, because it means **the money loop
+cannot even start without the tenant's cooperation**, and the pilot's target
+demographic is small landlords with long-tenured, often older, tenants. The
+launch plan assumed the problem was settling charges. The prior problem is
+creating them.
+
+**Fix.** A landlord action to activate a lease directly, with the invite as the
+happy path rather than the only path. Effort: half a day.
+
+### 1.2 No UI ends a lease, so the landlord reaches an unresolvable dead end
+
+Nothing in `src/components` or `src/app` ends a lease. Verified exhaustively: the
+only references to `ENDED`/`TERMINATED` outside services are read-only status
+checks in the two tenant pages.
+
+**Failure scenario.** A tenant moves out in March. The landlord flips the unit to
+Vacant, which PATCHes only `unit.status` and never touches the lease
+(`src/components/landlord/units-manager.tsx`). The lease stays ACTIVE, so:
+
+- `generateRentCharges` mints a new rent charge every month, forever
+- `applyLateFees` adds a late fee to each one
+- the dashboard fills with late-rent cards for a tenant who left
+- and when the landlord tries to delete the property, `deleteProperty`
+  (`src/lib/services/property.ts:161`) refuses with **"This property has leases.
+  End or delete them first."**
+
+The error instructs the landlord to perform an action the application does not
+implement. Effort: 1 day including deposit disposition.
+
+### 1.3 The dashboard says "All quiet" while emergency maintenance is open
+
+`getDashboard` (`src/lib/services/dashboard.ts:107`) composes the attention queue
+from exactly three sources:
 
 ```ts
-if (periodEnd < startOfDayUTC(lease.startDate)) return null;
-if (lease.endDate && periodStart > startOfDayUTC(lease.endDate)) return null;
+const items = sortAttention([
+  ...buildLateRentItems(lateRent),
+  ...vacancyItems,
+  ...(sample ? [buildSampleItem(sample)] : []),
+]);
 ```
 
-There is no proration anywhere in the codebase.
+Maintenance is counted in the pulse bar and never becomes an attention item. The
+`AttentionItem` kind union in `src/lib/attention.ts` is
+`"vacancy" | "sample" | "late-rent"`, with no maintenance member.
 
-**Failure scenario.** A tenant signs a lease starting January 20 at $1,850/mo
-with `rentDueDay: 1`. The next tick runs with `asOf = Jan 20`. `periodEnd`
-(Jan 31) is not before the lease start, so a charge is created:
+**Failure scenario.** A tenant files an EMERGENCY request: no heat, water coming
+through the ceiling. The landlord opens the dashboard. Setup is complete, no late
+rent, no vacancy. The queue renders **"All quiet. 4 units, nothing needs you."**
+while the pulse bar directly above it reads "1 open maintenance."
 
-- amount: $1,850, the full month
-- dueDate: January 1, nineteen days before the tenant had keys
-- immediately `isOverdue`, so the tenant's portal reads "PAST DUE $1,850"
-- a late fee is generated as soon as grace expires
-- the landlord's dashboard shows a `MONEY_TO_YOU` card for a debt that does not
-  exist
+The product's stated thesis is that the dashboard is an attention engine and that
+the empty state is the product. This is that promise inverted, on the highest
+severity class the system models. Effort: 2 hours, the builder pattern already
+exists.
 
-The mirror case is a lease ending January 15, which is billed the full month.
+### 1.4 Onboarding an existing tenant fabricates backdated past-due rent
 
-**Fix.** Prorate the first and last periods by days occupied, and never emit a
-`dueDate` earlier than `lease.startDate`. Proration policy (by calendar day vs
-30-day month) is a founder decision and must be stated in the lease terms.
-Effort: 1 day, mostly in the pure core, plus tests.
+`rentChargeForPeriod` (`src/lib/charges.ts:70`) has no concept of when billing
+starts for a lease. The moment a lease flips to ACTIVE, the next tick generates
+the current month in full.
 
-### A2. Chicago tenants are marked late a day early (HIGH)
+**Failure scenario.** A landlord enters a real lease running since June 2025. The
+tenant accepts on August 12, 2026. Within two minutes the tick creates August
+rent of $1,850 with `dueDate` August 1, already past due, and a late fee follows
+once grace expires.
 
-All date math is UTC, deliberately and correctly for period keys. But
-`isOverdue` (`src/lib/charges.ts:96`) treats lateness as a UTC question:
+The first thing a brand-new tenant sees in the product is a bill they already
+paid, marked late, with a penalty attached. Effort: 1 to 2 days with 1.5 below.
 
-```ts
-return chargeOpenCents(c) > 0 &&
-  startOfDayUTC(c.dueDate).getTime() < startOfDayUTC(asOf).getTime();
-```
+### 1.5 Nothing can settle a charge
 
-**Failure scenario.** Rent due July 1, stored `2026-07-01T00:00:00Z`. At
-`2026-07-02T02:00:00Z` the tick runs. In Chicago that instant is 9:00pm on
-July 1, still the due date. `startOfDayUTC(asOf)` is July 2, which is greater
-than July 1, so the charge is overdue. With `lateFeeGraceDays: 0`,
-`lateFeeForRent` fires the same evening and the tenant is charged a late fee
-with three hours still left on the due date.
+Covered in the launch plan. `Payment`, `PaymentAllocation`, and `ConnectAccount`
+have zero reads and zero writes. `postLedger` is built, tested, and has no caller.
+This is the root cause of the unbounded scans in 2.4.
 
-Every Chicago landlord is affected for 5 to 6 hours of every due date, and the
-error is always against the tenant.
+### 1.6 No password reset
 
-**Fix.** Keep UTC for period keys, but evaluate lateness in the property's local
-timezone. Add a timezone to Organization or Property (defaulting to
-`America/Chicago` for the pilot) and compare local calendar days.
+Covered in the launch plan. `AuthToken` exists and is unused.
+
+---
+
+## Part 2: Money defects
+
+### 2.1 No proration, first or last month (HIGH)
+
+A lease genuinely starting August 15 at $1,850 is billed $1,850 with `dueDate`
+August 1, fourteen days before occupancy. The pro-rated amount for 17 of 31 days
+is $1,014.52, so the tenant is over-billed by $835.48 **and** marked late on it.
+The mirror case applies to the final month.
+
+**Fix.** Prorate by day overlap, clamp the first period's due date to the lease
+start, and document the rounding rule beside the money conventions. Effort: 1 day.
+
+### 2.2 Editing a late fee retroactively mints one fee per unpaid past month (HIGH)
+
+`applyLateFees` (`src/lib/services/charges.ts:87`) reads `lateFeeCents` from the
+**live lease row** at evaluation time, not from a snapshot taken when the charge
+was generated. It also re-evaluates all history on every tick.
+
+**Failure scenario.** A landlord onboards in February with no late fee (the schema
+default is 0). Six months of rent charges accumulate, all permanently open
+because nothing can settle them. In August they set a $75 late fee in the lease
+panel, expecting it to apply going forward. The next tick mints a late fee for
+every one of the six unpaid months at once: $450 appears on the tenant's balance
+in a single sweep, backdated, from an edit the landlord believed was prospective.
+
+**Fix.** Snapshot the fee terms onto the RENT charge at generation time and have
+`lateFeeForRent` read the snapshot. Correct regardless, since the terms in force
+at billing time are what governs. Effort: half a day.
+
+### 2.3 Landlord and tenant disagree about who is late (HIGH)
+
+`getOrgLateRent` (`src/lib/services/charges.ts:169`) filters with a raw instant
+comparison, `dueDate: { lt: asOf }`, while the tenant portal uses the
+day-granular `isOverdue`. Charges are stored at UTC midnight and the tick creates
+them seconds into the day.
+
+**Failure scenario.** At `2026-08-01T00:00:05Z` the tick creates the August
+charge with `dueDate 2026-08-01T00:00:00Z`. Five seconds later the same
+predicate is true, so the charge enters the landlord's late-rent queue on the
+morning rent is due, rendered as a card reading **"$1,850, 0 days late."** In
+Chicago local time that is 7:00pm on July 31, the evening *before* the due date.
+
+**Fix.** Route the landlord side through the same day-granular predicate the
+tenant side uses. Effort: 2 hours.
+
+### 2.4 Lateness is evaluated in UTC (MEDIUM)
+
+Even after 2.3, `startOfDayUTC` means the grace boundary lands at 7:00pm Chicago
+rather than the end of the local day. A tenant with a 5-day grace period is
+charged at 7:00pm on day 5, five hours early, every time.
+
+**Fix.** A timezone on Organization (default `America/Chicago` for the pilot) and
+local-day comparison for overdue, grace, and `daysLate`. Effort: half a day for a
+fixed offset, 1 to 2 days done properly.
+
+### 2.5 Unbounded tick scans (MEDIUM)
+
+`applyLateFees` uses `status: { not: "VOID" }`, which deliberately includes fully
+paid charges, with no date floor and no `take`. It materializes every rent charge
+ever created, every two minutes, 720 times a day, on a 5-connection pool shared
+with live web traffic. `generateRentCharges` issues a separate `findFirst` per
+ACTIVE lease on every tick even though it can only create rows on one day a
+month. Neither filter has a supporting index.
+
+**Fix.** Narrow to `status: { in: ["PENDING", "PARTIALLY_PAID"] }`, add a date
+floor and a `take`, replace the per-lease `findFirst` with one `findMany` of
+existing period keys plus `createMany({ skipDuplicates })`, and add the indexes.
 Effort: half a day.
 
-### A3. Nothing can ever settle a charge (BLOCKER)
+### 2.6 No backfill for missed periods (MEDIUM)
 
-Covered in the launch plan and repeated here for completeness because it is the
-root cause of the tick's growth problem below. `Payment`, `PaymentAllocation`,
-and `ConnectAccount` have zero reads and zero writes. `postLedger` is built,
-tested, and has no caller.
+`runTick` always calls `generateRentCharges()` with no argument, so only the
+current UTC month can ever be created. A lease starting in June whose tenant
+accepts in September never gets June, July, or August rent, and there is no
+recovery path. The same applies to any month the tick was down.
 
-### A4. The tick rescans all history every two minutes, forever (HIGH)
+### 2.7 Correcting a lease's rent does not fix the current charge (MEDIUM)
 
-`applyLateFees` (`src/lib/services/charges.ts:82`) is an unbounded scan:
+A landlord mistypes rent, the tick bills it that minute, and the correction via
+the lease panel updates only the lease row. `createChargeIfNew` finds the
+existing `(leaseId, RENT, '2026-08')` row and returns false forever. The wrong
+amount is permanent until void and one-off charges ship.
 
-```ts
-const rents = await prisma.charge.findMany({
-  where: { type: "RENT", status: { not: "VOID" }, dueDate: { lt: asOf } },
-  select: { /* ... */ lease: { select: { lateFeeCents, lateFeeGraceDays } } },
-});
-```
+### 2.8 `postLedger` swallows any unique violation (MEDIUM)
 
-No limit, no date floor, with a nested join, 720 times per day, against a
-Postgres instance shared with the founder's other services at
-`connection_limit: 5`.
+`src/lib/services/ledger.ts:112` cannot distinguish a duplicate idempotency key
+from any other P2002 raised inside the transaction. `LedgerEntry.reversalOfId` is
+unique, so a double-reversal rolls back the whole transaction and returns
+`{ posted: false }`, which the caller reads as "already done, no-op." Latent
+today because the ledger has no callers; live the moment M1 lands.
+Effort: 1 hour.
 
-Because A3 means charges never reach a paid state, the scanned set grows
-monotonically forever. `generateRentCharges` has the same shape over all ACTIVE
-leases.
+### 2.9 The ledger overflows at $21.47M (LOW today, un-fixable later)
 
-**Fix.** Bound the window (only charges within the last N months can newly incur
-a first late fee), add the covering index, and skip leases that are not ACTIVE.
-Effort: half a day. Worth doing alongside M1 since M1 changes what "open" means.
+`LedgerEntry.runningBalanceCents` is `Int`, so int4, capping at
+$21,474,836.47. It is a monotonically accumulating per-account balance that is
+never reset. `seq` was correctly declared `BigInt`; the money columns were not. A
+platform-level account aggregating every org crosses the ceiling well before any
+single landlord does.
 
-### A5. No late fee cap, in a city that caps late fees (HIGH, product + legal)
+The table is empty today, so widening to int8 is a two-hour migration with zero
+data risk. After M1 posts real money it is a very different job. **Do this
+before M1, not after.**
 
-`lateFeeDollars` accepts anything up to $1,000,000
-(`src/lib/validation/property.ts:22`, `dollarsField`). The lease panel offers a
-placeholder of `75` and the hint "If rent comes late."
-(`src/components/landlord/lease-panel.tsx:463`). There is no cap, no warning,
-and no jurisdiction awareness.
+### 2.10 `allocateOldestFirst` is unguarded (LOW)
 
-The Chicago RLTO (Municipal Code 5-12-140(h)) caps late fees at **$10 for the
-first $500 of monthly rent, plus 5% of the amount above $500**. At $1,850 rent
-that is a maximum of **$77.50**. An excessive late fee provision is
-unenforceable, and reported remedies include damages of two months' rent.
+Correcting the launch plan: the allocation core **already exists**, at
+`src/lib/money.ts:32`. M1 is smaller than originally estimated. But unlike
+`feeFromBps` immediately above it, which validates and throws, it has no guard:
+a negative `paymentCents` returns a negative remainder and silently manufactures
+a credit, and a fractional amount produces fractional-cent allocations that flow
+straight into `Charge.amountPaidCents`. It also has no tie-break when a rent
+charge and a late fee share a due date, so ordering there is whatever the
+database returned. Effort: 1 hour.
 
-**Why this is worse for us than for a landlord with a spreadsheet.** A landlord
-who charges an illegal fee by hand does it once and can be argued out of it. Our
-cron generates it automatically, every month, on a schedule, in writing, with a
-"Late fee for 2026-07" description. We are manufacturing the evidence.
+### 2.11 The tenant "You owe" headline includes charges not yet due (LOW)
 
-**Fix, and the opportunity.** Compute and cap the fee from monthly rent and the
-property's jurisdiction, show the landlord the ceiling and why
-("Chicago caps this at $77.50 for $1,850 rent"), and refuse to generate above
-it. Generic national PM tools do not do this. Being visibly correct about
-Chicago rules is a real wedge with the exact landlords we are recruiting.
-This needs counsel review before shipping the specific numbers.
-Effort: 1 day, plus counsel time.
-
-### A6. Security deposits are stored and then ignored (MEDIUM, product + legal)
-
-`securityDepositCents` exists on both Unit and Lease and is displayed. Nothing
-in the codebase addresses the RLTO deposit regime: interest paid annually on
-deposits held six months or more (the City sets the rate; **0.01% for 2026**),
-receipt requirements, the separate federally insured account requirement, or
-return with an itemized statement within the statutory deadline.
-
-We do not hold the deposits, so the obligation is the landlord's, not ours. But
-we display the number as though it is handled, and a landlord who trusts the app
-as their system of record will miss the annual interest payment. Deposit
-violations carry some of the RLTO's steepest remedies.
-
-**Fix.** Either (a) surface the obligation as a dated attention item with the
-computed interest, which is a genuinely valuable feature, or (b) state plainly
-in the UI that VillageKeep does not track deposit compliance. Do not leave it
-ambiguous. Effort: 1 day for (a), an hour for (b). Counsel review either way.
+Rent for the whole month is generated on the first tick of the month regardless
+of `rentDueDay`. With `rentDueDay: 28`, a tenant opening the portal on August 1
+sees "You owe $1,850.00" for rent due 27 days later.
 
 ---
 
-## B. Security defects
+## Part 3: Security defects
 
-### B1. Rate limiting is bypassable via a client-controlled header (HIGH)
+### 3.1 Rate limiting is bypassable via a client-controlled header (HIGH)
 
-`src/lib/request.ts` in full:
+`src/lib/request.ts` takes the **first** `X-Forwarded-For` entry, which is
+client-supplied. Render appends the real address rather than replacing the
+header, so `[0]` is attacker-chosen.
 
-```ts
-export function getClientIp(req: Request): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0]!.trim();
-  return "unknown";
-}
-```
+Rotating the header yields unlimited distinct rate-limit buckets. Per-account
+lockout still caps brute force against one account, but credential stuffing
+across many accounts is unthrottled and signup is unlimited. It also means every
+`ip` recorded in `AuditLog` and on `Session` is forgeable.
 
-It takes the **first** entry, which is the value the client supplied. Render's
-proxy appends the real address rather than replacing the header, so
-`X-Forwarded-For: 1.2.3.4` yields `1.2.3.4, <real client ip>` and `[0]` is
-attacker-chosen.
+**Fix.** Take the *n*th entry from the right, where *n* is the number of trusted
+proxies. Effort: 1 hour. Highest value per minute in this document.
 
-**Failure scenario.** An attacker rotates the header on every request. Each
-value is a distinct rate-limit bucket, so `login:${ip}:${email}` and
-`signup:${ip}` never trip. The per-account lockout at 10 failures
-(`src/lib/services/auth.ts:9`) still caps brute force against one account, but
-credential stuffing across many accounts at 2 to 3 common passwords each is
-completely unthrottled, and account creation is unlimited.
+### 3.2 Open redirect on the login page (HIGH)
 
-**Fix.** Take the last entry, or better, the *n*th from the right where *n* is
-the number of trusted proxies in front of the app, and fall back to a per-account
-counter rather than "unknown". Effort: 1 hour. Highest value-per-minute fix in
-this document.
-
-### B2. Rotating SESSION_SECRET destroys every stored access code (HIGH)
-
-`src/lib/crypto.ts` derives the AES-256-GCM key by hashing `SESSION_SECRET`:
+`src/components/auth/auth-forms.tsx:38`:
 
 ```ts
-function key(): Buffer {
-  const secret = env.SESSION_SECRET;
-  if (!secret) throw new Error("SESSION_SECRET must be set ...");
-  return createHash("sha256").update(secret).digest();
-}
+router.push(next || data.redirect || "/");
 ```
 
-`render.yaml` declares `SESSION_SECRET` with `generateValue: true`.
+`next` comes off `searchParams` with no shape check. A crafted
+`/login?next=https://villagekeep-support.example/verify` sends a landlord who
+just typed their real password to an attacker-controlled page, perfectly
+positioned to present a "session expired, sign in again" form.
 
-**Failure scenario.** A Blueprint sync, a secret rotation after a suspected leak,
-or an environment rebuild regenerates the value. Every session is invalidated,
-which is expected and fine. Every lockbox code, gate code, and access code
-encrypted under the old key becomes permanently undecryptable.
-`revealAccessCodes` (`src/lib/services/property.ts:124`) catches the auth-tag
-failure and returns `{ value: null, locked: true }`, so there is no crash, no
-alert, and no recovery: the data is silently and irrecoverably gone.
+**Fix.** Accept only same-origin paths beginning with a single `/`.
+Effort: 15 minutes.
 
-This also means the app can never rotate its session secret, which is the one
-secret you most want to be able to rotate.
+### 3.3 Rotating `SESSION_SECRET` destroys every stored access code (HIGH)
 
-**Fix.** A separate `DATA_ENCRYPTION_KEY`, versioned key ids in the `enc1:`
-prefix so re-encryption is possible, and a documented rotation procedure.
-Effort: half a day. Do it before there is enough encrypted data to make
-migration painful.
+`src/lib/crypto.ts:12` derives the AES-256-GCM key by hashing `SESSION_SECRET`,
+which `render.yaml` declares `generateValue: true`.
 
-### B3. No security headers (MEDIUM)
+A rotation, a Blueprint sync, or an environment rebuild invalidates sessions,
+which is fine, and **permanently destroys every lockbox and gate code**, which is
+not. `revealAccessCodes` catches the auth-tag failure and returns
+`{ locked: true }`, so there is no crash, no alert, and no recovery. It also
+means the one secret you would most want to rotate after a leak can never be
+rotated.
 
-`next.config.ts` sets `poweredByHeader: false` and nothing else. `middleware.ts`
-only checks cookie presence. There is no Content-Security-Policy, HSTS,
-X-Frame-Options / frame-ancestors, or Referrer-Policy anywhere.
+**Fix.** A separate `DATA_ENCRYPTION_KEY` with versioned key ids in the `enc1:`
+prefix so re-encryption is possible. Effort: half a day, and cheaper now than
+after the pilot accumulates codes.
 
-**Fix.** A headers block in `next.config.ts`. Effort: 2 hours, most of it
-tuning CSP against Next's inline scripts.
+### 3.4 Photo upload buffers the whole body before the size check (HIGH)
 
-### B4. Photo bytes live in the shared Postgres (MEDIUM)
+`src/app/api/v1/landlord/photos/route.ts:14` reads the entire request body into
+memory before `MAX_UPLOAD_BYTES` is consulted. On a Render starter instance this
+is a straightforward OOM vector from an authenticated user.
 
-`FileBlob.bytes` is a Prisma `Bytes` column. Images are resized to webp at
-100 to 350KB (`src/lib/services/photos.ts`), with limits of 12 photos per
-property and 8 per unit.
+### 3.5 `requireOrgApi` ignores `Membership.role` (MEDIUM)
 
-At the pilot's own numbers, 10 landlords holding 20 properties each at 12 photos
-is roughly 10 x 20 x 12 x 250KB, about **600MB of image data inside a database
-that is shared with the founder's other services**, inflating their backup size
-and restore time along with ours. The per-image discipline is good; the storage
-location is the problem.
+`src/lib/authz/api.ts:17` checks that the user is a LANDLORD with an active org
+and never reads the role. `OrgRole` defines OWNER, MANAGER, and VIEWER. A VIEWER
+would have full OWNER write access across every landlord route. Latent because
+no UI creates VIEWERs yet; live the moment team invites ship.
 
-Also `deletePhoto` deletes the Attachment and the FileBlob in two separate
-statements with no transaction, so a failure between them orphans bytes
-permanently.
+### 3.6 The authorization boundary has no database-level integrity (MEDIUM)
 
-**Fix.** Object storage with signed URLs before the pilot grows, or at minimum a
-documented ceiling and a monitor on schema size. Effort: 1 day for the move.
+`orgId` is the entire authz boundary: every check reduces to
+`where: { orgId: ctx.orgId }`. Of 33 foreign keys in the init migration:
 
-### B5. Verified sound, for the record
+| Has an `orgId` FK | No `orgId` FK |
+| --- | --- |
+| Membership, Property, ConnectAccount | **Charge, Payment, Lease, Unit, MaintenanceRequest, Message, Attachment, AuditLog** |
 
-These were audited and are correct. Listing them so effort is not spent here:
+The eight tables carrying the security boundary have `orgId` as a bare
+unconstrained string, with no FK to `Organization` and no guarantee that
+`Charge.orgId` agrees with `Charge.lease.unit.property.orgId`. One bug writing
+the wrong `orgId` moves money between organizations and the database accepts it.
+
+*(An auditor claimed "every orgId column" is unconstrained. Three do have FKs.
+The eight that matter for authz do not.)*
+
+The denormalization is a defensible performance call; it needs a composite FK to
+the parent or, at minimum, the cross-org test sweep.
+
+### 3.7 Sessions slide for 30 days with no absolute cap and no user revocation (MEDIUM)
+
+`revokeAllUserSessions` exists and is never called from any route. There is no
+settings page, so a user who loses a device has no way to sign it out.
+
+### 3.8 No Origin check or CSRF token (MEDIUM)
+
+Mutating routes rely solely on `SameSite=lax`. An Origin header check on
+state-changing routes is cheap defense in depth.
+
+### 3.9 No security headers (MEDIUM)
+
+No CSP, HSTS, X-Frame-Options or frame-ancestors, Referrer-Policy, or
+X-Content-Type-Options anywhere. Effort: 2 hours.
+
+### 3.10 Photo bytes live in the shared Postgres (MEDIUM)
+
+`FileBlob.bytes` is a `Bytes` column. At the pilot's own numbers, 10 landlords x
+20 properties x 12 photos x 250KB is roughly **600MB of image data inside a
+database shared with the founder's other services**, inflating their backup size
+and restore time. `deletePhoto` also removes the Attachment and the FileBlob in
+two un-transacted statements, orphaning bytes on failure.
+
+### 3.11 Lower severity
+
+- `handleServiceError` logs full Prisma error objects, putting tenant PII and
+  query parameters into Render logs.
+- The unauthenticated health endpoint discloses the private schema name and the
+  deployed commit SHA.
+- `getPhotoForOrg` does not filter on `kind`, so the endpoint will serve any
+  future attachment type once non-photo attachments exist.
+- The in-memory rate-limit map's cleanup degrades to an O(n) scan once it
+  exceeds 10,000 keys, which 3.1 makes trivial to force.
+
+---
+
+## Part 4: Schema and data model
+
+Assessed against what M1 actually needs.
+
+### 4.1 An overpayment silently vanishes (BLOCKER for M1)
+
+Nothing in the schema can hold unallocated money or a tenant credit, yet
+`allocateOldestFirst` already returns a `remainderCents`. A tenant who pays
+$2,000 against $1,850 owed has $150 with nowhere to go.
+
+### 4.2 No way to represent a bounced check or returned ACH (BLOCKER for M1)
+
+`PaymentStatus` has no returned or reversed state usable for offline recording,
+and `PARTIALLY_REFUNDED` exists with nowhere to store the refunded amount. This
+is also precisely the case offline recording never sees but Stripe ACH will,
+three days after the charge already showed paid.
+
+### 4.3 `Payment` lacks the four fields offline recording needs (HIGH)
+
+No `receivedAt` (distinct from `createdAt`: a check received on the 1st but
+entered on the 5th must not be late), no `reference`, no `note`, no
+`recordedByUserId`. `providerRef` is globally `@unique`, so it cannot hold a
+check number, since two landlords will both write check #101.
+
+### 4.4 `PaymentAllocation` has no integrity constraints (HIGH)
+
+No unique on `(paymentId, chargeId)`, no positive-amount constraint, and nothing
+ties `Charge.amountPaidCents` to the sum of its allocations. The two
+representations can drift with no detection.
+
+### 4.5 `LedgerEntry` cannot model rent collection (HIGH)
+
+No TENANT account type, no `leaseId` or `chargeId`, and no balancing invariant.
+It was designed for marketplace escrow. Wiring rent through it in M1 is a larger
+schema change than the launch plan assumed.
+
+### 4.6 Append-only is a comment, not a constraint (MEDIUM)
+
+Nothing at the database level prevents an UPDATE or DELETE on `LedgerEntry` or
+the status-history tables, despite the invariant being load-bearing.
+
+### 4.7 Voiding a charge is a destructive in-place edit (MEDIUM)
+
+`ChargeStatus.VOID` with no reason, no actor, and no history table, which
+contradicts the project's own append-only correction rule.
+
+### 4.8 Missing indexes on hot paths (MEDIUM)
+
+Neither tick query has a supporting index. Neither the notification bell feed nor
+the email flusher is served by `Notification`'s only index, and the bell polls
+every 60 seconds per open tab.
+
+### 4.9 `deleteProperty` does not guard maintenance requests (MEDIUM)
+
+It checks leases but not maintenance, so the FK violation surfaces to the
+landlord as a raw 500.
+
+### 4.10 No CHECK constraints on any money column (MEDIUM)
+
+Nothing prevents a negative `amountCents` or an `amountPaidCents` exceeding
+`amountCents`.
+
+### 4.11 `pnpm db:migrate` and `db:deploy` bypass every schema safeguard (HIGH)
+
+This one touches the project's most critical rule. Schema isolation is enforced
+in three places: `src/lib/env.ts`, `scripts/render-start.mjs`, and
+`docker-entrypoint.sh`. The two commands a human would actually type are:
+
+```json
+"db:migrate": "prisma migrate dev",
+"db:deploy":  "prisma migrate deploy",
+```
+
+The Prisma CLI reads `DATABASE_URL` verbatim and knows nothing about
+`APP_DB_SCHEMA`. `.env.example` ships a `DATABASE_URL` with **no `?schema=`
+parameter**, and Render's managed connection string has none either.
+
+`pnpm db:deploy` pointed at production therefore applies every migration to the
+**`public` schema of the shared database**. That is exactly the scenario the
+CLAUDE.md rule exists to prevent, reachable by typing a command package.json
+advertises. It is already causing a smaller problem: the README claims
+`pnpm db:migrate` "creates villagekeep_app schema locally," which is false unless
+the developer hand-edited their `.env`.
+
+**Fix.** Route both scripts through a wrapper that pins the schema the way
+`render-start.mjs` already does. Effort: under an hour.
+
+---
+
+## Part 5: User journeys
+
+### 5.1 A tenant who owes $2,300 is told there are no charges (HIGH)
+
+`src/app/(tenant)/tenant/payments/page.tsx:24` short-circuits billing to null the
+moment a lease is not ACTIVE, then renders the literal sentence **"No charges on
+this lease yet."** to a tenant carrying $2,300 of back rent and late fees. The
+tenant dashboard does the same.
+
+### 5.2 `shareWithTenant` does not hide what the landlord thinks it hides (HIGH)
+
+Lease *terms* are gated by the sharing switch. Charge *amounts* are not: both
+tenant pages call `getTenantBilling` unconditionally. The tenant dashboard says
+"Your landlord hasn't shared lease details here yet" with an itemized $1,850 rent
+charge rendered directly below it.
+
+Decide whether a tenant is always entitled to their balance (defensible) and make
+the control say so, or gate it. Today the switch quietly means less than the
+label implies.
+
+### 5.3 A moved-out tenant can file emergency maintenance on their old unit (HIGH)
+
+`tenantActiveLease` (`src/lib/services/maintenance.ts:42`) is named for active
+leases and its guard message says "No active lease", but it falls back to the
+most recent lease of **any** status. An ENDED tenant passes the guard and can
+file an EMERGENCY request against a unit someone else now lives in.
+
+### 5.4 The landlord loses message history exactly when it matters (HIGH)
+
+`listLandlordThreads` drops every conversation whose lease is no longer DRAFT or
+ACTIVE. When a tenancy ends, the entire thread vanishes from the landlord's list,
+including any discussion of damages, notice, or the deposit, at the precise
+moment a deposit dispute needs it. The direct URL still works; nothing links to
+it.
+
+### 5.5 Every input is 14px, so iOS Safari zooms and never zooms back (HIGH)
+
+`src/components/ui.tsx:108` uses `text-sm`, which is 14px. iOS Safari auto-zooms
+any input below 16px and does not restore on blur. This shared class backs every
+`EditableRow`, so every rent, deposit, late fee, and date field on the lease
+panel does it. The product is explicitly mobile-first for landlords on phones.
+Effort: one class change plus a visual check.
+
+### 5.6 Submit buttons stick on "Sending..." forever (HIGH)
+
+`src/components/tenant/report-problem-wizard.tsx:143` and the other submit paths
+do not use `try/finally`. A tenant on a train with one bar taps send, `fetch`
+rejects before returning a Response, `setBusy(false)` never runs, and the button
+stays disabled reading "Sending..." with no error and no retry short of a reload.
+
+### 5.7 Sample data completes two of three setup steps and inflates the rent number (HIGH)
+
+`createSample` inserts a property with two units that both have market rent, so
+`computeSetup` marks "Add your first property" and "Set unit rents" done with
+green checks for a landlord who has done neither, and the dashboard's headline
+scheduled-rent figure includes fictional money.
+
+### 5.8 Zero error boundaries (BLOCKER, listed in Part 1 context)
+
+No `error.tsx`, `not-found.tsx`, `loading.tsx`, or `global-error.tsx` anywhere
+under `src/app`. Any server exception or `notFound()` renders stock Next.js
+chrome with no header, no nav, no logo, and no route back into the product.
+
+### 5.9 Navigation dead ends (MEDIUM)
+
+- Late-rent and vacancy cards route to the property page, which contains no rent,
+  no charges, no balance, and no action to resolve the item.
+- Setup steps 2 and 3 route to the properties list, which contains neither
+  action. The real path to inviting a tenant is property, then unit card, then
+  unit page, then lease panel.
+- The expired-invite screen offers no link, no contact, and no way to request a
+  new one, while the "already used" branch two lines above does pass a CTA.
+- A user holding both landlord and tenant roles can never reach their second
+  portal: `computeRoles` supports it, nothing renders a switcher.
+
+### 5.10 Scale and ergonomics (MEDIUM)
+
+- Message threads have no pagination and re-download every message on a
+  20-second timer. At 500 messages that is a janky, battery-burning page.
+- The maintenance inbox loads every request the org has ever had with no filter,
+  status tab, or search.
+- Both wizards trap the user on step 0 with no cancel or back affordance.
+- Sample create and remove swallow their error messages entirely, so a failed
+  removal just flickers the button.
+- HEIC is advertised as accepted but the bundled libvips cannot decode HEVC
+  `.heic`, the iPhone default, producing an unhelpful generic error.
+
+### 5.11 Accessibility on the primary flows (MEDIUM)
+
+- Every in-place edit field opens an autofocused input with no accessible name:
+  the label is a `<span>`, not a `<label htmlFor>`, and no `aria-label` exists.
+  A screen-reader user hears "edit text, blank" on rent, deposit, and every other
+  value in the product.
+- The unit card is a `div` with `role="link"` whose Enter handler fires for its
+  own child controls, so keyboard users navigate away instead of operating the
+  status select or the delete button.
+- The notification bell has no `aria-expanded`, `aria-haspopup`, or focus
+  management, and Escape does not restore focus.
+
+---
+
+## Part 6: Verified sound
+
+Audited and correct. Listing these so effort is not spent re-checking them.
 
 - **Invite tokens.** 32 random bytes, SHA-256 hashed at rest, never stored raw,
   rotated on reissue, TTL enforced, lookup by hash.
-  (`src/lib/services/invite.ts:23`)
 - **Cron authentication.** Length-checked `timingSafeEqual`, closed by default
-  when `CRON_SECRET` is unset. (`src/app/api/internal/cron/tick/route.ts:13`)
+  when `CRON_SECRET` is unset.
 - **Message authorization.** `leaseAccess` verifies lease tenancy or org
-  membership on every call and returns 404 rather than 403 on failure.
-  (`src/lib/services/message.ts:29`)
+  membership on every call and returns 404 rather than 403.
 - **Photo serving.** `getPhotoForOrg` scopes by org before returning bytes.
-- **Rent due day.** Capped at 28 in validation *and* clamped defensively in
-  `rentDueDate`, so February is safe by two independent mechanisms.
+- **Maintenance scoping.** Every org query is correctly constrained.
+- **Rent due day.** Capped at 28 in validation *and* clamped in `rentDueDate`,
+  so February is safe by two independent mechanisms.
 - **Ad-hoc charge uniqueness.** `@@unique([leaseId, type, periodKey])` with a
-  nullable `periodKey` correctly permits unlimited one-off charges, since
-  Postgres treats NULLs as distinct. This was flagged as an obstacle in the
-  first-pass plan and that was wrong: the schema already solves it, with a
-  comment explaining why.
+  nullable `periodKey` correctly permits unlimited one-off charges. The
+  first-pass plan flagged this as an obstacle and was wrong: the schema already
+  solves it, deliberately, with a comment explaining the Postgres NULL semantics.
+- **The pure-core split.** `src/lib/*.ts` separated from `src/lib/services/*.ts`
+  is paying off: every money defect above is fixable in a pure, testable function.
 
 ---
 
-## C. Product and UX defects
+## Part 7: Priority
 
-### C1. `shareWithTenant` does not hide what the landlord thinks it hides (HIGH)
+Ranked by harm per day of work, which is not the milestone order.
 
-Lease *terms* are gated behind the sharing switch via `tenantLeaseTerms`. Charge
-*amounts* are not. Both the tenant dashboard and `/tenant/payments` call
-`getTenantBilling(home.leaseId)` unconditionally, gated only on lease status:
+**Ship today (under 3 hours total):**
 
-```ts
-const billing = ended ? null : await getTenantBilling(home.leaseId);
-```
+| Finding | Effort |
+| --- | --- |
+| 3.2 open redirect on login | 15 min |
+| 5.7 / setup chain: hide unbuildable "Connect your bank" step | 15 min |
+| 3.1 rate-limit header bypass | 1 hour |
+| 4.11 pin the schema in `db:migrate` / `db:deploy` | 1 hour |
 
-**Failure scenario.** A landlord deliberately leaves the lease unshared. The
-tenant portal still displays "Rent for July 2026, $1,850" and a running balance.
-The landlord believes rent is private and it is not.
+**Before any tenant touches the product:**
 
-This may even be the intended behavior, since a tenant is entitled to know what
-they owe. But the UI presents one switch that implies it covers money, and it
-does not. Decide the policy and make the control honest.
-Effort: 2 hours either way.
+| Finding | Effort |
+| --- | --- |
+| 1.1 landlord can activate a lease | half day |
+| 1.3 maintenance in the attention queue | 2 hours |
+| 5.8 error and not-found boundaries | half day |
+| 5.1 ended-lease tenants see their balance | 1 hour |
+| 5.3 fix `tenantActiveLease` fallback | 1 hour |
+| 5.5 16px inputs | 30 min |
+| 5.6 `try/finally` on every submit | 1 hour |
+| 2.9 widen ledger money columns to int8 | 2 hours |
 
-### C2. There are no error boundaries anywhere (HIGH)
+**M1, the money loop (schema work is larger than first estimated):**
+1.4, 1.5, 2.1, 2.2, 2.3, 2.7, 2.8, 2.10, 4.1 to 4.5, 4.7, 4.10.
 
-No `error.tsx`, `not-found.tsx`, `loading.tsx`, or `global-error.tsx` exists
-anywhere under `src/app`. Verified by exhaustive find.
+**M1 adjacent:** 1.2 move-out, 2.5 tick bounds, 2.6 backfill.
 
-**Failure scenario.** Any unhandled server exception, including a transient
-Postgres blip on the shared instance, renders the stock Next.js production error
-page: "Application error: a server-side exception has occurred", a digest
-string, no branding, no navigation. `notFound()` in the property page
-(`src/app/(landlord)/landlord/properties/[id]/page.tsx:31`) lands in the default
-404 for the same reason.
-
-**Fix.** Route-group error and not-found boundaries with the portal shell so a
-user keeps their nav and can retry. Effort: half a day.
-
-### C3. The setup chain has a step that can never complete (MEDIUM)
-
-`computeSetup` (`src/lib/attention.ts`) hardcodes:
-
-```ts
-{ key: "bank", label: "Connect your bank", done: false, soon: true },
-```
-
-Every landlord, forever, sees an unfinishable "Connect your bank" step. The
-`complete` flag excludes `soon` steps so the chain does resolve internally, but
-the user still stares at a permanent incomplete item advertising a feature that
-does not exist. This is the same overselling problem as the landing page,
-sitting on the primary surface.
-
-**Fix.** Hide `soon` steps until the milestone ships. Effort: 15 minutes.
+**Before public launch:** 3.3 to 3.10, 4.6, 4.8, 4.9, 5.2, 5.4, 5.9 to 5.11.
 
 ---
 
-## D. Verification gaps
-
-Restated from the launch plan with the specific consequence now that the defects
-above are known: **every single defect in sections A and B would have been
-caught by tests that do not exist.** A1 and A2 by pure-core date tests that were
-simply never written for the mid-month and timezone cases. B1 by one route test.
-A4 by any query-count assertion.
-
-The pure core is well factored and cheaply testable. The gap is not
-architectural, it is that the cases were not enumerated. That is the argument
-for the harness in M5: not ceremony, but the thing that would have caught the
-money bugs before a tenant saw them.
-
----
-
-## Priority order
-
-Ranked by expected harm per day of work, which is not the same as the milestone
-order in the launch plan.
-
-| # | Finding | Severity | Effort |
-| --- | --- | --- | --- |
-| 1 | B1 rate-limit bypass | HIGH | 1 hour |
-| 2 | C3 unfinishable setup step | MEDIUM | 15 min |
-| 3 | A1 mid-month full-month billing | BLOCKER | 1 day |
-| 4 | A3 money loop cannot close (M1) | BLOCKER | 4 to 5 days |
-| 5 | A2 timezone lateness | HIGH | half day |
-| 6 | A5 late fee cap | HIGH | 1 day + counsel |
-| 7 | C2 error boundaries | HIGH | half day |
-| 8 | B2 encryption key separation | HIGH | half day |
-| 9 | A4 unbounded tick scan | HIGH | half day |
-| 10 | C1 sharing control honesty | HIGH | 2 hours |
-| 11 | B3 security headers | MEDIUM | 2 hours |
-| 12 | A6 deposit obligations | MEDIUM | 1 day + counsel |
-| 13 | B4 blobs out of Postgres | MEDIUM | 1 day |
-
-Items 1 and 2 are under two hours combined and should go out today.
-
-## Sources
-
-- [Chicago RLTO 5-12-140, late fees](https://www.depositlaw.com/140)
-- [Chicago and Cook County late fee rules](https://www.gcrealtyinc.com/blog/late-fees-in-chicago-cook-county-evanston--everywhere-else)
-- [City of Chicago, security deposit interest rates](https://www.chicago.gov/city/en/depts/doh/provdrs/landlords/svcs/security-deposit-interest-rates.html)
-- [2026 Chicago security deposit interest rate](https://www.caapts.org/news/2026-illinois-and-chicago-security-deposit-interest-rates)
-
-Legal findings above are research, not advice. Each one names the specific
-question to put to counsel and the specific code it affects.
+Legal findings (Chicago RLTO late fee caps, security deposit interest) live in
+`mvp-launch-plan.md` and the pending regulatory pass. They are research, not
+advice, and each names the question to put to counsel.
