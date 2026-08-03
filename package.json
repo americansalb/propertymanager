@@ -13,13 +13,14 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
+    "db:migrate": "node scripts/prisma-scoped.mjs migrate dev",
+    "db:deploy": "node scripts/prisma-scoped.mjs migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:audit": "tsx scripts/db-audit.ts",
     "design:icons": "tsx scripts/gen-icon-sheet.ts",
     "design:portraits": "tsx scripts/gen-portrait-sheet.mts",
-    "design:shots": "tsx scripts/ui-shots.ts"
+    "design:shots": "tsx scripts/ui-shots.ts",
+    "test:proof": "vitest run --config vitest.proof.config.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

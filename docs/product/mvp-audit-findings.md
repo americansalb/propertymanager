@@ -11,6 +11,16 @@ by an independent adversarial pass whose job was to refute it. Claims that could
 not survive that pass were dropped. Where an auditor overstated a claim, the
 correction is noted inline.
 
+**Then every money and security claim was executed.** A real Postgres 16 was
+stood up, the actual migrations applied, and the app's own service functions run
+against the audit's failure scenarios. All eleven reproduced. The evidence, with
+measured output, is in `tests/proof/` (`pnpm test:proof`, see its README). Two
+findings were **corrected by that testing**: the `db:deploy` blast radius in 4.11
+was smaller than first described (and the real hazard turned out to be
+`db:migrate`), and the cross-org boundary in 3.6 **holds under direct attack**,
+so it is fragile and untested rather than broken. Numbers quoted below are
+measured, not estimated.
+
 Out of scope: Phase 2 surfaces (marketplace, bidding, escrow, pro portal). This
 is about defects in shipped code and gaps that block a pilot with real tenants.
 
@@ -183,6 +193,20 @@ with live web traffic. `generateRentCharges` issues a separate `findFirst` per
 ACTIVE lease on every tick even though it can only create rows on one day a
 month. Neither filter has a supporting index.
 
+**Measured via `pg_stat_statements`**, 10 orgs x 25 units, one tick with nothing
+to do:
+
+| Unpaid history | Charges | Queries/tick | Queries/day |
+| --- | --- | --- | --- |
+| all paid (baseline) | 6,000 | 503 | 362,160 |
+| 12 months unpaid | 6,500 | 3,502 | 2,521,440 |
+| 24 months unpaid | 12,500 | 6,502 | 4,681,440 |
+| 36 months unpaid | 18,500 | 9,502 | 6,841,440 |
+
+Linear in unpaid history, and since A3 means nothing can ever settle a charge,
+that history only grows. Every unpaid charge adds a query to every tick forever.
+All of the above created **zero rows**.
+
 **Fix.** Narrow to `status: { in: ["PENDING", "PARTIALLY_PAID"] }`, add a date
 floor and a `take`, replace the per-lease `findFirst` with one `findMany` of
 existing period keys plus `createMany({ skipDuplicates })`, and add the indexes.
@@ -317,6 +341,14 @@ unconstrained string, with no FK to `Organization` and no guarantee that
 `Charge.orgId` agrees with `Charge.lease.unit.property.orgId`. One bug writing
 the wrong `orgId` moves money between organizations and the database accepts it.
 
+**Tested: the boundary holds today.** Six direct cross-org attacks
+(`getProperty`, `updateProperty`, `updatePropertyDetails`, `deleteProperty`,
+`updateUnit`, `updateLease`, all with org B's context against org A's ids) were
+every one blocked with `NotFoundError`, and org A's data was unchanged. The
+guard-then-write convention works. This finding is about **fragility, not a live
+leak**: the invariant rests entirely on a discarded guard call that no test
+protects and no constraint backstops.
+
 *(An auditor claimed "every orgId column" is unconstrained. Three do have FKs.
 The eight that matter for authz do not.)*
 
@@ -436,15 +468,30 @@ The Prisma CLI reads `DATABASE_URL` verbatim and knows nothing about
 `APP_DB_SCHEMA`. `.env.example` ships a `DATABASE_URL` with **no `?schema=`
 parameter**, and Render's managed connection string has none either.
 
-`pnpm db:deploy` pointed at production therefore applies every migration to the
-**`public` schema of the shared database**. That is exactly the scenario the
-CLAUDE.md rule exists to prevent, reachable by typing a command package.json
-advertises. It is already causing a smaller problem: the README claims
-`pnpm db:migrate` "creates villagekeep_app schema locally," which is false unless
-the developer hand-edited their `.env`.
+**Tested empirically against a real Postgres 16.** My first-pass description was
+partly wrong; here is what actually happens, all three cases reproduced:
 
-**Fix.** Route both scripts through a wrapper that pins the schema the way
-`render-start.mjs` already does. Effort: under an hour.
+| Command | State of `public` | Observed result |
+| --- | --- | --- |
+| `pnpm db:deploy` | empty | **39 tables created in `public`.** Prisma logs `schema "public"` |
+| `pnpm db:deploy` | has other tables | `Error: P3005`, refuses. **Fails safe** |
+| `pnpm db:migrate` | has other tables | Reports the other service's table as *drift*, then: **"We need to reset the `public` schema. All data will be lost."** One confirmation from dropping it |
+
+So the catastrophic framing I gave first was overstated for `db:deploy` on a
+genuinely shared `public`, where Prisma's baseline check blocks it. That
+protection is accidental, not designed. The real hazard is `db:migrate`, which
+identifies another service's tables as drift and offers to destroy them. It
+exited 130 non-interactively; in a terminal it is a `y` keystroke.
+
+Either way, if the founder's other services use their own schemas, `public` is
+empty and `db:deploy` pollutes it with 39 tables. The README also claims
+`pnpm db:migrate` "creates villagekeep_app schema locally," which is false
+unless the developer hand-edited their `.env`.
+
+**Fixed** in this branch: `scripts/prisma-scoped.mjs` pins the schema the way
+`render-start.mjs` already does and refuses `reset` outright. Verified against
+the same Render-shaped URL that previously wrote to `public`: it now lands 39
+tables in `villagekeep_app`.
 
 ---
 
