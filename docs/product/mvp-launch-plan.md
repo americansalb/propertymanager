@@ -206,7 +206,16 @@ regardless of when we start it.
 Six milestones. M1 through M5 get us to a credible pilot launch. M6 runs in
 parallel and unlocks the public launch. Day estimates are focused build days.
 
-### M1: Close the money loop (4 to 5 days) - blocker
+> **Superseded in part by the audit.** A seven-dimension audit
+> (`mvp-audit-findings.md`) found four further blockers that are not missing
+> features but shipped code doing the wrong thing, most importantly that a lease
+> can only reach ACTIVE if the tenant clicks an invite link, so rent is never
+> generated at all for a tenant who does not. M1's full build order now lives in
+> `m1-money-loop-spec.md` (5.5 days, reconciled from three competing designs)
+> and the M5 test harness in `test-harness-spec.md`. Read those for the
+> implementation; this section remains the shape of the release.
+
+### M1: Close the money loop (5.5 days, see `m1-money-loop-spec.md`) - blocker
 
 The single highest-value change in the plan.
 
