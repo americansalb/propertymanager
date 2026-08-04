@@ -4,10 +4,25 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { buttonCls } from "@/components/ui";
 
+// text-base (16px): below 16px iOS Safari zooms on focus. This is the first
+// screen a user touches, so it must not zoom.
 const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
+  "w-full rounded-lg border border-stone-300 px-3 py-2 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 const labelCls = "mb-1 block text-sm font-medium text-stone-700";
 const submitCls = `${buttonCls("primary")} w-full py-2.5`;
+
+/**
+ * Only same-origin paths are safe redirect targets. A value like
+ * "https://evil.example/verify" or "//evil.example" off ?next= would send a
+ * freshly authenticated user off-site to a convincing re-login phish, so
+ * accept only a path that starts with a single "/" and no backslash.
+ */
+export function safeNext(next: string | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
+    return null;
+  }
+  return next;
+}
 
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, {
@@ -35,7 +50,7 @@ export function LoginForm({ next }: { next?: string }) {
         email: form.get("email"),
         password: form.get("password"),
       });
-      router.push(next || data.redirect || "/");
+      router.push(safeNext(next) || data.redirect || "/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");

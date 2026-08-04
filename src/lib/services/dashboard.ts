@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import type { OrgCtx } from "@/lib/authz/api";
 import {
   buildLateRentItems,
+  buildMaintenanceItems,
   buildSampleItem,
   buildVacancyItems,
   computeSetup,
@@ -38,8 +39,17 @@ export type DashboardData = {
 };
 
 export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
-  const [propertyCount, units, openMaintenance, sample, portfolio, tenantInvites, tenantsJoined, lateRent] =
-    await Promise.all([
+  const [
+    propertyCount,
+    units,
+    openMaintenance,
+    openMaintReqs,
+    sample,
+    portfolio,
+    tenantInvites,
+    tenantsJoined,
+    lateRent,
+  ] = await Promise.all([
     prisma.property.count({ where: { orgId: ctx.orgId } }),
     prisma.unit.findMany({
       where: { orgId: ctx.orgId },
@@ -56,6 +66,20 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
       where: {
         orgId: ctx.orgId,
         status: { in: ["SUBMITTED", "ACKNOWLEDGED", "SCHEDULED", "IN_PROGRESS"] },
+      },
+    }),
+    // Requests a tenant is waiting on (not yet scheduled or in progress): these
+    // become NEEDS YOU cards, emergencies first.
+    prisma.maintenanceRequest.findMany({
+      where: { orgId: ctx.orgId, status: { in: ["SUBMITTED", "ACKNOWLEDGED"] } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        urgency: true,
+        propertyId: true,
+        property: { select: { name: true } },
+        unit: { select: { unitNumber: true } },
       },
     }),
     findSample(ctx),
@@ -104,7 +128,19 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
       })),
   );
 
+  const maintenanceItems = buildMaintenanceItems(
+    openMaintReqs.map((r) => ({
+      id: r.id,
+      title: r.title,
+      urgency: r.urgency,
+      unitNumber: r.unit?.unitNumber ?? null,
+      propertyId: r.propertyId,
+      propertyName: r.property.name,
+    })),
+  );
+
   const items = sortAttention([
+    ...maintenanceItems,
     ...buildLateRentItems(lateRent),
     ...vacancyItems,
     ...(sample ? [buildSampleItem(sample)] : []),

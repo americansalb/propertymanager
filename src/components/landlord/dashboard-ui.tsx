@@ -51,10 +51,12 @@ const KIND_ICON: Record<AttentionItem["kind"], React.ReactNode> = {
   vacancy: <IconDoor className="h-4.5 w-4.5" />,
   sample: <IconKeep className="h-4.5 w-4.5" />,
   "late-rent": <IconRent className="h-4.5 w-4.5" />,
+  maintenance: <IconWrench className="h-4.5 w-4.5" />,
 };
 
 const CLS_CHIP: Record<AttentionItem["cls"], string> = {
   EMERGENCY: "bg-red-50 text-red-700",
+  NEEDS_RESPONSE: "bg-copper-tint text-copper-deep",
   MONEY_ON_YOU: "bg-copper-tint text-copper-deep",
   MONEY_TO_YOU: "bg-amber-50 text-amber-800",
   EXPIRING: "bg-stone-100 text-stone-600",

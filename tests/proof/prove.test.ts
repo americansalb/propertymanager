@@ -176,15 +176,12 @@ describe("CLAIM: postLedger's P2002 catch swallows a double reversal", () => {
   });
 });
 
-describe("CLAIM: allocateOldestFirst has no input guard", () => {
-  it("manufactures a negative credit from a negative payment", () => {
+describe("FIXED: allocateOldestFirst now guards its input", () => {
+  it("throws on negative and fractional payments instead of corrupting state", () => {
     const charges = [{ id: "c1", dueDate: new Date(), amountCents: 185000, amountPaidCents: 0 }];
-    const neg = allocateOldestFirst(-5000, charges);
-    console.log(`   -> allocateOldestFirst(-5000) => remainderCents=${neg.remainderCents}, allocations=${neg.allocations.length}`);
-    expect(neg.remainderCents).toBe(-5000);
-    const frac = allocateOldestFirst(1850.5, charges);
-    console.log(`   -> allocateOldestFirst(1850.5) => allocated ${frac.allocations[0]?.amountCents} (fractional cents)`);
-    expect(Number.isInteger(frac.allocations[0]!.amountCents)).toBe(false);
+    expect(() => allocateOldestFirst(-5000, charges)).toThrow();
+    expect(() => allocateOldestFirst(1850.5, charges)).toThrow();
+    console.log(`   -> allocateOldestFirst now rejects negative and fractional payments`);
   });
 });
 

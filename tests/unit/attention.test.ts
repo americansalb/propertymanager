@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildMaintenanceItems,
   buildSampleItem,
   buildVacancyItems,
   computeSetup,
@@ -97,5 +98,41 @@ describe("buildSampleItem", () => {
     const item = buildSampleItem({ id: "p9", name: "Sample: Oakdale Duplex" });
     expect(item.cls).toBe("SETUP");
     expect(item.refId).toBe("p9");
+  });
+});
+
+describe("buildMaintenanceItems", () => {
+  const base = {
+    id: "m1",
+    title: "No hot water",
+    unitNumber: "2F",
+    propertyId: "p1",
+    propertyName: "Oakdale Duplex",
+  };
+
+  it("ranks an emergency in the EMERGENCY class, linked to review", () => {
+    const [item] = buildMaintenanceItems([{ ...base, urgency: "EMERGENCY" }]);
+    expect(item).toMatchObject({
+      kind: "maintenance",
+      cls: "EMERGENCY",
+      action: { label: "Review", href: "/landlord/maintenance/m1" },
+    });
+    expect(item!.title).toContain("2F at Oakdale Duplex");
+  });
+
+  it("puts non-emergency open work in NEEDS_RESPONSE", () => {
+    const [item] = buildMaintenanceItems([{ ...base, urgency: "URGENT" }]);
+    expect(item!.cls).toBe("NEEDS_RESPONSE");
+  });
+
+  it("sorts an emergency above late rent and a vacancy", () => {
+    const sorted = sortAttention([
+      ...buildVacancyItems([
+        { unitId: "u", unitNumber: "3R", propertyId: "p", propertyName: "X", marketRentCents: 120_000 },
+      ]),
+      ...buildMaintenanceItems([{ ...base, urgency: "EMERGENCY" }]),
+    ]);
+    expect(sorted[0]!.kind).toBe("maintenance");
+    expect(sorted[0]!.cls).toBe("EMERGENCY");
   });
 });

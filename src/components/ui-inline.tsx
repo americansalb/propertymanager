@@ -243,7 +243,7 @@ export function EditableRow({
                   }
                 }}
                 onBlur={() => void commit()}
-                className="min-w-24 flex-1 border-0 p-0.5 text-sm focus:outline-none"
+                className="min-w-24 flex-1 border-0 p-0.5 text-base focus:outline-none"
               />
               <button
                 onMouseDown={(e) => e.preventDefault()}

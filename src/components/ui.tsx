@@ -105,8 +105,11 @@ export function Money({ cents, className }: { cents: number; className?: string 
   return <span className={`tabular-nums ${className ?? ""}`}>{formatCents(cents)}</span>;
 }
 
+// text-base (16px), not text-sm: iOS Safari zooms the viewport on focus for
+// any input under 16px and never zooms back. Every inline lease/rent/deposit
+// field flows through this class.
 export const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
+  "w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 
 export function Field({
   label,

@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { buttonCls } from "@/components/ui";
 
+// text-base (16px): below 16px iOS Safari zooms on focus. This is a tenant's
+// first screen, almost always on a phone.
 const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
+  "w-full rounded-lg border border-stone-300 px-3 py-2 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 const labelCls = "mb-1 block text-sm font-medium text-stone-700";
 
 /**

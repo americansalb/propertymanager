@@ -55,4 +55,52 @@ describe("allocateOldestFirst", () => {
     expect(allocations).toEqual([]);
     expect(remainderCents).toBe(500);
   });
+
+  it("rejects a negative payment (no fabricated credit)", () => {
+    expect(() => allocateOldestFirst(-5000, charges)).toThrow();
+  });
+
+  it("rejects a fractional payment (no fractional cents)", () => {
+    expect(() => allocateOldestFirst(1850.5, charges)).toThrow();
+  });
+
+  it("breaks same-day ties by id, deterministically", () => {
+    const sameDay = [
+      { id: "late-fee", dueDate: new Date("2026-03-01"), amountCents: 7_500, amountPaidCents: 0 },
+      { id: "rent", dueDate: new Date("2026-03-01"), amountCents: 185_000, amountPaidCents: 0 },
+    ];
+    // Regardless of input order, allocation order is stable (id-sorted).
+    const a = allocateOldestFirst(1_000, sameDay);
+    const b = allocateOldestFirst(1_000, [...sameDay].reverse());
+    expect(a.allocations).toEqual(b.allocations);
+    expect(a.allocations[0]!.chargeId).toBe("late-fee");
+  });
+});
+
+describe("safeNext (open-redirect guard)", () => {
+  it("keeps same-origin paths", async () => {
+    const { safeNext } = await import("@/components/auth/auth-forms");
+    expect(safeNext("/landlord/dashboard")).toBe("/landlord/dashboard");
+    expect(safeNext("/tenant/payments?x=1")).toBe("/tenant/payments?x=1");
+  });
+
+  it("rejects off-site and protocol-relative targets", async () => {
+    const { safeNext } = await import("@/components/auth/auth-forms");
+    expect(safeNext("https://evil.example/verify")).toBeNull();
+    expect(safeNext("//evil.example")).toBeNull();
+    expect(safeNext("/\\evil.example")).toBeNull();
+    expect(safeNext(undefined)).toBeNull();
+    expect(safeNext("relative/path")).toBeNull();
+  });
+});
+
+describe("getClientIp (rate-limit key trust)", () => {
+  it("trusts the last hop, not the client-supplied first entry", async () => {
+    const { getClientIp } = await import("@/lib/request");
+    const req = new Request("http://x", {
+      headers: { "x-forwarded-for": "1.1.1.1, 2.2.2.2, 9.9.9.9" },
+    });
+    // 1.1.1.1 is attacker-chosen; 9.9.9.9 is what Render's LB appended.
+    expect(getClientIp(req)).toBe("9.9.9.9");
+  });
 });

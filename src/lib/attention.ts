@@ -11,6 +11,7 @@ import { formatCents } from "@/lib/money";
 
 export type AttentionClass =
   | "EMERGENCY"
+  | "NEEDS_RESPONSE" // a tenant is waiting on the landlord (open maintenance)
   | "MONEY_ON_YOU" // money waiting on the landlord (release escrow, compare bids)
   | "MONEY_TO_YOU" // money owed to the landlord (late rent)
   | "EXPIRING" // leases, credentials
@@ -19,16 +20,17 @@ export type AttentionClass =
 
 export const CLASS_ORDER: Record<AttentionClass, number> = {
   EMERGENCY: 0,
-  MONEY_ON_YOU: 1,
-  MONEY_TO_YOU: 2,
-  EXPIRING: 3,
-  OPTIMIZATION: 4,
-  SETUP: 5,
+  NEEDS_RESPONSE: 1,
+  MONEY_ON_YOU: 2,
+  MONEY_TO_YOU: 3,
+  EXPIRING: 4,
+  OPTIMIZATION: 5,
+  SETUP: 6,
 };
 
 export type AttentionItem = {
   id: string;
-  kind: "vacancy" | "sample" | "late-rent";
+  kind: "vacancy" | "sample" | "late-rent" | "maintenance";
   cls: AttentionClass;
   title: string;
   meta?: string;
@@ -97,6 +99,44 @@ export function buildLateRentItems(late: LateRentInput[]): AttentionItem[] {
     action: { label: "View", href: `/landlord/properties/${l.propertyId}` },
     refId: l.propertyId,
   }));
+}
+
+export type MaintenanceAttentionInput = {
+  id: string;
+  title: string;
+  urgency: string; // MaintUrgency
+  unitNumber: string | null;
+  propertyId: string;
+  propertyName: string;
+};
+
+const URGENCY_LABEL: Record<string, string> = {
+  EMERGENCY: "emergency",
+  URGENT: "urgent",
+  NORMAL: "normal",
+  LOW: "low priority",
+};
+
+/**
+ * Open maintenance a tenant is waiting on. Emergencies rank above everything;
+ * the rest sit in NEEDS_RESPONSE, just under emergencies and above money. This
+ * is the one class the dashboard rated most severe yet never surfaced: it was
+ * only ever a number in the pulse bar.
+ */
+export function buildMaintenanceItems(reqs: MaintenanceAttentionInput[]): AttentionItem[] {
+  return reqs.map((r) => {
+    const isEmergency = r.urgency === "EMERGENCY";
+    const where = r.unitNumber ? `${r.unitNumber} at ${r.propertyName}` : r.propertyName;
+    return {
+      id: `maintenance:${r.id}`,
+      kind: "maintenance" as const,
+      cls: isEmergency ? ("EMERGENCY" as const) : ("NEEDS_RESPONSE" as const),
+      title: `${r.title} · ${where}`,
+      meta: `${URGENCY_LABEL[r.urgency] ?? r.urgency.toLowerCase()} · awaiting your response`,
+      action: { label: "Review", href: `/landlord/maintenance/${r.id}` },
+      refId: r.id,
+    };
+  });
 }
 
 export function buildSampleItem(sample: { id: string; name: string }): AttentionItem {

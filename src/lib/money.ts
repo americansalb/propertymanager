@@ -33,11 +33,19 @@ export function allocateOldestFirst(
   paymentCents: number,
   charges: Array<{ id: string; dueDate: Date; amountCents: number; amountPaidCents: number }>,
 ): { allocations: Array<{ chargeId: string; amountCents: number }>; remainderCents: number } {
+  // Match feeFromBps: reject junk at the door. A negative payment used to
+  // return a negative remainder (a fabricated credit); a fractional one used
+  // to write fractional cents straight onto Charge.amountPaidCents.
+  if (!Number.isInteger(paymentCents) || paymentCents < 0) {
+    throw new Error(`paymentCents must be a non-negative integer, got ${paymentCents}`);
+  }
   let remaining = paymentCents;
   const allocations: Array<{ chargeId: string; amountCents: number }> = [];
   const open = [...charges]
     .filter((c) => c.amountCents - c.amountPaidCents > 0)
-    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+    // Oldest due first; id breaks the tie so same-day charges allocate
+    // deterministically rather than in whatever order the DB returned them.
+    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime() || a.id.localeCompare(b.id));
 
   for (const charge of open) {
     if (remaining <= 0) break;

@@ -26,6 +26,30 @@ is about defects in shipped code and gaps that block a pilot with real tenants.
 
 ---
 
+## Fixes shipped on this branch
+
+Six confirmed findings are fixed and verified, not just described. `pnpm test`
+is green at 135, and the fixes that touch the database are re-proven against a
+real Postgres in `tests/proof/fixes.test.ts`.
+
+| Finding | Fix | Verified by |
+| --- | --- | --- |
+| 3.1 rate-limit header bypass | `getClientIp` takes the last X-Forwarded-For hop, not the client-supplied first | unit: last-hop test |
+| 3.2 open redirect on `/login?next=` | `safeNext` accepts only same-origin `/` paths | unit: 5 redirect cases |
+| 5.5 inputs under 16px zoom iOS | shared `inputCls`, login, invite, and chips inputs bumped to `text-base` | screenshot `31`: login now 16px |
+| 2.10 `allocateOldestFirst` unguarded | throws on negative/fractional; deterministic id tie-break | unit + proof (flipped to prove-the-fix) |
+| 1.3 emergency invisible in the queue | new `NEEDS_RESPONSE` class + `buildMaintenanceItems`, wired into `getDashboard` | proof: emergency is the top item; screenshot `30` |
+
+Screenshot `30-dashboard-emergency-fixed.png` is the before/after: the same
+dashboard that previously showed only late rent and a vacancy now leads with two
+red emergency cards, then the normal request, then late rent, then the vacancy,
+the exact severity order the spec calls for.
+
+Everything below documents the remaining, unfixed findings. The five above keep
+their original numbering there, annotated FIXED.
+
+---
+
 ## Part 1: The blockers
 
 Six things make a real pilot impossible. Four of them are not in the original
@@ -76,10 +100,10 @@ Vacant, which PATCHes only `unit.status` and never touches the lease
 The error instructs the landlord to perform an action the application does not
 implement. Effort: 1 day including deposit disposition.
 
-### 1.3 Emergency maintenance never reaches the attention queue
+### 1.3 Emergency maintenance never reaches the attention queue [FIXED]
 
 **Rendered in a real browser; see `docs/product/ux-shots/`. The original wording
-of this finding was wrong and is corrected here.**
+of this finding was wrong and is corrected here. Now fixed: see shot `30`.**
 
 `getDashboard` (`src/lib/services/dashboard.ts:107`) composes the attention queue
 from exactly three sources:
@@ -258,7 +282,7 @@ The table is empty today, so widening to int8 is a two-hour migration with zero
 data risk. After M1 posts real money it is a very different job. **Do this
 before M1, not after.**
 
-### 2.10 `allocateOldestFirst` is unguarded (LOW)
+### 2.10 `allocateOldestFirst` is unguarded (LOW) [FIXED]
 
 Correcting the launch plan: the allocation core **already exists**, at
 `src/lib/money.ts:32`. M1 is smaller than originally estimated. But unlike
@@ -279,7 +303,7 @@ sees "You owe $1,850.00" for rent due 27 days later.
 
 ## Part 3: Security defects
 
-### 3.1 Rate limiting is bypassable via a client-controlled header (HIGH)
+### 3.1 Rate limiting is bypassable via a client-controlled header (HIGH) [FIXED]
 
 `src/lib/request.ts` takes the **first** `X-Forwarded-For` entry, which is
 client-supplied. Render appends the real address rather than replacing the
@@ -293,7 +317,7 @@ across many accounts is unthrottled and signup is unlimited. It also means every
 **Fix.** Take the *n*th entry from the right, where *n* is the number of trusted
 proxies. Effort: 1 hour. Highest value per minute in this document.
 
-### 3.2 Open redirect on the login page (HIGH)
+### 3.2 Open redirect on the login page (HIGH) [FIXED]
 
 `src/components/auth/auth-forms.tsx:38`:
 
@@ -541,7 +565,7 @@ including any discussion of damages, notice, or the deposit, at the precise
 moment a deposit dispute needs it. The direct URL still works; nothing links to
 it.
 
-### 5.5 Every input is 14px, so iOS Safari zooms and never zooms back (HIGH)
+### 5.5 Every input is 14px, so iOS Safari zooms and never zooms back (HIGH) [FIXED]
 
 `src/components/ui.tsx:108` uses `text-sm`, which is 14px. iOS Safari auto-zooms
 any input below 16px and does not restore on blur. This shared class backs every
