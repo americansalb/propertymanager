@@ -10,8 +10,8 @@ UI and UX rules. Features ride on this; none of them matter without it.
    something.
 2. COLOR IS INFORMATION, NEVER DECORATION. Patina = good, money-in,
    verified. Copper = action wanted from you. Amber = warning. Red =
-   emergency only (a dead red-free dashboard is the goal state). Iron is
-   only the ink: no dark bands, no dark panels, no dark buttons.
+   emergency only (a dead red-free dashboard is the goal state). There is
+   no black anywhere: dark green is the ink and the main button.
 3. FIVE SECONDS TO THE ANSWER. Every screen is designed backwards from the
    question it answers. Money and counts in tabular figures, scannable at
    a glance. One primary action per surface, verb-first labels.
@@ -28,12 +28,16 @@ UI and UX rules. Features ride on this; none of them matter without it.
 
 The product is recognizable by restraint and two colors:
 
-- COPPER IS THE ONE THING TO DO. One copper button per surface, dark
-  lettering on it (white on copper fails contrast). Copper also marks
-  "needs you" labels and the active nav item (a copper underline).
-- GREEN IS DONE AND GOOD. Paid, fixed, chosen, verified. The green is the
-  mark's keep (#2F6353); its darkest step (#1B3B31) is the only dark
-  ground, used for footers and under the village artwork.
+- NO BLACK. Dark green does every job black would: body ink (#1B3B31),
+  main buttons (#234B3F, white lettering), footers and the ground under
+  the village artwork. Greys are tinted green too (the stone scale in
+  globals.css), so text and hairlines are never black or plain grey.
+- COPPER NEEDS YOU. Copper is for the thing that wants attention: the
+  "needs you" button (the kit's accent variant, dark green lettering
+  because white on copper fails contrast), "needs you" labels, the active
+  nav item (a copper underline) and one call to action on marketing pages.
+- GREEN IS ALSO DONE AND GOOD. Paid, fixed, chosen, verified use the
+  mark's keep green (#2F6353).
 - WHITE BARS, WARM PAPER. Headers are white with a hairline border.
   Pages sit on warm paper (#F6F4EF), content on white cards.
 - ROUNDED, NOT CUT. Buttons and chips are plainly rounded. The old cut

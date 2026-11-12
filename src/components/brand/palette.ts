@@ -4,8 +4,9 @@
  * these constants exist because SVG fills cannot read CSS variables when
  * rendered to static markup for sheets and previews.
  */
-export const IRON = "#34383F";
-export const IRON_DEEP = "#1D2024";
+// "Iron" is kept as a name only: the darkest tone in the artwork is deep green.
+export const IRON = "#234B3F";
+export const IRON_DEEP = "#17342B";
 export const COPPER = "#D08A45";
 export const COPPER_DEEP = "#9E5B23";
 export const PATINA = "#3E7C66";

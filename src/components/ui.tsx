@@ -3,13 +3,13 @@ import { formatCents } from "@/lib/money";
 
 /**
  * The UI kit. Small, dependency-free primitives that carry the design
- * language (docs/product/design-language.md): copper for the one thing to
- * do, green for done and good, flat depth (borders + background steps),
- * green focus rings, tabular money. Server-safe; usable from client
- * components too.
+ * language (docs/product/design-language.md): dark green for text and the
+ * main action, copper for what needs you, flat depth (borders + background
+ * steps), green focus rings, tabular money. Server-safe; usable from
+ * client components too.
  */
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "danger";
 type ButtonSize = "md" | "sm";
 
 const BTN_BASE =
@@ -17,9 +17,11 @@ const BTN_BASE =
   "active:translate-y-px disabled:pointer-events-none disabled:opacity-50";
 
 const BTN_VARIANT: Record<ButtonVariant, string> = {
-  // The one thing to do on a surface: a copper plate with dark lettering
-  // (white on copper fails contrast).
-  primary: "rounded-xl bg-copper text-iron-deep hover:bg-copper-bright",
+  // The main action: dark green, white lettering.
+  primary: "rounded-xl bg-keep-deep text-white hover:bg-patina",
+  // Something that needs you: copper, dark green lettering (white on
+  // copper fails contrast).
+  accent: "rounded-xl bg-copper text-iron-deep hover:bg-copper-bright",
   secondary:
     "rounded-lg border border-stone-300 text-stone-700 hover:border-patina hover:text-stone-900",
   ghost: "rounded-lg text-stone-500 hover:bg-stone-100 hover:text-stone-700",

@@ -1,13 +1,14 @@
 /**
  * Tenant invite email (pure: brand and URLs arrive as inputs). Table-based
- * HTML with the forge palette inlined - email clients ignore stylesheets.
+ * HTML with the brand palette inlined - email clients ignore stylesheets.
  */
 
-const IRON = "#34383f";
-const IRON_DEEP = "#23262b";
+// Names kept from the old palette; the dark tones are deep green now.
+const IRON = "#1b3b31";
+const IRON_DEEP = "#234b3f";
 const COPPER = "#d08a45";
-const STONE = "#57534e";
-const STONE_FAINT = "#a8a29e";
+const STONE = "#476b5f";
+const STONE_FAINT = "#789187";
 
 function escapeHtml(s: string): string {
   return s
@@ -56,7 +57,7 @@ export function tenantInviteEmail(input: TenantInviteEmailInput): {
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border:1px solid #e7e5e4;border-radius:12px;">
             <tr>
-              <td style="padding:28px 32px 0;font-family:Georgia,serif;font-size:20px;font-weight:bold;color:${IRON};">
+              <td style="padding:28px 32px 0;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:bold;color:${IRON};">
                 ${brandName}
               </td>
             </tr>

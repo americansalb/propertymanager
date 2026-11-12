@@ -62,7 +62,7 @@ export default function LandingPage() {
           <div className="mt-10 flex items-center justify-center gap-3">
             <Link
               href="/signup"
-              className="inline-flex items-center rounded-xl bg-copper px-7 py-3 text-base font-semibold text-iron-deep transition hover:bg-copper-bright active:translate-y-px"
+              className="inline-flex items-center rounded-xl bg-keep-deep px-7 py-3 text-base font-semibold text-white transition hover:bg-patina active:translate-y-px"
             >
               Start free
             </Link>
