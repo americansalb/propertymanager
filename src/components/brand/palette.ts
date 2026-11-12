@@ -15,6 +15,7 @@ export const GLOW = "#F6E7D7"; // lit windows
 // The mark (v4): a green keep lit from the left, holding a copper home.
 export const KEEP = "#2F6353"; // lit face
 export const KEEP_DEEP = "#234B3F"; // shaded face
+export const KEEP_NIGHT = "#1B3B31"; // ground and the darkest buildings
 export const HOME_ROOF = "#DC9853";
 export const HOME_ROOF_DEEP = "#A9652B";
 export const HOME_WALL = "#C8823E";

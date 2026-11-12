@@ -14,32 +14,32 @@ import { CreateSampleButton, RemoveSampleButton } from "./sample-buttons";
 
 // ── Pulse bar ───────────────────────────────────────────────────────────────
 
-/** The ledger bar: money engraved on iron. */
+/** The summary bar: three numbers on a white card. */
 export function PulseBar({ pulse }: { pulse: Pulse }) {
   return (
-    <div className="cut flex flex-wrap items-center gap-x-10 gap-y-3 bg-iron px-6 py-5">
+    <div className="flex flex-wrap items-center gap-x-10 gap-y-3 rounded-2xl border border-stone-200 bg-white px-6 py-5">
       <span className="flex items-baseline gap-2.5">
-        <IconRent className="h-4 w-4 self-center text-copper" />
+        <IconRent className="h-4 w-4 self-center text-stone-400" />
         <Money
           cents={pulse.marketRentTotalCents}
-          className="font-display text-2xl font-semibold text-copper"
+          className="font-display text-2xl font-semibold text-stone-900"
         />
-        <span className="text-sm text-stone-400">/mo market rent</span>
+        <span className="text-sm text-stone-500">/mo market rent</span>
       </span>
       <span className="flex items-baseline gap-2.5">
-        <IconDoor className="h-4 w-4 self-center text-patina-bright" />
-        <span className="font-display text-2xl font-semibold tabular-nums text-white">
+        <IconDoor className="h-4 w-4 self-center text-stone-400" />
+        <span className="font-display text-2xl font-semibold tabular-nums text-stone-900">
           {pulse.occupiedCount}
           <span className="text-stone-400"> / {pulse.unitCount}</span>
         </span>
-        <span className="text-sm text-stone-400">occupied</span>
+        <span className="text-sm text-stone-500">occupied</span>
       </span>
       <span className="flex items-baseline gap-2.5">
         <IconWrench className="h-4 w-4 self-center text-stone-400" />
-        <span className="font-display text-2xl font-semibold tabular-nums text-white">
+        <span className="font-display text-2xl font-semibold tabular-nums text-stone-900">
           {pulse.openMaintenance}
         </span>
-        <span className="text-sm text-stone-400">open maintenance</span>
+        <span className="text-sm text-stone-500">open maintenance</span>
       </span>
     </div>
   );
@@ -131,7 +131,7 @@ export function SetupChain({ setup, showSample }: { setup: SetupState; showSampl
                   ? "bg-patina text-white"
                   : step.soon
                     ? "bg-stone-200 text-stone-400"
-                    : "bg-iron text-white"
+                    : "bg-copper text-iron-deep"
               }`}
             >
               {step.done ? <IconCheck className="h-3 w-3" /> : i + 1}

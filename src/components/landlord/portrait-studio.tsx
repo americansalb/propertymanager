@@ -41,7 +41,7 @@ export function PortraitStudio({
   const chip = (active: boolean) =>
     `rounded-full px-2.5 py-1 text-xs font-medium transition ${
       active
-        ? "bg-iron text-white"
+        ? "bg-patina text-white"
         : "border border-stone-200 bg-white text-stone-600 hover:border-patina"
     }`;
 

@@ -4,7 +4,18 @@
  * windows, and the shimmer on every gable: light face left of the apex,
  * deep face right, exactly like the mark. Zero curves.
  */
-import { BRICK, BRICK_DEEP, COPPER, COPPER_DEEP, GLOW, IRON, KEEP, PATINA, PATINA_DEEP } from "./palette";
+import {
+  BRICK,
+  BRICK_DEEP,
+  COPPER,
+  COPPER_DEEP,
+  GLOW,
+  IRON,
+  KEEP,
+  KEEP_NIGHT,
+  PATINA,
+  PATINA_DEEP,
+} from "./palette";
 
 export function VillageSkyline({ className }: { className?: string }) {
   return (
@@ -32,10 +43,10 @@ export function VillageSkyline({ className }: { className?: string }) {
       {/* ── front row ── */}
       {/* A: corner row-house, stepped parapet (iron anchor) */}
       <g>
-        <rect x="0" y="88" width="95" height="62" fill={IRON} />
-        <rect x="0" y="80" width="22" height="8" fill={IRON} />
-        <rect x="38" y="80" width="22" height="8" fill={IRON} />
-        <rect x="74" y="80" width="21" height="8" fill={IRON} />
+        <rect x="0" y="88" width="95" height="62" fill={KEEP_NIGHT} />
+        <rect x="0" y="80" width="22" height="8" fill={KEEP_NIGHT} />
+        <rect x="38" y="80" width="22" height="8" fill={KEEP_NIGHT} />
+        <rect x="74" y="80" width="21" height="8" fill={KEEP_NIGHT} />
         <rect x="14" y="100" width="9" height="11" fill={GLOW} />
         <rect x="32" y="100" width="9" height="11" fill={GLOW} />
         <rect x="50" y="100" width="9" height="11" fill={GLOW} />
@@ -88,8 +99,8 @@ export function VillageSkyline({ className }: { className?: string }) {
 
       {/* F: iron mid block, stepped center parapet */}
       <g>
-        <rect x="440" y="70" width="100" height="80" fill={IRON} />
-        <rect x="478" y="60" width="24" height="10" fill={IRON} />
+        <rect x="440" y="70" width="100" height="80" fill={KEEP_NIGHT} />
+        <rect x="478" y="60" width="24" height="10" fill={KEEP_NIGHT} />
         <rect x="452" y="82" width="10" height="12" fill={GLOW} />
         <rect x="472" y="82" width="10" height="12" fill={GLOW} />
         <rect x="492" y="82" width="10" height="12" fill={GLOW} />
@@ -145,8 +156,8 @@ export function VillageSkyline({ className }: { className?: string }) {
       {/* I: brick flat-top block */}
       <g>
         <rect x="833" y="60" width="84" height="90" fill={BRICK} />
-        <rect x="833" y="52" width="20" height="8" fill={IRON} />
-        <rect x="897" y="52" width="20" height="8" fill={IRON} />
+        <rect x="833" y="52" width="20" height="8" fill={KEEP_NIGHT} />
+        <rect x="897" y="52" width="20" height="8" fill={KEEP_NIGHT} />
         <rect x="845" y="72" width="9" height="11" fill={GLOW} />
         <rect x="863" y="72" width="9" height="11" fill={GLOW} />
         <rect x="881" y="72" width="9" height="11" fill={GLOW} />
@@ -178,9 +189,9 @@ export function VillageSkyline({ className }: { className?: string }) {
 
       {/* L: iron edge block */}
       <g>
-        <rect x="1097" y="80" width="103" height="70" fill={IRON} />
-        <rect x="1097" y="72" width="24" height="8" fill={IRON} />
-        <rect x="1138" y="72" width="24" height="8" fill={IRON} />
+        <rect x="1097" y="80" width="103" height="70" fill={KEEP_NIGHT} />
+        <rect x="1097" y="72" width="24" height="8" fill={KEEP_NIGHT} />
+        <rect x="1138" y="72" width="24" height="8" fill={KEEP_NIGHT} />
         <rect x="1110" y="92" width="10" height="12" fill={GLOW} />
         <rect x="1132" y="92" width="10" height="12" fill={GLOW} />
         <rect x="1154" y="92" width="10" height="12" fill={GLOW} />

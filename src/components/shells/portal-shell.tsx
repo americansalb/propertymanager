@@ -8,7 +8,7 @@ import { LogoutButton } from "./logout-button";
 import { NavLinks, type NavItem } from "./nav-links";
 import { NotificationBell } from "./notification-bell";
 
-/** Fortress header: iron band, patina nav, battlement edge. */
+/** Portal header: white bar, the mark, and the nav with a copper underline. */
 export async function PortalShell({
   portalLabel,
   userName,
@@ -36,33 +36,32 @@ export async function PortalShell({
   }));
   return (
     <div className="min-h-screen">
-      <header className="bg-iron">
+      <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5">
-              <LogoMark tone="dark" small className="h-8 w-8" />
-              <Wordmark tone="dark" className="text-lg" />
+              <LogoMark small className="h-8 w-8" />
+              <Wordmark className="text-lg" />
             </Link>
-            <span className="rounded-full bg-patina px-2.5 py-0.5 text-xs font-medium text-white">
+            <span className="rounded-full bg-patina-tint px-2.5 py-0.5 text-xs font-medium text-patina">
               {portalLabel}
             </span>
             {contextName && (
-              <span className="hidden text-sm text-stone-400 sm:inline">· {contextName}</span>
+              <span className="hidden text-sm text-stone-500 sm:inline">· {contextName}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell initialItems={initialItems} initialUnread={initialUnread} />
-            <span className="hidden text-sm text-stone-300 sm:inline">{userName}</span>
+            <span className="hidden text-sm text-stone-600 sm:inline">{userName}</span>
             <LogoutButton />
           </div>
         </div>
         {nav && nav.length > 0 && (
-          <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2.5">
+          <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4">
             <NavLinks items={nav} />
           </nav>
         )}
       </header>
-      <div className="crenel" />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <ToastProvider>{children}</ToastProvider>
       </main>
