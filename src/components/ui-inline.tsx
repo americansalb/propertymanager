@@ -250,7 +250,7 @@ export function EditableRow({
                 onClick={() => void commit()}
                 disabled={busy}
                 aria-label="Save"
-                className="cut-sm bg-copper p-1.5 text-iron-deep hover:bg-copper-bright disabled:opacity-50"
+                className="cut-sm bg-keep-deep p-1.5 text-white hover:bg-patina disabled:opacity-50"
               >
                 <IconCheck className="h-3 w-3" />
               </button>

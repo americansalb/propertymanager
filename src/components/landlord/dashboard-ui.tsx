@@ -76,7 +76,7 @@ export function AttentionCard({ item }: { item: AttentionItem }) {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {item.kind === "sample" && item.refId && <RemoveSampleButton propertyId={item.refId} />}
-        <Button href={item.action.href} size="sm">
+        <Button href={item.action.href} size="sm" variant="accent">
           {item.action.label}
         </Button>
       </div>
