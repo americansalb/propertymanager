@@ -103,7 +103,7 @@ describe("tenantLeaseTerms", () => {
     expect(t.rentDueLabel).toBe("Due on the 1st");
     expect(t.termLabel).toBe("Jan 1, 2026 to Dec 31, 2026");
     expect(t.depositLabel).toBe("$1,850.00");
-    expect(t.petLabel).toBe("$50.00/mo, $300.00 deposit");
+    expect(t.petLabel).toBe("$50.00 a month, $300.00 deposit");
     expect(t.parkingLabel).toBe("Spot 4 (included)");
     expect(t.utilities).toEqual(["Water", "Trash"]);
   });
@@ -133,6 +133,6 @@ describe("tenantLeaseTerms", () => {
     })!;
     expect(t.depositLabel).toBeNull();
     expect(t.petLabel).toBeNull();
-    expect(t.parkingLabel).toBe("Spot 4 at $150.00/mo");
+    expect(t.parkingLabel).toBe("Spot 4 at $150.00 a month");
   });
 });

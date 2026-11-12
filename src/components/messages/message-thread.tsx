@@ -70,7 +70,7 @@ export function MessageThread({
     setBusy(false);
     if (!res.ok) {
       const d = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(d.error ?? "Could not send.");
+      setError(d.error ?? "That did not send. Try again.");
       return;
     }
     setBody("");
@@ -81,18 +81,18 @@ export function MessageThread({
     <div className="flex flex-col">
       <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto py-1">
         {messages.length === 0 ? (
-          <p className="py-10 text-center text-sm text-stone-500">No messages yet. Say hello.</p>
+          <p className="py-8 text-center text-stone-600">No messages yet. Write the first one below.</p>
         ) : (
           messages.map((m) => (
             <div key={m.id} className={`flex flex-col ${m.mine ? "items-end" : "items-start"}`}>
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                  m.mine ? "bg-patina text-white" : "border border-stone-200 bg-white text-stone-800"
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-base leading-6 ${
+                  m.mine ? "bg-keep-deep text-white" : "bg-stone-100 text-stone-900"
                 }`}
               >
                 <p className="whitespace-pre-wrap">{m.body}</p>
               </div>
-              <span className="mt-1 px-1 text-[11px] text-stone-400">
+              <span className="mt-1 px-1 text-xs text-stone-500">
                 {m.mine ? "You" : (m.senderName ?? "")} · {fmtTime(m.at)}
               </span>
             </div>
@@ -123,17 +123,21 @@ export function MessageThread({
           placeholder="Write a message"
           aria-label="Message"
           rows={2}
-          className="flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina"
+          className="min-w-0 flex-1 resize-none rounded-xl border border-stone-300 bg-white px-3.5 py-3 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-2 focus:ring-patina/25"
         />
         <button
           type="submit"
           disabled={busy || body.trim().length === 0}
-          className={`${buttonCls("primary")} disabled:opacity-50`}
+          className={`${buttonCls("primary")} min-h-12`}
         >
           {busy ? "Sending…" : "Send"}
         </button>
       </form>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-2 text-sm font-medium text-red-700">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

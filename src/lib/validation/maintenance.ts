@@ -28,11 +28,11 @@ export type MaintenanceRequestInput = z.infer<typeof maintenanceRequestSchema>;
 export const CATEGORY_LABEL: Record<(typeof MAINTENANCE_CATEGORIES)[number], string> = {
   PLUMBING: "Plumbing",
   ELECTRICAL: "Electrical",
-  HVAC: "Heating & cooling",
+  HVAC: "Heating and cooling",
   APPLIANCE: "Appliance",
-  DOORS_LOCKS: "Doors & locks",
+  DOORS_LOCKS: "Doors and locks",
   PEST: "Pests",
-  FLOORING_WALLS: "Floors & walls",
+  FLOORING_WALLS: "Floors and walls",
   OTHER: "Something else",
 };
 
@@ -45,11 +45,11 @@ export const URGENCY_LABEL: Record<(typeof MAINTENANCE_URGENCIES)[number], strin
 
 /** Tenant-facing status wording (the raw enum is internal). */
 export const MAINT_STATUS_LABEL: Record<string, string> = {
-  SUBMITTED: "Submitted",
-  ACKNOWLEDGED: "Seen by landlord",
-  SCHEDULED: "Scheduled",
-  IN_PROGRESS: "In progress",
-  RESOLVED: "Resolved",
+  SUBMITTED: "Sent",
+  ACKNOWLEDGED: "Seen by your landlord",
+  SCHEDULED: "Visit scheduled",
+  IN_PROGRESS: "Work started",
+  RESOLVED: "Fixed",
   CLOSED: "Closed",
   CANCELLED: "Cancelled",
   SENT_TO_MARKETPLACE: "Finding a pro",
@@ -58,13 +58,13 @@ export const MAINT_STATUS_LABEL: Record<string, string> = {
 /** Landlord-facing status wording (neutral; the tenant sees softer labels). */
 export const MAINT_STATUS_LABEL_LANDLORD: Record<string, string> = {
   SUBMITTED: "New",
-  ACKNOWLEDGED: "Acknowledged",
-  SCHEDULED: "Scheduled",
-  IN_PROGRESS: "In progress",
-  RESOLVED: "Resolved",
+  ACKNOWLEDGED: "Seen",
+  SCHEDULED: "Visit scheduled",
+  IN_PROGRESS: "Work started",
+  RESOLVED: "Fixed",
   CLOSED: "Closed",
   CANCELLED: "Cancelled",
-  SENT_TO_MARKETPLACE: "Sent to marketplace",
+  SENT_TO_MARKETPLACE: "Out for bids",
 };
 
 /** Statuses a landlord can set when responding to a request. */
@@ -76,13 +76,13 @@ export const MAINT_LANDLORD_STATUSES = [
   "CANCELLED",
 ] as const;
 
-/** Verb-first labels for the landlord's status actions. */
-export const MAINT_ACTION_LABEL: Record<(typeof MAINT_LANDLORD_STATUSES)[number], string> = {
-  ACKNOWLEDGED: "Acknowledge",
-  SCHEDULED: "Mark scheduled",
-  IN_PROGRESS: "Mark in progress",
-  RESOLVED: "Mark resolved",
-  CANCELLED: "Cancel request",
+/** What each stage means, said to the landlord choosing it. */
+export const MAINT_STAGE_HELP: Record<string, string> = {
+  SUBMITTED: "Nobody has answered yet.",
+  ACKNOWLEDGED: "You have read it. Nothing is booked yet.",
+  SCHEDULED: "Someone is coming. Say when in the note.",
+  IN_PROGRESS: "The repair is under way.",
+  RESOLVED: "The problem is solved.",
 };
 
 export const maintenanceRespondSchema = z
@@ -101,7 +101,7 @@ export const MAINT_TENANT_UPDATE_VERB: Record<string, string> = {
   ACKNOWLEDGED: "saw your request",
   SCHEDULED: "scheduled a visit",
   IN_PROGRESS: "started work",
-  RESOLVED: "marked this resolved",
+  RESOLVED: "marked this fixed",
   CLOSED: "closed this request",
   CANCELLED: "cancelled this request",
   SENT_TO_MARKETPLACE: "is finding a pro",

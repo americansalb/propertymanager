@@ -160,6 +160,18 @@ export function Stat({
   );
 }
 
+/** A fact that is read, not edited. Lines up with the editable rows. */
+export function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5 py-2.5 sm:grid sm:grid-cols-[10rem_1fr] sm:items-baseline sm:gap-x-4">
+      <dt className="text-sm leading-6 text-stone-500">{label}</dt>
+      <dd className="min-w-0 break-words text-base font-medium leading-6 text-stone-900">
+        {children}
+      </dd>
+    </div>
+  );
+}
+
 /** A step's tick: green when done, an empty ring while waiting. */
 export function StepMark({ done = false }: { done?: boolean }) {
   return done ? (

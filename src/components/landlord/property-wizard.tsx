@@ -50,8 +50,8 @@ function validate(id: StepId, d: Draft): string | null {
     case "address":
       if (!d.address1.trim()) return "Enter the street address.";
       if (!d.city.trim()) return "Enter the city.";
-      if (!/^[A-Za-z]{2}$/.test(d.state.trim())) return "Use the 2-letter state code.";
-      if (!/^\d{5}(-\d{4})?$/.test(d.zipCode.trim())) return "Enter a valid ZIP code.";
+      if (!/^[A-Za-z]{2}$/.test(d.state.trim())) return "Use the two-letter state, like IL.";
+      if (!/^\d{5}(-\d{4})?$/.test(d.zipCode.trim())) return "Enter the 5-digit ZIP code.";
       return null;
     case "units":
       return parseUnitPattern(d.unitPattern).length > 0
@@ -153,17 +153,17 @@ export function PropertyWizard() {
 
   const meta: Record<StepId, { title: string; subtitle?: string }> = {
     address: {
-      title: "Where's the property?",
-      subtitle: "The address becomes the property's name; rename it anytime.",
+      title: "Where is the property?",
+      subtitle: "We name it after the address. You can rename it later.",
     },
     type: { title: "What kind of place is it?" },
     units: {
       title: "Name the units",
-      subtitle: "Type a list or a range. 1F, 2F works; so does 101-112 or A-D.",
+      subtitle: "Type them with commas, or as a range. 1F, 2F works. So does 101-112.",
     },
     rent: {
-      title: "What's the monthly rent?",
-      subtitle: "Optional. Setting it now powers the vacancy math on your dashboard.",
+      title: "What is the monthly rent?",
+      subtitle: "You can skip this and add it later.",
     },
   };
 
@@ -182,24 +182,24 @@ export function PropertyWizard() {
               {
                 value: "SINGLE_FAMILY",
                 label: "Single-family home",
-                description: "One front door; we set up the unit for you",
+                description: "One home. We set it up for you.",
                 icon: <IconHome className="h-7 w-7" duo />,
               },
               {
                 value: "MULTIFAMILY",
                 label: "Building with units",
-                description: "Two-flat to high-rise; name the units next",
+                description: "Two or more units. You name them next.",
                 icon: <IconProperty className="h-7 w-7" duo />,
               },
               {
                 value: "CONDO",
                 label: "Condo",
-                description: "A single unit you own inside a building",
+                description: "One unit you own inside a building.",
               },
               {
                 value: "TOWNHOUSE",
                 label: "Townhouse",
-                description: "Attached home, one household",
+                description: "An attached home for one household.",
               },
             ]}
             onSelect={(v) => {
@@ -207,7 +207,7 @@ export function PropertyWizard() {
               setStep((s) => s + 1);
             }}
           />
-          <div className="mt-3 flex items-center justify-center gap-2 text-xs text-stone-400">
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-stone-600">
             <span>Something else?</span>
             {(["COMMERCIAL", "OTHER"] as const).map((t) => (
               <button
@@ -217,7 +217,7 @@ export function PropertyWizard() {
                   set("type", t);
                   setStep((s) => s + 1);
                 }}
-                className="rounded px-1.5 py-0.5 font-medium text-stone-500 hover:bg-stone-100 hover:text-stone-700"
+                className="inline-flex min-h-9 items-center rounded-full border border-stone-300 bg-white px-3.5 font-medium text-stone-700 transition hover:border-patina hover:text-patina"
               >
                 {t === "COMMERCIAL" ? "Commercial" : "Other"}
               </button>
@@ -228,103 +228,137 @@ export function PropertyWizard() {
         <form onSubmit={next} className="flex flex-1 flex-col">
           {id === "address" && (
             <div className="space-y-3">
-              <input
-                autoFocus
-                value={draft.address1}
-                onChange={(e) => set("address1", e.target.value)}
-                placeholder="Street address"
-                aria-label="Street address"
-                className={inputCls}
-              />
-              <input
-                value={draft.address2}
-                onChange={(e) => set("address2", e.target.value)}
-                placeholder="Unit, suite, floor (optional)"
-                aria-label="Address line 2"
-                className={inputCls}
-              />
-              <div className="grid grid-cols-[1fr_72px_110px] gap-3">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-stone-700">
+                  Street address
+                </span>
                 <input
-                  value={draft.city}
-                  onChange={(e) => set("city", e.target.value)}
-                  placeholder="City"
-                  aria-label="City"
+                  autoFocus
+                  value={draft.address1}
+                  onChange={(e) => set("address1", e.target.value)}
+                  placeholder="1247 W Oakdale Ave"
+                  autoComplete="address-line1"
                   className={inputCls}
                 />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-stone-700">
+                  Apartment, suite or floor <span className="font-normal text-stone-500">(if any)</span>
+                </span>
                 <input
-                  value={draft.state}
-                  onChange={(e) => set("state", e.target.value)}
-                  placeholder="IL"
-                  maxLength={2}
-                  aria-label="State"
+                  value={draft.address2}
+                  onChange={(e) => set("address2", e.target.value)}
+                  autoComplete="address-line2"
                   className={inputCls}
                 />
-                <input
-                  value={draft.zipCode}
-                  onChange={(e) => set("zipCode", e.target.value)}
-                  placeholder="ZIP"
-                  inputMode="numeric"
-                  aria-label="ZIP"
-                  className={inputCls}
-                />
+              </label>
+              <div className="grid grid-cols-[1fr_5rem_7rem] gap-3">
+                <label className="block">
+                <span className="mb-1 block text-sm font-medium text-stone-700">
+                  City
+                </span>
+                  <input
+                    value={draft.city}
+                    onChange={(e) => set("city", e.target.value)}
+                    autoComplete="address-level2"
+                    className={inputCls}
+                  />
+                </label>
+                <label className="block">
+                <span className="mb-1 block text-sm font-medium text-stone-700">
+                  State
+                </span>
+                  <input
+                    value={draft.state}
+                    onChange={(e) => set("state", e.target.value)}
+                    placeholder="IL"
+                    maxLength={2}
+                    autoComplete="address-level1"
+                    className={inputCls}
+                  />
+                </label>
+                <label className="block">
+                <span className="mb-1 block text-sm font-medium text-stone-700">
+                  ZIP
+                </span>
+                  <input
+                    value={draft.zipCode}
+                    onChange={(e) => set("zipCode", e.target.value)}
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    className={inputCls}
+                  />
+                </label>
               </div>
             </div>
           )}
 
           {id === "units" && (
             <div>
-              <input
-                autoFocus
-                value={draft.unitPattern}
-                onChange={(e) => set("unitPattern", e.target.value)}
-                placeholder="1F, 2F  or  101-112"
-                aria-label="Units"
-                className={inputCls}
-              />
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-stone-700">
+                  Unit names or numbers
+                </span>
+                <input
+                  autoFocus
+                  value={draft.unitPattern}
+                  onChange={(e) => set("unitPattern", e.target.value)}
+                  placeholder="1F, 2F"
+                  className={inputCls}
+                />
+              </label>
               {units.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {units.slice(0, 24).map((u) => (
                     <span
                       key={u}
-                      className="cut-sm bg-patina-tint px-2 py-0.5 text-xs font-medium text-patina"
+                      className="rounded-full bg-patina-tint px-2.5 py-1 text-sm font-medium text-patina"
                     >
                       {u}
                     </span>
                   ))}
                   {units.length > 24 && (
-                    <span className="px-1 text-xs text-stone-400">
+                    <span className="px-1 py-1 text-sm text-stone-500">
                       +{units.length - 24} more
                     </span>
                   )}
                 </div>
               )}
               {units.length > 0 && (
-                <p className="mt-2 text-xs text-stone-400">
-                  {units.length} unit{units.length === 1 ? "" : "s"} ready. Rents come next on
-                  the property page.
+                <p className="mt-2 text-sm text-stone-500">
+                  {units.length} unit{units.length === 1 ? "" : "s"}. You set the rent for each
+                  one on the next page.
                 </p>
               )}
             </div>
           )}
 
           {id === "rent" && (
-            <div className="relative">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-stone-400">
-                $
+            <label className="block">
+                <span className="mb-1 block text-sm font-medium text-stone-700">
+                  Rent each month
+                </span>
+              <span className="relative block">
+                <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-stone-500">
+                  $
+                </span>
+                <input
+                  autoFocus
+                  value={draft.rentDollars}
+                  onChange={(e) => set("rentDollars", e.target.value)}
+                  placeholder="1,850"
+                  inputMode="decimal"
+                  className={`${inputCls} pl-8`}
+                />
               </span>
-              <input
-                autoFocus
-                value={draft.rentDollars}
-                onChange={(e) => set("rentDollars", e.target.value)}
-                placeholder="1,850"
-                inputMode="decimal"
-                aria-label="Monthly rent in dollars"
-                className={`${inputCls} pl-7`}
-              />
-            </div>
+            </label>
           )}
 
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          {error && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-700">
+              {error}
+            </p>
+          )}
           {duplicateBlocked && (
             <button
               type="button"
@@ -332,12 +366,12 @@ export function PropertyWizard() {
               disabled={busy}
               className={`${buttonCls("secondary")} mt-3 w-full`}
             >
-              It really is a second property here: create it anyway
+              This is a different property at the same address. Add it anyway
             </button>
           )}
 
           <button type="submit" disabled={busy} className={`${buttonCls("primary")} mt-6 w-full py-3`}>
-            {busy ? "Creating…" : isLast ? "Create property" : "Continue"}
+            {busy ? "Adding…" : isLast ? "Add this property" : "Continue"}
           </button>
           {id === "rent" && draft.rentDollars.trim() === "" && (
             <button

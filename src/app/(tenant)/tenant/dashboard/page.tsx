@@ -2,14 +2,16 @@ import Link from "next/link";
 import { requireRole } from "@/lib/authz";
 import { getTenantHome } from "@/lib/services/tenant";
 import { getTenantBilling } from "@/lib/services/charges";
-import { brand } from "@/lib/brand";
 import { formatCents } from "@/lib/money";
 import { formatLeaseDate } from "@/lib/leases";
-import { Badge, Card, Money } from "@/components/ui";
+import { InfoRow, Section } from "@/components/ui";
 import { unitTitle } from "@/lib/units";
-import { IconChevronRight, IconWrench } from "@/components/icons";
+import { IconChevronRight } from "@/components/icons";
 
 export const metadata = { title: "Home" };
+
+const rowLink =
+  "group -mx-3 flex min-h-16 items-center gap-3 rounded-lg px-3 py-3 transition hover:bg-stone-50 focus-visible:bg-stone-50";
 
 export default async function TenantDashboard() {
   const session = await requireRole("TENANT", "/tenant/dashboard");
@@ -17,17 +19,17 @@ export default async function TenantDashboard() {
 
   if (!home) {
     return (
-      <div className="mx-auto max-w-xl">
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-stone-900">
-          Welcome, {session.firstName}
+      <div className="mx-auto max-w-3xl">
+        <p className="text-sm text-stone-500">Hello, {session.firstName}</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-900">
+          Your home is not connected yet
         </h1>
-        <Card className="mt-5 p-5">
-          <p className="text-sm font-semibold text-stone-900">Your home isn&apos;t connected yet.</p>
-          <p className="mt-1 text-sm text-stone-500">
-            Ask your landlord for an invite link; everything about your place appears here the
-            moment you accept it.
+        <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+          <p className="text-stone-700">
+            Ask your landlord for an invite link. Once you open it, your rent, your lease and a way
+            to report problems all show up here.
           </p>
-        </Card>
+        </section>
       </div>
     );
   }
@@ -37,139 +39,117 @@ export default async function TenantDashboard() {
     home.unitNumber.toLowerCase() === "main"
       ? p.address1
       : `${unitTitle(home.unitNumber)}, ${p.address1}`;
-  const specs = [
-    home.unit.bedrooms != null ? `${home.unit.bedrooms} bd` : null,
-    home.unit.bathrooms != null ? `${home.unit.bathrooms} ba` : null,
-    home.unit.squareFeet != null ? `${home.unit.squareFeet.toLocaleString()} sqft` : null,
-  ].filter(Boolean);
   const ended = home.leaseStatus === "ENDED" || home.leaseStatus === "TERMINATED";
   const billing = ended ? null : await getTenantBilling(home.leaseId);
-  const included: Array<[string, string]> = home.terms
+  const terms = home.terms;
+  const facts: Array<[string, string]> = terms
     ? ([
-        ["Deposit held", home.terms.depositLabel],
-        ["Pets", home.terms.petLabel],
-        ["Parking", home.terms.parkingLabel],
+        ["Rent", terms.rentCents != null ? `${formatCents(terms.rentCents)} a month` : null],
+        // The shared label reads "Due on the 1st"; under this row's label, drop the echo.
         [
-          "Utilities included",
-          home.terms.utilities.length > 0 ? home.terms.utilities.join(", ") : null,
+          "Rent is due",
+          terms.rentDueLabel ? `${terms.rentDueLabel.replace(/^Due on/, "On")} of each month` : null,
         ],
+        ["Lease", terms.termLabel],
+        ["Deposit held", terms.depositLabel],
+        ["Pets", terms.petLabel],
+        ["Parking", terms.parkingLabel],
+        ["Utilities included", terms.utilities.length > 0 ? terms.utilities.join(", ") : null],
       ].filter(([, v]) => v != null) as Array<[string, string]>)
     : [];
 
-  return (
-    <div className="mx-auto max-w-xl">
-      <Card className="overflow-hidden">
-        <div className="bg-stone-50 px-6 pt-5">
-          <div className="min-w-0 pb-4">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-copper-deep">
-              Your home
-            </p>
-            <h1 className="mt-0.5 truncate font-display text-xl font-semibold tracking-tight text-stone-900">
-              {homeTitle}
-            </h1>
-            <p className="text-sm text-stone-500">
-              {p.city}, {p.state} {p.zipCode}
-            </p>
-          </div>
-        </div>
-        {specs.length > 0 && (
-          <div className="border-t border-stone-100 px-6 py-2.5 text-sm text-stone-500">
-            {specs.join(" · ")}
-          </div>
-        )}
-      </Card>
+  const balance = billing?.summary.balanceCents ?? 0;
+  const pastDue = billing?.summary.pastDueCents ?? 0;
 
-      {ended ? (
-        <Card className="mt-4 p-5 text-sm text-stone-500">Your lease here has ended.</Card>
-      ) : home.terms ? (
-        <Card className="mt-4 p-5">
-          {home.terms.rentCents != null && (
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              <Money
-                cents={home.terms.rentCents}
-                className="font-display text-3xl font-semibold text-stone-900"
-              />
-              <span className="text-sm text-stone-500">
-                /mo{home.terms.rentDueLabel ? ` · ${home.terms.rentDueLabel.toLowerCase()}` : ""}
-              </span>
-            </div>
-          )}
-          {home.terms.termLabel && (
-            <p
-              className={
-                home.terms.rentCents != null
-                  ? "mt-1 text-sm text-stone-500"
-                  : "text-sm text-stone-700"
-              }
-            >
-              {home.terms.termLabel}
-            </p>
-          )}
-          {included.length > 0 && (
-            <dl
-              className={`space-y-1.5 ${
-                home.terms.rentCents != null || home.terms.termLabel
-                  ? "mt-4 border-t border-stone-100 pt-4"
-                  : ""
-              }`}
-            >
-              {included.map(([label, value]) => (
-                <div key={label} className="flex justify-between gap-4 text-sm">
-                  <dt className="text-stone-500">{label}</dt>
-                  <dd className="text-right text-stone-800">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </Card>
-      ) : (
-        <Card className="mt-4 p-5 text-sm text-stone-500">
-          Your landlord hasn&apos;t shared lease details here yet.
-        </Card>
-      )}
+  return (
+    <div className="mx-auto max-w-3xl">
+      <p className="text-sm text-stone-500">Your home</p>
+      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-900">{homeTitle}</h1>
+      <p className="mt-1 text-stone-600">
+        {p.city}, {p.state} {p.zipCode}
+      </p>
 
       {billing && (
-        <Link href="/tenant/payments" className="mt-4 block">
-          <Card className="flex items-center justify-between gap-4 p-5 transition hover:border-stone-300">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-copper-deep">
-                {billing.summary.balanceCents > 0 ? "You owe" : "Balance"}
-              </p>
-              <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <Money
-                  cents={billing.summary.balanceCents}
-                  className="font-display text-2xl font-semibold text-stone-900"
-                />
-                {billing.summary.pastDueCents > 0 ? (
-                  <Badge tone="red">{formatCents(billing.summary.pastDueCents)} past due</Badge>
-                ) : billing.summary.balanceCents === 0 ? (
-                  <span className="text-sm font-medium text-patina">All paid up</span>
-                ) : billing.summary.nextDueDate ? (
-                  <span className="text-sm text-stone-500">
-                    due {formatLeaseDate(billing.summary.nextDueDate)}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-            <IconChevronRight className="h-5 w-5 shrink-0 text-stone-300" />
-          </Card>
+        <Link
+          href="/tenant/payments"
+          className="group mt-6 flex items-center gap-4 rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-patina sm:p-6"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm text-stone-500">
+              {balance > 0 ? "You owe" : "You owe nothing right now"}
+            </span>
+            <span className="mt-0.5 block text-3xl font-semibold tabular-nums tracking-tight text-stone-900">
+              {formatCents(balance)}
+            </span>
+            {pastDue > 0 ? (
+              <span className="mt-1 block text-sm font-medium text-red-700">
+                {formatCents(pastDue)} of it is past due
+              </span>
+            ) : balance === 0 ? (
+              <span className="mt-1 flex items-center gap-2 text-sm text-stone-600">
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-patina" />
+                All paid up
+              </span>
+            ) : billing.summary.nextDueDate ? (
+              <span className="mt-1 block text-sm text-stone-600">
+                Due {formatLeaseDate(billing.summary.nextDueDate)}
+              </span>
+            ) : null}
+          </span>
+          <IconChevronRight className="h-4 w-4 shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-patina" />
         </Link>
       )}
 
-      <Link href="/tenant/maintenance" className="mt-3 block">
-        <Card className="flex items-center gap-4 p-4 transition hover:border-stone-300">
-          <IconWrench className="h-6 w-6 shrink-0 text-stone-400" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-stone-900">Report a problem</p>
-            <p className="text-sm text-stone-500">Photos, a time that works, no phone tag.</p>
-          </div>
-          <IconChevronRight className="h-5 w-5 shrink-0 text-stone-300" />
-        </Card>
-      </Link>
+      <section className="mt-5 rounded-2xl border border-stone-200 bg-white px-5 py-2 sm:px-6">
+        <ul className="divide-y divide-stone-100">
+          <li>
+            <Link href="/tenant/maintenance" className={rowLink}>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-stone-900">
+                  Report a problem
+                </span>
+                <span className="mt-0.5 block text-sm text-stone-600">
+                  Say what is wrong and when someone can come by.
+                </span>
+              </span>
+              <IconChevronRight className="h-4 w-4 shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-patina" />
+            </Link>
+          </li>
+          <li>
+            <Link href="/tenant/messages" className={rowLink}>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-stone-900">
+                  Message {home.orgName}
+                </span>
+                <span className="mt-0.5 block text-sm text-stone-600">
+                  Questions go straight to your landlord.
+                </span>
+              </span>
+              <IconChevronRight className="h-4 w-4 shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-patina" />
+            </Link>
+          </li>
+        </ul>
+      </section>
 
-      <p className="mt-5 text-center text-xs text-stone-400">
-        {homeTitle} is managed by {home.orgName} on {brand.name}.
-      </p>
+      <Section title="Your lease">
+        {ended ? (
+          <p className="py-1 text-stone-600">Your lease here has ended.</p>
+        ) : facts.length > 0 ? (
+          <dl>
+            {facts.map(([label, value]) => (
+              <InfoRow key={label} label={label}>
+                {value}
+              </InfoRow>
+            ))}
+          </dl>
+        ) : (
+          <p className="py-1 text-stone-600">
+            {home.orgName} has not shared the lease details here yet.
+          </p>
+        )}
+      </Section>
+
+      <p className="mt-5 text-sm text-stone-500">This home is managed by {home.orgName}.</p>
     </div>
   );
 }
