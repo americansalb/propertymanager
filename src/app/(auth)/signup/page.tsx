@@ -14,9 +14,9 @@ export default async function SignupPage() {
   return (
     <>
       <SignupWizard brandName={brand.name} brandDomain={brand.domain} />
-      <p className="mt-6 text-center text-sm text-stone-500">
+      <p className="mt-6 text-center text-stone-600">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-copper-deep hover:underline">
+        <Link href="/login" className="font-medium text-patina underline">
           Sign in
         </Link>
       </p>

@@ -128,7 +128,7 @@ export function NotificationBell({
               <button
                 type="button"
                 onClick={markAll}
-                className="text-xs font-medium text-patina hover:text-patina-bright"
+                className="text-sm font-medium text-patina underline"
               >
                 Mark all read
               </button>
@@ -149,8 +149,8 @@ export function NotificationBell({
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-stone-900">{n.title}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-stone-500">{n.body}</p>
-                      <p className="mt-1 text-[11px] text-stone-400">{timeAgo(n.createdAt)}</p>
+                      <p className="mt-0.5 line-clamp-2 text-sm text-stone-600">{n.body}</p>
+                      <p className="mt-1 text-xs text-stone-500">{timeAgo(n.createdAt)}</p>
                     </div>
                   </div>
                 );

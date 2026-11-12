@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <LogoMark className="h-14 w-14" />
         <Wordmark className="text-2xl" />
       </Link>
-      <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8">
+      <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-5 sm:p-8">
         {children}
       </div>
     </main>

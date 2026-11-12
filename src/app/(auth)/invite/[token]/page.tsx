@@ -13,8 +13,8 @@ export const metadata = { title: "Your invite" };
 function Plain({ headline, sub, cta }: { headline: string; sub: string; cta?: React.ReactNode }) {
   return (
     <div className="text-center">
-      <h1 className="text-xl font-semibold text-stone-900">{headline}</h1>
-      <p className="mt-2 text-sm text-stone-500">{sub}</p>
+      <h1 className="text-2xl font-semibold tracking-tight text-stone-900">{headline}</h1>
+      <p className="mt-2 text-stone-600">{sub}</p>
       {cta && <div className="mt-6">{cta}</div>}
     </div>
   );
@@ -27,8 +27,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   if (preview.state === "invalid") {
     return (
       <Plain
-        headline="This invite link isn't valid"
-        sub="It may have been replaced with a newer one. Ask your landlord to send a fresh link."
+        headline="This link does not work"
+        sub="It may have been replaced by a newer one. Ask your landlord to send you a new link."
       />
     );
   }
@@ -36,16 +36,16 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     return (
       <Plain
         headline="This invite was already used"
-        sub="Your home is waiting behind your login."
-        cta={<Button href="/login" className="w-full py-2.5">Sign in</Button>}
+        sub="Sign in to see your home."
+        cta={<Button href="/login" className="min-h-12 w-full">Sign in</Button>}
       />
     );
   }
   if (preview.state === "expired") {
     return (
       <Plain
-        headline="This invite has expired"
-        sub={`Invite links last 7 days. Ask ${preview.orgName} to send a fresh one.`}
+        headline="This link has run out"
+        sub={`Invite links work for 7 days. Ask ${preview.orgName} to send you a new one.`}
       />
     );
   }
@@ -60,27 +60,23 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   return (
     <div>
       <div className="text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-copper-deep">
-          {preview.orgName} invited you to
-        </p>
-        <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-stone-900">
-          {home}
-        </h1>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="text-sm text-stone-500">{preview.orgName} invited you to</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">{home}</h1>
+        <p className="mt-1 text-stone-600">
           {p.city}, {p.state} {p.zipCode}
         </p>
         {preview.preview && (
-          <p className="mt-3 text-sm text-stone-600">
+          <p className="mt-3 text-stone-700">
             {[
               preview.preview.monthlyRentCents != null
-                ? `${formatCents(preview.preview.monthlyRentCents)}/mo`
+                ? `${formatCents(preview.preview.monthlyRentCents)} a month`
                 : null,
               preview.preview.startDate != null
                 ? `starts ${formatLeaseDate(preview.preview.startDate)}`
                 : null,
             ]
               .filter(Boolean)
-              .join(" · ")}
+              .join(", ")}
           </p>
         )}
       </div>
@@ -90,26 +86,26 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           <AcceptInviteForm token={token} mode="session" />
         ) : session ? (
           <div className="space-y-3 text-center">
-            <p className="text-sm text-stone-600">
-              You&apos;re signed in as <span className="font-medium">{session.email}</span>, but
-              this invite is for <span className="font-medium">{preview.email}</span>.
+            <p className="text-stone-700">
+              You are signed in as <span className="font-semibold">{session.email}</span>, but this
+              invite is for <span className="font-semibold">{preview.email}</span>.
             </p>
             <SignOutToSwitch />
           </div>
         ) : preview.accountExists ? (
           <div className="space-y-3 text-center">
-            <p className="text-sm text-stone-600">
-              <span className="font-medium">{preview.email}</span> already has a {brand.name}{" "}
+            <p className="text-stone-700">
+              <span className="font-semibold">{preview.email}</span> already has a {brand.name}{" "}
               account.
             </p>
-            <Button href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`} className="w-full py-2.5">
+            <Button href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`} className="min-h-12 w-full">
               Sign in to accept
             </Button>
           </div>
         ) : (
           <>
             <AcceptInviteForm token={token} mode="new" />
-            <p className="mt-4 text-center text-xs text-stone-400">
+            <p className="mt-4 text-center text-sm text-stone-500">
               This creates your {brand.name} account for {preview.email}.
             </p>
           </>
@@ -117,10 +113,11 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       </div>
 
       <p className="mt-6 text-center text-sm text-stone-500">
-        Not you?{" "}
-        <Link href="/" className="font-medium text-copper-deep hover:underline">
-          Ignore this invite
+        Not you? You can{" "}
+        <Link href="/" className="font-medium text-patina underline">
+          ignore this invite
         </Link>
+        .
       </p>
     </div>
   );

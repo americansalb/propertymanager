@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { OptionCards, WizardShell } from "@/components/wizard/wizard-shell";
 import { IconDoor, IconHome, IconMail, IconTenants, IconTools } from "@/components/icons";
-import { buttonCls } from "@/components/ui";
+import { buttonCls, inputCls } from "@/components/ui";
 
-const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
-const continueCls = `${buttonCls("primary")} mt-6 w-full py-3`;
+const continueCls = `${buttonCls("primary")} mt-6 min-h-12 w-full`;
+const fieldLabel = "mb-1 block text-sm font-medium text-stone-700";
 
 type StepId = "type" | "tenant" | "name" | "business" | "phone" | "email" | "password";
 
@@ -45,15 +44,15 @@ function validate(id: StepId, d: Draft): string | null {
     case "name":
       return d.firstName.trim() && d.lastName.trim() ? null : "Enter your first and last name.";
     case "business":
-      return d.businessName.trim() ? null : "Give it a name, you can change it later.";
+      return d.businessName.trim() ? null : "Give it a name. You can change it later.";
     case "phone":
-      return d.phone.trim().length >= 7 ? null : "Enter a phone number pros can be reached at.";
+      return d.phone.trim().length >= 7 ? null : "Enter a phone number you can be reached at.";
     case "email":
-      return /^\S+@\S+\.\S+$/.test(d.email.trim()) ? null : "Enter a valid email address.";
+      return /^\S+@\S+\.\S+$/.test(d.email.trim()) ? null : "That does not look like an email address.";
     case "password":
-      if (d.password.length < 8) return "At least 8 characters.";
+      if (d.password.length < 8) return "Use at least 8 characters.";
       if (!/[a-zA-Z]/.test(d.password) || !/[0-9]/.test(d.password))
-        return "Include at least one letter and one number.";
+        return "Use at least one letter and one number.";
       return null;
     default:
       return null;
@@ -136,16 +135,25 @@ export function SignupWizard({
   const meta: Record<StepId, { title: string; subtitle?: string }> = {
     type: { title: `What brings you to ${brandName}?` },
     tenant: {
-      title: "Tenants join by invitation",
-      subtitle: "Your home, lease, and rent are linked the moment you join.",
+      title: "You join with a link from your landlord",
+      subtitle: "The link connects you to your home and your lease.",
     },
-    name: { title: "What's your name?" },
+    name: { title: "What is your name?" },
     business: isLandlord
-      ? { title: "What should we call your portfolio?", subtitle: "Your company or a simple label like \"Smith Rentals\". You can change it anytime." }
-      : { title: "What's your business called?", subtitle: "The name landlords and tenants will see on your bids." },
-    phone: { title: "What's the best phone for jobs?", subtitle: "Landlords use this to coordinate scheduling once you win work." },
-    email: { title: "What's your email?", subtitle: "You'll sign in with this." },
-    password: { title: "Set your password", subtitle: "At least 8 characters, with a letter and a number." },
+      ? {
+          title: "What should we call your rentals?",
+          subtitle: 'Your company name, or something simple like "Smith Rentals". You can change it later.',
+        }
+      : { title: "What is your business called?", subtitle: "This is the name owners see." },
+    phone: {
+      title: "What is the best phone number for jobs?",
+      subtitle: "Owners call this number to set up a visit.",
+    },
+    email: { title: "What is your email?", subtitle: "You sign in with it." },
+    password: {
+      title: "Choose a password",
+      subtitle: "At least 8 characters, with a letter and a number.",
+    },
   };
 
   return (
@@ -162,19 +170,19 @@ export function SignupWizard({
             {
               value: "LANDLORD",
               label: "I own or manage rentals",
-              description: "Collect rent, handle maintenance, hire trusted pros",
+              description: "Keep track of leases, rent and repairs in one place.",
               icon: <IconHome className="h-8 w-8" duo />,
             },
             {
               value: "PRO",
-              label: "I'm a service pro",
-              description: "Plumbing, electrical, handyman: get leads and guaranteed payment",
+              label: "I do repairs for a living",
+              description: "Plumbing, electrical, handyman and more. Be first in line when repair jobs open.",
               icon: <IconTools className="h-8 w-8" duo />,
             },
             {
               value: "TENANT",
               label: "I rent my home",
-              description: "Pay rent and request repairs, set up by your landlord",
+              description: "See your lease and report problems. Your landlord invites you.",
               icon: <IconDoor className="h-8 w-8" duo />,
             },
           ]}
@@ -185,62 +193,83 @@ export function SignupWizard({
         />
       ) : id === "tenant" ? (
         <div className="flex flex-1 flex-col">
-          <ul className="space-y-4 text-sm leading-6 text-stone-600">
+          <ul className="space-y-4 leading-6 text-stone-700">
             <li className="flex gap-3">
               <IconMail className="mt-1 h-5 w-5 shrink-0 text-patina" />
               <span>
-                <span className="font-medium text-stone-900">Already invited?</span> Open the
-                email from {brandName}: your personal link connects you to your lease.
+                <span className="font-semibold text-stone-900">Already invited?</span> Open the
+                email from {brandName} and tap the link inside.
               </span>
             </li>
             <li className="flex gap-3">
               <IconTenants className="mt-1 h-5 w-5 shrink-0 text-patina" />
               <span>
-                <span className="font-medium text-stone-900">Not yet?</span> Ask your landlord
-                to add you as a tenant. That keeps your rent, deposits, and repairs tied to
-                your actual lease from day one.
+                <span className="font-semibold text-stone-900">Not yet?</span> Ask your landlord
+                to invite you. They only need your email.
               </span>
             </li>
           </ul>
           <Link href="/login" className={`${continueCls} text-center`}>
             I already have an account
           </Link>
-          <p className="mt-4 text-center text-xs text-stone-400">
-            Landlord not on {brandName} yet? Point them to {brandDomain}
+          <p className="mt-4 text-center text-sm text-stone-500">
+            Landlord not on {brandName} yet? Send them to {brandDomain}.
           </p>
         </div>
       ) : (
         <form onSubmit={next} className="flex flex-1 flex-col">
           {id === "name" && (
             <div className="grid grid-cols-2 gap-3">
-              <input autoFocus value={draft.firstName} onChange={(e) => set("firstName", e.target.value)} placeholder="First name" aria-label="First name" className={inputCls} />
-              <input value={draft.lastName} onChange={(e) => set("lastName", e.target.value)} placeholder="Last name" aria-label="Last name" className={inputCls} />
+              <label className="block">
+                <span className={fieldLabel}>First name</span>
+                <input autoFocus value={draft.firstName} onChange={(e) => set("firstName", e.target.value)} autoComplete="given-name" className={inputCls} />
+              </label>
+              <label className="block">
+                <span className={fieldLabel}>Last name</span>
+                <input value={draft.lastName} onChange={(e) => set("lastName", e.target.value)} autoComplete="family-name" className={inputCls} />
+              </label>
             </div>
           )}
           {id === "business" && (
-            <input
-              autoFocus
-              value={draft.businessName}
-              onChange={(e) => set("businessName", e.target.value)}
-              placeholder={isLandlord ? "e.g. Oakdale Properties" : "e.g. Smith Plumbing Co"}
-              aria-label="Business name"
-              className={inputCls}
-            />
+            <label className="block">
+              <span className={fieldLabel}>Name</span>
+              <input
+                autoFocus
+                value={draft.businessName}
+                onChange={(e) => set("businessName", e.target.value)}
+                placeholder={isLandlord ? "Smith Rentals" : "Smith Plumbing"}
+                autoComplete="organization"
+                className={inputCls}
+              />
+            </label>
           )}
           {id === "phone" && (
-            <input autoFocus type="tel" value={draft.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(312) 555-0142" aria-label="Business phone" className={inputCls} />
+            <label className="block">
+              <span className={fieldLabel}>Phone number</span>
+              <input autoFocus type="tel" value={draft.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(312) 555-0142" autoComplete="tel" className={inputCls} />
+            </label>
           )}
           {id === "email" && (
-            <input autoFocus type="email" value={draft.email} onChange={(e) => set("email", e.target.value)} placeholder="you@example.com" autoComplete="email" aria-label="Email" className={inputCls} />
+            <label className="block">
+              <span className={fieldLabel}>Email</span>
+              <input autoFocus type="email" value={draft.email} onChange={(e) => set("email", e.target.value)} placeholder="you@example.com" autoComplete="email" className={inputCls} />
+            </label>
           )}
           {id === "password" && (
-            <input autoFocus type="password" value={draft.password} onChange={(e) => set("password", e.target.value)} autoComplete="new-password" aria-label="Password" className={inputCls} />
+            <label className="block">
+              <span className={fieldLabel}>Password</span>
+              <input autoFocus type="password" value={draft.password} onChange={(e) => set("password", e.target.value)} autoComplete="new-password" className={inputCls} />
+            </label>
           )}
 
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          {error && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-700">
+              {error}
+            </p>
+          )}
 
           <button type="submit" disabled={busy} className={continueCls}>
-            {busy ? "Creating your account…" : isLast ? "Create account" : "Continue"}
+            {busy ? "Creating your account…" : isLast ? "Create my account" : "Continue"}
           </button>
         </form>
       )}
