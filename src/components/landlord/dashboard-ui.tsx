@@ -1,196 +1,136 @@
 import Link from "next/link";
 import type { AttentionItem, SetupState } from "@/lib/attention";
-import type { PortfolioProperty, Pulse } from "@/lib/services/dashboard";
-import { Button, Card, Money } from "@/components/ui";
-import {
-  IconCheck,
-  IconDoor,
-  IconKeep,
-  IconRent,
-  IconWrench,
-} from "@/components/icons";
+import type { Pulse } from "@/lib/services/dashboard";
+import { formatCents } from "@/lib/money";
+import { Button, Stat, StepMark } from "@/components/ui";
+import { IconChevronRight } from "@/components/icons";
 import { CreateSampleButton, RemoveSampleButton } from "./sample-buttons";
 
-// ── Pulse bar ───────────────────────────────────────────────────────────────
+// ── The three numbers ───────────────────────────────────────────────────────
 
-/** The summary bar: three numbers on a white card. */
 export function PulseBar({ pulse }: { pulse: Pulse }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-10 gap-y-3 rounded-2xl border border-stone-200 bg-white px-6 py-5">
-      <span className="flex items-baseline gap-2.5">
-        <IconRent className="h-4 w-4 self-center text-stone-400" />
-        <Money
-          cents={pulse.marketRentTotalCents}
-          className="font-display text-2xl font-semibold text-stone-900"
+    <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+      <dl className="grid gap-5 sm:grid-cols-3">
+        <Stat label="Rent each month" value={formatCents(pulse.leaseRentTotalCents)} />
+        <Stat
+          label="Lived in"
+          value={`${pulse.occupiedCount} of ${pulse.unitCount}`}
+          unit={pulse.unitCount === 1 ? "unit" : "units"}
         />
-        <span className="text-sm text-stone-500">/mo market rent</span>
+        <Stat
+          label="Open repairs"
+          value={pulse.openMaintenance === 0 ? "None" : pulse.openMaintenance}
+          note={
+            pulse.openMaintenance > 0 ? (
+              <Link href="/landlord/maintenance" className="font-medium text-patina underline">
+                See them
+              </Link>
+            ) : undefined
+          }
+        />
+      </dl>
+    </section>
+  );
+}
+
+// ── What needs you ──────────────────────────────────────────────────────────
+
+/** One thing that needs the owner: a copper dot, a sentence, a way in. */
+function AttentionRow({ item }: { item: AttentionItem }) {
+  const text = (
+    <span className="min-w-0 flex-1">
+      <span className="flex items-center gap-2.5">
+        <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-copper" />
+        <span className="text-base font-semibold text-stone-900">{item.title}</span>
       </span>
-      <span className="flex items-baseline gap-2.5">
-        <IconDoor className="h-4 w-4 self-center text-stone-400" />
-        <span className="font-display text-2xl font-semibold tabular-nums text-stone-900">
-          {pulse.occupiedCount}
-          <span className="text-stone-400"> / {pulse.unitCount}</span>
+      {item.meta && <span className="mt-0.5 block pl-[18px] text-sm text-stone-600">{item.meta}</span>}
+    </span>
+  );
+
+  // The sample row carries a second button, so it cannot be one big link.
+  if (item.kind === "sample") {
+    return (
+      <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
+        {text}
+        <span className="flex shrink-0 items-center gap-2 pl-[18px] sm:pl-0">
+          <Button href={item.action.href} size="sm" variant="secondary">
+            {item.action.label}
+          </Button>
+          {item.refId && <RemoveSampleButton propertyId={item.refId} />}
         </span>
-        <span className="text-sm text-stone-500">occupied</span>
-      </span>
-      <span className="flex items-baseline gap-2.5">
-        <IconWrench className="h-4 w-4 self-center text-stone-400" />
-        <span className="font-display text-2xl font-semibold tabular-nums text-stone-900">
-          {pulse.openMaintenance}
-        </span>
-        <span className="text-sm text-stone-500">open maintenance</span>
-      </span>
-    </div>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={item.action.href}
+      className="group -mx-3 flex min-h-16 items-center gap-3 rounded-lg px-3 py-3 transition hover:bg-stone-50 focus-visible:bg-stone-50"
+    >
+      {text}
+      <IconChevronRight className="h-4 w-4 shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-patina" />
+    </Link>
   );
 }
 
-// ── Attention queue ─────────────────────────────────────────────────────────
-
-const KIND_ICON: Record<AttentionItem["kind"], React.ReactNode> = {
-  vacancy: <IconDoor className="h-4.5 w-4.5" />,
-  sample: <IconKeep className="h-4.5 w-4.5" />,
-  "late-rent": <IconRent className="h-4.5 w-4.5" />,
-};
-
-const CLS_CHIP: Record<AttentionItem["cls"], string> = {
-  EMERGENCY: "bg-red-50 text-red-700",
-  MONEY_ON_YOU: "bg-copper-tint text-copper-deep",
-  MONEY_TO_YOU: "bg-amber-50 text-amber-800",
-  EXPIRING: "bg-stone-100 text-stone-600",
-  OPTIMIZATION: "bg-amber-50 text-amber-800",
-  SETUP: "bg-stone-100 text-stone-500",
-};
-
-export function AttentionCard({ item }: { item: AttentionItem }) {
+export function AttentionList({ items }: { items: AttentionItem[] }) {
   return (
-    <Card className="flex items-center gap-4 p-4">
-      <span
-        className={`cut-sm flex h-9 w-9 shrink-0 items-center justify-center ${CLS_CHIP[item.cls]}`}
-      >
-        {KIND_ICON[item.kind]}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-stone-900">{item.title}</p>
-        {item.meta && <p className="mt-0.5 text-xs text-stone-500">{item.meta}</p>}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {item.kind === "sample" && item.refId && <RemoveSampleButton propertyId={item.refId} />}
-        <Button href={item.action.href} size="sm" variant="accent">
-          {item.action.label}
-        </Button>
-      </div>
-    </Card>
-  );
-}
-
-export function AllQuiet({ unitCount }: { unitCount: number }) {
-  return (
-    <Card className="flex items-center gap-4 p-5">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-patina-tint text-patina">
-        <IconCheck className="h-5 w-5" />
-      </span>
-      <div>
-        <p className="font-display text-sm font-semibold text-stone-900">All quiet.</p>
-        <p className="text-sm text-stone-500">
-          {unitCount} unit{unitCount === 1 ? "" : "s"}, nothing needs you.
-        </p>
-      </div>
-    </Card>
-  );
-}
-
-// ── Setup chain (day-0 attention) ───────────────────────────────────────────
-
-export function SetupChain({ setup, showSample }: { setup: SetupState; showSample: boolean }) {
-  const current = setup.steps.find((s) => !s.done && !s.soon);
-  return (
-    <Card className="p-6">
-      <h2 className="font-display text-lg font-semibold text-stone-900">
-        Let&apos;s get your first rent flowing
-      </h2>
-      <p className="mt-1 text-sm text-stone-500">
-        A single-family home takes about 30 seconds. Tenants and rent come right after.
-      </p>
-
-      <ol className="mt-5 grid gap-3 sm:grid-cols-4">
-        {setup.steps.map((step, i) => (
-          <li
-            key={step.key}
-            className={`rounded-lg border p-3 ${
-              step.done
-                ? "border-patina-tint bg-patina-tint/40"
-                : step.soon
-                  ? "border-stone-100 bg-stone-50"
-                  : "border-stone-200 bg-white"
-            }`}
-          >
-            <span
-              className={`cut-sm flex h-6 w-6 items-center justify-center text-xs font-semibold ${
-                step.done
-                  ? "bg-patina text-white"
-                  : step.soon
-                    ? "bg-stone-200 text-stone-400"
-                    : "bg-copper text-iron-deep"
-              }`}
-            >
-              {step.done ? <IconCheck className="h-3 w-3" /> : i + 1}
-            </span>
-            <p
-              className={`mt-2 text-xs font-medium ${
-                step.soon ? "text-stone-400" : "text-stone-800"
-              }`}
-            >
-              {step.label}
-              {step.soon && (
-                <span className="ml-1 rounded-full bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-500">
-                  soon
-                </span>
-              )}
-            </p>
+    <section className="mt-5 rounded-2xl border border-stone-200 bg-white px-5 py-2 sm:px-6">
+      <ul className="divide-y divide-stone-100">
+        {items.map((item) => (
+          <li key={item.id}>
+            <AttentionRow item={item} />
           </li>
         ))}
-      </ol>
-
-      {current && (
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button href={current.href ?? "/landlord/properties"}>{current.label}</Button>
-          {showSample && current.key === "property" && <CreateSampleButton />}
-        </div>
-      )}
-    </Card>
+      </ul>
+    </section>
   );
 }
 
-// ── Portfolio strip: each place, how full it is ────────────────────────────
+// ── Getting set up ──────────────────────────────────────────────────────────
 
-export function PortfolioStrip({ portfolio }: { portfolio: PortfolioProperty[] }) {
+const STEP_HELP: Record<string, string> = {
+  property: "Only the address. It takes about a minute.",
+  rents: "Open a unit and enter what it rents for.",
+  invite: "They get a link to see their lease and report problems.",
+};
+
+export function SetupChain({ setup, showSample }: { setup: SetupState; showSample: boolean }) {
+  // Steps that are not built yet are not shown: nothing here is a promise.
+  const steps = setup.steps.filter((s) => !s.soon);
+  const current = steps.find((s) => !s.done);
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {portfolio.map((p) => {
-        const occupied = p.units.filter((u) => u.status === "OCCUPIED").length;
-        return (
-          <Link
-            key={p.id}
-            href={`/landlord/properties/${p.id}`}
-            className="group rounded-xl border border-stone-200 bg-white p-4 transition hover:border-patina"
-          >
-            <p className="truncate text-sm font-semibold text-stone-900">{p.name}</p>
-            <p className="mt-0.5 text-xs tabular-nums text-stone-500">
-              {occupied} of {p.units.length} occupied
-            </p>
-            <div
-              className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100"
-              role="img"
-              aria-label={`${occupied} of ${p.units.length} homes occupied`}
-            >
-              <div
-                className="h-full rounded-full bg-patina"
-                style={{ width: `${p.units.length ? (occupied / p.units.length) * 100 : 0}%` }}
-              />
-            </div>
-          </Link>
-        );
-      })}
-    </div>
+    <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+      <ol className="space-y-4">
+        {steps.map((step) => {
+          const isCurrent = step.key === current?.key;
+          return (
+            <li key={step.key} className="flex gap-3">
+              <StepMark done={step.done} />
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`font-medium ${
+                    step.done || isCurrent ? "text-stone-900" : "text-stone-500"
+                  }`}
+                >
+                  {step.label}
+                </p>
+                {!step.done && <p className="text-sm text-stone-500">{STEP_HELP[step.key]}</p>}
+                {isCurrent && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button href={step.href ?? "/landlord/properties"} variant="accent">
+                      {step.label}
+                    </Button>
+                    {showSample && step.key === "property" && <CreateSampleButton />}
+                  </div>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }

@@ -16,6 +16,8 @@ export type Pulse = {
   unitCount: number;
   occupiedCount: number;
   marketRentTotalCents: number;
+  /** Rent on active leases: what actually comes in each month. */
+  leaseRentTotalCents: number;
   openMaintenance: number;
 };
 
@@ -27,6 +29,9 @@ export type PortfolioProperty = {
   portraitBody: string | null;
   portraitRoof: string | null;
   portraitAccent: string | null;
+  address1: string;
+  city: string;
+  state: string;
   units: Array<{ id: string; status: string }>;
 };
 
@@ -38,7 +43,7 @@ export type DashboardData = {
 };
 
 export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
-  const [propertyCount, units, openMaintenance, sample, portfolio, tenantInvites, tenantsJoined, lateRent] =
+  const [propertyCount, units, openMaintenance, sample, portfolio, tenantInvites, tenantsJoined, lateRent, leaseRent] =
     await Promise.all([
     prisma.property.count({ where: { orgId: ctx.orgId } }),
     prisma.unit.findMany({
@@ -61,11 +66,14 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
     findSample(ctx),
     prisma.property.findMany({
       where: { orgId: ctx.orgId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { name: "asc" },
       select: {
         id: true,
         name: true,
         type: true,
+        address1: true,
+        city: true,
+        state: true,
         portraitSeed: true,
         portraitBody: true,
         portraitRoof: true,
@@ -76,12 +84,17 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
     prisma.invitation.count({ where: { orgId: ctx.orgId, kind: "TENANT" } }),
     prisma.leaseTenant.count({ where: { lease: { orgId: ctx.orgId } } }),
     getOrgLateRent(ctx.orgId),
+    prisma.lease.aggregate({
+      where: { orgId: ctx.orgId, status: "ACTIVE" },
+      _sum: { monthlyRentCents: true },
+    }),
   ]);
 
   const pulse: Pulse = {
     unitCount: units.length,
     occupiedCount: units.filter((u) => u.status === "OCCUPIED").length,
     marketRentTotalCents: units.reduce((s, u) => s + (u.marketRentCents ?? 0), 0),
+    leaseRentTotalCents: leaseRent._sum.monthlyRentCents ?? 0,
     openMaintenance,
   };
 

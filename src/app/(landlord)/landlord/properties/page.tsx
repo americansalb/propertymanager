@@ -1,27 +1,16 @@
 import Link from "next/link";
 import { requireOrg } from "@/lib/authz";
 import { listProperties } from "@/lib/services/property";
-import { Badge, Button, PageTitle } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { PropertyRow } from "@/components/landlord/property-row";
 import { IconSearch } from "@/components/icons";
 
 export const metadata = { title: "Properties" };
 
-const TYPE_LABEL: Record<string, string> = {
-  SINGLE_FAMILY: "Single family",
-  MULTIFAMILY: "Multifamily",
-  CONDO: "Condo",
-  TOWNHOUSE: "Townhouse",
-  COMMERCIAL: "Commercial",
-  OTHER: "Other",
-};
+type Search = { q?: string; tag?: string; vac?: string };
 
-const SORTS = [
-  { key: "new", label: "Newest" },
-  { key: "name", label: "Name" },
-  { key: "vacancy", label: "Most vacant" },
-] as const;
-
-type Search = { q?: string; type?: string; tag?: string; vac?: string; sort?: string };
+/** Below this many properties, a search box is just clutter. */
+const SEARCH_FROM = 6;
 
 function href(params: Search, patch: Partial<Search>): string {
   const merged = { ...params, ...patch };
@@ -31,6 +20,13 @@ function href(params: Search, patch: Partial<Search>): string {
   return `/landlord/properties${s ? `?${s}` : ""}`;
 }
 
+const chip = (active: boolean) =>
+  `inline-flex min-h-9 items-center rounded-full px-3.5 text-sm font-medium transition ${
+    active
+      ? "bg-keep-deep text-white"
+      : "border border-stone-300 bg-white text-stone-700 hover:border-patina hover:text-patina"
+  }`;
+
 export default async function PropertiesPage({
   searchParams,
 }: {
@@ -38,173 +34,117 @@ export default async function PropertiesPage({
 }) {
   const session = await requireOrg("/landlord/properties");
   const params = await searchParams;
-  const all = await listProperties(
-    { userId: session.userId, orgId: session.orgId },
-    { q: params.q, type: params.type, tag: params.tag },
-  );
+  const ctx = { userId: session.userId, orgId: session.orgId };
+  const filtered = Boolean(params.q || params.tag || params.vac);
+  const matches = await listProperties(ctx, { q: params.q, tag: params.tag });
+  // The unfiltered list decides what tools to show, and which labels exist.
+  const all = filtered ? await listProperties(ctx, {}) : matches;
 
-  let properties = all;
-  if (params.vac === "1") {
-    properties = properties.filter((p) => p.units.some((u) => u.status === "VACANT"));
-  }
-  if (params.sort === "name") {
-    properties = [...properties].sort((a, b) => a.name.localeCompare(b.name));
-  } else if (params.sort === "vacancy") {
-    properties = [...properties].sort(
-      (a, b) =>
-        b.units.filter((u) => u.status === "VACANT").length -
-        a.units.filter((u) => u.status === "VACANT").length,
-    );
-  }
+  const properties = (
+    params.vac === "1"
+      ? matches.filter((p) => p.units.some((u) => u.status === "VACANT"))
+      : matches
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
-  const tagCloud = [...new Set(all.flatMap((p) => p.tags))].slice(0, 10);
-  const filtered = Boolean(params.q || params.type || params.tag || params.vac);
+  const labels = [...new Set(all.flatMap((p) => p.tags))].slice(0, 8);
+  const anyVacant = all.some((p) => p.units.some((u) => u.status === "VACANT"));
+  const showTools = all.length >= SEARCH_FROM || filtered;
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <PageTitle>Properties</PageTitle>
-          <p className="mt-1 text-sm tabular-nums text-stone-500">
-            {properties.length}
-            {filtered ? ` of ${all.length}` : ""} propert
-            {properties.length === 1 ? "y" : "ies"}
-          </p>
-        </div>
-        <Button href="/landlord/properties/new">Add property</Button>
+    <div className="mx-auto max-w-3xl">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-3xl font-semibold tracking-tight text-stone-900">Properties</h1>
+        {all.length > 0 && <Button href="/landlord/properties/new">Add a property</Button>}
       </div>
 
-      {(all.length > 0 || filtered) && (
-        <div className="mt-5 flex flex-wrap items-center gap-2">
+      {showTools && (
+        <div className="mt-5 space-y-3">
           <form action="/landlord/properties" className="relative">
-            {params.type && <input type="hidden" name="type" value={params.type} />}
             {params.tag && <input type="hidden" name="tag" value={params.tag} />}
             {params.vac && <input type="hidden" name="vac" value={params.vac} />}
-            <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
+            <label htmlFor="property-search" className="sr-only">
+              Search by name or address
+            </label>
+            <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
+              id="property-search"
               name="q"
               defaultValue={params.q}
-              placeholder="Search address or name"
-              className="w-56 rounded-lg border border-stone-300 py-1.5 pl-8 pr-3 text-sm focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina"
+              placeholder="Search by name or address"
+              className="w-full rounded-xl border border-stone-300 bg-white py-3 pl-11 pr-3.5 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-2 focus:ring-patina/25"
             />
           </form>
-
-          {Object.entries(TYPE_LABEL).map(([key, label]) => {
-            const active = params.type === key;
-            return (
-              <Link
-                key={key}
-                href={href(params, { type: active ? undefined : key })}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                  active
-                    ? "bg-patina text-white"
-                    : "border border-stone-200 bg-white text-stone-600 hover:border-patina"
-                }`}
-              >
-                {label}
-              </Link>
-            );
-          })}
-
-          <Link
-            href={href(params, { vac: params.vac === "1" ? undefined : "1" })}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              params.vac === "1"
-                ? "bg-amber-500 text-white"
-                : "border border-stone-200 bg-white text-stone-600 hover:border-patina"
-            }`}
-          >
-            Has vacancy
-          </Link>
-
-          {tagCloud.map((t) => {
-            const active = params.tag === t;
-            return (
-              <Link
-                key={t}
-                href={href(params, { tag: active ? undefined : t })}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                  active
-                    ? "bg-patina text-white"
-                    : "border border-stone-200 bg-white text-stone-600 hover:border-patina"
-                }`}
-              >
-                #{t}
-              </Link>
-            );
-          })}
-
-          <span className="ml-auto flex items-center gap-1 text-xs text-stone-400">
-            sort
-            {SORTS.map((s) => (
-              <Link
-                key={s.key}
-                href={href(params, { sort: s.key === "new" ? undefined : s.key })}
-                className={`rounded px-1.5 py-0.5 font-medium ${
-                  (params.sort ?? "new") === s.key
-                    ? "text-patina"
-                    : "text-stone-500 hover:text-stone-700"
-                }`}
-              >
-                {s.label}
-              </Link>
-            ))}
-          </span>
+          {(anyVacant || labels.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {anyVacant && (
+                <Link
+                  href={href(params, { vac: params.vac === "1" ? undefined : "1" })}
+                  className={chip(params.vac === "1")}
+                >
+                  With a vacancy
+                </Link>
+              )}
+              {labels.map((t) => (
+                <Link
+                  key={t}
+                  href={href(params, { tag: params.tag === t ? undefined : t })}
+                  className={chip(params.tag === t)}
+                >
+                  {t}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {properties.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed border-stone-300 bg-white p-10 text-center">
-          <h2 className="font-display text-lg font-medium text-stone-900">
-            {filtered ? "Nothing matches those filters" : "No properties yet"}
-          </h2>
-          <p className="mx-auto mt-1 max-w-md text-sm text-stone-500">
-            {filtered
-              ? "Clear a filter or two and the village comes back."
-              : "Add your first property - a single-family home takes about 30 seconds."}
-          </p>
+        <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
           {filtered ? (
-            <Button href="/landlord/properties" variant="secondary" className="mt-5">
-              Clear filters
-            </Button>
+            <>
+              <p className="text-xl font-semibold tracking-tight text-stone-900">
+                Nothing matches that
+              </p>
+              <p className="mt-1 text-stone-600">
+                Try a shorter search, or go back to the whole list.
+              </p>
+              <Button href="/landlord/properties" variant="secondary" className="mt-5">
+                Show all properties
+              </Button>
+            </>
           ) : (
-            <Button href="/landlord/properties/new" className="mt-5">
-              Add your first property
-            </Button>
+            <>
+              <p className="text-xl font-semibold tracking-tight text-stone-900">
+                Add your first property
+              </p>
+              <p className="mt-1 text-stone-600">
+                Start with the address. A single house takes about a minute.
+              </p>
+              <Button href="/landlord/properties/new" variant="accent" className="mt-5">
+                Add a property
+              </Button>
+            </>
           )}
-        </div>
+        </section>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {properties.map((p) => {
-            const occupied = p.units.filter((u) => u.status === "OCCUPIED").length;
-            return (
-              <Link
-                key={p.id}
-                href={`/landlord/properties/${p.id}`}
-                className="group rounded-xl border border-stone-200 bg-white p-5 transition hover:border-patina"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="truncate font-semibold text-stone-900">{p.name}</h2>
-                  <Badge>{TYPE_LABEL[p.type] ?? p.type}</Badge>
-                </div>
-                <p className="mt-1 truncate text-sm text-stone-500">
-                  {p.address1}
-                  {p.address2 ? `, ${p.address2}` : ""} · {p.city}, {p.state} {p.zipCode}
-                </p>
-                <div className="mt-2 flex items-center justify-between">
-                  <p className="text-sm font-medium tabular-nums text-patina">
-                    {occupied} of {p.units.length} occupied
-                  </p>
-                  {p.tags.length > 0 && (
-                    <span className="truncate text-xs text-stone-400">
-                      #{p.tags.slice(0, 2).join(" #")}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <section className="mt-5 rounded-2xl border border-stone-200 bg-white px-5 py-2 sm:px-6">
+          <ul className="divide-y divide-stone-100">
+            {properties.map((p) => (
+              <li key={p.id}>
+                <PropertyRow property={p} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {filtered && properties.length > 0 && (
+        <p className="mt-3 text-sm text-stone-500">
+          Showing {properties.length} of {all.length}.{" "}
+          <Link href="/landlord/properties" className="font-medium text-patina underline">
+            Show all
+          </Link>
+        </p>
       )}
     </div>
   );

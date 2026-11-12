@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatCents } from "@/lib/money";
 import { UTILITY_SUGGESTIONS } from "@/lib/validation/property";
-import { useToast } from "@/components/ui-feedback";
+import { ConfirmButton, useToast } from "@/components/ui-feedback";
 import { AddChips, EditableRow, useOptionalRows, useRowPatch } from "@/components/ui-inline";
 import { unitTitle } from "@/lib/units";
 
@@ -25,6 +25,8 @@ export type UnitView = {
   /** Card subline: who lives here / who's been invited (property page only). */
   tenantNames?: string[];
   pendingInviteEmail?: string | null;
+  /** Rent on the current lease, when there is one. */
+  leaseRentCents?: number | null;
 };
 
 export const STATUS_LABEL: Record<string, string> = {
@@ -94,6 +96,42 @@ export function UnitStatusSelect({
         </option>
       ))}
     </select>
+  );
+}
+
+/** Deleting lives at the bottom of the thing it deletes, never on a list. */
+export function UnitDeleteButton({
+  unitId,
+  unitNumber,
+  propertyId,
+}: {
+  unitId: string;
+  unitNumber: string;
+  propertyId: string;
+}) {
+  const router = useRouter();
+  const { push: toast } = useToast();
+
+  async function remove() {
+    const res = await fetch(`/api/v1/landlord/units/${unitId}`, { method: "DELETE" });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      toast(data.error ?? `Couldn't delete ${unitTitle(unitNumber)}.`, "bad");
+      return;
+    }
+    toast(`${unitTitle(unitNumber)} deleted.`);
+    router.push(`/landlord/properties/${propertyId}`);
+    router.refresh();
+  }
+
+  return (
+    <ConfirmButton
+      onConfirm={remove}
+      confirmLabel="Yes, delete it"
+      className="min-h-9 rounded-lg px-3 text-sm font-medium text-stone-500 transition hover:bg-red-50 hover:text-red-700"
+    >
+      Delete this unit
+    </ConfirmButton>
   );
 }
 

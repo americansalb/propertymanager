@@ -1,17 +1,17 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/authz";
 import { getProperty, revealAccessCodes } from "@/lib/services/property";
 import { getUnitTenancyByProperty } from "@/lib/services/lease";
 import { NotFoundError } from "@/lib/authz/api";
+import { formatCents } from "@/lib/money";
+import { PROPERTY_TYPE_LABEL, addressLine } from "@/lib/property-types";
 import { UnitsManager, type UnitView } from "@/components/landlord/units-manager";
 import { PropertyDeleteButton } from "@/components/landlord/property-delete-button";
 import { PropertyDetailsCard } from "@/components/landlord/property-details-card";
-import { PropertyHeaderEditor } from "@/components/landlord/property-header-editor";
+import { PropertyFacts } from "@/components/landlord/property-header-editor";
 import { PhotoStrip } from "@/components/landlord/photo-strip";
 import { listPhotos, PHOTO_LIMITS } from "@/lib/services/photos";
-import { Badge } from "@/components/ui";
-import { IconChevronLeft } from "@/components/icons";
+import { BackLink, Section, Stat } from "@/components/ui";
 
 export const metadata = { title: "Property" };
 
@@ -51,6 +51,7 @@ export default async function PropertyDetailPage({
     status: u.status,
     tenantNames: tenancy[u.id]?.tenantNames ?? [],
     pendingInviteEmail: tenancy[u.id]?.pendingInviteEmail ?? null,
+    leaseRentCents: tenancy[u.id]?.leaseRentCents ?? null,
   }));
 
   const photos = await listPhotos(
@@ -58,8 +59,16 @@ export default async function PropertyDetailPage({
     "Property",
     property.id,
   );
-  const occupied = units.filter((u) => u.status === "OCCUPIED").length;
-  const rentMissing = units.filter((u) => u.marketRentCents == null).length;
+
+  // The answer first: how full is it, and what does it bring in.
+  const livedIn = units.filter((u) => u.status !== "VACANT");
+  const vacant = units.filter((u) => u.status === "VACANT");
+  const rentCents = livedIn.reduce(
+    (sum, u) => sum + (u.leaseRentCents ?? u.marketRentCents ?? 0),
+    0,
+  );
+  const askingCents = vacant.reduce((sum, u) => sum + (u.marketRentCents ?? 0), 0);
+
   const codes = revealAccessCodes(property.accessCodes);
   const details = {
     alternateAddress: property.alternateAddress,
@@ -74,63 +83,72 @@ export default async function PropertyDetailPage({
     notes: property.notes,
     tags: property.tags,
   };
+  const core = {
+    id: property.id,
+    name: property.name,
+    type: property.type,
+    address1: property.address1,
+    address2: property.address2,
+    city: property.city,
+    state: property.state,
+    zipCode: property.zipCode,
+  };
 
   return (
-    <div>
-      <Link
-        href="/landlord/properties"
-        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700"
-      >
-        <IconChevronLeft className="h-3 w-3" /> Properties
-      </Link>
+    <div className="mx-auto max-w-3xl">
+      <BackLink href="/landlord/properties">Properties</BackLink>
 
-      <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-start">
-        <PropertyHeaderEditor
-          property={{
-            id: property.id,
-            name: property.name,
-            type: property.type,
-            address1: property.address1,
-            address2: property.address2,
-            city: property.city,
-            state: property.state,
-            zipCode: property.zipCode,
-            alternateAddress: property.alternateAddress,
-          }}
-          chips={
-            <>
-              <Badge tone={occupied === units.length && units.length > 0 ? "patina" : "amber"}>
-                {occupied} of {units.length} occupied
-              </Badge>
-              {rentMissing > 0 && (
-                <Badge tone="copper">
-                  rent not set on {rentMissing} unit{rentMissing === 1 ? "" : "s"}
-                </Badge>
-              )}
-            </>
-          }
-        />
-        <div className="flex shrink-0 items-center gap-3">
-          <PropertyDeleteButton propertyId={property.id} />
-        </div>
-      </div>
+      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-900">
+        {property.name}
+      </h1>
+      <p className="mt-1 text-stone-600">{addressLine(core)}</p>
+      <p className="text-sm text-stone-500">{PROPERTY_TYPE_LABEL[property.type] ?? "Property"}</p>
 
-      <section className="mt-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
-          Photos
-        </h2>
+      {units.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+          <dl className="grid gap-5 sm:grid-cols-3">
+            <Stat
+              label="Lived in"
+              value={`${livedIn.length} of ${units.length}`}
+              unit={units.length === 1 ? "unit" : "units"}
+            />
+            <Stat label="Rent each month" value={formatCents(rentCents)} />
+            <Stat
+              label="Vacant"
+              value={vacant.length === 0 ? "None" : vacant.length}
+              unit={vacant.length === 0 ? undefined : vacant.length === 1 ? "unit" : "units"}
+              note={
+                vacant.length > 0 && askingCents > 0
+                  ? `Asking ${formatCents(askingCents)} a month`
+                  : undefined
+              }
+              noteTone="copper"
+            />
+          </dl>
+        </section>
+      )}
+
+      <UnitsManager propertyId={property.id} units={units} />
+
+      <Section title="Building details">
+        <PropertyDetailsCard propertyId={property.id} details={details} />
+      </Section>
+
+      <Section title="This property">
+        <PropertyFacts property={core} />
+      </Section>
+
+      <Section title="Photos">
         <PhotoStrip
           entityType="Property"
           entityId={property.id}
           photos={photos}
           limit={PHOTO_LIMITS.Property}
         />
-      </section>
+      </Section>
 
-      <UnitsManager propertyId={property.id} units={units} />
-
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-        <PropertyDetailsCard propertyId={property.id} details={details} />
+      <div className="mt-6">
+        <PropertyDeleteButton propertyId={property.id} />
       </div>
     </div>
   );

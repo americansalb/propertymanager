@@ -22,11 +22,10 @@ export function PropertyDeleteButton({ propertyId }: { propertyId: string }) {
   return (
     <ConfirmButton
       onConfirm={remove}
-      confirmLabel="Delete property"
-      title="Delete property and all of its units"
-      className="rounded-lg px-2 py-1 text-sm text-stone-400 transition hover:bg-red-50 hover:text-red-600"
+      confirmLabel="Yes, delete it"
+      className="min-h-9 rounded-lg px-3 text-sm font-medium text-stone-500 transition hover:bg-red-50 hover:text-red-700"
     >
-      Delete property
+      Delete this property
     </ConfirmButton>
   );
 }

@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, buttonCls } from "@/components/ui";
-import { EditableRow, useRowPatch } from "@/components/ui-inline";
+import { Badge } from "@/components/ui";
+import {
+  AddChips,
+  EditableRow,
+  useOptionalRows,
+  useRowPatch,
+  type EditableRowProps,
+} from "@/components/ui-inline";
 
 export type DetailsView = {
   alternateAddress: string | null;
@@ -19,10 +25,29 @@ export type DetailsView = {
   tags: string[];
 };
 
+type Key =
+  | "water"
+  | "breaker"
+  | "codes"
+  | "parking"
+  | "year"
+  | "pets"
+  | "petNotes"
+  | "notes"
+  | "tags"
+  | "aka";
+
+type Def = {
+  key: Key;
+  /** The word on the Add chip. */
+  chip: string;
+  filled: boolean;
+  row: Omit<EditableRowProps, "autoOpen" | "onDismissEmpty">;
+};
+
 /**
- * The operational record as living rows: every row edits itself in place.
- * Empty rows pitch their value ("Your plumber's first question..."); the
- * card stays silent until it has facts, and never becomes a form.
+ * What a repair person asks first. Only rows with an answer show; the rest
+ * wait behind Add chips, so an empty building never looks like a form.
  */
 export function PropertyDetailsCard({
   propertyId,
@@ -32,230 +57,217 @@ export function PropertyDetailsCard({
   details: DetailsView;
 }) {
   const patch = useRowPatch(`/api/v1/landlord/properties/${propertyId}/details`);
-  const [revealed, setRevealed] = useState(false);
   const [showCodes, setShowCodes] = useState(false);
 
-  const pets =
-    details.petsAllowed === null ? null : details.petsAllowed ? "Allowed" : "Not allowed";
-
-  type Row = { filled: boolean; node: React.ReactNode };
-  const rows: Row[] = [
+  const defs: Def[] = [
     {
-      filled: details.alternateAddress != null,
-      node: (
-        <EditableRow
-          key="aka"
-          label="Also known as"
-          value={details.alternateAddress}
-          emptyPrompt="Corner building? Add its other street address."
-          kind={{ kind: "text", placeholder: "850 W Belmont Ave entrance" }}
-          onSave={(v) => patch({ alternateAddress: v })}
-          savedToast="Saved."
-        />
-      ),
-    },
-    {
-      filled: details.yearBuilt != null,
-      node: (
-        <EditableRow
-          key="year"
-          label="Year built"
-          value={details.yearBuilt?.toString() ?? null}
-          emptyPrompt="When was it built? Pros quote blind without it."
-          kind={{ kind: "number", placeholder: "1924" }}
-          onSave={(v) => patch({ yearBuilt: v })}
-          savedToast="Saved."
-        />
-      ),
-    },
-    {
-      filled: details.parkingNotes != null,
-      node: (
-        <EditableRow
-          key="parking"
-          label="Parking"
-          value={details.parkingNotes}
-          emptyPrompt="Where does the van park? Pros ask first."
-          kind={{ kind: "text", placeholder: "Permit zone 383; alley spot behind" }}
-          onSave={(v) => patch({ parkingNotes: v })}
-          savedToast="Saved."
-        />
-      ),
-    },
-    {
+      key: "water",
+      chip: "Water shutoff",
       filled: details.waterShutoffLocation != null,
-      node: (
-        <EditableRow
-          key="water"
-          label="Water shutoff"
-          value={details.waterShutoffLocation}
-          emptyPrompt="Your plumber's first question in an emergency."
-          kind={{ kind: "text", placeholder: "Basement, NE corner by the meter" }}
-          onSave={(v) => patch({ waterShutoffLocation: v })}
-          savedToast="Saved."
-        />
-      ),
+      row: {
+        label: "Water shutoff",
+        value: details.waterShutoffLocation,
+        emptyPrompt: "Where is the main water shutoff?",
+        kind: { kind: "text", placeholder: "Basement, by the meter" },
+        onSave: (v) => patch({ waterShutoffLocation: v }),
+        savedToast: "Saved.",
+      },
     },
     {
+      key: "breaker",
+      chip: "Breaker panel",
       filled: details.breakerPanelLocation != null,
-      node: (
-        <EditableRow
-          key="breaker"
-          label="Breaker panel"
-          value={details.breakerPanelLocation}
-          emptyPrompt="The first thing any electrician asks."
-          kind={{ kind: "text", placeholder: "Rear stairwell, gray box" }}
-          onSave={(v) => patch({ breakerPanelLocation: v })}
-          savedToast="Saved."
-        />
-      ),
+      row: {
+        label: "Breaker panel",
+        value: details.breakerPanelLocation,
+        emptyPrompt: "Where is the breaker panel?",
+        kind: { kind: "text", placeholder: "Rear stairwell, gray box" },
+        onSave: (v) => patch({ breakerPanelLocation: v }),
+        savedToast: "Saved.",
+      },
     },
     {
+      key: "codes",
+      chip: "Door and gate codes",
       filled: details.accessCodes != null || details.accessLocked,
-      node: (
-        <EditableRow
-          key="codes"
-          label="Access codes"
-          value={details.accessCodes}
-          display={
-            details.accessLocked ? (
-              <span className="text-amber-700">Stored, but the encryption key changed.</span>
+      row: {
+        label: "Door and gate codes",
+        value: details.accessCodes,
+        display: details.accessLocked ? (
+          <span className="text-amber-800">Saved, but it can no longer be read. Enter it again.</span>
+        ) : (
+          // span, not button: this display lives inside the row button
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowCodes((s) => !s);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowCodes((s) => !s);
+              }
+            }}
+            className="cursor-pointer"
+          >
+            {showCodes ? (
+              details.accessCodes
             ) : (
-              // span, not button: this display lives inside the row button
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCodes((s) => !s);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowCodes((s) => !s);
-                  }
-                }}
-                className="cursor-pointer font-medium text-copper-deep hover:underline"
-              >
-                {showCodes ? details.accessCodes : "•••••• tap to reveal"}
-              </span>
-            )
-          }
-          emptyPrompt="Lockbox or gate codes, encrypted, shared per job only."
-          kind={{ kind: "text", placeholder: "Lockbox 4417; gate #2290" }}
-          onSave={(v) => patch({ accessCodes: v })}
-          savedToast="Encrypted and saved."
-        />
-      ),
+              <>
+                <span aria-hidden="true">••••••</span>
+                <span className="ml-2 text-sm font-medium text-patina underline">Show</span>
+              </>
+            )}
+          </span>
+        ),
+        emptyPrompt: "Lockbox, door or gate codes. Stored encrypted.",
+        kind: { kind: "text", placeholder: "Lockbox 4417, gate 2290" },
+        onSave: (v) => patch({ accessCodes: v }),
+        savedToast: "Saved and encrypted.",
+      },
     },
     {
+      key: "parking",
+      chip: "Parking",
+      filled: details.parkingNotes != null,
+      row: {
+        label: "Parking",
+        value: details.parkingNotes,
+        emptyPrompt: "Where can a work van park?",
+        kind: { kind: "text", placeholder: "Alley spot behind the building" },
+        onSave: (v) => patch({ parkingNotes: v }),
+        savedToast: "Saved.",
+      },
+    },
+    {
+      key: "year",
+      chip: "Year built",
+      filled: details.yearBuilt != null,
+      row: {
+        label: "Year built",
+        value: details.yearBuilt?.toString() ?? null,
+        emptyPrompt: "A rough year is fine.",
+        kind: { kind: "number", placeholder: "1924" },
+        onSave: (v) => patch({ yearBuilt: v }),
+        savedToast: "Saved.",
+      },
+    },
+    {
+      key: "pets",
+      chip: "Pets",
       filled: details.petsAllowed != null,
-      node: (
-        <EditableRow
-          key="pets"
-          label="Pets"
-          value={details.petsAllowed === null ? null : details.petsAllowed ? "yes" : "no"}
-          display={pets}
-          emptyPrompt="Pets on site change who takes the job."
-          kind={{
-            kind: "select",
-            options: [
-              { value: "unset", label: "Not decided" },
-              { value: "yes", label: "Allowed" },
-              { value: "no", label: "Not allowed" },
-            ],
-          }}
-          onSave={(v) => patch({ petsAllowed: v ?? "unset" })}
-          savedToast="Saved."
-        />
-      ),
+      row: {
+        label: "Pets",
+        value: details.petsAllowed === null ? null : details.petsAllowed ? "yes" : "no",
+        display:
+          details.petsAllowed === null ? null : details.petsAllowed ? "Allowed" : "Not allowed",
+        emptyPrompt: "Are pets allowed here?",
+        kind: {
+          kind: "select",
+          options: [
+            { value: "unset", label: "Not decided" },
+            { value: "yes", label: "Allowed" },
+            { value: "no", label: "Not allowed" },
+          ],
+        },
+        onSave: (v) => patch({ petsAllowed: v ?? "unset" }),
+        savedToast: "Saved.",
+      },
     },
     {
+      key: "petNotes",
+      chip: "Pet rules",
       filled: details.petNotes != null,
-      node: (
-        <EditableRow
-          key="petNotes"
-          label="Pet notes"
-          value={details.petNotes}
-          emptyPrompt="Conditions, breeds, weight limits."
-          kind={{ kind: "text", placeholder: "Cats ok, dogs under 30 lbs" }}
-          onSave={(v) => patch({ petNotes: v })}
-          savedToast="Saved."
-        />
-      ),
+      row: {
+        label: "Pet rules",
+        value: details.petNotes,
+        emptyPrompt: "Any limits on size, breed or number?",
+        kind: { kind: "text", placeholder: "Cats are fine. Dogs under 30 lbs." },
+        onSave: (v) => patch({ petNotes: v }),
+        savedToast: "Saved.",
+      },
     },
     {
+      key: "notes",
+      chip: "Notes",
       filled: details.notes != null,
-      node: (
-        <EditableRow
-          key="notes"
-          label="Notes"
-          value={details.notes}
-          emptyPrompt="Anything the next person at the door should know."
-          kind={{ kind: "text", rows: 3, placeholder: "Boiler serviced March 2026..." }}
-          onSave={(v) => patch({ notes: v })}
-          savedToast="Saved."
-        />
-      ),
+      row: {
+        label: "Notes",
+        value: details.notes,
+        emptyPrompt: "Anything the next person at the door should know.",
+        kind: { kind: "text", rows: 3, placeholder: "Boiler serviced in March." },
+        onSave: (v) => patch({ notes: v }),
+        savedToast: "Saved.",
+      },
     },
     {
+      key: "tags",
+      chip: "Labels",
       filled: details.tags.length > 0,
-      node: (
-        <EditableRow
-          key="tags"
-          label="Tags"
-          value={details.tags}
-          display={
-            <span className="flex flex-wrap gap-1.5">
-              {details.tags.map((t) => (
-                <Badge key={t}>{t}</Badge>
-              ))}
-            </span>
-          }
-          emptyPrompt="Organize your way: Lakeview, LLC-A, Section 8."
-          kind={{ kind: "chips", placeholder: "Add a tag" }}
-          onSave={(v) => patch({ tags: Array.isArray(v) ? v : [] })}
-          savedToast="Tags saved."
-        />
-      ),
+      row: {
+        label: "Labels",
+        value: details.tags,
+        display: (
+          <span className="flex flex-wrap gap-1.5">
+            {details.tags.map((t) => (
+              <Badge key={t}>{t}</Badge>
+            ))}
+          </span>
+        ),
+        emptyPrompt: "Group your properties your way.",
+        kind: { kind: "chips", placeholder: "Lakeview, LLC A" },
+        onSave: (v) => patch({ tags: Array.isArray(v) ? v : [] }),
+        savedToast: "Labels saved.",
+      },
+    },
+    {
+      key: "aka",
+      chip: "Second address",
+      filled: details.alternateAddress != null,
+      row: {
+        label: "Second address",
+        value: details.alternateAddress,
+        emptyPrompt: "A corner building's other street address.",
+        kind: { kind: "text", placeholder: "850 W Belmont Ave" },
+        onSave: (v) => patch({ alternateAddress: v }),
+        savedToast: "Saved.",
+      },
     },
   ];
 
-  const filledRows = rows.filter((r) => r.filled);
-  const hiddenCount = rows.length - filledRows.length;
-  const empty = filledRows.length === 0;
-  const visible = empty || revealed ? rows : filledRows;
+  const rows = useOptionalRows(
+    Object.fromEntries(defs.map((d) => [d.key, d.filled])) as Record<Key, boolean>,
+  );
+  const shown = defs.filter((d) => rows.shows(d.key));
+  // Pet rules only make sense once pets are allowed.
+  const pending = defs.filter(
+    (d) => rows.pending.includes(d.key) && (d.key !== "petNotes" || details.petsAllowed === true),
+  );
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white">
-      <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
-        <h2 className="text-sm font-semibold text-stone-900">Details &amp; access</h2>
-      </div>
-
-      {empty && !revealed ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <p className="text-sm text-stone-500">
-            Nothing recorded yet. Pros will ask for the year built, parking, shutoff
-            locations, pets, and access codes.
-          </p>
-          <button onClick={() => setRevealed(true)} className={buttonCls("secondary", "sm")}>
-            Add details
-          </button>
-        </div>
-      ) : (
-        <dl className="p-4">
-          {visible.map((r) => r.node)}
-          {!revealed && hiddenCount > 0 && (
-            <button
-              onClick={() => setRevealed(true)}
-              className="mt-2 text-xs font-medium text-stone-400 transition hover:text-copper-deep"
-            >
-              + {hiddenCount} more detail{hiddenCount === 1 ? "" : "s"} pros will ask about
-            </button>
-          )}
-        </dl>
+    <div>
+      {shown.length === 0 && (
+        <p className="py-1 text-stone-600">
+          Nothing saved yet. Add what you know now, and nobody has to call you from the basement
+          later.
+        </p>
       )}
+      {shown.map((d) => (
+        <EditableRow
+          key={d.key}
+          {...d.row}
+          autoOpen={rows.fresh(d.key)}
+          onDismissEmpty={() => rows.hide(d.key)}
+        />
+      ))}
+      <AddChips
+        title={shown.length === 0 ? "Add" : "Add more"}
+        items={pending.map((d) => ({ key: d.key, label: d.chip }))}
+        onPick={(key) => rows.reveal(key as Key)}
+      />
     </div>
   );
 }
