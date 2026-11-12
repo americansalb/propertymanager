@@ -5,7 +5,6 @@ import { brand } from "@/lib/brand";
 import { formatCents } from "@/lib/money";
 import { formatLeaseDate } from "@/lib/leases";
 import { unitTitle } from "@/lib/units";
-import { PropertyPortrait } from "@/components/brand/property-portrait";
 import { Button } from "@/components/ui";
 import { AcceptInviteForm, SignOutToSwitch } from "@/components/auth/accept-invite-form";
 
@@ -60,19 +59,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   return (
     <div>
-      <PropertyPortrait
-        seedKey={p.id}
-        type={p.type}
-        units={p.unitStatuses.map((status) => ({ status }))}
-        prefs={{
-          portraitSeed: p.portraitSeed,
-          portraitBody: p.portraitBody,
-          portraitRoof: p.portraitRoof,
-          portraitAccent: p.portraitAccent,
-        }}
-        className="mx-auto h-28 w-auto"
-      />
-      <div className="mt-4 text-center">
+      <div className="text-center">
         <p className="text-xs font-semibold uppercase tracking-widest text-copper-deep">
           {preview.orgName} invited you to
         </p>

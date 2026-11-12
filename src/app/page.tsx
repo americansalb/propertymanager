@@ -2,7 +2,6 @@ import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { Wordmark } from "@/components/brand/wordmark";
-import { VillageSkyline } from "@/components/brand/village-skyline";
 
 const FEATURES = [
   {
@@ -86,7 +85,6 @@ export default function LandingPage() {
       </main>
 
       <div className="mt-auto">
-        <VillageSkyline className="block w-full" />
         <footer className="bg-keep-night">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-7 text-xs text-stone-300">
             <span>

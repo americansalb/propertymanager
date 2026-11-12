@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { AttentionItem, SetupState } from "@/lib/attention";
 import type { PortfolioProperty, Pulse } from "@/lib/services/dashboard";
 import { Button, Card, Money } from "@/components/ui";
-import { PropertyPortrait } from "@/components/brand/property-portrait";
 import {
   IconCheck,
   IconDoor,
@@ -162,7 +161,7 @@ export function SetupChain({ setup, showSample }: { setup: SetupState; showSampl
   );
 }
 
-// ── Portfolio strip: your village, building by building ────────────────────
+// ── Portfolio strip: each place, how full it is ────────────────────────────
 
 export function PortfolioStrip({ portfolio }: { portfolio: PortfolioProperty[] }) {
   return (
@@ -175,21 +174,20 @@ export function PortfolioStrip({ portfolio }: { portfolio: PortfolioProperty[] }
             href={`/landlord/properties/${p.id}`}
             className="group rounded-xl border border-stone-200 bg-white p-4 transition hover:border-patina"
           >
-            <div className="flex h-20 items-end justify-center">
-              <PropertyPortrait
-                seedKey={p.id}
-                type={p.type}
-                units={p.units}
-                prefs={p}
-                className="h-full w-auto transition group-hover:-translate-y-0.5"
-              />
-            </div>
-            <p className="mt-3 truncate text-center text-sm font-semibold text-stone-900">
-              {p.name}
-            </p>
-            <p className="mt-0.5 text-center text-xs tabular-nums text-stone-500">
+            <p className="truncate text-sm font-semibold text-stone-900">{p.name}</p>
+            <p className="mt-0.5 text-xs tabular-nums text-stone-500">
               {occupied} of {p.units.length} occupied
             </p>
+            <div
+              className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100"
+              role="img"
+              aria-label={`${occupied} of ${p.units.length} homes occupied`}
+            >
+              <div
+                className="h-full rounded-full bg-patina"
+                style={{ width: `${p.units.length ? (occupied / p.units.length) * 100 : 0}%` }}
+              />
+            </div>
           </Link>
         );
       })}

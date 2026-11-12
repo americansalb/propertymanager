@@ -8,7 +8,6 @@ import { UnitsManager, type UnitView } from "@/components/landlord/units-manager
 import { PropertyDeleteButton } from "@/components/landlord/property-delete-button";
 import { PropertyDetailsCard } from "@/components/landlord/property-details-card";
 import { PropertyHeaderEditor } from "@/components/landlord/property-header-editor";
-import { PortraitStudio } from "@/components/landlord/portrait-studio";
 import { PhotoStrip } from "@/components/landlord/photo-strip";
 import { listPhotos, PHOTO_LIMITS } from "@/lib/services/photos";
 import { Badge } from "@/components/ui";
@@ -86,17 +85,6 @@ export default async function PropertyDetailPage({
       </Link>
 
       <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-start">
-        <PortraitStudio
-          propertyId={property.id}
-          type={property.type}
-          units={units}
-          prefs={{
-            portraitSeed: property.portraitSeed,
-            portraitBody: property.portraitBody,
-            portraitRoof: property.portraitRoof,
-            portraitAccent: property.portraitAccent,
-          }}
-        />
         <PropertyHeaderEditor
           property={{
             id: property.id,
