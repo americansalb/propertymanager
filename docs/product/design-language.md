@@ -49,7 +49,9 @@ is recognizable at a glance:
   and the literal two-tone pairs stay reserved for artwork.
 - THE VILLAGE IS BRICK. Building bodies are warm Chicago common brick
   (#9A5B43) with deeper red (#7C4334) seeded in and the occasional iron
-  block for rhythm. The keep and castle elements stay iron, always.
+  block for rhythm. The keep is green, like the mark (v4: green keep lit
+  from the left, copper home, wordmark in green and copper). Other castle
+  elements stay iron.
   Windows, doors, and roofs keep the metal palette; brick walls stay flat
   (no brick facet: shimmer belongs to metal).
 

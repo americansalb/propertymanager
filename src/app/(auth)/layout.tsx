@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { brand } from "@/lib/brand";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { Wordmark } from "@/components/brand/wordmark";
 import { VillageSkyline } from "@/components/brand/village-skyline";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -8,9 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <main className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-12 pb-44">
       <Link href="/" className="mb-8 flex flex-col items-center gap-3">
         <LogoMark className="h-14 w-14" />
-        <span className="font-display text-2xl font-semibold tracking-tight text-stone-900">
-          {brand.name}
-        </span>
+        <Wordmark className="text-2xl" />
       </Link>
       <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8">
         {children}

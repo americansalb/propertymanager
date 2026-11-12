@@ -9,9 +9,12 @@
   --color-copper: #d08a45;
   --color-copper-deep: #9e5b23;
   --color-copper-tint: #f6e7d7;
+  --color-copper-bright: #dc9853; /* copper legible on iron and on the keep's green */
   --color-patina: #3e7c66;
   --color-patina-tint: #e9f1ec;
   --color-patina-bright: #74b399; /* patina legible on iron */
+  --color-keep: #2f6353; /* the mark's keep, lit face */
+  --color-keep-deep: #234b3f; /* the mark's keep, shaded face */
   --color-brick: #9a5b43; /* the village is brick */
   --color-brick-deep: #7c4334;
 

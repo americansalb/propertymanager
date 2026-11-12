@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { Wordmark } from "@/components/brand/wordmark";
 import { VillageSkyline } from "@/components/brand/village-skyline";
 import { SpotEscrow, SpotRent, SpotTools } from "@/components/icons/spots";
 
@@ -28,12 +29,8 @@ export default function LandingPage() {
       <header className="bg-iron">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#faf8f4]">
-              <LogoMark className="h-7 w-7" />
-            </span>
-            <span className="font-display text-xl font-semibold tracking-tight text-white">
-              {brand.name}
-            </span>
+            <LogoMark tone="dark" small className="h-9 w-9" />
+            <Wordmark tone="dark" className="text-xl" />
           </Link>
           <nav className="flex items-center gap-3">
             <Link
