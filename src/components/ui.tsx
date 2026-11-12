@@ -28,9 +28,10 @@ const BTN_VARIANT: Record<ButtonVariant, string> = {
   danger: "rounded-lg text-stone-400 hover:bg-red-50 hover:text-red-600",
 };
 
+// md is a full 44px touch target; sm (36px) is for buttons inside a row.
 const BTN_SIZE: Record<ButtonSize, string> = {
-  md: "px-4 py-2 text-sm",
-  sm: "px-3 py-1.5 text-xs",
+  md: "min-h-11 px-5 py-2 text-[15px]",
+  sm: "min-h-9 px-3.5 py-1.5 text-sm",
 };
 
 export function buttonCls(variant: ButtonVariant = "primary", size: ButtonSize = "md") {
@@ -91,9 +92,7 @@ export function Badge({ tone = "stone", children }: { tone?: BadgeTone; children
 }
 
 export function SectionHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400">{children}</h2>
-  );
+  return <h2 className="text-lg font-semibold tracking-tight text-stone-900">{children}</h2>;
 }
 
 export function PageTitle({ children }: { children: React.ReactNode }) {
@@ -109,8 +108,9 @@ export function Money({ cents, className }: { cents: number; className?: string 
   return <span className={`tabular-nums ${className ?? ""}`}>{formatCents(cents)}</span>;
 }
 
+// 16px text so phones do not zoom in on focus; 48px tall.
 export const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
+  "w-full rounded-xl border border-stone-300 bg-white px-3.5 py-3 text-base text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-2 focus:ring-patina/25";
 
 export function Field({
   label,
