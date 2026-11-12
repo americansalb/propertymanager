@@ -2,12 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { buttonCls } from "@/components/ui";
+import { buttonCls, inputCls } from "@/components/ui";
 
-const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 const labelCls = "mb-1 block text-sm font-medium text-stone-700";
-const submitCls = `${buttonCls("primary")} w-full py-2.5`;
+const submitCls = `${buttonCls("primary")} min-h-12 w-full`;
 
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, {
@@ -24,6 +22,7 @@ export function LoginForm({ next }: { next?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -51,9 +50,30 @@ export function LoginForm({ next }: { next?: string }) {
       </div>
       <div>
         <label htmlFor="password" className={labelCls}>Password</label>
-        <input id="password" name="password" type="password" required autoComplete="current-password" className={inputCls} />
+        <div className="relative">
+          <input
+            id="password"
+            name="password"
+            type={show ? "text" : "password"}
+            required
+            autoComplete="current-password"
+            className={`${inputCls} pr-16`}
+          />
+          <button
+            type="button"
+            onClick={() => setShow((s) => !s)}
+            aria-pressed={show}
+            className="absolute inset-y-0 right-1.5 my-1.5 rounded-lg px-2.5 text-sm font-medium text-stone-600 hover:bg-stone-100"
+          >
+            {show ? "Hide" : "Show"}
+          </button>
+        </div>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm font-medium text-red-700">
+          {error}
+        </p>
+      )}
       <button type="submit" disabled={busy} className={submitCls}>
         {busy ? "Signing in…" : "Sign in"}
       </button>

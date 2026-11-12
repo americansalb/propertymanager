@@ -2,10 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { buttonCls } from "@/components/ui";
+import { buttonCls, inputCls } from "@/components/ui";
 
-const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-patina focus:outline-none focus:ring-1 focus:ring-patina";
 const labelCls = "mb-1 block text-sm font-medium text-stone-700";
 
 /**
@@ -28,7 +26,7 @@ export function AcceptInviteForm({ token, mode }: { token: string; mode: "new" |
     });
     const data = (await res.json().catch(() => ({}))) as { redirect?: string; error?: string };
     if (!res.ok) {
-      setError(data.error ?? "Something went wrong.");
+      setError(data.error ?? "Something went wrong. Try again.");
       setBusy(false);
       return;
     }
@@ -39,11 +37,15 @@ export function AcceptInviteForm({ token, mode }: { token: string; mode: "new" |
   if (mode === "session") {
     return (
       <div className="space-y-3">
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+        <p role="alert" className="text-sm font-medium text-red-700">
+          {error}
+        </p>
+      )}
         <button
           onClick={() => void submit({})}
           disabled={busy}
-          className={`${buttonCls("primary")} w-full py-2.5`}
+          className={`${buttonCls("primary")} min-h-12 w-full`}
         >
           {busy ? "One moment…" : "Accept and see your home"}
         </button>
@@ -102,10 +104,16 @@ export function AcceptInviteForm({ token, mode }: { token: string; mode: "new" |
           autoComplete="new-password"
           className={inputCls}
         />
-        <p className="mt-1 text-xs text-stone-400">At least 8 characters with a letter and a number.</p>
+        <p className="mt-1 text-sm text-stone-500">
+          At least 8 characters, with a letter and a number.
+        </p>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button type="submit" disabled={busy} className={`${buttonCls("primary")} w-full py-2.5`}>
+      {error && (
+        <p role="alert" className="text-sm font-medium text-red-700">
+          {error}
+        </p>
+      )}
+      <button type="submit" disabled={busy} className={`${buttonCls("primary")} min-h-12 w-full`}>
         {busy ? "Setting up…" : "See your home"}
       </button>
     </form>
@@ -124,7 +132,7 @@ export function SignOutToSwitch() {
     <button
       onClick={() => void signOut()}
       disabled={busy}
-      className={`${buttonCls("secondary")} w-full py-2.5`}
+      className={`${buttonCls("secondary")} min-h-12 w-full`}
     >
       {busy ? "Signing out…" : "Sign out and continue"}
     </button>

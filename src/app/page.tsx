@@ -5,16 +5,16 @@ import { Wordmark } from "@/components/brand/wordmark";
 
 const FEATURES = [
   {
-    title: "Rent that arrives itself",
-    body: "Tenants pay online, rent lands on the 1st, and the ledger writes itself. Late fees follow your rules, not your patience.",
+    title: "Know what needs you",
+    body: "Open it and the first thing you see is what needs you today. If nothing does, it says so.",
   },
   {
-    title: "Maintenance off your plate",
-    body: "Tenants report with photos. Vetted local pros bid with up-front prices. You approve from your phone.",
+    title: "Every rental on one page",
+    body: "The lease, the tenant, the rent and when it is due. Nothing to dig for, nothing to remember.",
   },
   {
-    title: "Money that can't get lost",
-    body: "Payment for every job sits in escrow until you approve the finished work. No deposits vanishing, no chasing refunds.",
+    title: "Repairs without phone tag",
+    body: "Tenants report a problem in a minute. You answer in one tap, and everyone can see where it stands.",
   },
 ];
 
@@ -30,13 +30,13 @@ export default function LandingPage() {
           <nav className="flex shrink-0 items-center gap-1 sm:gap-3">
             <Link
               href="/login"
-              className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium text-stone-700 transition hover:text-stone-900 sm:px-3"
+              className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 text-[15px] font-medium text-stone-700 transition hover:text-stone-900"
             >
               Sign in
             </Link>
             <Link
               href="/signup"
-              className="inline-flex items-center whitespace-nowrap rounded-xl bg-copper px-3 py-2 text-sm font-semibold text-iron-deep transition hover:bg-copper-bright active:translate-y-px sm:px-4"
+              className="inline-flex min-h-11 items-center whitespace-nowrap rounded-xl bg-keep-deep px-4 text-[15px] font-semibold text-white transition hover:bg-patina active:translate-y-px"
             >
               Get started
             </Link>
@@ -46,39 +46,37 @@ export default function LandingPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-3xl px-6 pt-20 pb-14 text-center sm:pt-28">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-copper-deep">
-            Property management &amp; trusted local pros
-          </p>
-          <h1 className="mt-5 font-display text-5xl font-semibold leading-[1.05] tracking-tight text-stone-900 sm:text-7xl">
+          <h1 className="text-5xl font-semibold leading-[1.05] tracking-tight text-stone-900 sm:text-7xl">
             Your rentals,
             <br />
             well kept.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-stone-600">
-            Collect rent, handle maintenance, and hire verified local pros, with every
-            payment held safely until the work passes your inspection.
+            Leases, rent and repairs for your rentals, in one calm place. Simple enough to use
+            without a manual.
           </p>
-          <div className="mt-10 flex items-center justify-center gap-3">
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/signup"
-              className="inline-flex items-center rounded-xl bg-keep-deep px-7 py-3 text-base font-semibold text-white transition hover:bg-patina active:translate-y-px"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-keep-deep px-7 text-base font-semibold text-white transition hover:bg-patina active:translate-y-px sm:w-auto"
             >
               Start free
             </Link>
-            <Link
-              href="/signup"
-              className="rounded-xl border border-stone-300 bg-white px-7 py-3 text-base font-semibold text-stone-700 transition hover:border-patina hover:text-stone-900"
-            >
-              I&apos;m a service pro
-            </Link>
           </div>
+          <p className="mt-5 text-sm text-stone-500">
+            Renting your home? Your landlord sends you a link. Doing repairs for a living?{" "}
+            <Link href="/signup" className="font-medium text-patina underline">
+              Get on the list
+            </Link>
+            .
+          </p>
         </section>
 
         <section className="mx-auto grid max-w-5xl gap-4 px-6 pb-24 sm:grid-cols-3">
           {FEATURES.map((f) => (
-            <div key={f.title} className="rounded-xl border border-stone-200 bg-white p-6">
-              <h2 className="font-display text-lg font-semibold text-stone-900">{f.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-stone-600">{f.body}</p>
+            <div key={f.title} className="rounded-2xl border border-stone-200 bg-white p-6">
+              <h2 className="text-lg font-semibold tracking-tight text-stone-900">{f.title}</h2>
+              <p className="mt-2 leading-6 text-stone-600">{f.body}</p>
             </div>
           ))}
         </section>
@@ -86,7 +84,7 @@ export default function LandingPage() {
 
       <div className="mt-auto">
         <footer className="bg-keep-night">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-7 text-xs text-stone-300">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-7 text-sm text-stone-300">
             <span>
               © {new Date().getFullYear()} {brand.name} · {brand.tagline}
             </span>

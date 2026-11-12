@@ -17,12 +17,11 @@ export default async function LoginPage({
 
   return (
     <>
-      <h1 className="mb-1 text-xl font-semibold text-stone-900">Welcome back</h1>
-      <p className="mb-6 text-sm text-stone-500">Sign in to your account.</p>
+      <h1 className="mb-5 text-2xl font-semibold tracking-tight text-stone-900">Sign in</h1>
       <LoginForm next={next} />
-      <p className="mt-6 text-center text-sm text-stone-500">
+      <p className="mt-6 text-center text-stone-600">
         New here?{" "}
-        <Link href="/signup" className="font-medium text-copper-deep hover:underline">
+        <Link href="/signup" className="font-medium text-patina underline">
           Create an account
         </Link>
       </p>

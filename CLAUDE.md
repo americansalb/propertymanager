@@ -37,6 +37,10 @@ Read-only instance audit: `pnpm db:audit`.
   `requireOrg()` - never from client input.
 - Ledger + status-history tables are append-only; corrections are new rows.
 - Route handlers stay thin: zod parse → `src/lib/services/*` → JSON.
+- Every page follows the page rules in `docs/product/design-language.md`:
+  one column, the answer first, one next step, rows that are links,
+  `Section` cards, `EditableRow`/`InfoRow` facts, empty fields behind Add
+  chips, no "soon", plain words (Repairs, Home, "a month").
 
 ## Commands
 
