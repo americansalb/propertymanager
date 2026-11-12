@@ -54,6 +54,17 @@ something else is probably two pages.
 10. PLAIN WORDS. Repairs, not maintenance. Home, not dashboard. "A month",
     not "/mo". Labels on every field; a placeholder is only an example.
 
+## The landing page
+
+The landing page shows the product instead of describing it. Its pictures
+are small copies of the real screens (`components/landing/shots.tsx`),
+built from the same colors and the same words, plus one working piece: a
+repair the visitor answers themselves (`repair-demo.tsx`, which uses the
+product's own stage labels). No illustrations, no stock photos, no invented
+numbers or quotes. When a real screen changes, its copy here changes too.
+Everything pictured must be built. The soft shadow under these frames is
+the one place depth is allowed; the app itself stays flat.
+
 ## The signature
 
 The product is recognizable by restraint and two colors:
