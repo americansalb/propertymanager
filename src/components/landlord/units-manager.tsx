@@ -1,123 +1,83 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { formatCents } from "@/lib/money";
-import { buttonCls, inputCls } from "@/components/ui";
-import { ConfirmButton, useToast } from "@/components/ui-feedback";
-import {
-  UnitStatusSelect,
-  unitTitle,
-  type UnitView,
-} from "@/components/landlord/unit-terms";
-import { IconChevronRight, IconClose, IconPlus } from "@/components/icons";
+import { Section, buttonCls, inputCls } from "@/components/ui";
+import { useToast } from "@/components/ui-feedback";
+import { STATUS_LABEL, unitTitle, type UnitView } from "@/components/landlord/unit-terms";
+import { IconChevronRight, IconPlus } from "@/components/icons";
 
 export type { UnitView };
 
-/** "$1,850 deposit · pet +$50/mo · parking incl." */
-function termsSubline(u: UnitView): string {
-  const parts: string[] = [];
-  if (u.securityDepositCents != null) parts.push(`${formatCents(u.securityDepositCents)} deposit`);
-  if (u.petRentCents != null) parts.push(`pet +${formatCents(u.petRentCents)}/mo`);
-  else if (u.petDepositCents != null) parts.push(`pet dep ${formatCents(u.petDepositCents)}`);
-  if (u.parkingRentCents === 0) parts.push("parking incl.");
-  else if (u.parkingRentCents != null) parts.push(`parking +${formatCents(u.parkingRentCents)}/mo`);
-  if (u.utilitiesIncluded.length > 0) parts.push(`${u.utilitiesIncluded.length} utilities incl.`);
-  return parts.join(" · ");
+/** Who is in the unit, said in one line. Copper means it needs the owner. */
+function standing(unit: UnitView): { line: string; needsYou: boolean } {
+  const names = unit.tenantNames ?? [];
+  if (names.length > 0) {
+    const who = names.join(" and ");
+    return unit.status === "NOTICE"
+      ? { line: `${who}, moving out`, needsYou: true }
+      : { line: who, needsYou: false };
+  }
+  if (unit.pendingInviteEmail) {
+    return { line: `Waiting for ${unit.pendingInviteEmail} to accept`, needsYou: true };
+  }
+  if (unit.status === "VACANT") return { line: "Vacant", needsYou: true };
+  return {
+    line: `${STATUS_LABEL[unit.status] ?? "Occupied"}, no lease on file`,
+    needsYou: true,
+  };
 }
 
-/** Compact card: the unit's front door. Click anywhere to enter its profile. */
-function UnitCard({
-  unit,
-  href,
-  onDelete,
-}: {
-  unit: UnitView;
-  href: string;
-  onDelete: () => void;
-}) {
-  const router = useRouter();
-  const occupied = unit.status !== "VACANT";
-  const specs = [
-    unit.bedrooms != null ? `${unit.bedrooms} bd` : null,
-    unit.bathrooms != null ? `${unit.bathrooms} ba` : null,
-    unit.squareFeet != null ? `${unit.squareFeet.toLocaleString()} sqft` : null,
-  ].filter(Boolean);
-  const terms = termsSubline(unit);
+/** One unit, one row, and the whole row is the link into it. */
+function UnitRow({ unit, href }: { unit: UnitView; href: string }) {
+  const vacant = unit.status === "VACANT";
+  const rent = vacant ? unit.marketRentCents : (unit.leaseRentCents ?? unit.marketRentCents);
+  const { line, needsYou } = standing(unit);
 
   return (
-    <div
-      role="link"
-      tabIndex={0}
-      onClick={() => router.push(href)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") router.push(href);
-      }}
-      className="group relative cursor-pointer rounded-xl border border-stone-200 bg-white p-4 transition hover:border-patina"
+    <Link
+      href={href}
+      className="group -mx-3 flex min-h-16 items-center gap-3 rounded-lg px-3 py-3 transition hover:bg-stone-50 focus-visible:bg-stone-50"
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="truncate font-display text-lg font-semibold text-stone-900">
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-base font-semibold text-stone-900">
           {unitTitle(unit.unitNumber)}
-        </p>
-        <UnitStatusSelect unitId={unit.id} unitNumber={unit.unitNumber} status={unit.status} />
-      </div>
-
-      <div className="mt-2 pb-5">
-        {unit.marketRentCents != null ? (
-          <p className="flex items-baseline gap-1.5">
-            <span className="font-display text-xl font-semibold tabular-nums text-stone-900">
-              {formatCents(unit.marketRentCents)}
-            </span>
-            <span className="text-xs text-stone-500">/mo {occupied ? "rent" : "asking"}</span>
-          </p>
-        ) : (
-          <p className="text-sm text-stone-400 transition group-hover:text-copper-deep">
-            <span className="mr-1 font-semibold text-copper">+</span>
-            {occupied ? "Set the rent" : "Set asking rent"}
-          </p>
-        )}
-        {terms && <p className="mt-1 text-xs text-stone-500">{terms}</p>}
-        {specs.length > 0 && <p className="mt-1 text-sm text-stone-500">{specs.join(" · ")}</p>}
-        {unit.tenantNames && unit.tenantNames.length > 0 ? (
-          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-stone-600">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-patina" />
-            {unit.tenantNames.join(" · ")}
-          </p>
-        ) : unit.pendingInviteEmail ? (
-          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-stone-500">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-copper" />
-            Invited {unit.pendingInviteEmail}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="absolute right-3 bottom-3 flex items-center gap-1">
-        <span onClick={(e) => e.stopPropagation()}>
-          <ConfirmButton
-            onConfirm={onDelete}
-            confirmLabel="Delete"
-            title="Delete unit"
-            className="rounded-lg p-1.5 text-stone-300 transition hover:bg-red-50 hover:text-red-600 sm:opacity-0 sm:transition sm:group-hover:opacity-100"
-          >
-            <IconClose className="h-3.5 w-3.5" />
-          </ConfirmButton>
         </span>
-        <IconChevronRight className="h-3.5 w-3.5 text-stone-300 transition group-hover:translate-x-0.5 group-hover:text-patina" />
-      </div>
-    </div>
+        <span className="mt-0.5 flex items-baseline gap-2 text-sm">
+          <span
+            aria-hidden="true"
+            className={`h-2 w-2 shrink-0 -translate-y-px rounded-full ${needsYou ? "bg-copper" : "bg-patina"}`}
+          />
+          <span className={`min-w-0 break-words sm:truncate ${needsYou ? "text-copper-deep" : "text-stone-600"}`}>
+            {line}
+          </span>
+        </span>
+      </span>
+      <span className="shrink-0 text-right">
+        {rent != null ? (
+          <>
+            <span className="block text-base font-semibold tabular-nums text-stone-900">
+              {formatCents(rent)}
+            </span>
+            <span className="block text-sm text-stone-500">{vacant ? "asking" : "a month"}</span>
+          </>
+        ) : (
+          <span className="text-sm font-medium text-copper-deep">Rent not set</span>
+        )}
+      </span>
+      <IconChevronRight className="h-4 w-4 shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-patina" />
+    </Link>
   );
 }
 
-/** Create is a tiny two-field card; the new unit's profile opens next. */
-function NewUnitCard({
-  propertyId,
-  onClose,
-}: {
-  propertyId: string;
-  onClose: () => void;
-}) {
+/** Two labeled fields. The new unit's own page opens next. */
+function NewUnitForm({ propertyId, onClose }: { propertyId: string; onClose: () => void }) {
   const router = useRouter();
   const { push: toast } = useToast();
+  const nameId = useId();
+  const rentId = useId();
   const [unitNumber, setUnitNumber] = useState("");
   const [rent, setRent] = useState("");
   const [busy, setBusy] = useState(false);
@@ -125,7 +85,7 @@ function NewUnitCard({
 
   async function create() {
     if (unitNumber.trim() === "") {
-      setError("Give the unit a name or number.");
+      setError("Give the unit a name or a number first.");
       return;
     }
     setBusy(true);
@@ -152,41 +112,56 @@ function NewUnitCard({
   }
 
   return (
-    <div className="rounded-xl border border-patina bg-white p-4">
-      <div className="space-y-2.5">
-        <input
-          autoFocus
-          value={unitNumber}
-          onChange={(e) => {
-            setUnitNumber(e.target.value);
-            setError(null);
-          }}
-          onKeyDown={(e) => e.key === "Enter" && void create()}
-          placeholder="Unit name or number (2F, 101, Garden…)"
-          aria-label="Unit name or number"
-          className={inputCls}
-        />
-        <div className="relative">
-          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-stone-400">
-            $
-          </span>
+    <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-4">
+      <p className="font-semibold text-stone-900">Add a unit</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <label htmlFor={nameId} className="mb-1 block text-sm font-medium text-stone-700">
+            Name or number
+          </label>
           <input
-            value={rent}
-            onChange={(e) => setRent(e.target.value)}
+            id={nameId}
+            autoFocus
+            value={unitNumber}
+            onChange={(e) => {
+              setUnitNumber(e.target.value);
+              setError(null);
+            }}
             onKeyDown={(e) => e.key === "Enter" && void create()}
-            inputMode="decimal"
-            placeholder="Asking rent (optional)"
-            aria-label="Asking rent"
-            className={`${inputCls} pl-7`}
+            placeholder="2F, 101, Garden"
+            className={inputCls}
           />
         </div>
+        <div>
+          <label htmlFor={rentId} className="mb-1 block text-sm font-medium text-stone-700">
+            Asking rent <span className="font-normal text-stone-500">(you can add it later)</span>
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-stone-500">
+              $
+            </span>
+            <input
+              id={rentId}
+              value={rent}
+              onChange={(e) => setRent(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void create()}
+              inputMode="decimal"
+              placeholder="1,850"
+              className={`${inputCls} pl-8`}
+            />
+          </div>
+        </div>
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      <div className="mt-3 flex gap-2">
-        <button onClick={() => void create()} disabled={busy} className={buttonCls("primary", "sm")}>
+      {error && (
+        <p role="alert" className="mt-2 text-sm font-medium text-red-700">
+          {error}
+        </p>
+      )}
+      <div className="mt-4 flex gap-2">
+        <button onClick={() => void create()} disabled={busy} className={buttonCls("primary")}>
           {busy ? "Adding…" : "Add unit"}
         </button>
-        <button onClick={onClose} disabled={busy} className={buttonCls("ghost", "sm")}>
+        <button onClick={onClose} disabled={busy} className={buttonCls("ghost")}>
           Cancel
         </button>
       </div>
@@ -195,46 +170,40 @@ function NewUnitCard({
 }
 
 export function UnitsManager({ propertyId, units }: { propertyId: string; units: UnitView[] }) {
-  const router = useRouter();
-  const { push: toast } = useToast();
   const [adding, setAdding] = useState(false);
-
-  async function remove(unit: UnitView) {
-    const res = await fetch(`/api/v1/landlord/units/${unit.id}`, { method: "DELETE" });
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) {
-      toast(data.error ?? `Couldn't delete ${unitTitle(unit.unitNumber)}.`, "bad");
-      return;
-    }
-    toast(`${unitTitle(unit.unitNumber)} deleted.`);
-    router.refresh();
-  }
+  const none = units.length === 0;
 
   return (
-    <section className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
-        Units ({units.length})
-      </h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {units.map((u) => (
-          <UnitCard
-            key={u.id}
-            unit={u}
-            href={`/landlord/properties/${propertyId}/units/${u.id}`}
-            onDelete={() => void remove(u)}
-          />
-        ))}
-        {adding ? (
-          <NewUnitCard propertyId={propertyId} onClose={() => setAdding(false)} />
-        ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="flex min-h-28 items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 text-sm font-medium text-stone-400 transition hover:border-patina hover:text-patina"
-          >
-            <IconPlus className="h-4 w-4" /> Add unit
+    <Section
+      title={units.length === 1 ? "Unit" : "Units"}
+      aside={
+        !adding && !none ? (
+          <button onClick={() => setAdding(true)} className={buttonCls("secondary", "sm")}>
+            <IconPlus className="h-3.5 w-3.5" /> Add a unit
           </button>
-        )}
-      </div>
-    </section>
+        ) : null
+      }
+    >
+      {none && !adding && (
+        <div className="flex flex-col gap-4 py-1 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-stone-600">
+            No units yet. A single house is one unit. A duplex is two.
+          </p>
+          <button onClick={() => setAdding(true)} className={`${buttonCls("accent")} shrink-0`}>
+            Add the first unit
+          </button>
+        </div>
+      )}
+      {!none && (
+        <ul className="divide-y divide-stone-100">
+          {units.map((u) => (
+            <li key={u.id}>
+              <UnitRow unit={u} href={`/landlord/properties/${propertyId}/units/${u.id}`} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {adding && <NewUnitForm propertyId={propertyId} onClose={() => setAdding(false)} />}
+    </Section>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatCents } from "@/lib/money";
+import { IconChevronLeft } from "@/components/icons";
 
 /**
  * The UI kit. Small, dependency-free primitives that carry the design
@@ -88,6 +89,91 @@ export function Badge({ tone = "stone", children }: { tone?: BadgeTone; children
     >
       {children}
     </span>
+  );
+}
+
+/** A titled white card: every section of every page looks the same. */
+export function Section({
+  title,
+  hint,
+  aside,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+      <div className="mb-2 flex min-h-9 items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold tracking-tight text-stone-900">{title}</h2>
+        {aside}
+      </div>
+      {hint && <p className="-mt-1 mb-2 text-sm text-stone-500">{hint}</p>}
+      {children}
+    </section>
+  );
+}
+
+/** The way back up one level, always in the same place. */
+export function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="-ml-1 inline-flex min-h-9 items-center gap-1.5 rounded-lg px-1 text-sm font-medium text-stone-500 transition hover:text-stone-800"
+    >
+      <IconChevronLeft className="h-3 w-3" /> {children}
+    </Link>
+  );
+}
+
+/** One fact in a summary card: a plain label over the answer. */
+export function Stat({
+  label,
+  value,
+  unit,
+  note,
+  noteTone = "stone",
+}: {
+  label: string;
+  value: React.ReactNode;
+  unit?: string;
+  note?: React.ReactNode;
+  noteTone?: "stone" | "copper";
+}) {
+  return (
+    <div>
+      <dt className="text-sm text-stone-500">{label}</dt>
+      <dd className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight text-stone-900">
+        {value}
+        {unit && <span className="ml-1.5 text-sm font-normal text-stone-500">{unit}</span>}
+      </dd>
+      {note && (
+        <p
+          className={`text-sm ${noteTone === "copper" ? "font-medium text-copper-deep" : "text-stone-500"}`}
+        >
+          {note}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** A step's tick: green when done, an empty ring while waiting. */
+export function StepMark({ done = false }: { done?: boolean }) {
+  return done ? (
+    <span
+      aria-hidden="true"
+      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-patina text-xs font-bold text-white"
+    >
+      ✓
+    </span>
+  ) : (
+    <span
+      aria-hidden="true"
+      className="mt-0.5 h-6 w-6 shrink-0 rounded-full border-2 border-stone-300"
+    />
   );
 }
 

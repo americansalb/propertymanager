@@ -386,6 +386,9 @@ export function AddChips({
         {items.map((item) => (
           <button
             key={item.key}
+            // Keep focus where it is until the click lands: an open empty row
+            // closes on blur, which would shift this chip from under the tap.
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => onPick(item.key)}
             className="inline-flex min-h-9 items-center rounded-full border border-stone-300 bg-white px-3.5 text-sm font-medium text-stone-700 transition hover:border-patina hover:text-patina"
           >

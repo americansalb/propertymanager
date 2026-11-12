@@ -91,6 +91,8 @@ export async function deleteLease(ctx: OrgCtx, id: string) {
 export type UnitTenancySummary = {
   tenantNames: string[];
   pendingInviteEmail: string | null;
+  /** Rent on the current lease, which can differ from the asking rent. */
+  leaseRentCents: number;
 };
 
 /** Per-unit tenant lines for a property's unit cards. */
@@ -103,6 +105,7 @@ export async function getUnitTenancyByProperty(
     select: {
       id: true,
       unitId: true,
+      monthlyRentCents: true,
       tenants: {
         orderBy: { isPrimary: "desc" },
         select: {
@@ -132,6 +135,7 @@ export async function getUnitTenancyByProperty(
         (t) => `${t.tenantProfile.user.firstName} ${t.tenantProfile.user.lastName}`,
       ),
       pendingInviteEmail: pending.find((p) => p.leaseId === lease.id)?.email ?? null,
+      leaseRentCents: lease.monthlyRentCents,
     };
   }
   return out;

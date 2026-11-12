@@ -91,7 +91,7 @@ export function ConfirmButton({
         <button
           onClick={() => void confirm()}
           disabled={busy}
-          className="cut-sm bg-red-700 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-red-800 disabled:opacity-50"
+          className="min-h-9 rounded-lg bg-red-700 px-3.5 text-sm font-semibold text-white transition hover:bg-red-800 disabled:opacity-50"
         >
           {busy ? "…" : confirmLabel}
         </button>
@@ -101,7 +101,7 @@ export function ConfirmButton({
             setArmed(false);
           }}
           disabled={busy}
-          className="rounded-lg px-2 py-1 text-xs font-medium text-stone-500 hover:bg-stone-100"
+          className="min-h-9 rounded-lg px-3 text-sm font-medium text-stone-600 hover:bg-stone-100"
         >
           Keep
         </button>

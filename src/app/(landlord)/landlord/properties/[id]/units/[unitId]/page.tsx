@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/authz";
 import { getUnit } from "@/lib/services/property";
@@ -7,7 +6,7 @@ import { listPhotos, PHOTO_LIMITS } from "@/lib/services/photos";
 import { NotFoundError } from "@/lib/authz/api";
 import { formatLeaseDate, isoDateOnly, ordinal } from "@/lib/leases";
 import { formatCents } from "@/lib/money";
-import { Badge } from "@/components/ui";
+import { BackLink, Badge, Section, StepMark } from "@/components/ui";
 import { PhotoStrip } from "@/components/landlord/photo-strip";
 import {
   LeaseTerms,
@@ -19,12 +18,12 @@ import {
 } from "@/components/landlord/lease-panel";
 import {
   UnitAskingTerms,
+  UnitDeleteButton,
   UnitFacts,
   UnitStatusSelect,
   type UnitView,
 } from "@/components/landlord/unit-terms";
 import { unitTitle } from "@/lib/units";
-import { IconChevronLeft } from "@/components/icons";
 
 export const metadata = { title: "Unit" };
 
@@ -118,12 +117,7 @@ export default async function UnitProfilePage({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link
-        href={`/landlord/properties/${unit.property.id}`}
-        className="-ml-1 inline-flex min-h-11 items-center gap-1 px-1 text-sm font-medium text-stone-600 hover:text-stone-900"
-      >
-        <IconChevronLeft className="h-3 w-3" /> {unit.property.name}
-      </Link>
+      <BackLink href={`/landlord/properties/${unit.property.id}`}>{unit.property.name}</BackLink>
 
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -303,47 +297,16 @@ export default async function UnitProfilePage({
           </div>
         </details>
       )}
+
+      {!leaseView && (
+        <div className="mt-6">
+          <UnitDeleteButton
+            unitId={unit.id}
+            unitNumber={unit.unitNumber}
+            propertyId={unit.property.id}
+          />
+        </div>
+      )}
     </div>
-  );
-}
-
-/** A titled white card: every section of the page looks the same. */
-function Section({
-  title,
-  hint,
-  aside,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  aside?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold tracking-tight text-stone-900">{title}</h2>
-        {aside}
-      </div>
-      {hint && <p className="-mt-1 mb-2 text-sm text-stone-500">{hint}</p>}
-      {children}
-    </section>
-  );
-}
-
-/** A step's tick: green when done, an empty ring while waiting. */
-function StepMark({ done = false }: { done?: boolean }) {
-  return done ? (
-    <span
-      aria-hidden="true"
-      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-patina text-xs font-bold text-white"
-    >
-      ✓
-    </span>
-  ) : (
-    <span
-      aria-hidden="true"
-      className="mt-0.5 h-6 w-6 shrink-0 rounded-full border-2 border-stone-300"
-    />
   );
 }

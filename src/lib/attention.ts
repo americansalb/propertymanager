@@ -1,4 +1,5 @@
 import { formatCents } from "@/lib/money";
+import { unitTitle } from "@/lib/units";
 
 /**
  * The attention engine (pure logic, no DB).
@@ -62,13 +63,17 @@ export function buildVacancyItems(vacant: VacantUnitInput[]): AttentionItem[] {
     id: `vacancy:${u.unitId}`,
     kind: "vacancy" as const,
     cls: "OPTIMIZATION" as const,
-    title: `${u.unitNumber} at ${u.propertyName} is vacant`,
+    title: `${unitTitle(u.unitNumber)} at ${u.propertyName} is vacant`,
     meta:
       u.marketRentCents != null
-        ? `${formatCents(u.marketRentCents)}/mo sitting idle`
-        : "No market rent set",
+        ? `Asking ${formatCents(u.marketRentCents)} a month`
+        : "No asking rent set yet",
     stakeCents: u.marketRentCents ?? 0,
-    action: { label: "View unit", href: `/landlord/properties/${u.propertyId}` },
+    // Straight to the unit: that is where a tenant gets added.
+    action: {
+      label: "Open",
+      href: `/landlord/properties/${u.propertyId}/units/${u.unitId}`,
+    },
     refId: u.propertyId,
   }));
 }
@@ -89,12 +94,10 @@ export function buildLateRentItems(late: LateRentInput[]): AttentionItem[] {
     id: `late-rent:${l.leaseId}`,
     kind: "late-rent" as const,
     cls: "MONEY_TO_YOU" as const,
-    title: l.tenantName
-      ? `${l.tenantName} · ${l.unitNumber} at ${l.propertyName}`
-      : `${l.unitNumber} at ${l.propertyName}`,
-    meta: `${formatCents(l.openCents)} · ${l.daysLate} day${l.daysLate === 1 ? "" : "s"} late`,
+    title: `${l.tenantName ?? "Rent"} is ${l.daysLate} day${l.daysLate === 1 ? "" : "s"} late`,
+    meta: `${formatCents(l.openCents)} owed, ${unitTitle(l.unitNumber)} at ${l.propertyName}`,
     stakeCents: l.openCents,
-    action: { label: "View", href: `/landlord/properties/${l.propertyId}` },
+    action: { label: "Open", href: `/landlord/properties/${l.propertyId}` },
     refId: l.propertyId,
   }));
 }
@@ -104,9 +107,9 @@ export function buildSampleItem(sample: { id: string; name: string }): Attention
     id: `sample:${sample.id}`,
     kind: "sample",
     cls: "SETUP",
-    title: "You're exploring with sample data",
-    meta: "Remove it whenever you're ready; your real properties are untouched.",
-    action: { label: "Open sample", href: `/landlord/properties/${sample.id}` },
+    title: "This is a sample property",
+    meta: "It is here to look around in. Remove it whenever you like.",
+    action: { label: "Open", href: `/landlord/properties/${sample.id}` },
     refId: sample.id,
   };
 }
@@ -141,7 +144,7 @@ export function computeSetup(input: {
     },
     {
       key: "rents",
-      label: "Set unit rents",
+      label: "Set the rent",
       done: input.unitsWithRent > 0,
       href: "/landlord/properties",
     },

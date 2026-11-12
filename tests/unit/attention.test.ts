@@ -43,7 +43,7 @@ describe("computeSetup", () => {
 });
 
 describe("buildVacancyItems", () => {
-  it("carries the stake and links to the property", () => {
+  it("carries the stake and links straight to the unit", () => {
     const [item] = buildVacancyItems([
       {
         unitId: "u1",
@@ -56,9 +56,9 @@ describe("buildVacancyItems", () => {
     expect(item).toMatchObject({
       kind: "vacancy",
       cls: "OPTIMIZATION",
-      title: "2F at Oakdale Duplex is vacant",
+      title: "Unit 2F at Oakdale Duplex is vacant",
       stakeCents: 192_500,
-      action: { href: "/landlord/properties/p1" },
+      action: { href: "/landlord/properties/p1/units/u1" },
     });
     expect(item!.meta).toContain("$1,925.00");
   });
