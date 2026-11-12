@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireOrg } from "@/lib/authz";
 import { listProperties } from "@/lib/services/property";
 import { Badge, Button, PageTitle } from "@/components/ui";
-import { PropertyPortrait } from "@/components/brand/property-portrait";
 import { IconSearch } from "@/components/icons";
 
 export const metadata = { title: "Properties" };
@@ -184,16 +183,7 @@ export default async function PropertiesPage({
                 href={`/landlord/properties/${p.id}`}
                 className="group rounded-xl border border-stone-200 bg-white p-5 transition hover:border-patina"
               >
-                <div className="flex h-28 items-end justify-center">
-                  <PropertyPortrait
-                    seedKey={p.id}
-                    type={p.type}
-                    units={p.units}
-                    prefs={p}
-                    className="h-full w-auto transition group-hover:-translate-y-0.5"
-                  />
-                </div>
-                <div className="mt-4 flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2">
                   <h2 className="truncate font-semibold text-stone-900">{p.name}</h2>
                   <Badge>{TYPE_LABEL[p.type] ?? p.type}</Badge>
                 </div>

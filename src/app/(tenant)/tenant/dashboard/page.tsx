@@ -6,7 +6,6 @@ import { brand } from "@/lib/brand";
 import { formatCents } from "@/lib/money";
 import { formatLeaseDate } from "@/lib/leases";
 import { Badge, Card, Money } from "@/components/ui";
-import { PropertyPortrait } from "@/components/brand/property-portrait";
 import { unitTitle } from "@/lib/units";
 import { IconChevronRight, IconWrench } from "@/components/icons";
 
@@ -60,19 +59,7 @@ export default async function TenantDashboard() {
   return (
     <div className="mx-auto max-w-xl">
       <Card className="overflow-hidden">
-        <div className="flex items-end gap-5 bg-stone-50 px-6 pt-5">
-          <PropertyPortrait
-            seedKey={p.id}
-            type={p.type}
-            units={p.unitStatuses.map((status) => ({ status }))}
-            prefs={{
-              portraitSeed: p.portraitSeed,
-              portraitBody: p.portraitBody,
-              portraitRoof: p.portraitRoof,
-              portraitAccent: p.portraitAccent,
-            }}
-            className="h-24 w-auto shrink-0"
-          />
+        <div className="bg-stone-50 px-6 pt-5">
           <div className="min-w-0 pb-4">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-copper-deep">
               Your home

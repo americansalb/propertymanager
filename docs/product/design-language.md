@@ -44,16 +44,11 @@ The product is recognizable by restraint and two colors:
   corners, facets and battlement edge are retired.
 - FLAT, NO SHADOWS. Depth comes from background steps (paper to white)
   and 1px borders. Hover shifts a border to green; press nudges 1px down.
-- THE SHIMMER lives only in artwork: every gabled roof in the mark,
-  skyline and portraits splits at its apex, light face left, deep face
-  right. Always a hard stop, never a gradient ramp.
-- THE VILLAGE IS BRICK. Building bodies are warm Chicago common brick
-  (#9A5B43) with deeper red (#7C4334) seeded in and the occasional iron
-  block for rhythm. The keep is green, like the mark (v4: green keep lit
-  from the left, copper home, wordmark in green and copper). The darkest
-  buildings and the ground are deep green, never black.
-  Windows, doors, and roofs keep the metal palette; brick walls stay flat
-  (no brick facet: shimmer belongs to metal).
+- NO ILLUSTRATIONS. The mark is the only drawing in the product. The
+  village skyline and the building portraits are retired from every page
+  (their components remain in the code, unused). A place is shown by its
+  name, address and numbers; real photos can be added on the property
+  page.
 
 ## Typography
 
