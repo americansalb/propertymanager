@@ -2,7 +2,7 @@ import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { Wordmark } from "@/components/brand/wordmark";
-import { IconDoor, IconHome, IconTools } from "@/components/icons";
+import { IconChevronRight } from "@/components/icons";
 import { Reveal } from "@/components/landing/reveal";
 import { RepairDemo } from "@/components/landing/repair-demo";
 import { BrowserFrame, PhoneFrame, PhoneTabs } from "@/components/landing/frames";
@@ -34,22 +34,22 @@ function Point({ children }: { children: React.ReactNode }) {
 
 const AUDIENCES = [
   {
-    icon: <IconHome className="h-5 w-5" />,
-    title: "If you own rentals",
+    title: "You own rentals",
     body: "Add an address, then your tenant. The lease, the rent and the repairs are kept for you from there.",
-    link: { href: "/signup", label: "Start free" },
+    href: "/signup",
+    action: "Start free",
   },
   {
-    icon: <IconDoor className="h-5 w-5" />,
-    title: "If you rent your home",
+    title: "You rent your home",
     body: "Your landlord sends you a link. You see your lease and what you owe, and you report problems from your phone.",
-    link: null,
+    href: "/login",
+    action: "Sign in",
   },
   {
-    icon: <IconTools className="h-5 w-5" />,
-    title: "If you fix things for a living",
+    title: "You fix things for a living",
     body: "Plumbers, electricians and handymen can get on the list for local repair jobs.",
-    link: { href: "/signup", label: "Get on the list" },
+    href: "/signup",
+    action: "Get on the list",
   },
 ];
 
@@ -64,8 +64,8 @@ export default function LandingPage() {
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <LogoMark small className="h-9 w-9 shrink-0" />
-            <Wordmark className="text-lg sm:text-xl" />
+            <LogoMark className="h-10 w-10 shrink-0 sm:h-11 sm:w-11" />
+            <Wordmark className="text-xl sm:text-2xl" />
           </Link>
           <nav className="flex shrink-0 items-center gap-1 sm:gap-3">
             <Link
@@ -86,8 +86,9 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* ── Hero: the promise, then the product itself ── */}
-        <section className="mx-auto max-w-3xl px-6 pt-12 text-center sm:pt-16">
-          <h1 className="text-5xl font-semibold leading-[1.05] tracking-tight text-stone-900 sm:text-7xl">
+        <section className="mx-auto max-w-3xl px-6 pt-8 text-center sm:pt-10">
+          <LogoMark className="animate-rise mx-auto h-28 w-28 sm:h-36 sm:w-36" />
+          <h1 className="mt-5 text-5xl font-semibold leading-[1.05] tracking-tight text-stone-900 sm:text-7xl">
             Your rentals,
             <br />
             <span className="text-copper-deep">well kept.</span>
@@ -198,54 +199,62 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── Who it is for ── */}
-        <section className="px-6 py-20 sm:py-24">
-          <Reveal className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
-              One place for everyone at the address.
-            </h2>
-          </Reveal>
-          <div className="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-3">
-            {AUDIENCES.map((a, i) => (
-              <Reveal key={a.title} delay={i * 90} className="h-full">
-                <div className="flex h-full flex-col rounded-2xl border border-stone-200 bg-white p-6">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-patina-tint text-patina">
-                    {a.icon}
-                  </span>
-                  <h3 className="mt-4 text-lg font-semibold tracking-tight text-stone-900">
-                    {a.title}
-                  </h3>
-                  <p className="mt-2 flex-1 leading-6 text-stone-600">{a.body}</p>
-                  {a.link && (
-                    <Link
-                      href={a.link.href}
-                      className="mt-4 inline-flex min-h-9 items-center font-semibold text-patina underline"
-                    >
-                      {a.link.label}
-                    </Link>
-                  )}
-                </div>
-              </Reveal>
-            ))}
+        {/* ── Who it is for: three plain statements, each a way in ── */}
+        <section className="px-6 py-20 sm:py-28">
+          <div className="mx-auto max-w-5xl">
+            <Reveal>
+              <h2 className="max-w-2xl text-3xl font-semibold tracking-tight text-stone-900 sm:text-5xl sm:leading-[1.1]">
+                One place for everyone at the address.
+              </h2>
+            </Reveal>
+            <div className="mt-10 border-t border-stone-300 sm:mt-14">
+              {AUDIENCES.map((a, i) => (
+                <Reveal key={a.title} delay={i * 90}>
+                  <Link
+                    href={a.href}
+                    className="group grid gap-x-10 gap-y-3 border-b border-stone-300 py-8 transition hover:bg-white sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] sm:px-5 sm:py-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_11rem] lg:items-baseline"
+                  >
+                    <h3 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+                      {a.title}
+                    </h3>
+                    <p className="text-lg leading-8 text-stone-600">{a.body}</p>
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap text-lg font-semibold text-patina sm:col-start-2 lg:col-start-3 lg:justify-end">
+                      {a.action}
+                      <IconChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                    </span>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* ── The last word ── */}
-        <section className="bg-keep-night px-6 py-20 text-center sm:py-24">
-          <Reveal className="mx-auto max-w-2xl">
-            <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Start with one address.
-            </h2>
-            <p className="mx-auto mt-4 max-w-md text-lg leading-8 text-stone-300">
-              Adding your first rental takes about a minute.
-            </p>
-            <Link
-              href="/signup"
-              className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-copper px-8 text-base font-semibold text-iron-deep transition hover:bg-copper-bright active:translate-y-px"
-            >
-              Start free
-            </Link>
-          </Reveal>
+        {/* ── The last word: the keep, standing on the ground line ── */}
+        <section className="overflow-hidden bg-keep-night px-6">
+          <div className="mx-auto grid max-w-5xl items-end gap-x-10 lg:grid-cols-2">
+            <Reveal className="pb-12 pt-20 text-center sm:pt-28 lg:pb-28 lg:text-left">
+              <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-6xl sm:leading-[1.05]">
+                Start with one address.
+              </h2>
+              <p className="mx-auto mt-5 max-w-md text-lg leading-8 text-stone-300 lg:mx-0">
+                Adding your first rental takes about a minute.
+              </p>
+              <Link
+                href="/signup"
+                className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-copper px-8 text-base font-semibold text-iron-deep transition hover:bg-copper-bright active:translate-y-px"
+              >
+                Start free
+              </Link>
+            </Reveal>
+            {/* The drawing leaves a sliver under the keep; the shift down puts its
+                foot exactly on the line where the footer begins. */}
+            <Reveal className="flex justify-center lg:justify-end" delay={120}>
+              <LogoMark
+                tone="dark"
+                className="h-64 w-64 translate-y-[6.2%] sm:h-80 sm:w-80 lg:h-[27rem] lg:w-[27rem]"
+              />
+            </Reveal>
+          </div>
         </section>
       </main>
 
