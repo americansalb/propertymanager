@@ -65,6 +65,13 @@ numbers or quotes. When a real screen changes, its copy here changes too.
 Everything pictured must be built. The soft shadow under these frames is
 the one place depth is allowed; the app itself stays flat.
 
+The mark gets room. On every public page it appears at least once large
+enough to read the copper home inside the keep: above the headline on the
+landing page, standing on the footer line in the closing band, and above
+the sign-in card. The `small` drawing is only for 28px and under. Lists of
+audiences or features are typographic rows that lead somewhere, never a
+grid of icon cards.
+
 ## The signature
 
 The product is recognizable by restraint and two colors:
