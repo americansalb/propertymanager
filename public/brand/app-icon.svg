@@ -1,0 +1,4 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <title>VillageKeep app icon</title>
+  <rect width="120" height="120" fill="#17342B"/><g transform="translate(60,59) scale(0.64)"><path d="M -60 62 L -41 -44 L -41 -62 L -24 -62 L -24 -44 L -9 -44 L -9 -62 L 9 -62 L 9 -44 L 24 -44 L 24 -62 L 41 -62 L 41 -44 L 60 62 Z" fill="#2F6353"/><path d="M -60 62 L -41 -44 L -41 -62 L -24 -62 L -24 -44 L -9 -44 L -9 -62 L 0 -62 L 0 62 Z" fill="#3E7C66"/><path d="M 0 -31 L -35 4 L 0 4 Z" fill="#DC9853"/><path d="M 0 -31 L 35 4 L 0 4 Z" fill="#A9652B"/><rect x="-28" y="4" width="28" height="58" fill="#C8823E"/><rect x="0" y="4" width="28" height="58" fill="#8F521F"/></g>
+</svg>

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { brand } from "@/lib/brand";
 import { getSession } from "@/lib/authz";
 import { listNotifications, unreadCount } from "@/lib/services/notification";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { Wordmark } from "@/components/brand/wordmark";
 import { ToastProvider } from "@/components/ui-feedback";
 import { LogoutButton } from "./logout-button";
 import { NavLinks, type NavItem } from "./nav-links";
@@ -40,12 +40,8 @@ export async function PortalShell({
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#faf8f4]">
-                <LogoMark className="h-6 w-6" />
-              </span>
-              <span className="font-display text-lg font-semibold tracking-tight text-white">
-                {brand.name}
-              </span>
+              <LogoMark tone="dark" small className="h-8 w-8" />
+              <Wordmark tone="dark" className="text-lg" />
             </Link>
             <span className="rounded-full bg-patina px-2.5 py-0.5 text-xs font-medium text-white">
               {portalLabel}

@@ -4,16 +4,7 @@
  * windows, and the shimmer on every gable: light face left of the apex,
  * deep face right, exactly like the mark. Zero curves.
  */
-import {
-  BRICK,
-  BRICK_DEEP,
-  COPPER,
-  COPPER_DEEP,
-  GLOW,
-  IRON,
-  PATINA,
-  PATINA_DEEP,
-} from "./palette";
+import { BRICK, BRICK_DEEP, COPPER, COPPER_DEEP, GLOW, IRON, KEEP, PATINA, PATINA_DEEP } from "./palette";
 
 export function VillageSkyline({ className }: { className?: string }) {
   return (
@@ -108,12 +99,12 @@ export function VillageSkyline({ className }: { className?: string }) {
         <rect x="482" y="118" width="16" height="32" fill={COPPER_DEEP} />
       </g>
 
-      {/* KEEP: the center tower, iron forever; its raised home carries the mark's shimmer */}
+      {/* KEEP: the center tower, green like the mark; its raised home carries the mark's shimmer */}
       <g>
-        <rect x="555" y="42" width="90" height="108" fill={IRON} />
-        <rect x="555" y="24" width="18" height="18" fill={IRON} />
-        <rect x="591" y="24" width="18" height="18" fill={IRON} />
-        <rect x="627" y="24" width="18" height="18" fill={IRON} />
+        <rect x="555" y="42" width="90" height="108" fill={KEEP} />
+        <rect x="555" y="24" width="18" height="18" fill={KEEP} />
+        <rect x="591" y="24" width="18" height="18" fill={KEEP} />
+        <rect x="627" y="24" width="18" height="18" fill={KEEP} />
         {/* the home raised in the keep: split exactly like the logo */}
         <polygon points="584,96 600,78 600,96" fill={COPPER} />
         <polygon points="600,96 600,78 616,96" fill={COPPER_DEEP} />

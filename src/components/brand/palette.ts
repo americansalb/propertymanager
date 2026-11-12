@@ -11,10 +11,18 @@ export const COPPER_DEEP = "#9E5B23";
 export const PATINA = "#3E7C66";
 export const PATINA_DEEP = "#2F6350";
 export const GLOW = "#F6E7D7"; // lit windows
+
+// The mark (v4): a green keep lit from the left, holding a copper home.
+export const KEEP = "#2F6353"; // lit face
+export const KEEP_DEEP = "#234B3F"; // shaded face
+export const HOME_ROOF = "#DC9853";
+export const HOME_ROOF_DEEP = "#A9652B";
+export const HOME_WALL = "#C8823E";
+export const HOME_WALL_DEEP = "#8F521F";
 export const NOTICE = "#D9A441";
 
 // The village is brick: warm Chicago common as the default body,
-// deeper red seeded in, occasional iron. The keep stays iron.
+// deeper red seeded in, occasional iron. The keep is green, like the mark.
 export const BRICK = "#9A5B43";
 export const BRICK_DEEP = "#7C4334";
 
