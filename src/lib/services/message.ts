@@ -81,7 +81,7 @@ export async function getThread(userId: string, leaseId: string): Promise<Thread
 
   return {
     leaseId,
-    title: `${unitTitle(access.lease.unitNumber)} · ${access.lease.propertyName}`,
+    title: `${unitTitle(access.lease.unitNumber)} at ${access.lease.propertyName}`,
     otherParty,
     messages: rows.map((r) => ({
       id: r.id,

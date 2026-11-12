@@ -12,6 +12,7 @@ import { unitTitle } from "@/lib/units";
 import {
   CATEGORY_LABEL,
   MAINT_STATUS_LABEL,
+  MAINT_TENANT_UPDATE_VERB,
   type MaintenanceRequestInput,
   type MaintenanceRespondInput,
 } from "@/lib/validation/maintenance";
@@ -350,7 +351,7 @@ export async function respondToMaintenance(
     channel: "IN_APP",
     type: "maintenance.update",
     title: changed ? `Update: ${req.title}` : `Note on: ${req.title}`,
-    body: note ?? `Your landlord marked this ${statusLabel.toLowerCase()}.`,
+    body: note ?? `Your landlord ${MAINT_TENANT_UPDATE_VERB[nextStatus] ?? `marked this ${statusLabel.toLowerCase()}`}.`,
     linkUrl: "/tenant/maintenance",
     refType: "MaintenanceRequest",
     refId: id,

@@ -5,7 +5,7 @@ import { IconKeep, IconMail, IconProperty, IconWrench } from "@/components/icons
 const NAV = [
   {
     href: "/landlord/dashboard",
-    label: "Dashboard",
+    label: "Home",
     icon: <IconKeep className="h-4 w-4" />,
   },
   {
@@ -15,7 +15,7 @@ const NAV = [
   },
   {
     href: "/landlord/maintenance",
-    label: "Maintenance",
+    label: "Repairs",
     icon: <IconWrench className="h-4 w-4" />,
   },
   {

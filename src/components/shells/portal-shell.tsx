@@ -5,10 +5,14 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { Wordmark } from "@/components/brand/wordmark";
 import { ToastProvider } from "@/components/ui-feedback";
 import { LogoutButton } from "./logout-button";
-import { NavLinks, type NavItem } from "./nav-links";
+import { NavLinks, TabBar, type NavItem } from "./nav-links";
 import { NotificationBell } from "./notification-bell";
 
-/** Portal header: white bar, the mark, and the nav with a copper underline. */
+/**
+ * The frame around every signed-in page: a white header, then one column.
+ * Header and page share the same width, so their edges line up. On a phone
+ * the places move to a bar at the bottom, under the thumb.
+ */
 export async function PortalShell({
   portalLabel,
   userName,
@@ -37,7 +41,7 @@ export async function PortalShell({
   return (
     <div className="min-h-screen">
       <header className="border-b border-stone-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5">
               <LogoMark small className="h-8 w-8" />
@@ -57,14 +61,15 @@ export async function PortalShell({
           </div>
         </div>
         {nav && nav.length > 0 && (
-          <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4">
+          <nav aria-label="Main" className="mx-auto hidden max-w-3xl gap-1 px-1 sm:flex">
             <NavLinks items={nav} />
           </nav>
         )}
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-3xl px-4 pb-28 pt-6 sm:pb-16 sm:pt-8">
         <ToastProvider>{children}</ToastProvider>
       </main>
+      {nav && nav.length > 0 && <TabBar items={nav} />}
     </div>
   );
 }

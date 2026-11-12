@@ -132,7 +132,7 @@ export function tenantLeaseTerms(lease: TenantLeaseSource): TenantLeaseTerms | n
 
   const petParts: string[] = [];
   if (shared.has("PETS")) {
-    if (lease.petRentCents != null) petParts.push(`${formatCents(lease.petRentCents)}/mo`);
+    if (lease.petRentCents != null) petParts.push(`${formatCents(lease.petRentCents)} a month`);
     if (lease.petDepositCents != null) {
       petParts.push(`${formatCents(lease.petDepositCents)} deposit`);
     }
@@ -143,7 +143,7 @@ export function tenantLeaseTerms(lease: TenantLeaseSource): TenantLeaseTerms | n
     if (lease.parkingRentCents === 0) {
       parkingLabel = lease.parkingSpot ? `${lease.parkingSpot} (included)` : "Included";
     } else if (lease.parkingRentCents != null) {
-      parkingLabel = `${lease.parkingSpot ?? "Parking"} at ${formatCents(lease.parkingRentCents)}/mo`;
+      parkingLabel = `${lease.parkingSpot ?? "Parking"} at ${formatCents(lease.parkingRentCents)} a month`;
     } else if (lease.parkingSpot) {
       parkingLabel = lease.parkingSpot;
     }

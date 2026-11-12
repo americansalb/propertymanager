@@ -1,6 +1,5 @@
 import { requireRole } from "@/lib/authz";
 import { getTenantThread } from "@/lib/services/message";
-import { Card, PageTitle } from "@/components/ui";
 import { MessageThread } from "@/components/messages/message-thread";
 
 export const metadata = { title: "Messages" };
@@ -10,24 +9,28 @@ export default async function TenantMessages() {
   const thread = await getTenantThread(session.userId);
 
   return (
-    <div className="mx-auto max-w-xl">
-      <PageTitle>Messages</PageTitle>
+    <div className="mx-auto max-w-3xl">
+      <h1 className="text-3xl font-semibold tracking-tight text-stone-900">Messages</h1>
       {!thread ? (
-        <Card className="mt-4 p-5 text-sm text-stone-500">
-          Your home isn&apos;t connected yet. Once you accept your invite, you can message your
-          landlord here.
-        </Card>
+        <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
+          <p className="text-xl font-semibold tracking-tight text-stone-900">
+            Your home is not connected yet
+          </p>
+          <p className="mt-1 text-stone-600">
+            Open the invite link your landlord sent you. After that, you can message them here.
+          </p>
+        </section>
       ) : (
         <>
-          <p className="mt-1 text-sm text-stone-500">
-            {thread.otherParty} · {thread.title}
+          <p className="mt-1 text-stone-600">
+            With {thread.otherParty}, about {thread.title}
           </p>
-          <Card className="mt-4 p-4 sm:p-5">
+          <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-4 sm:p-6">
             <MessageThread
               leaseId={thread.leaseId}
               initialMessages={thread.messages.map((m) => ({ ...m, at: m.at.toISOString() }))}
             />
-          </Card>
+          </section>
         </>
       )}
     </div>
