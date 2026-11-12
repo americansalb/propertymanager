@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
-/* VillageKeep design tokens - derived from the logo's metallurgy:
-   iron (strength), copper (warmth/craft), patina (aged copper = trust).
-   Full rules: docs/product/design-language.md ("the forge"). */
+/* VillageKeep design tokens - from the mark: copper and the green that
+   copper turns with age. Copper = your move. Green = done, paid, good.
+   Iron is only the ink. Full rules: docs/product/design-language.md. */
 @theme {
   --color-iron: #34383f;
   --color-iron-deep: #23262b;
@@ -10,21 +10,22 @@
   --color-copper-deep: #9e5b23;
   --color-copper-tint: #f6e7d7;
   --color-copper-bright: #dc9853; /* copper legible on iron and on the keep's green */
-  --color-patina: #3e7c66;
+  --color-patina: #2f6353; /* the green: same as the mark's keep */
   --color-patina-tint: #e9f1ec;
   --color-patina-bright: #74b399; /* patina legible on iron */
   --color-keep: #2f6353; /* the mark's keep, lit face */
   --color-keep-deep: #234b3f; /* the mark's keep, shaded face */
+  --color-keep-night: #1b3b31; /* footers and the ground under the village */
   --color-brick: #9a5b43; /* the village is brick */
   --color-brick-deep: #7c4334;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
-  --background: #faf8f4; /* parchment */
-  --foreground: #34383f; /* iron */
+  --background: #f6f4ef; /* warm paper */
+  --foreground: #24272c; /* ink */
 }
 
 body {
@@ -44,47 +45,13 @@ body {
   background: var(--color-patina-tint);
 }
 
-/* The forged signature: 45-degree cut corners (top-left, bottom-right)
-   on pressables and status chips. Pairs with solid fills, no borders. */
+/* Pressables and status chips: plain rounded corners. (These class names
+   date from the cut-corner look; they now only set the radius.) */
 .cut {
-  clip-path: polygon(
-    8px 0,
-    100% 0,
-    100% calc(100% - 8px),
-    calc(100% - 8px) 100%,
-    0 100%,
-    0 8px
-  );
+  border-radius: 12px;
 }
 .cut-sm {
-  clip-path: polygon(
-    6px 0,
-    100% 0,
-    100% calc(100% - 6px),
-    calc(100% - 6px) 100%,
-    0 100%,
-    0 6px
-  );
-}
-
-/* The shimmer: one ridge, two faces of the same metal. Hard stop, never a
-   ramp. Buttons wear it as a translucent overlay so hover colors compose
-   and labels keep contrast (true copper-deep would drop below AA). */
-.facet {
-  background-image: linear-gradient(115deg, transparent 0 55%, rgb(0 0 0 / 0.16) 55%);
-}
-.facet-soft {
-  background-image: linear-gradient(115deg, transparent 0 55%, rgb(0 0 0 / 0.1) 55%);
-}
-
-/* Battlement edge: iron teeth descending from a fortress header. */
-.crenel {
-  height: 6px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--color-iron) 0 16px,
-    transparent 16px 28px
-  );
+  border-radius: 10px;
 }
 
 /* Wizard step entrance */

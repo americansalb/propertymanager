@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
       <div className="pointer-events-none fixed inset-x-0 bottom-0 -z-10">
         <VillageSkyline className="block w-full" />
-        <div className="h-6 bg-iron" />
+        <div className="h-6 bg-keep-night" />
       </div>
     </main>
   );

@@ -17,10 +17,10 @@ export function NavLinks({ items }: { items: NavItem[] }) {
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition ${
               active
-                ? "bg-patina text-white"
-                : "text-stone-300 hover:bg-white/10 hover:text-white"
+                ? "border-copper font-semibold text-stone-900"
+                : "border-transparent text-stone-500 hover:text-stone-900"
             }`}
           >
             {item.icon}

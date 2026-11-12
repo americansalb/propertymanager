@@ -110,7 +110,7 @@ export function NotificationBell({
         type="button"
         onClick={toggle}
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
-        className="relative flex h-9 w-9 items-center justify-center rounded-lg text-stone-300 transition hover:bg-white/10 hover:text-white"
+        className="relative flex h-9 w-9 items-center justify-center rounded-lg text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
       >
         <IconBell className="h-5 w-5" />
         {unread > 0 && (
