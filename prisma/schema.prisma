@@ -55,11 +55,14 @@ enum OrgRole {
 
 // A landlord business. All PM data is scoped by orgId.
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  // When a tenant reports a problem, ask the owner's matching repair people
+  // for a price right away. Off = the owner asks by hand.
+  autoAskQuotes Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   memberships    Membership[]
   properties     Property[]
@@ -150,26 +153,26 @@ enum PropertyType {
 }
 
 model Property {
-  id        String       @id @default(cuid())
-  orgId     String
-  name      String
-  type      PropertyType @default(SINGLE_FAMILY)
-  address1  String
-  address2  String?
-  city      String
-  state     String
-  zipCode   String
+  id       String       @id @default(cuid())
+  orgId    String
+  name     String
+  type     PropertyType @default(SINGLE_FAMILY)
+  address1 String
+  address2 String?
+  city     String
+  state    String
+  zipCode  String
 
   // Operational record: filled progressively, every field raises quote
   // accuracy for pros and switching cost for us.
   /// Corner buildings and double lots: the property's other street address.
-  alternateAddress     String?
+  alternateAddress String?
 
   // Portrait studio: owner-chosen looks override the seeded defaults.
-  portraitSeed   Int?
-  portraitBody   String? // BRICK | BRICK_DEEP | IRON
-  portraitRoof   String? // PARAPET | GABLE | SHED (buildings only)
-  portraitAccent String? // COPPER | PATINA
+  portraitSeed         Int?
+  portraitBody         String? // BRICK | BRICK_DEEP | IRON
+  portraitRoof         String? // PARAPET | GABLE | SHED (buildings only)
+  portraitAccent       String? // COPPER | PATINA
   yearBuilt            Int?
   parkingNotes         String?
   waterShutoffLocation String?
@@ -179,10 +182,10 @@ model Property {
   petsAllowed          Boolean?
   petNotes             String?
   notes                String?
-  tags                 String[]     @default([])
+  tags                 String[] @default([])
 
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   org                 Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
   units               Unit[]
@@ -198,15 +201,15 @@ enum UnitStatus {
 }
 
 model Unit {
-  id          String     @id @default(cuid())
-  propertyId  String
-  orgId       String // denormalized for scoping/index locality
-  unitNumber  String     @default("Main") // single-family = one "Main" unit
-  bedrooms    Int?
-  bathrooms   Decimal?   @db.Decimal(3, 1)
-  squareFeet  Int?
+  id              String     @id @default(cuid())
+  propertyId      String
+  orgId           String // denormalized for scoping/index locality
+  unitNumber      String     @default("Main") // single-family = one "Main" unit
+  bedrooms        Int?
+  bathrooms       Decimal?   @db.Decimal(3, 1)
+  squareFeet      Int?
   marketRentCents Int?
-  status      UnitStatus @default(VACANT)
+  status          UnitStatus @default(VACANT)
 
   // Standing terms: what this unit rents FOR. Leases (1.4) inherit these.
   securityDepositCents Int?
@@ -216,8 +219,8 @@ model Unit {
   parkingRentCents     Int? // monthly; null = not set, 0 = included
   utilitiesIncluded    String[] @default([])
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   property            Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   leases              Lease[]
@@ -268,17 +271,17 @@ model Lease {
   utilitiesIncluded String[] @default([])
 
   /// Master switch: whether the tenant portal shows this lease at all.
-  shareWithTenant Boolean @default(true)
+  shareWithTenant Boolean  @default(true)
   /// When shown, which term groups the tenant sees (per-field sharing):
   /// RENT | TERM | DEPOSIT | PETS | PARKING | UTILITIES. Default: all.
-  sharedFields String[] @default(["RENT", "TERM", "DEPOSIT", "PETS", "PARKING", "UTILITIES"])
+  sharedFields    String[] @default(["RENT", "TERM", "DEPOSIT", "PETS", "PARKING", "UTILITIES"])
 
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  unit    Unit          @relation(fields: [unitId], references: [id])
-  tenants LeaseTenant[]
-  charges Charge[]
+  unit     Unit          @relation(fields: [unitId], references: [id])
+  tenants  LeaseTenant[]
+  charges  Charge[]
   messages Message[]
 
   @@index([orgId])
@@ -468,6 +471,7 @@ model MaintenanceRequest {
   property      Property                   @relation(fields: [propertyId], references: [id])
   unit          Unit?                      @relation(fields: [unitId], references: [id])
   statusHistory MaintenanceStatusHistory[]
+  quotes        QuoteRequest[]
 
   @@index([orgId, status])
   @@index([unitId])
@@ -484,6 +488,70 @@ model MaintenanceStatusHistory {
 
   request MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
+  @@index([requestId])
+}
+
+// ───────────────────────── THE OWNER'S OWN REPAIR PEOPLE AND THEIR QUOTES ──
+// An owner's plumber, locksmith or handyman: a name and a way to reach them.
+// They need no account. Each QuoteRequest carries a private link (random
+// token in the link, sha256 at rest) that the repair person answers with a
+// price and a time. No money moves here: approving a quote is saying yes to
+// the price, nothing more.
+
+model Contractor {
+  id               String    @id @default(cuid())
+  orgId            String
+  name             String
+  trades           Trade[]
+  phone            String?
+  email            String?
+  notes            String?
+  // Say yes for the owner when this person's price is at or under this many
+  // cents. Null means always ask the owner.
+  autoApproveCents Int?
+  archivedAt       DateTime?
+  createdByUserId  String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  quotes QuoteRequest[]
+
+  @@index([orgId])
+}
+
+enum QuoteStatus {
+  SENT // asked, no answer yet
+  QUOTED // they named a price
+  DECLINED // they cannot take it
+  APPROVED // the owner, or the owner's own rule, said yes
+  NOT_CHOSEN // someone else got the job
+}
+
+model QuoteRequest {
+  id              String      @id @default(cuid())
+  orgId           String
+  requestId       String
+  contractorId    String
+  tokenHash       String      @unique
+  status          QuoteStatus @default(SENT)
+  emailedAt       DateTime?
+  viewedAt        DateTime?
+  priceLowCents   Int?
+  priceHighCents  Int?
+  availability    String?
+  note            String?
+  respondedAt     DateTime?
+  decidedAt       DateTime?
+  decidedByUserId String? // null when the owner's rule approved it
+  autoApproved    Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  request    MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  contractor Contractor         @relation(fields: [contractorId], references: [id])
+
+  @@unique([requestId, contractorId])
+  @@index([orgId])
   @@index([requestId])
 }
 
@@ -653,7 +721,7 @@ model ProProfile {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  user           User            @relation(fields: [userId], references: [id])
+  user           User             @relation(fields: [userId], references: [id])
   services       ProService[]
   areas          ProServiceArea[]
   verifications  Verification[]

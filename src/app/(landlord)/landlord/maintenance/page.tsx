@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireOrg } from "@/lib/authz";
 import { listOrgMaintenance, type OrgMaintenanceRow } from "@/lib/services/maintenance";
-import { Badge } from "@/components/ui";
+import { Badge, Button } from "@/components/ui";
 import { IconChevronRight } from "@/components/icons";
 import { MAINT_STATUS_LABEL_LANDLORD } from "@/lib/validation/maintenance";
 import { unitTitle } from "@/lib/units";
@@ -18,6 +18,9 @@ function ageLabel(d: Date): string {
 /** One repair, one row, and the whole row is the link. */
 function RequestRow({ r }: { r: OrgMaintenanceRow }) {
   const isNew = r.status === "SUBMITTED";
+  // Prices waiting on a yes are the next thing to do, ahead of the stage.
+  const prices = r.open ? r.pricesWaiting : 0;
+  const needsYou = isNew || prices > 0;
   const where = r.unitNumber ? `${unitTitle(r.unitNumber)} at ${r.propertyName}` : r.propertyName;
   return (
     <Link
@@ -39,11 +42,15 @@ function RequestRow({ r }: { r: OrgMaintenanceRow }) {
         <span
           aria-hidden="true"
           className={`h-2 w-2 rounded-full ${
-            !r.open ? "bg-stone-300" : isNew ? "bg-copper" : "bg-patina"
+            !r.open ? "bg-stone-300" : needsYou ? "bg-copper" : "bg-patina"
           }`}
         />
-        <span className={isNew ? "font-medium text-copper-deep" : "text-stone-600"}>
-          {MAINT_STATUS_LABEL_LANDLORD[r.status] ?? r.status}
+        <span className={needsYou ? "font-medium text-copper-deep" : "text-stone-600"}>
+          {prices > 0
+            ? prices === 1
+              ? "1 price in"
+              : `${prices} prices in`
+            : (MAINT_STATUS_LABEL_LANDLORD[r.status] ?? r.status)}
         </span>
       </span>
       <IconChevronRight className="h-4 w-4 shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-patina" />
@@ -72,7 +79,12 @@ export default async function MaintenanceInbox() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-semibold tracking-tight text-stone-900">Repairs</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-semibold tracking-tight text-stone-900">Repairs</h1>
+        <Button href="/landlord/maintenance/people" variant="secondary" size="sm">
+          Your repair people
+        </Button>
+      </div>
       <p className="mt-1 text-stone-600">
         {open.length === 0
           ? "Nothing is waiting to be fixed."

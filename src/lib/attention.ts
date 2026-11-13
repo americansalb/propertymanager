@@ -29,7 +29,7 @@ export const CLASS_ORDER: Record<AttentionClass, number> = {
 
 export type AttentionItem = {
   id: string;
-  kind: "vacancy" | "sample" | "late-rent";
+  kind: "vacancy" | "sample" | "late-rent" | "quotes";
   cls: AttentionClass;
   title: string;
   meta?: string;
@@ -99,6 +99,36 @@ export function buildLateRentItems(late: LateRentInput[]): AttentionItem[] {
     stakeCents: l.openCents,
     action: { label: "Open", href: `/landlord/properties/${l.propertyId}` },
     refId: l.propertyId,
+  }));
+}
+
+export type QuotesWaitingInput = {
+  requestId: string;
+  title: string;
+  unitNumber: string | null;
+  propertyName: string;
+  /** How many prices are in. */
+  count: number;
+  /** The lowest "at most" among them, in cents. */
+  lowestCents: number;
+};
+
+/** Prices in from repair people, waiting for the owner's yes. */
+export function buildQuoteItems(waiting: QuotesWaitingInput[]): AttentionItem[] {
+  return waiting.map((w) => ({
+    id: `quotes:${w.requestId}`,
+    kind: "quotes" as const,
+    cls: "MONEY_ON_YOU" as const,
+    title:
+      w.count === 1
+        ? `1 price is in for: ${w.title}`
+        : `${w.count} prices to compare for: ${w.title}`,
+    meta: `${w.count === 1 ? "" : "From "}${formatCents(w.lowestCents)}, ${
+      w.unitNumber ? `${unitTitle(w.unitNumber)} at ` : ""
+    }${w.propertyName}`,
+    stakeCents: w.lowestCents,
+    action: { label: "Open", href: `/landlord/maintenance/${w.requestId}` },
+    refId: w.requestId,
   }));
 }
 

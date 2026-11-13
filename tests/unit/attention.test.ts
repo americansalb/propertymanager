@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildQuoteItems,
   buildSampleItem,
   buildVacancyItems,
   computeSetup,
@@ -97,5 +98,26 @@ describe("buildSampleItem", () => {
     const item = buildSampleItem({ id: "p9", name: "Sample: Oakdale Duplex" });
     expect(item.cls).toBe("SETUP");
     expect(item.refId).toBe("p9");
+  });
+});
+
+describe("buildQuoteItems", () => {
+  it("puts prices waiting for a yes at the top of the list, linked to the repair", () => {
+    const [one] = buildQuoteItems([
+      { requestId: "r1", title: "Kitchen sink leaks", unitNumber: "1F", propertyName: "Oakdale Duplex", count: 1, lowestCents: 18_000 },
+    ]);
+    expect(one).toMatchObject({
+      kind: "quotes",
+      cls: "MONEY_ON_YOU",
+      title: "1 price is in for: Kitchen sink leaks",
+      action: { href: "/landlord/maintenance/r1" },
+    });
+    expect(one!.meta).toBe("$180.00, Unit 1F at Oakdale Duplex");
+
+    const [many] = buildQuoteItems([
+      { requestId: "r2", title: "No heat", unitNumber: null, propertyName: "418 Maple St", count: 3, lowestCents: 25_000 },
+    ]);
+    expect(many!.title).toBe("3 prices to compare for: No heat");
+    expect(many!.meta).toBe("From $250.00, 418 Maple St");
   });
 });
