@@ -36,10 +36,12 @@
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* House-number lettering for big headlines on public pages. */
+  --font-brand: var(--font-jost), "Century Gothic", "Avenir Next", ui-sans-serif, sans-serif;
 }
 
 :root {
-  --background: #f6f4ef; /* warm paper */
+  --background: #f3f6f4; /* clean and cool, a breath of the green */
   --foreground: #1b3b31; /* ink: the deepest green */
 }
 
@@ -120,5 +122,68 @@ body {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+}
+
+/* Landing hero: a repair plays out on a phone, one beat at a time. Every
+   beat holds its space from the start, so nothing below it jumps. */
+@keyframes beat-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes beat-out {
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+@keyframes tap {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+.beat {
+  animation: beat-in 0.45s cubic-bezier(0.2, 0.8, 0.25, 1.15) both;
+}
+.beat-gone {
+  animation:
+    beat-in 0.45s cubic-bezier(0.2, 0.8, 0.25, 1.15) both,
+    beat-out 0.2s ease-in forwards;
+}
+.beat-tap {
+  animation: tap 0.6s ease-out both;
+}
+/* The "$0 a month" sticker: one small wobble when you point at it. */
+.sticker {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.25, 1.4);
+}
+.sticker:hover {
+  transform: rotate(4deg) scale(1.05);
+}
+@media (prefers-reduced-motion: reduce) {
+  .beat,
+  .beat-tap {
+    animation: none;
+  }
+  /* Without motion, show where the story ends. */
+  .beat-gone,
+  .beat-tap {
+    display: none;
+  }
+  .sticker,
+  .sticker:hover {
+    transition: none;
+    transform: rotate(-8deg);
   }
 }

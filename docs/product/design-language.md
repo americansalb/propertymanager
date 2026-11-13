@@ -56,6 +56,19 @@ something else is probably two pages.
 
 ## The landing page
 
+It answers two questions, in this order: why VillageKeep is different (a
+repair gets priced by the owner's own people before they lift a finger)
+and what it costs (nothing, with the full list of what that includes).
+
+Flat color and strong contrast: white, the light green tint, deep green,
+and solid copper blocks with dark green text. No textures, no glows, no
+glossy gradients: those read as a 2006 profile page, not as software. The
+fun comes from things that move once and things you can touch: the repair
+that plays out in the hero, the demo, the "$0 a month" sticker. Big
+headlines use Jost (`font-brand`), the lettering of a house number; all
+other text stays Inter.
+
+
 The landing page shows the product instead of describing it. Its pictures
 are small copies of the real screens (`components/landing/shots.tsx`),
 built from the same colors and the same words, plus one working piece: a
