@@ -171,7 +171,7 @@ export function RepairDemo({ tenantBar }: { tenantBar: React.ReactNode }) {
       <div ref={phone} className="mx-auto">
         <p className="mb-3 text-sm font-medium text-stone-300">Tom&apos;s phone</p>
         <PhoneFrame>
-          <div className="bg-[#f6f4ef]">
+          <div className="bg-[#f3f6f4]">
             {tenantBar}
             <div className="min-h-[330px] px-3.5 pb-4 pt-3.5">
               <p className="text-lg font-semibold tracking-tight text-stone-900">Repairs</p>

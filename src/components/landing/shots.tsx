@@ -120,7 +120,7 @@ function PlaceRow({
 /** The owner's home screen on a day when two things need them. */
 export function OwnerHome({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="bg-[#f6f4ef]">
+    <div className="bg-[#f3f6f4]">
       <AppBar who="Dana" tabs={!compact} />
       <div className={`mx-auto max-w-xl ${compact ? "px-3.5 pb-5 pt-4" : "px-5 pb-8 pt-6"}`}>
         <p className="text-[11px] text-stone-500">Hello, Dana</p>
@@ -164,6 +164,19 @@ export function OwnerHome({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** The top bar of the owner's phone. */
+export function OwnerBar() {
+  return (
+    <div className="flex h-10 items-center justify-between border-b border-stone-200 bg-white px-3.5">
+      <span className="flex items-center gap-1.5">
+        <LogoMark small className="h-5 w-5" />
+        <Wordmark className="text-xs" />
+      </span>
+      <span className="text-[11px] font-medium text-stone-500">Dana</span>
+    </div>
+  );
+}
+
 /** The top bar of the tenant's phone. */
 export function TenantBar() {
   return (
@@ -182,7 +195,7 @@ export function TenantBar() {
 /** The tenant's home screen: what they owe, and the two things they can do. */
 export function TenantHome() {
   return (
-    <div className="bg-[#f6f4ef]">
+    <div className="bg-[#f3f6f4]">
       <TenantBar />
       <div className="px-3.5 pb-4 pt-3.5">
         <p className="text-[11px] text-stone-500">Your home</p>
