@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import type { OrgCtx } from "@/lib/authz/api";
 import {
   buildLateRentItems,
+  buildQuoteItems,
   buildSampleItem,
   buildVacancyItems,
   computeSetup,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/attention";
 import { findSample } from "@/lib/services/sample";
 import { getOrgLateRent } from "@/lib/services/charges";
+import { quoteCeilingCents } from "@/lib/quotes";
 
 export type Pulse = {
   unitCount: number;
@@ -43,7 +45,7 @@ export type DashboardData = {
 };
 
 export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
-  const [propertyCount, units, openMaintenance, sample, portfolio, tenantInvites, tenantsJoined, lateRent, leaseRent] =
+  const [propertyCount, units, openMaintenance, sample, portfolio, tenantInvites, tenantsJoined, lateRent, leaseRent, quoted] =
     await Promise.all([
     prisma.property.count({ where: { orgId: ctx.orgId } }),
     prisma.unit.findMany({
@@ -88,6 +90,24 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
       where: { orgId: ctx.orgId, status: "ACTIVE" },
       _sum: { monthlyRentCents: true },
     }),
+    // Open repairs with prices in and nobody approved yet.
+    prisma.maintenanceRequest.findMany({
+      where: {
+        orgId: ctx.orgId,
+        status: { in: ["SUBMITTED", "ACKNOWLEDGED", "SCHEDULED", "IN_PROGRESS"] },
+        quotes: { some: { status: "QUOTED" }, none: { status: "APPROVED" } },
+      },
+      select: {
+        id: true,
+        title: true,
+        unit: { select: { unitNumber: true } },
+        property: { select: { name: true } },
+        quotes: {
+          where: { status: "QUOTED" },
+          select: { priceLowCents: true, priceHighCents: true },
+        },
+      },
+    }),
   ]);
 
   const pulse: Pulse = {
@@ -117,7 +137,21 @@ export async function getDashboard(ctx: OrgCtx): Promise<DashboardData> {
       })),
   );
 
+  const quoteItems = buildQuoteItems(
+    quoted.map((r) => ({
+      requestId: r.id,
+      title: r.title,
+      unitNumber: r.unit?.unitNumber ?? null,
+      propertyName: r.property.name,
+      count: r.quotes.length,
+      lowestCents: Math.min(
+        ...r.quotes.map((q) => quoteCeilingCents(q.priceLowCents ?? 0, q.priceHighCents)),
+      ),
+    })),
+  );
+
   const items = sortAttention([
+    ...quoteItems,
     ...buildLateRentItems(lateRent),
     ...vacancyItems,
     ...(sample ? [buildSampleItem(sample)] : []),

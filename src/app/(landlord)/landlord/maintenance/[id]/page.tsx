@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/authz";
 import { NotFoundError } from "@/lib/authz/api";
 import { getOrgMaintenanceRequest } from "@/lib/services/maintenance";
+import { getRequestQuotes } from "@/lib/services/quote";
 import { BackLink, Badge, InfoRow, Section } from "@/components/ui";
 import { CATEGORY_LABEL, MAINT_STATUS_LABEL_LANDLORD } from "@/lib/validation/maintenance";
 import { unitTitle } from "@/lib/units";
 import { MaintenanceRespond } from "@/components/landlord/maintenance-respond";
+import { RepairQuotes } from "@/components/landlord/repair-quotes";
 
 export const metadata = { title: "Repair" };
 
@@ -42,6 +44,9 @@ export default async function MaintenanceDetail({
     if (e instanceof NotFoundError) notFound();
     throw e;
   }
+
+  const quotes = await getRequestQuotes({ userId: session.userId, orgId: session.orgId }, id);
+  const pricesIn = quotes.quotes.filter((q) => q.status === "QUOTED").length;
 
   const where = req.unitNumber
     ? `${unitTitle(req.unitNumber)} at ${req.propertyName}`
@@ -86,6 +91,25 @@ export default async function MaintenanceDetail({
           {req.accessNotes && <InfoRow label="Getting in">{req.accessNotes}</InfoRow>}
         </dl>
       </section>
+
+      <Section
+        title="Prices"
+        aside={
+          quotes.open && pricesIn > 0 ? (
+            <Badge tone="copper">
+              {pricesIn === 1 ? "1 price to look at" : `${pricesIn} prices to compare`}
+            </Badge>
+          ) : null
+        }
+      >
+        <RepairQuotes
+          requestId={req.id}
+          quotes={quotes.quotes}
+          canAsk={quotes.canAsk}
+          peopleOnFile={quotes.peopleOnFile}
+          open={quotes.open}
+        />
+      </Section>
 
       <Section title="Send an update">
         <MaintenanceRespond

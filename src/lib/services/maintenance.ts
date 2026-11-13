@@ -7,6 +7,7 @@
 import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { notify } from "@/lib/services/notification";
+import { autoAskOnReport } from "@/lib/services/quote";
 import { NotFoundError, type OrgCtx } from "@/lib/authz/api";
 import { unitTitle } from "@/lib/units";
 import {
@@ -86,6 +87,14 @@ export async function createTenantMaintenanceRequest(userId: string, input: Main
     meta: { category: input.category, urgency: input.urgency },
   });
 
+  // Ask the owner's own repair people for a price right away, if they
+  // have any that fit. This never blocks or fails the tenant's report.
+  const asked = await autoAskOnReport(lease.orgId, request.id);
+  const askedLine =
+    asked.length > 0
+      ? ` We asked ${asked.map((a) => a.name).join(" and ")} for a price.`
+      : "";
+
   // Alert the landlord(s). Email is flushed by the worker tick.
   const members = await prisma.membership.findMany({
     where: { orgId: lease.orgId, role: { in: ["OWNER", "MANAGER"] } },
@@ -97,8 +106,8 @@ export async function createTenantMaintenanceRequest(userId: string, input: Main
       userId: m.userId,
       channel: "EMAIL",
       type: "maintenance.submitted",
-      title: `${input.urgency === "EMERGENCY" ? "EMERGENCY: " : ""}New maintenance request`,
-      body: `${who} reported a ${CATEGORY_LABEL[input.category]} issue at ${unitTitle(lease.unit.unitNumber)}: ${input.title}`,
+      title: `${input.urgency === "EMERGENCY" ? "Emergency: " : ""}${who} reported a problem`,
+      body: `${input.title} (${CATEGORY_LABEL[input.category]}) at ${unitTitle(lease.unit.unitNumber)}.${askedLine}`,
       linkUrl: `/landlord/maintenance/${request.id}`,
       refType: "MaintenanceRequest",
       refId: request.id,
@@ -192,6 +201,8 @@ export type OrgMaintenanceRow = {
   propertyId: string;
   propertyName: string;
   tenantName: string | null;
+  /** Prices in from repair people that nobody has said yes to yet. */
+  pricesWaiting: number;
 };
 
 /** Every maintenance request across the org, open ones first, for the inbox. */
@@ -209,6 +220,7 @@ export async function listOrgMaintenance(ctx: OrgCtx): Promise<OrgMaintenanceRow
       createdByUserId: true,
       property: { select: { id: true, name: true } },
       unit: { select: { unitNumber: true } },
+      quotes: { select: { status: true } },
     },
   });
   const names = await userNames(reqs.map((r) => r.createdByUserId));
@@ -224,6 +236,9 @@ export async function listOrgMaintenance(ctx: OrgCtx): Promise<OrgMaintenanceRow
     propertyId: r.property.id,
     propertyName: r.property.name,
     tenantName: names.get(r.createdByUserId) ?? null,
+    pricesWaiting: r.quotes.some((q) => q.status === "APPROVED")
+      ? 0
+      : r.quotes.filter((q) => q.status === "QUOTED").length,
   }));
   return rows.sort(
     (a, b) =>

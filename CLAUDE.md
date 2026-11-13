@@ -59,3 +59,13 @@ email, public accept page, tenant home behind one shareWithTenant switch).
 Next: 1.4 charges → 1.5 maintenance wizard → 1.6 rent via Stripe Connect
 (landlords = Connect accounts; escrow = separate charges & transfers) → 1.7
 emails/polish. Phase 2 = marketplace. Old codebase: `archive/main-2026-06-09`.
+
+Quotes from the owner's own repair people (built, founder direction Nov 2026):
+owners add their plumber, locksmith, handyman (`Contractor`, no account). When
+a tenant reports a problem, the ones whose trade fits are asked for a price
+through a private link (`QuoteRequest`, `/quote/[token]`); the owner compares
+and says yes, or a per-person limit says yes for them. Rules live in
+`src/lib/quotes.ts`, the rest in `src/lib/services/quote.ts`. No money moves:
+approving is "go ahead at this price". Next on this track: an urgent path
+(first trusted person to say yes), texts (needs a texting account), an AI
+price estimate (needs an API key), then outside pros.
