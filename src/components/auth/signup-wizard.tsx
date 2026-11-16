@@ -176,7 +176,7 @@ export function SignupWizard({
             {
               value: "PRO",
               label: "I do repairs for a living",
-              description: "Plumbing, electrical, handyman and more. Be first in line when repair jobs open.",
+              description: "Maintenance, cleaning, painting and more. Be first in line when repair jobs open.",
               icon: <IconTools className="h-8 w-8" duo />,
             },
             {

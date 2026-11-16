@@ -38,7 +38,7 @@ const OURS = [
 const WHY = [
   {
     title: "Your people first",
-    body: "The plumber, locksmith and handyman you already trust are asked before anyone else.",
+    body: "The plumber, locksmith and maintenance pro you already trust are asked before anyone else.",
   },
   {
     title: "Your limits",
@@ -77,7 +77,7 @@ const AUDIENCES = [
   },
   {
     title: "You fix things for a living",
-    body: "Plumbers, electricians and handymen can get on the list for local repair jobs.",
+    body: "Maintenance pros, cleaners, painters and plumbers can get on the list for local repair jobs.",
     href: "/signup",
     action: "Get on the list",
   },

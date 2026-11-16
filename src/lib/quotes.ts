@@ -34,7 +34,7 @@ export const TRADE_LABEL: Record<Trade, string> = {
   ELECTRICAL: "Electrician",
   HVAC: "Heating and cooling",
   LOCKSMITH: "Locksmith",
-  HANDYMAN: "Handyman",
+  HANDYMAN: "Maintenance pro",
   APPLIANCE_REPAIR: "Appliance repair",
   PEST_CONTROL: "Pest control",
   PAINTING: "Painter",
@@ -79,7 +79,7 @@ export type Askable = { id: string; trades: string[]; archivedAt?: Date | null }
 
 /**
  * Who to ask about a problem: the owner's specialists for that kind of
- * problem. With no specialist on file, their handyman or general contractor.
+ * problem. With no specialist on file, their maintenance pro or general contractor.
  */
 export function pickContractors<T extends Askable>(category: RepairCategory, people: T[]): T[] {
   const active = people.filter((p) => !p.archivedAt);

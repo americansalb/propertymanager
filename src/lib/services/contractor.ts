@@ -1,5 +1,5 @@
 /**
- * The owner's own repair people: their plumber, locksmith, handyman. A name,
+ * The owner's own repair people: their plumber, locksmith, maintenance pro. A name,
  * what they do, and a way to reach them. Nobody here has an account.
  * Removing someone archives them, so the quotes they gave stay on record.
  */

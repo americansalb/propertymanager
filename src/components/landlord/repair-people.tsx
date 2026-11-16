@@ -326,7 +326,7 @@ export function RepairPeople({
           Add the people you already call
         </p>
         <p className="mt-1 text-stone-600">
-          Your plumber, your locksmith, your handyman. The next time a tenant reports a problem,
+          Your plumber, your locksmith, your maintenance pro. The next time a tenant reports a problem,
           the ones who fit are asked for a price, and their answers line up for you to compare.
         </p>
         <button onClick={() => setOpen("new")} className={`${buttonCls("accent")} mt-5`}>
