@@ -61,7 +61,7 @@ Next: 1.4 charges → 1.5 maintenance wizard → 1.6 rent via Stripe Connect
 emails/polish. Phase 2 = marketplace. Old codebase: `archive/main-2026-06-09`.
 
 Quotes from the owner's own repair people (built, founder direction Nov 2026):
-owners add their plumber, locksmith, handyman (`Contractor`, no account). When
+owners add their plumber, locksmith, maintenance pro (`Contractor`, no account). When
 a tenant reports a problem, the ones whose trade fits are asked for a price
 through a private link (`QuoteRequest`, `/quote/[token]`); the owner compares
 and says yes, or a per-person limit says yes for them. Rules live in

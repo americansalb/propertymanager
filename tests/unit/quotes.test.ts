@@ -19,7 +19,7 @@ describe("pickContractors", () => {
   const people = [
     person("plumber", ["PLUMBING"]),
     person("locksmith", ["LOCKSMITH"]),
-    person("handyman", ["HANDYMAN"]),
+    person("maintenance", ["HANDYMAN"]),
     person("old-plumber", ["PLUMBING"], true),
   ];
 
@@ -32,13 +32,13 @@ describe("pickContractors", () => {
     expect(pickContractors("PLUMBING", people).map((p) => p.id)).not.toContain("old-plumber");
   });
 
-  it("falls back to the handyman when there is no specialist", () => {
-    expect(pickContractors("ELECTRICAL", people).map((p) => p.id)).toEqual(["handyman"]);
-    expect(pickContractors("OTHER", people).map((p) => p.id)).toEqual(["handyman"]);
+  it("falls back to the maintenance pro when there is no specialist", () => {
+    expect(pickContractors("ELECTRICAL", people).map((p) => p.id)).toEqual(["maintenance"]);
+    expect(pickContractors("OTHER", people).map((p) => p.id)).toEqual(["maintenance"]);
   });
 
-  it("does not add the handyman when a specialist exists", () => {
-    expect(pickContractors("PLUMBING", people).map((p) => p.id)).not.toContain("handyman");
+  it("does not add the maintenance pro when a specialist exists", () => {
+    expect(pickContractors("PLUMBING", people).map((p) => p.id)).not.toContain("maintenance");
   });
 
   it("asks nobody when nobody fits", () => {

@@ -72,7 +72,7 @@ prices, payment released only when you approve the work.
 
 ### Supply cold start (Chicago)
 
-Seed 10 to 20 pros per launch trade (plumbing, electrical, handyman: the
+Seed 10 to 20 pros per launch trade (plumbing, electrical, maintenance pro: the
 highest-frequency maintenance categories). Manual verification through an
 admin queue (license, COI); VERIFIED badge is the carrot. PREMIUM tier
 (placement, SLAs) waits until demand justifies it.

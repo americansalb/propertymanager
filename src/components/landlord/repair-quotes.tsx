@@ -126,7 +126,7 @@ export function RepairQuotes({
     return (
       <div className="flex flex-col gap-4 py-1 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-stone-600">
-          Add your plumber, locksmith or handyman once. After that, every repair asks them for a
+          Add your plumber, locksmith or maintenance pro once. After that, every repair asks them for a
           price and lines the answers up here.
         </p>
         <Link href="/landlord/maintenance/people" className={`${buttonCls("secondary")} shrink-0`}>
