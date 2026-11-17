@@ -191,3 +191,40 @@ export function quoteNotChosenEmail(i: {
   });
   return { subject, html, text };
 }
+
+/** A new project near a pro, in work they listed. */
+export function projectNearYouEmail(i: {
+  brandName: string;
+  proName: string;
+  title: string;
+  description: string;
+  /** "Chicago, IL 60657": the street address comes only with the job. */
+  area: string;
+  closes: string;
+  link: string;
+}): Email {
+  const subject = `New project near you: ${i.title}`;
+  const text = [
+    `Hi ${i.proName},`,
+    "",
+    `An owner in ${i.area} posted a project in work you do:`,
+    "",
+    i.title,
+    i.description,
+    "",
+    `${i.closes}. Bid with your price and when you can come:`,
+    i.link,
+  ].join("\n");
+  const html = layout({
+    brandName: i.brandName,
+    headline: "A new project near you",
+    bodyHtml:
+      p(`Hi ${esc(i.proName)}, an owner in ${strong(i.area)} posted a project in work you do.`) +
+      quoteBlock(i.title) +
+      p(esc(i.description)) +
+      p(esc(`${i.closes}.`)),
+    button: { label: "See it and bid", url: i.link },
+    footHtml: `You get these because your page lists this kind of work in ${esc(i.area)}. Change that on your page.`,
+  });
+  return { subject, html, text };
+}

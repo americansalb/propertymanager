@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireOrg } from "@/lib/authz";
 import { listOrgMaintenance, type OrgMaintenanceRow } from "@/lib/services/maintenance";
+import { listOwnerProjects } from "@/lib/services/project";
 import { Badge, Button } from "@/components/ui";
 import { IconChevronRight } from "@/components/icons";
 import { MAINT_STATUS_LABEL_LANDLORD } from "@/lib/validation/maintenance";
@@ -72,7 +73,9 @@ function RequestList({ rows }: { rows: OrgMaintenanceRow[] }) {
 
 export default async function MaintenanceInbox() {
   const session = await requireOrg("/landlord/maintenance");
-  const rows = await listOrgMaintenance({ userId: session.userId, orgId: session.orgId });
+  const ctx = { userId: session.userId, orgId: session.orgId };
+  const [rows, projects] = await Promise.all([listOrgMaintenance(ctx), listOwnerProjects(ctx)]);
+  const openProjects = projects.filter((p) => p.status === "OPEN_FOR_BIDS");
   const open = rows.filter((r) => r.open);
   const closed = rows.filter((r) => !r.open);
   const fresh = open.filter((r) => r.status === "SUBMITTED").length;
@@ -81,9 +84,14 @@ export default async function MaintenanceInbox() {
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight text-stone-900">Repairs</h1>
-        <Button href="/landlord/maintenance/people" variant="secondary" size="sm">
-          Your repair people
-        </Button>
+        <span className="flex flex-wrap gap-2">
+          <Button href="/landlord/maintenance/people" variant="secondary" size="sm">
+            Your repair people
+          </Button>
+          <Button href="/landlord/projects/new" variant="secondary" size="sm">
+            Post a project
+          </Button>
+        </span>
       </div>
       <p className="mt-1 text-stone-600">
         {open.length === 0
@@ -101,6 +109,36 @@ export default async function MaintenanceInbox() {
           <p className="mt-1 text-stone-600">
             When a tenant reports a problem, it shows up here and you answer in one tap.
           </p>
+        </section>
+      )}
+
+      {openProjects.length > 0 && (
+        <section className="mt-5 rounded-2xl border border-stone-200 bg-white px-5 py-2 sm:px-6">
+          <p className="pt-3 text-sm text-stone-500">Out to nearby pros</p>
+          <ul className="divide-y divide-stone-100">
+            {openProjects.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/landlord/projects/${p.id}`}
+                  className="group -mx-3 flex min-h-16 items-center gap-3 rounded-lg px-3 py-3 transition hover:bg-stone-50"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-semibold text-stone-900">{p.title}</span>
+                    <span className="mt-0.5 block break-words text-sm text-stone-600">
+                      {p.where} · {p.closes}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2 text-sm">
+                    <span aria-hidden="true" className={`h-2 w-2 rounded-full ${p.bids > 0 ? "bg-copper" : "bg-stone-300"}`} />
+                    <span className={p.bids > 0 ? "font-medium text-copper-deep" : "text-stone-600"}>
+                      {p.bids === 0 ? "No bids yet" : p.bids === 1 ? "1 bid" : `${p.bids} bids`}
+                    </span>
+                  </span>
+                  <IconChevronRight className="h-4 w-4 shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-patina" />
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

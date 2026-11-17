@@ -3,6 +3,11 @@ import { requireOrg } from "@/lib/authz";
 import { NotFoundError } from "@/lib/authz/api";
 import { getOrgMaintenanceRequest } from "@/lib/services/maintenance";
 import { getRequestQuotes } from "@/lib/services/quote";
+import { prisma } from "@/lib/db";
+import { OPEN_TRADE_PEOPLE, openTradeForCategory } from "@/lib/projects";
+import type { RepairCategory } from "@/lib/quotes";
+import Link from "next/link";
+import { buttonCls } from "@/components/ui";
 import { BackLink, Badge, InfoRow, Section } from "@/components/ui";
 import { CATEGORY_LABEL, MAINT_STATUS_LABEL_LANDLORD } from "@/lib/validation/maintenance";
 import { unitTitle } from "@/lib/units";
@@ -47,6 +52,11 @@ export default async function MaintenanceDetail({
 
   const quotes = await getRequestQuotes({ userId: session.userId, orgId: session.orgId }, id);
   const pricesIn = quotes.quotes.filter((q) => q.status === "QUOTED").length;
+  const openTrade = openTradeForCategory(req.category as RepairCategory);
+  const project = await prisma.job.findUnique({
+    where: { sourceMaintenanceRequestId: req.id },
+    select: { id: true, status: true, bids: { where: { status: { in: ["PENDING", "ACCEPTED"] } }, select: { id: true } } },
+  });
 
   const where = req.unitNumber
     ? `${unitTitle(req.unitNumber)} at ${req.propertyName}`
@@ -109,6 +119,37 @@ export default async function MaintenanceDetail({
           peopleOnFile={quotes.peopleOnFile}
           open={quotes.open}
         />
+        {project ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4">
+            <p className="text-stone-700">
+              {project.status === "OPEN_FOR_BIDS"
+                ? project.bids.length === 0
+                  ? "Open to nearby pros. No bids yet."
+                  : project.bids.length === 1
+                    ? "Open to nearby pros: 1 bid so far."
+                    : `Open to nearby pros: ${project.bids.length} bids so far.`
+                : project.status === "AWARDED"
+                  ? "A nearby pro has this job."
+                  : "The project for nearby pros was taken down."}
+            </p>
+            <Link href={`/landlord/projects/${project.id}`} className={buttonCls("secondary", "sm")}>
+              See the bids
+            </Link>
+          </div>
+        ) : (
+          quotes.open &&
+          openTrade && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4">
+              <p className="min-w-0 text-stone-700">
+                Want more prices? Open it to {OPEN_TRADE_PEOPLE[openTrade]} nearby. They bid,
+                you pick.
+              </p>
+              <Link href={`/landlord/projects/new?repair=${req.id}`} className={buttonCls("secondary", "sm")}>
+                Open to nearby pros
+              </Link>
+            </div>
+          )
+        )}
       </Section>
 
       <Section title="Send an update">
