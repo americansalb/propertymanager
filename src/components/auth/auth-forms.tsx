@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { buttonCls, inputCls } from "@/components/ui";
@@ -49,7 +50,14 @@ export function LoginForm({ next }: { next?: string }) {
         <input id="email" name="email" type="email" required autoComplete="email" className={inputCls} />
       </div>
       <div>
-        <label htmlFor="password" className={labelCls}>Password</label>
+        <div className="mb-1 flex items-baseline justify-between gap-3">
+          <label htmlFor="password" className="block text-sm font-medium text-stone-700">
+            Password
+          </label>
+          <Link href="/forgot" className="text-sm font-medium text-patina underline">
+            Forgot it?
+          </Link>
+        </div>
         <div className="relative">
           <input
             id="password"
