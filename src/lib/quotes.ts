@@ -24,6 +24,7 @@ export const TRADES = [
   "CLEANING",
   "LANDSCAPING",
   "GENERAL_CONTRACTOR",
+  "JUNK_REMOVAL",
   "OTHER",
 ] as const;
 export type Trade = (typeof TRADES)[number];
@@ -43,6 +44,7 @@ export const TRADE_LABEL: Record<Trade, string> = {
   CLEANING: "Cleaner",
   LANDSCAPING: "Yard and snow",
   GENERAL_CONTRACTOR: "General contractor",
+  JUNK_REMOVAL: "Junk removal",
   OTHER: "Something else",
 };
 

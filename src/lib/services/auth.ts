@@ -4,6 +4,7 @@ import { createSession } from "@/lib/auth/session";
 import { computeRoles, defaultPortal } from "@/lib/authz/roles";
 import { createOrgWithOwner } from "@/lib/services/org";
 import { audit } from "@/lib/audit";
+import { sendEmailConfirmation } from "@/lib/services/email-verify";
 import type { LoginInput, SignupInput } from "@/lib/validation/auth";
 
 const MAX_FAILED_ATTEMPTS = 10;
@@ -72,6 +73,11 @@ export async function signup(input: SignupInput, meta: { ip: string; userAgent: 
     ip: meta.ip,
     meta: { accountType: input.accountType },
   });
+
+  // Pros confirm their email before their page can go public: send it now.
+  if (input.accountType === "PRO") {
+    void sendEmailConfirmation(user.id).catch((e) => console.error("confirm email failed", e));
+  }
 
   const redirect = input.accountType === "LANDLORD" ? "/landlord/dashboard" : "/pro/dashboard";
   return { token, expiresAt, redirect };
