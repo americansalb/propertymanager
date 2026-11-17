@@ -25,3 +25,13 @@ export const loginSchema = z.object({
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const forgotSchema = z.object({
+  // Trim before checking, so a stray space from a phone keyboard is not an error.
+  email: z.string().trim().toLowerCase().email("That does not look like an email address."),
+});
+
+export const resetSchema = z.object({
+  token: z.string().min(20),
+  password: passwordSchema,
+});
