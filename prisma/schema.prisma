@@ -967,6 +967,8 @@ model Bid {
   jobId                 String
   proProfileId          String
   amountCents           Int
+  amountHighCents       Int? // a range, when they cannot be sure until they see it
+  availability          String? // "Tomorrow morning", in their words
   includesMaterials     Boolean   @default(true)
   message               String?
   estimatedStartDate    DateTime?

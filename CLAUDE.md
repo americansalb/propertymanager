@@ -77,5 +77,12 @@ publish `/pros/[slug]`. Facts on the page say exactly what was checked
 (email confirmed, how many owners list them, jobs approved); never
 "verified". ID checks (Stripe Identity) and state license checks come later.
 Owners add a published pro to their own repair people in one tap.
+Projects (built Nov 2026): owners post a project, or open a tenant's repair
+to nearby pros (`Job`/`Bid`, `src/lib/projects.ts`, `services/project.ts`).
+Only open-market trades go out (maintenance, cleaning, painting, junk,
+yard and snow, flooring, appliance repair); licensed work stays with the
+owner's own people. Pros with a public page in that trade and ZIP bid a
+price or range and a time; the owner says yes; the winner gets the address
+and joins the owner's repair people. takeRateBps is 0: no money moves.
 Also built: forgot password (`/forgot`, `/reset/[token]`) and recording rent
 received outside the app (`src/lib/payments.ts`, `services/rent.ts`).
