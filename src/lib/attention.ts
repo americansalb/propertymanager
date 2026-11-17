@@ -80,6 +80,7 @@ export function buildVacancyItems(vacant: VacantUnitInput[]): AttentionItem[] {
 
 export type LateRentInput = {
   leaseId: string;
+  unitId: string;
   unitNumber: string;
   propertyId: string;
   propertyName: string;
@@ -97,7 +98,8 @@ export function buildLateRentItems(late: LateRentInput[]): AttentionItem[] {
     title: `${l.tenantName ?? "Rent"} is ${l.daysLate} day${l.daysLate === 1 ? "" : "s"} late`,
     meta: `${formatCents(l.openCents)} owed, ${unitTitle(l.unitNumber)} at ${l.propertyName}`,
     stakeCents: l.openCents,
-    action: { label: "Open", href: `/landlord/properties/${l.propertyId}` },
+    // Straight to the unit's rent, where the payment gets written down.
+    action: { label: "Open", href: `/landlord/properties/${l.propertyId}/units/${l.unitId}#rent` },
     refId: l.propertyId,
   }));
 }

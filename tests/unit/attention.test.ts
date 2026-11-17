@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildLateRentItems,
   buildQuoteItems,
   buildSampleItem,
   buildVacancyItems,
@@ -119,5 +120,27 @@ describe("buildQuoteItems", () => {
     ]);
     expect(many!.title).toBe("3 prices to compare for: No heat");
     expect(many!.meta).toBe("From $250.00, 418 Maple St");
+  });
+});
+
+describe("buildLateRentItems", () => {
+  it("names who is late and links straight to that unit's rent", () => {
+    const [item] = buildLateRentItems([
+      {
+        leaseId: "l1",
+        unitId: "u1",
+        unitNumber: "B",
+        propertyId: "p1",
+        propertyName: "Linden Court",
+        tenantName: "Jordan Lee",
+        openCents: 140_000,
+        daysLate: 3,
+      },
+    ]);
+    expect(item).toMatchObject({
+      cls: "MONEY_TO_YOU",
+      title: "Jordan Lee is 3 days late",
+      action: { href: "/landlord/properties/p1/units/u1#rent" },
+    });
   });
 });

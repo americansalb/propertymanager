@@ -129,7 +129,7 @@ describe("lateFeeForRent", () => {
     const fee = lateFeeForRent(rent, lease, new Date("2026-07-07T00:00:00Z"))!;
     expect(fee.amountCents).toBe(7_500);
     expect(fee.periodKey).toBe("2026-07");
-    expect(fee.description).toBe("Late fee for 2026-07");
+    expect(fee.description).toBe("Late fee for July 2026 rent");
   });
   it("does not charge within the grace window", () => {
     expect(lateFeeForRent(rent, lease, new Date("2026-07-06T00:00:00Z"))).toBeNull();

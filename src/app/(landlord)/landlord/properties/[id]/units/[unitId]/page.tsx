@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/authz";
 import { getUnit } from "@/lib/services/property";
 import { getUnitLeasePanel } from "@/lib/services/lease";
+import { getLeaseRent } from "@/lib/services/rent";
+import { RentPanel, type RentView } from "@/components/landlord/rent-panel";
 import { listPhotos, PHOTO_LIMITS } from "@/lib/services/photos";
 import { NotFoundError } from "@/lib/authz/api";
 import { formatLeaseDate, isoDateOnly, ordinal } from "@/lib/leases";
@@ -47,6 +49,19 @@ export default async function UnitProfilePage({
     listPhotos(ctx, "Unit", unit.id),
     getUnitLeasePanel(ctx, unit.id),
   ]);
+
+  // Rent is billed only on an active lease.
+  const rentData =
+    panel && panel.lease.status === "ACTIVE" ? await getLeaseRent(ctx, panel.lease.id) : null;
+  const rentView: RentView | null = rentData
+    ? {
+        leaseId: rentData.leaseId,
+        balanceCents: rentData.balanceCents,
+        pastDueCents: rentData.pastDueCents,
+        charges: rentData.charges.map((c) => ({ ...c, dueDate: c.dueDate.toISOString() })),
+        payments: rentData.payments.map((p) => ({ ...p, paidAt: p.paidAt?.toISOString() ?? null })),
+      }
+    : null;
 
   const leaseView: LeaseView | null = panel
     ? {
@@ -229,6 +244,17 @@ export default async function UnitProfilePage({
           </div>
         )}
       </section>
+
+      {rentView && (
+        <div id="rent" className="scroll-mt-20">
+          <Section title="Rent">
+            <RentPanel
+              rent={rentView}
+              tenantFirstName={tenantLines[0]?.name.split(" ")[0] ?? null}
+            />
+          </Section>
+        </div>
+      )}
 
       {!leaseView && (
         <Section title="Asking terms" hint="A new lease starts as a copy of these.">

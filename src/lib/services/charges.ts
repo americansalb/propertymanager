@@ -154,6 +154,7 @@ export async function getTenantBilling(leaseId: string, asOf: Date = new Date())
 
 export type OrgLateRent = {
   leaseId: string;
+  unitId: string;
   unitNumber: string;
   propertyId: string;
   propertyName: string;
@@ -174,7 +175,7 @@ export async function getOrgLateRent(orgId: string, asOf: Date = new Date()): Pr
       dueDate: true,
       lease: {
         select: {
-          unit: { select: { unitNumber: true, propertyId: true, property: { select: { name: true } } } },
+          unit: { select: { id: true, unitNumber: true, propertyId: true, property: { select: { name: true } } } },
           tenants: {
             orderBy: { isPrimary: "desc" },
             take: 1,
@@ -201,6 +202,7 @@ export async function getOrgLateRent(orgId: string, asOf: Date = new Date()): Pr
     } else {
       byLease.set(r.leaseId, {
         leaseId: r.leaseId,
+        unitId: u.id,
         unitNumber: u.unitNumber,
         propertyId: u.propertyId,
         propertyName: u.property.name,
