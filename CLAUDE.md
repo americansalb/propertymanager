@@ -69,3 +69,13 @@ and says yes, or a per-person limit says yes for them. Rules live in
 approving is "go ahead at this price". Next on this track: an urgent path
 (first trusted person to say yes), texts (needs a texting account), an AI
 price estimate (needs an API key), then outside pros.
+
+Pro pages (built Nov 2026): repair pros sign up, confirm their email
+(`AuthToken` EMAIL_VERIFY, `/verify/[token]`), pick trades, set starting
+prices on jobs from `src/lib/pro-catalog.ts` (`ProPrice`), add ZIP codes, and
+publish `/pros/[slug]`. Facts on the page say exactly what was checked
+(email confirmed, how many owners list them, jobs approved); never
+"verified". ID checks (Stripe Identity) and state license checks come later.
+Owners add a published pro to their own repair people in one tap.
+Also built: forgot password (`/forgot`, `/reset/[token]`) and recording rent
+received outside the app (`src/lib/payments.ts`, `services/rent.ts`).

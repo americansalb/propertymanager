@@ -20,6 +20,26 @@ export async function requireOrgApi(): Promise<
   return { ok: true, ctx: { userId: session.userId, orgId: session.activeOrgId } };
 }
 
+export type ProCtx = { userId: string; proProfileId: string };
+
+/** API-route guard for repair pros: the profile always comes from the session. */
+export async function requireProApi(): Promise<
+  { ok: true; ctx: ProCtx } | { ok: false; res: NextResponse }
+> {
+  const session = await getSession();
+  if (!session) {
+    return { ok: false, res: NextResponse.json({ error: "Not signed in." }, { status: 401 }) };
+  }
+  const { prisma } = await import("@/lib/db");
+  const profile = session.roles.includes("PRO")
+    ? await prisma.proProfile.findUnique({ where: { userId: session.userId }, select: { id: true } })
+    : null;
+  if (!profile) {
+    return { ok: false, res: NextResponse.json({ error: "Forbidden." }, { status: 403 }) };
+  }
+  return { ok: true, ctx: { userId: session.userId, proProfileId: profile.id } };
+}
+
 export class NotFoundError extends Error {}
 export class ConflictError extends Error {}
 

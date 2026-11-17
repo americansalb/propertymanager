@@ -682,6 +682,7 @@ enum Trade {
   ROOFING
   FLOORING
   GENERAL_CONTRACTOR
+  JUNK_REMOVAL
   OTHER
 }
 
@@ -703,6 +704,15 @@ model ProProfile {
   id                String    @id @default(cuid())
   userId            String    @unique
   businessName      String
+  // Their public page: what they do, what they charge, out in the open.
+  trades            Trade[]   @default([])
+  hourlyRateCents   Int?
+  tripChargeCents   Int?
+  slug              String?   @unique // villagekeep.com/pros/<slug>
+  publishedAt       DateTime? // null = their page is not public
+  // Self-reported until a state check exists; always shown as theirs.
+  licenseNumber     String?
+  licenseState      String?
   dbaName           String?
   entityType        String? // LLC | CORP | SOLE_PROP | PARTNERSHIP
   phone             String
@@ -732,12 +742,27 @@ model ProProfile {
   services       ProService[]
   areas          ProServiceArea[]
   verifications  Verification[]
+  prices         ProPrice[]
   bids           Bid[]
   jobInvites     JobInvite[]
   reviews        Review[]
   connectAccount ConnectAccount?
 
   @@index([status])
+}
+
+// A pro's own starting price for a job from the catalog in src/lib/pro-catalog.ts.
+model ProPrice {
+  id           String   @id @default(cuid())
+  proProfileId String
+  taskKey      String
+  fromCents    Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  proProfile ProProfile @relation(fields: [proProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([proProfileId, taskKey])
 }
 
 // ZIP-code service areas (deliberate: specific ZIPs, not a radius).

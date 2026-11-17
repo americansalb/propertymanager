@@ -1,44 +1,27 @@
-import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/authz";
-import { StepMark } from "@/components/ui";
+import { prisma } from "@/lib/db";
+import { getProPage } from "@/lib/services/pro";
+import { ProPageEditor } from "@/components/pro/pro-page-editor";
 
-export const metadata = { title: "Home" };
+export const metadata = { title: "Your page" };
 
 export default async function ProDashboard() {
   const session = await requireRole("PRO", "/pro/dashboard");
   const profile = await prisma.proProfile.findUnique({
     where: { userId: session.userId },
-    select: { businessName: true },
+    select: { id: true },
   });
+  if (!profile) return null;
+  const page = await getProPage({ userId: session.userId, proProfileId: profile.id });
 
   return (
     <div className="mx-auto max-w-3xl">
-      <p className="text-sm text-stone-500">Hello, {session.firstName}</p>
-      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-900">
-        {profile?.businessName ?? "Your business"}
-      </h1>
-
-      <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
-        <ol className="space-y-4">
-          <li className="flex gap-3">
-            <StepMark done />
-            <div>
-              <p className="font-medium text-stone-900">Your account is saved</p>
-              <p className="text-sm text-stone-500">There is nothing else to do right now.</p>
-            </div>
-          </li>
-          <li className="flex gap-3">
-            <StepMark />
-            <div>
-              <p className="font-medium text-stone-900">Repair jobs open</p>
-              <p className="text-sm text-stone-500">
-                We email {session.email} the day you can set up your page and start getting
-                requests.
-              </p>
-            </div>
-          </li>
-        </ol>
-      </section>
+      <ProPageEditor
+        data={{
+          ...page,
+          prices: page.prices.map((p) => ({ taskKey: p.taskKey, fromCents: p.fromCents })),
+        }}
+      />
     </div>
   );
 }
