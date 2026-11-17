@@ -388,7 +388,7 @@ export default function LandingPage() {
       <footer className="border-t border-white/10 bg-keep-night">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-7 text-sm text-stone-300">
           <span>
-            © {new Date().getFullYear()} {brand.name} · {brand.tagline}
+            © {new Date().getFullYear()} {brand.name}. {brand.tagline}
           </span>
           <span className="font-medium tracking-wide">{brand.domain}</span>
         </div>
