@@ -19,7 +19,7 @@ const jost = Jost({
 
 export const metadata: Metadata = {
   title: { default: brand.name, template: `%s · ${brand.name}` },
-  description: brand.tagline,
+  description: brand.description,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

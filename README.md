@@ -1,6 +1,6 @@
 # VillageKeep
 
-**Property management & trusted local pros** - villagekeep.com
+**Your rentals, well kept.** Property management with your own repair people - villagekeep.com
 
 Landlords manage properties and collect rent. Tenants report problems through a
 guided wizard. Verified local pros bid on the work, the platform escrows the
