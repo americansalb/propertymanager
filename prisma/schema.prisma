@@ -389,6 +389,13 @@ model Payment {
   currency            String          @default("usd")
   failureCode         String?
   paidAt              DateTime?
+  // OFFLINE payments: who wrote it down, and anything they noted (check #).
+  recordedByUserId    String?
+  note                String?
+  // A recorded payment is never deleted. Undoing it adds negative
+  // allocations and sets these, so the history keeps both rows.
+  voidedAt            DateTime?
+  voidedByUserId      String?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
@@ -402,7 +409,7 @@ model PaymentAllocation {
   id          String   @id @default(cuid())
   paymentId   String
   chargeId    String
-  amountCents Int
+  amountCents Int // negative when a recorded payment is undone
   createdAt   DateTime @default(now())
 
   payment Payment @relation(fields: [paymentId], references: [id])

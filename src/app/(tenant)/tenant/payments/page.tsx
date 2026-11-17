@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/authz";
 import { getTenantHome } from "@/lib/services/tenant";
 import { getTenantBilling } from "@/lib/services/charges";
+import { getTenantPayments } from "@/lib/services/rent";
 import { formatCents } from "@/lib/money";
 import { formatLeaseDate } from "@/lib/leases";
 import { Section } from "@/components/ui";
@@ -12,6 +13,7 @@ export default async function TenantPayments() {
   const home = await getTenantHome(session.userId);
   const ended = home ? home.leaseStatus === "ENDED" || home.leaseStatus === "TERMINATED" : false;
   const billing = home && !ended ? await getTenantBilling(home.leaseId) : null;
+  const paid = home ? await getTenantPayments(home.leaseId) : [];
   const balance = billing?.summary.balanceCents ?? 0;
   const pastDue = billing?.summary.pastDueCents ?? 0;
 
@@ -78,6 +80,24 @@ export default async function TenantPayments() {
                     </span>
                     <span className="shrink-0 text-base font-semibold tabular-nums text-stone-900">
                       {formatCents(c.openCents)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {paid.length > 0 && (
+            <Section title="What you have paid">
+              <ul className="divide-y divide-stone-100">
+                {paid.map((x) => (
+                  <li key={x.id} className="flex min-h-12 items-center justify-between gap-4 py-2.5">
+                    <span className="text-stone-700">
+                      {x.paidAt ? formatLeaseDate(x.paidAt) : "Recorded"}
+                      {x.recordedOffline ? ` · ${x.method}` : ""}
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums text-stone-900">
+                      {formatCents(x.amountCents)}
                     </span>
                   </li>
                 ))}

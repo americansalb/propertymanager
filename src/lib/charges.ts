@@ -29,6 +29,12 @@ function addDaysUTC(d: Date, days: number): Date {
   return new Date(d.getTime() + days * 86_400_000);
 }
 
+/** "2026-07" reads as "July 2026". */
+export function periodLabel(periodKey: string): string {
+  const [y, m] = periodKey.split("-").map(Number);
+  return y && m && m >= 1 && m <= 12 ? `${MONTHS[m - 1]} ${y}` : periodKey;
+}
+
 /** "YYYY-MM" for the month a date falls in (UTC). */
 export function periodKeyOf(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -154,6 +160,6 @@ export function lateFeeForRent(
     periodKey,
     dueDate: startOfDayUTC(asOf),
     amountCents: lease.lateFeeCents,
-    description: `Late fee for ${periodKey}`,
+    description: `Late fee for ${periodLabel(periodKey)} rent`,
   };
 }
