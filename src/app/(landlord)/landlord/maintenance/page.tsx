@@ -85,6 +85,9 @@ export default async function MaintenanceInbox() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight text-stone-900">Repairs</h1>
         <span className="flex flex-wrap gap-2">
+          <Button href="/landlord/maintenance/new" size="sm">
+            Report a repair
+          </Button>
           <Button href="/landlord/maintenance/people" variant="secondary" size="sm">
             Your repair people
           </Button>
@@ -107,7 +110,8 @@ export default async function MaintenanceInbox() {
         <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
           <p className="text-xl font-semibold tracking-tight text-stone-900">All clear</p>
           <p className="mt-1 text-stone-600">
-            When a tenant reports a problem, it shows up here and you answer in one tap.
+            When a tenant reports a problem, it shows up here and you answer in one tap. Heard
+            about one by phone or saw it yourself? Report it and your repair people are asked.
           </p>
         </section>
       )}

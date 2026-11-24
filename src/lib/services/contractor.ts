@@ -16,6 +16,8 @@ export type ContractorView = {
   email: string | null;
   notes: string | null;
   autoApproveCents: number | null;
+  /** The agreed price for coming out. */
+  calloutCents: number | null;
   /** Jobs this person was approved for. */
   jobsWon: number;
 };
@@ -34,6 +36,7 @@ export async function listContractors(ctx: OrgCtx): Promise<ContractorView[]> {
     email: c.email,
     notes: c.notes,
     autoApproveCents: c.autoApproveCents,
+    calloutCents: c.calloutCents,
     jobsWon: c._count.quotes,
   }));
 }
@@ -49,6 +52,7 @@ export async function createContractor(ctx: OrgCtx, input: ContractorInput) {
       email: input.email ?? null,
       notes: input.notes ?? null,
       autoApproveCents: input.autoApproveDollars ?? null,
+      calloutCents: input.calloutDollars ?? null,
     },
   });
   void audit({
@@ -91,6 +95,7 @@ export async function updateContractor(ctx: OrgCtx, id: string, patch: Contracto
       ...(patch.autoApproveDollars !== undefined
         ? { autoApproveCents: patch.autoApproveDollars }
         : {}),
+      ...(patch.calloutDollars !== undefined ? { calloutCents: patch.calloutDollars } : {}),
     },
   });
   void audit({
@@ -116,12 +121,33 @@ export async function archiveContractor(ctx: OrgCtx, id: string) {
   });
 }
 
-export async function getAutoAsk(ctx: OrgCtx): Promise<boolean> {
+export type QuoteSettings = { autoAsk: boolean; emergencyLimitCents: number | null };
+
+export async function getQuoteSettings(ctx: OrgCtx): Promise<QuoteSettings> {
   const org = await prisma.organization.findUnique({
     where: { id: ctx.orgId },
-    select: { autoAskQuotes: true },
+    select: { autoAskQuotes: true, emergencyLimitCents: true },
   });
-  return org?.autoAskQuotes ?? true;
+  return {
+    autoAsk: org?.autoAskQuotes ?? true,
+    emergencyLimitCents: org?.emergencyLimitCents ?? null,
+  };
+}
+
+/** In an emergency, the first of the owner's people at or under this gets the job. */
+export async function setEmergencyLimit(ctx: OrgCtx, cents: number | null) {
+  await prisma.organization.update({
+    where: { id: ctx.orgId },
+    data: { emergencyLimitCents: cents },
+  });
+  void audit({
+    actorUserId: ctx.userId,
+    orgId: ctx.orgId,
+    action: "org.emergency_limit",
+    entityType: "Organization",
+    entityId: ctx.orgId,
+    meta: { cents },
+  });
 }
 
 export async function setAutoAsk(ctx: OrgCtx, on: boolean) {

@@ -16,6 +16,8 @@ export type DetailsView = {
   parkingNotes: string | null;
   waterShutoffLocation: string | null;
   breakerPanelLocation: string | null;
+  gasShutoffLocation: string | null;
+  furnaceLocation: string | null;
   /** Already decrypted for this org member, or null. */
   accessCodes: string | null;
   accessLocked: boolean;
@@ -28,6 +30,8 @@ export type DetailsView = {
 type Key =
   | "water"
   | "breaker"
+  | "gas"
+  | "furnace"
   | "codes"
   | "parking"
   | "year"
@@ -83,6 +87,32 @@ export function PropertyDetailsCard({
         emptyPrompt: "Where is the breaker panel?",
         kind: { kind: "text", placeholder: "Rear stairwell, gray box" },
         onSave: (v) => patch({ breakerPanelLocation: v }),
+        savedToast: "Saved.",
+      },
+    },
+    {
+      key: "gas",
+      chip: "Gas shutoff",
+      filled: details.gasShutoffLocation != null,
+      row: {
+        label: "Gas shutoff",
+        value: details.gasShutoffLocation,
+        emptyPrompt: "Where is the main gas shutoff?",
+        kind: { kind: "text", placeholder: "Outside, by the gas meter" },
+        onSave: (v) => patch({ gasShutoffLocation: v }),
+        savedToast: "Saved.",
+      },
+    },
+    {
+      key: "furnace",
+      chip: "Furnace or boiler",
+      filled: details.furnaceLocation != null,
+      row: {
+        label: "Furnace or boiler",
+        value: details.furnaceLocation,
+        emptyPrompt: "Where is it, and where is its switch?",
+        kind: { kind: "text", placeholder: "Basement utility room, switch on the wall by the door" },
+        onSave: (v) => patch({ furnaceLocation: v }),
         savedToast: "Saved.",
       },
     },

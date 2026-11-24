@@ -34,6 +34,9 @@ import {
   type RepairCategory,
 } from "@/lib/quotes";
 import { unitTitle } from "@/lib/units";
+import { approvalLimitCents, knownSpots } from "@/lib/urgent";
+import { getPropertySpots } from "@/lib/services/spots";
+import { tenantUserIdsForLease } from "@/lib/services/tenant";
 import type { QuoteRespondInput } from "@/lib/validation/quote";
 
 /** A repair that can still be quoted on. */
@@ -131,6 +134,7 @@ export async function askForQuotes(opts: {
   const face = await orgFace(opts.orgId, opts.actorUserId);
   const where = whereLabel(req.unit?.unitNumber, req.property);
   const urgent = req.urgency === "EMERGENCY" || req.urgency === "URGENT";
+  const emergency = req.urgency === "EMERGENCY";
 
   const asked: AskedLine[] = [];
   for (const person of fresh) {
@@ -153,6 +157,7 @@ export async function askForQuotes(opts: {
         description: req.description,
         where,
         urgent,
+        emergency,
         link: buildQuoteLink(env.APP_URL, token),
       });
       const result = await sendEmail({ to: person.email, ...mail });
@@ -173,7 +178,7 @@ export async function askForQuotes(opts: {
     action: "quote.ask",
     entityType: "MaintenanceRequest",
     entityId: req.id,
-    meta: { asked: asked.length, automatic: opts.actorUserId === null },
+    meta: { asked: asked.length, automatic: opts.actorUserId === null, emergency },
   });
   return { asked };
 }
@@ -182,18 +187,23 @@ export async function askForQuotes(opts: {
  * Called right after a tenant reports a problem. Never throws: a tenant's
  * report must go through whether or not anyone could be asked.
  */
-export async function autoAskOnReport(orgId: string, requestId: string): Promise<AskedLine[]> {
+export async function autoAskOnReport(
+  orgId: string,
+  requestId: string,
+  /** Who reported it, when that was the owner. Null for a tenant's report. */
+  actorUserId: string | null = null,
+): Promise<{ asked: AskedLine[]; off: boolean }> {
   try {
     const org = await prisma.organization.findUnique({
       where: { id: orgId },
       select: { autoAskQuotes: true },
     });
-    if (!org?.autoAskQuotes) return [];
-    const { asked } = await askForQuotes({ orgId, actorUserId: null, requestId });
-    return asked;
+    if (!org?.autoAskQuotes) return { asked: [], off: true };
+    const { asked } = await askForQuotes({ orgId, actorUserId, requestId });
+    return { asked, off: false };
   } catch (e) {
     console.error("auto-ask for quotes failed", e);
-    return [];
+    return { asked: [], off: false };
   }
 }
 
@@ -327,6 +337,10 @@ export type QuotePreview =
       where: string;
       mayEnter: boolean;
       bestTimes: string[];
+      /** The price to come out that this person and the owner agreed on. */
+      calloutCents: number | null;
+      /** The shutoffs and the panel: only for the person who has the job. */
+      spots: Array<{ label: string; where: string | null; photo: boolean }>;
       mine: {
         status: string;
         priceLowCents: number | null;
@@ -343,7 +357,7 @@ async function findByToken(rawToken: string) {
       contractor: true,
       request: {
         include: {
-          property: { select: { name: true, address1: true, city: true } },
+          property: { select: { id: true, name: true, address1: true, city: true } },
           unit: { select: { unitNumber: true } },
           quotes: { select: { id: true, status: true } },
         },
@@ -370,8 +384,18 @@ export async function previewQuote(rawToken: string): Promise<QuotePreview> {
   }
   const face = await orgFace(quote.orgId);
   const req = quote.request;
+  const state = stateOf(quote);
+  const spots =
+    state === "won"
+      ? knownSpots(await getPropertySpots(req.property.id)).map((s) => ({
+          label: s.label,
+          where: s.where,
+          // The photo itself needs a sign-in, so a link holder only learns one exists.
+          photo: s.photoUrl != null,
+        }))
+      : [];
   return {
-    state: stateOf(quote),
+    state,
     ownerName: face?.name ?? face?.orgName ?? "Your customer",
     contractorName: quote.contractor.name,
     title: req.title,
@@ -381,6 +405,8 @@ export async function previewQuote(rawToken: string): Promise<QuotePreview> {
     where: whereLabel(req.unit?.unitNumber, req.property),
     mayEnter: req.permissionToEnter,
     bestTimes: req.preferredTimes,
+    calloutCents: quote.contractor.calloutCents,
+    spots,
     mine: {
       status: quote.status,
       priceLowCents: quote.priceLowCents,
@@ -459,10 +485,22 @@ export async function respondToQuote(
   });
   const price = formatQuotePrice(low, high);
 
-  // The owner's standing rule, if they set one for this person.
+  // The owner's standing rule: the limit set for this person, and in an
+  // emergency the limit set for whoever can come first.
+  const emergency = req.urgency === "EMERGENCY";
+  const org = emergency
+    ? await prisma.organization.findUnique({
+        where: { id: quote.orgId },
+        select: { emergencyLimitCents: true },
+      })
+    : null;
   if (
     ruleApproves({
-      limitCents: quote.contractor.autoApproveCents,
+      limitCents: approvalLimitCents({
+        personLimitCents: quote.contractor.autoApproveCents,
+        emergencyLimitCents: org?.emergencyLimitCents ?? null,
+        emergency,
+      }),
       priceLowCents: low,
       priceHighCents: high,
       someoneAlreadyApproved: false, // stateOf() already ruled that out
@@ -473,7 +511,9 @@ export async function respondToQuote(
       await tellOwners(quote.orgId, {
         type: "quote.auto_approved",
         title: `Approved for you: ${quote.contractor.name}, ${price}`,
-        body: `${req.title}, ${where}. It was under the limit you set for them. They can come: ${input.availability}.`,
+        body: `${req.title}, ${where}. It was under the limit you set${
+          emergency ? " for emergencies" : " for them"
+        }. They can come: ${input.availability}.`,
         requestId: req.id,
       });
       return { state: "won", autoApproved: true };
@@ -580,17 +620,22 @@ async function approve(quoteId: string, orgId: string, byUserId: string | null) 
   try {
     const face = await orgFace(orgId, byUserId);
     const where = whereLabel(req.unit?.unitNumber, req.property);
-    const tenant =
-      req.origin === "TENANT"
-        ? await prisma.user.findUnique({
-            where: { id: req.createdByUserId },
+    // The people who live there: whoever reported it, or the lease's
+    // tenants when the owner wrote the repair down.
+    const tenantIds =
+      req.origin === "TENANT" ? [req.createdByUserId] : await tenantUserIdsForLease(req.leaseId);
+    const tenants =
+      tenantIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: tenantIds } },
             select: { id: true, firstName: true },
           })
-        : null;
+        : [];
+    const tenant = tenants[0] ?? null;
 
-    if (tenant) {
+    for (const t of tenants) {
       await notify({
-        userId: tenant.id,
+        userId: t.id,
         channel: "IN_APP",
         type: "maintenance.update",
         title: `Update: ${req.title}`,

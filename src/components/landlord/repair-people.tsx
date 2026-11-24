@@ -16,6 +16,7 @@ export type PersonView = {
   email: string | null;
   notes: string | null;
   autoApproveCents: number | null;
+  calloutCents: number | null;
   jobsWon: number;
 };
 
@@ -43,6 +44,9 @@ function PersonForm({
   const [email, setEmail] = useState(person?.email ?? "");
   const [limit, setLimit] = useState(
     person?.autoApproveCents != null ? (person.autoApproveCents / 100).toString() : "",
+  );
+  const [callout, setCallout] = useState(
+    person?.calloutCents != null ? (person.calloutCents / 100).toString() : "",
   );
   const [notes, setNotes] = useState(person?.notes ?? "");
   const [busy, setBusy] = useState(false);
@@ -73,6 +77,7 @@ function PersonForm({
           email,
           notes,
           autoApproveDollars: limit.trim() === "" ? null : limit,
+          calloutDollars: callout.trim() === "" ? null : callout,
         }),
       },
     );
@@ -192,6 +197,28 @@ function PersonForm({
         </p>
 
         <div>
+          <label htmlFor={`${id}-callout`} className={label}>
+            Their price to come out <span className={hint}>(if you agreed on one)</span>
+          </label>
+          <div className="relative max-w-[14rem]">
+            <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-stone-500">
+              $
+            </span>
+            <input
+              id={`${id}-callout`}
+              value={callout}
+              onChange={(e) => setCallout(e.target.value)}
+              inputMode="decimal"
+              placeholder="95"
+              className={`${inputCls} pl-8`}
+            />
+          </div>
+          <p className="mt-1 text-sm text-stone-500">
+            It is filled in for them when you need someone in a hurry, so saying yes is one tap.
+          </p>
+        </div>
+
+        <div>
           <label htmlFor={`${id}-limit`} className={label}>
             Say yes without asking me, up to <span className={hint}>(if you like)</span>
           </label>
@@ -269,6 +296,7 @@ function PersonRow({ person, onEdit }: { person: PersonView; onEdit: () => void 
         <span className="mt-0.5 block break-words text-sm text-stone-600">
           {tradeLine(person.trades)}
           {reach ? ` · ${reach}` : ""}
+          {person.calloutCents != null ? ` · ${formatCents(person.calloutCents)} to come out` : ""}
         </span>
       </span>
       <span className="shrink-0 text-right text-sm">
@@ -286,12 +314,83 @@ function PersonRow({ person, onEdit }: { person: PersonView; onEdit: () => void 
   );
 }
 
+/** The owner's standing yes for emergencies: one amount, for whoever can come first. */
+function EmergencyLimit({ cents }: { cents: number | null }) {
+  const router = useRouter();
+  const { push: toast } = useToast();
+  const id = useId();
+  const [value, setValue] = useState(cents != null ? (cents / 100).toString() : "");
+  const [busy, setBusy] = useState(false);
+  const saved = cents != null ? (cents / 100).toString() : "";
+
+  async function save() {
+    setBusy(true);
+    const res = await fetch("/api/v1/landlord/quote-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emergencyLimitDollars: value.trim() === "" ? null : value }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      toast(data.error ?? "Couldn't save that. Try again.", "bad");
+      return;
+    }
+    toast(
+      value.trim() === ""
+        ? "You will approve every price yourself, emergencies too."
+        : "Saved. In an emergency, the first one who can come gets the job.",
+    );
+    router.refresh();
+  }
+
+  return (
+    <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+      <p className="text-base font-semibold text-stone-900">In an emergency</p>
+      <p className="mt-0.5 text-sm text-stone-600">
+        {cents != null
+          ? `The first of your people who can come for ${formatCents(cents)} or less gets the job without waiting for you. You are told right after.`
+          : "Every price waits for your yes, even at night. Set an amount and the first of your people who can come for that or less gets the job."}
+      </p>
+      <label htmlFor={`${id}-emergency`} className={`${label} mt-4`}>
+        Say yes without asking me, up to
+      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-[14rem] max-w-full">
+          <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-stone-500">
+            $
+          </span>
+          <input
+            id={`${id}-emergency`}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            inputMode="decimal"
+            placeholder="250"
+            className={`${inputCls} pl-8`}
+          />
+        </div>
+        {value.trim() !== saved && (
+          <button onClick={() => void save()} disabled={busy} className={buttonCls("secondary")}>
+            {busy ? "Saving…" : "Save"}
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-stone-500">
+        This covers the price to come out and stop the damage. The repair itself still gets a
+        price for you to approve.
+      </p>
+    </section>
+  );
+}
+
 export function RepairPeople({
   people,
   autoAsk,
+  emergencyLimitCents,
 }: {
   people: PersonView[];
   autoAsk: boolean;
+  emergencyLimitCents: number | null;
 }) {
   const router = useRouter();
   const { push: toast } = useToast();
@@ -396,6 +495,8 @@ export function RepairPeople({
           </button>
         </div>
       </section>
+
+      <EmergencyLimit cents={emergencyLimitCents} />
     </>
   );
 }

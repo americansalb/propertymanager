@@ -61,6 +61,10 @@ model Organization {
   // When a tenant reports a problem, ask the owner's matching repair people
   // for a price right away. Off = the owner asks by hand.
   autoAskQuotes Boolean  @default(true)
+  // In an emergency, the first of the owner's own people who can come at or
+  // under this many cents gets the job without waiting for the owner. Null
+  // means the owner approves every price, emergencies included.
+  emergencyLimitCents Int?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -177,6 +181,9 @@ model Property {
   parkingNotes         String?
   waterShutoffLocation String?
   breakerPanelLocation String?
+  gasShutoffLocation   String?
+  /// The furnace or boiler and its switch.
+  furnaceLocation      String?
   /// AES-256-GCM via lib/crypto (enc1: prefix); never stored in plaintext.
   accessCodes          String?
   petsAllowed          Boolean?
@@ -516,6 +523,9 @@ model Contractor {
   // Say yes for the owner when this person's price is at or under this many
   // cents. Null means always ask the owner.
   autoApproveCents Int?
+  // The price this person and the owner agreed on for coming out. It fills
+  // in their answer, so an emergency is one tap for them.
+  calloutCents     Int?
   archivedAt       DateTime?
   createdByUserId  String
   createdAt        DateTime  @default(now())

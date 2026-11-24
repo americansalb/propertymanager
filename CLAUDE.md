@@ -70,6 +70,26 @@ approving is "go ahead at this price". Next on this track: an urgent path
 (first trusted person to say yes), texts (needs a texting account), an AI
 price estimate (needs an API key), then outside pros.
 
+Direction (founder, Nov 2026): the product is "when something breaks in my
+rental, it gets handled at a price I already agreed to, even when I am
+asleep or abroad". One step at a time, each one earning before the next:
+0 the urgent response on the founder's own Chicago units (built, below),
+1 a phone line tenants call or text ($19 a month, needs a texting account),
+2 checked backup pros for when the owner's people do not answer, 3 leak
+and heat sensors on one approved kit, 4 everyday repairs with real prices
+and a second city. Nothing from a later step gets built early.
+
+Emergencies (built Nov 2026, step 0): a tenant taps what is happening
+(`/tenant/emergency`) and sees what to do right now, with the owner's words
+and photo of the water shutoff, breaker panel, gas shutoff or furnace (one
+photo per spot, `Attachment` kind `SPOT_*`, set on the property page). It
+becomes an ordinary repair marked EMERGENCY. The owner's people who fit are
+asked to come; their agreed call-out price (`Contractor.calloutCents`) is
+filled in, and the first yes at or under `Organization.emergencyLimitCents`
+gets the job without the owner. A gas smell asks nobody: it is for 911 and
+the gas company. Owners can also write a repair down themselves
+(`/landlord/maintenance/new`). Rules live in `src/lib/urgent.ts`.
+
 Pro pages (built Nov 2026): repair pros sign up, confirm their email
 (`AuthToken` EMAIL_VERIFY, `/verify/[token]`), pick trades, set starting
 prices on jobs from `src/lib/pro-catalog.ts` (`ProPrice`), add ZIP codes, and

@@ -1,5 +1,6 @@
 import { previewQuote } from "@/lib/services/quote";
 import { formatQuotePrice } from "@/lib/quotes";
+import { formatCents } from "@/lib/money";
 import { CATEGORY_LABEL } from "@/lib/validation/maintenance";
 import { Badge } from "@/components/ui";
 import { QuoteAnswerForm } from "@/components/quote-answer-form";
@@ -56,6 +57,7 @@ export default async function QuotePage({ params }: { params: Promise<{ token: s
   }
 
   const category = CATEGORY_LABEL[q.category as keyof typeof CATEGORY_LABEL] ?? q.category;
+  const emergency = q.urgency === "EMERGENCY";
   const job = (
     <>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
@@ -68,7 +70,9 @@ export default async function QuotePage({ params }: { params: Promise<{ token: s
       <p className="mt-1 text-stone-600">
         {q.where} · {category}
       </p>
-      <p className="mt-3 whitespace-pre-wrap text-lg leading-7 text-stone-900">{q.description}</p>
+      {q.description && (
+        <p className="mt-3 whitespace-pre-wrap text-lg leading-7 text-stone-900">{q.description}</p>
+      )}
       <dl className="mt-3 border-t border-stone-100 pt-2">
         <Fact label="Going in">
           {q.mayEnter ? "You may go in even if the tenant is out" : "Only when the tenant is home"}
@@ -89,9 +93,16 @@ export default async function QuotePage({ params }: { params: Promise<{ token: s
         <dl className="border-t border-stone-100 pt-2">
           {myPrice && <Fact label="Your price">{myPrice}</Fact>}
           {mine.availability && <Fact label="You said you can come">{mine.availability}</Fact>}
+          {q.spots.map((s) => (
+            <Fact key={s.label} label={s.label}>
+              {s.where ?? `${q.ownerName} has a photo of it. Ask them for it.`}
+            </Fact>
+          ))}
         </dl>
         <p className="mt-3 text-stone-600">
-          {q.ownerName} said yes. They will be in touch to set the time.
+          {emergency
+            ? `${q.ownerName} has been told you are coming.`
+            : `${q.ownerName} said yes. They will be in touch to set the time.`}
         </p>
       </div>
     );
@@ -100,7 +111,10 @@ export default async function QuotePage({ params }: { params: Promise<{ token: s
   return (
     <div>
       <p className="text-sm text-stone-500">
-        Hi {q.contractorName}. {q.ownerName} needs a price.
+        Hi {q.contractorName}.{" "}
+        {emergency
+          ? `${q.ownerName} has an emergency and needs someone now.`
+          : `${q.ownerName} needs a price.`}
       </p>
       <div className="mt-1">{job}</div>
 
@@ -120,9 +134,16 @@ export default async function QuotePage({ params }: { params: Promise<{ token: s
       )}
 
       <div className="mt-5 border-t border-stone-100 pt-5">
+        {mine.priceLowCents == null && q.calloutCents != null && (
+          <p className="mb-4 text-stone-700">
+            Your agreed price to come out is {formatCents(q.calloutCents)}. It is filled in below.
+            Change it if this one is different.
+          </p>
+        )}
         <QuoteAnswerForm
           token={token}
           ownerName={q.ownerName}
+          emergency={emergency}
           initial={
             mine.priceLowCents != null
               ? {
@@ -131,7 +152,14 @@ export default async function QuotePage({ params }: { params: Promise<{ token: s
                   availability: mine.availability ?? "",
                   note: mine.note ?? "",
                 }
-              : undefined
+              : q.calloutCents != null
+                ? {
+                    price: (q.calloutCents / 100).toString(),
+                    high: "",
+                    availability: "",
+                    note: "",
+                  }
+                : undefined
           }
         />
       </div>

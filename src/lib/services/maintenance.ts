@@ -1,8 +1,12 @@
 /**
- * Maintenance service (tenant side): a tenant files a request against their
- * active lease, it lands as SUBMITTED with a status-history row, and the
- * landlord is notified. Landlord-side triage and the marketplace bridge come
- * later; this is the tenant's "report a problem" path.
+ * Repairs. A tenant reports a problem against their lease, or the owner
+ * writes one down themselves (a call, a text, something they saw). Either
+ * way it lands as SUBMITTED with a status-history row, the owner's own
+ * repair people who fit are asked, and the other side is told.
+ *
+ * An emergency is the same repair with two differences: the tenant is told
+ * what to do right now (lib/urgent), and the first of the owner's people
+ * who can come within the emergency limit gets the job (services/quote).
  */
 import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
@@ -10,10 +14,15 @@ import { notify } from "@/lib/services/notification";
 import { autoAskOnReport } from "@/lib/services/quote";
 import { NotFoundError, type OrgCtx } from "@/lib/authz/api";
 import { unitTitle } from "@/lib/units";
+import { getPropertySpots } from "@/lib/services/spots";
+import { tenantUserIdsForLease } from "@/lib/services/tenant";
+import { EMERGENCY, askedSummary, knownSpots, type SpotView } from "@/lib/urgent";
 import {
   CATEGORY_LABEL,
   MAINT_STATUS_LABEL,
   MAINT_TENANT_UPDATE_VERB,
+  type EmergencyReportInput,
+  type LandlordRepairInput,
   type MaintenanceRequestInput,
   type MaintenanceRespondInput,
 } from "@/lib/validation/maintenance";
@@ -49,7 +58,19 @@ async function tenantActiveLease(userId: string) {
   );
 }
 
-export async function createTenantMaintenanceRequest(userId: string, input: MaintenanceRequestInput) {
+/** The shutoffs and the panel in the building a tenant lives in. */
+export async function getTenantSpots(userId: string): Promise<SpotView[]> {
+  const lease = await tenantActiveLease(userId);
+  if (!lease) return [];
+  return knownSpots(await getPropertySpots(lease.unit.propertyId));
+}
+
+export async function createTenantMaintenanceRequest(
+  userId: string,
+  input: MaintenanceRequestInput,
+  /** False when the owner's people are the wrong call (a gas smell). */
+  opts: { askPeople?: boolean } = {},
+): Promise<{ id: string; asked: number }> {
   const lease = await tenantActiveLease(userId);
   if (!lease) throw new NotFoundError("No active lease to attach this to.");
   const tenant = await prisma.user.findUniqueOrThrow({
@@ -89,11 +110,16 @@ export async function createTenantMaintenanceRequest(userId: string, input: Main
 
   // Ask the owner's own repair people for a price right away, if they
   // have any that fit. This never blocks or fails the tenant's report.
-  const asked = await autoAskOnReport(lease.orgId, request.id);
-  const askedLine =
-    asked.length > 0
-      ? ` We asked ${asked.map((a) => a.name).join(" and ")} for a price.`
-      : "";
+  const emergency = input.urgency === "EMERGENCY";
+  const askPeople = opts.askPeople !== false;
+  const { asked, off } = askPeople
+    ? await autoAskOnReport(lease.orgId, request.id)
+    : { asked: [], off: false };
+  const askedLine = askedSummary({
+    asked,
+    emergency,
+    skipped: !askPeople ? "NOT_THEIR_JOB" : off ? "OFF" : null,
+  });
 
   // Alert the landlord(s). Email is flushed by the worker tick.
   const members = await prisma.membership.findMany({
@@ -106,14 +132,122 @@ export async function createTenantMaintenanceRequest(userId: string, input: Main
       userId: m.userId,
       channel: "EMAIL",
       type: "maintenance.submitted",
-      title: `${input.urgency === "EMERGENCY" ? "Emergency: " : ""}${who} reported a problem`,
+      title: `${emergency ? "Emergency: " : ""}${who} reported a problem`,
       body: `${input.title} (${CATEGORY_LABEL[input.category]}) at ${unitTitle(lease.unit.unitNumber)}.${askedLine}`,
       linkUrl: `/landlord/maintenance/${request.id}`,
       refType: "MaintenanceRequest",
       refId: request.id,
     });
   }
-  return { id: request.id };
+  // The tenant is only told about people who were really reached.
+  return { id: request.id, asked: asked.filter((a) => a.emailed).length };
+}
+
+/**
+ * A tenant's emergency: one tap for what is happening. It becomes an
+ * ordinary repair marked EMERGENCY, so everything after it is the same.
+ */
+export async function createTenantEmergency(userId: string, input: EmergencyReportInput) {
+  const plan = EMERGENCY[input.kind];
+  return createTenantMaintenanceRequest(
+    userId,
+    {
+      category: plan.category,
+      title: plan.title,
+      description: input.details ?? "Reported as an emergency. No details were added.",
+      urgency: "EMERGENCY",
+      // Someone is on their way to a home with a tenant in it: they knock.
+      permissionToEnter: false,
+    },
+    { askPeople: plan.askPeople },
+  );
+}
+
+// ── The owner writes a repair down ──────────────────────────────────────────
+
+export type RepairPlace = { unitId: string; label: string };
+
+/** Every home the owner has, as "Unit 1F, Oakdale Two-Flat". */
+export async function listRepairPlaces(ctx: OrgCtx): Promise<RepairPlace[]> {
+  const units = await prisma.unit.findMany({
+    where: { orgId: ctx.orgId },
+    orderBy: [{ property: { name: "asc" } }, { unitNumber: "asc" }],
+    select: { id: true, unitNumber: true, property: { select: { name: true } } },
+  });
+  return units.map((u) => ({
+    unitId: u.id,
+    label:
+      u.unitNumber.toLowerCase() === "main"
+        ? u.property.name
+        : `${unitTitle(u.unitNumber)}, ${u.property.name}`,
+  }));
+}
+
+export async function createLandlordMaintenanceRequest(
+  ctx: OrgCtx,
+  input: LandlordRepairInput,
+): Promise<{ id: string; asked: number }> {
+  const unit = await prisma.unit.findFirst({
+    where: { id: input.unitId, orgId: ctx.orgId },
+    select: {
+      id: true,
+      unitNumber: true,
+      propertyId: true,
+      // The people living there see the repair and its updates.
+      leases: {
+        where: { status: "ACTIVE" },
+        orderBy: { startDate: "desc" },
+        take: 1,
+        select: { id: true },
+      },
+    },
+  });
+  if (!unit) throw new NotFoundError("That home is not one of yours.");
+  const leaseId = unit.leases[0]?.id ?? null;
+
+  const request = await prisma.maintenanceRequest.create({
+    data: {
+      orgId: ctx.orgId,
+      propertyId: unit.propertyId,
+      unitId: unit.id,
+      leaseId,
+      createdByUserId: ctx.userId,
+      origin: "LANDLORD",
+      category: input.category,
+      title: input.title,
+      description: input.description,
+      urgency: input.urgency,
+      permissionToEnter: input.permissionToEnter,
+      status: "SUBMITTED",
+    },
+  });
+  await prisma.maintenanceStatusHistory.create({
+    data: { requestId: request.id, toStatus: "SUBMITTED", actorUserId: ctx.userId },
+  });
+  void audit({
+    actorUserId: ctx.userId,
+    orgId: ctx.orgId,
+    action: "maintenance.create",
+    entityType: "MaintenanceRequest",
+    entityId: request.id,
+    meta: { category: input.category, urgency: input.urgency, origin: "LANDLORD" },
+  });
+
+  const { asked } = await autoAskOnReport(ctx.orgId, request.id, ctx.userId);
+
+  for (const userId of await tenantUserIdsForLease(leaseId)) {
+    await notify({
+      userId,
+      channel: "IN_APP",
+      type: "maintenance.update",
+      title: `Your landlord opened a repair: ${input.title}`,
+      body: "Updates show up on your Repairs page.",
+      linkUrl: "/tenant/maintenance",
+      refType: "MaintenanceRequest",
+      refId: request.id,
+    });
+  }
+  return { id: request.id, asked: asked.length };
 }
 
 export type TenantRequestRow = {
@@ -329,7 +463,14 @@ export async function respondToMaintenance(
 ): Promise<{ id: string; status: string }> {
   const req = await prisma.maintenanceRequest.findFirst({
     where: { id, orgId: ctx.orgId },
-    select: { id: true, status: true, title: true, createdByUserId: true },
+    select: {
+      id: true,
+      status: true,
+      title: true,
+      createdByUserId: true,
+      origin: true,
+      leaseId: true,
+    },
   });
   if (!req) throw new NotFoundError("Request not found.");
 
@@ -361,16 +502,21 @@ export async function respondToMaintenance(
   });
 
   const statusLabel = MAINT_STATUS_LABEL[nextStatus] ?? nextStatus;
-  await notify({
-    userId: req.createdByUserId,
-    channel: "IN_APP",
-    type: "maintenance.update",
-    title: changed ? `Update: ${req.title}` : `Note on: ${req.title}`,
-    body: note ?? `Your landlord ${MAINT_TENANT_UPDATE_VERB[nextStatus] ?? `marked this ${statusLabel.toLowerCase()}`}.`,
-    linkUrl: "/tenant/maintenance",
-    refType: "MaintenanceRequest",
-    refId: id,
-  });
+  // Whoever reported it, or the people living there when the owner did.
+  const tellUserIds =
+    req.origin === "TENANT" ? [req.createdByUserId] : await tenantUserIdsForLease(req.leaseId);
+  for (const userId of tellUserIds) {
+    await notify({
+      userId,
+      channel: "IN_APP",
+      type: "maintenance.update",
+      title: changed ? `Update: ${req.title}` : `Note on: ${req.title}`,
+      body: note ?? `Your landlord ${MAINT_TENANT_UPDATE_VERB[nextStatus] ?? `marked this ${statusLabel.toLowerCase()}`}.`,
+      linkUrl: "/tenant/maintenance",
+      refType: "MaintenanceRequest",
+      refId: id,
+    });
+  }
 
   void audit({
     actorUserId: ctx.userId,

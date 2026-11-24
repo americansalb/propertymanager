@@ -11,6 +11,8 @@ import { PropertyDetailsCard } from "@/components/landlord/property-details-card
 import { PropertyFacts } from "@/components/landlord/property-header-editor";
 import { PhotoStrip } from "@/components/landlord/photo-strip";
 import { listPhotos, PHOTO_LIMITS } from "@/lib/services/photos";
+import { getOwnerSpots } from "@/lib/services/spots";
+import { SpotPhotos } from "@/components/landlord/spot-photos";
 import { BackLink, Section, Stat } from "@/components/ui";
 
 export const metadata = { title: "Property" };
@@ -60,6 +62,8 @@ export default async function PropertyDetailPage({
     property.id,
   );
 
+  const spots = await getOwnerSpots({ userId: session.userId, orgId: session.orgId }, property.id);
+
   // The answer first: how full is it, and what does it bring in.
   const livedIn = units.filter((u) => u.status !== "VACANT");
   const vacant = units.filter((u) => u.status === "VACANT");
@@ -76,6 +80,8 @@ export default async function PropertyDetailPage({
     parkingNotes: property.parkingNotes,
     waterShutoffLocation: property.waterShutoffLocation,
     breakerPanelLocation: property.breakerPanelLocation,
+    gasShutoffLocation: property.gasShutoffLocation,
+    furnaceLocation: property.furnaceLocation,
     accessCodes: codes.value,
     accessLocked: codes.locked,
     petsAllowed: property.petsAllowed,
@@ -132,6 +138,13 @@ export default async function PropertyDetailPage({
 
       <Section title="Building details">
         <PropertyDetailsCard propertyId={property.id} details={details} />
+      </Section>
+
+      <Section
+        title="In an emergency"
+        hint="Your tenant sees these words and photos the moment they report a flood, a power cut or no heat."
+      >
+        <SpotPhotos propertyId={property.id} spots={spots} />
       </Section>
 
       <Section title="This property">

@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { ConflictError, NotFoundError, type OrgCtx } from "@/lib/authz/api";
+import { SPOTS, spotKind, type Spot } from "@/lib/urgent";
 
 /**
  * Photos for properties and units. Inputs are resized to <=1600px webp so
@@ -40,24 +41,15 @@ export function listPhotos(ctx: OrgCtx, entityType: PhotoEntityType, entityId: s
   });
 }
 
-export async function addPhoto(
+/** Resize, store the bytes, and record the attachment. */
+async function storeImage(
   ctx: OrgCtx,
   entityType: PhotoEntityType,
   entityId: string,
-  input: { bytes: Buffer; mimeType: string },
+  kind: string,
+  bytes: Buffer,
 ) {
-  await assertEntityInOrg(ctx, entityType, entityId);
-
-  const count = await prisma.attachment.count({
-    where: { orgId: ctx.orgId, entityType, entityId, kind: "PHOTO" },
-  });
-  if (count >= PHOTO_LIMITS[entityType]) {
-    throw new ConflictError(
-      `${entityType === "Unit" ? "Units" : "Properties"} hold up to ${PHOTO_LIMITS[entityType]} photos. Remove one first.`,
-    );
-  }
-
-  const processed = await sharp(input.bytes, { failOn: "error" })
+  const processed = await sharp(bytes, { failOn: "error" })
     .rotate() // honor EXIF orientation
     .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
     .webp({ quality: 80 })
@@ -77,7 +69,7 @@ export async function addPhoto(
     data: {
       entityType,
       entityId,
-      kind: "PHOTO",
+      kind,
       storageKey: blob.id,
       url: `/api/v1/files/${blob.id}`,
       mimeType: "image/webp",
@@ -94,14 +86,62 @@ export async function addPhoto(
     action: "photo.add",
     entityType,
     entityId,
-    meta: { attachmentId: attachment.id, sizeBytes: processed.length },
+    meta: { attachmentId: attachment.id, kind, sizeBytes: processed.length },
   });
+  return attachment;
+}
+
+export async function addPhoto(
+  ctx: OrgCtx,
+  entityType: PhotoEntityType,
+  entityId: string,
+  input: { bytes: Buffer; mimeType: string },
+) {
+  await assertEntityInOrg(ctx, entityType, entityId);
+
+  const count = await prisma.attachment.count({
+    where: { orgId: ctx.orgId, entityType, entityId, kind: "PHOTO" },
+  });
+  if (count >= PHOTO_LIMITS[entityType]) {
+    throw new ConflictError(
+      `${entityType === "Unit" ? "Units" : "Properties"} hold up to ${PHOTO_LIMITS[entityType]} photos. Remove one first.`,
+    );
+  }
+  return storeImage(ctx, entityType, entityId, "PHOTO", input.bytes);
+}
+
+/**
+ * The photo of one spot in a building: the water shutoff, the breaker
+ * panel. There is one per spot, so a new photo takes the old one's place.
+ */
+export async function setSpotPhoto(
+  ctx: OrgCtx,
+  propertyId: string,
+  spot: Spot,
+  input: { bytes: Buffer; mimeType: string },
+) {
+  await assertEntityInOrg(ctx, "Property", propertyId);
+  const kind = spotKind(spot);
+  const old = await prisma.attachment.findMany({
+    where: { orgId: ctx.orgId, entityType: "Property", entityId: propertyId, kind },
+    select: { id: true, storageKey: true },
+  });
+  // Store the new one first: a bad file must not cost them the old photo.
+  const attachment = await storeImage(ctx, "Property", propertyId, kind, input.bytes);
+  if (old.length > 0) {
+    await prisma.attachment.deleteMany({ where: { id: { in: old.map((o) => o.id) } } });
+    await prisma.fileBlob.deleteMany({ where: { id: { in: old.map((o) => o.storageKey) } } });
+  }
   return attachment;
 }
 
 export async function deletePhoto(ctx: OrgCtx, attachmentId: string) {
   const attachment = await prisma.attachment.findFirst({
-    where: { id: attachmentId, orgId: ctx.orgId, kind: "PHOTO" },
+    where: {
+      id: attachmentId,
+      orgId: ctx.orgId,
+      kind: { in: ["PHOTO", ...SPOTS.map(spotKind)] },
+    },
     select: { id: true, storageKey: true, entityType: true, entityId: true },
   });
   if (!attachment) throw new NotFoundError("Photo not found.");
@@ -123,6 +163,36 @@ export async function getPhotoForOrg(orgId: string, blobId: string) {
     select: { id: true },
   });
   if (!attachment) return null;
+  return prisma.fileBlob.findUnique({
+    where: { id: blobId },
+    select: { bytes: true, mimeType: true },
+  });
+}
+
+/**
+ * A tenant may see the photos of the spots in the building they live in,
+ * and nothing else: not the gallery, not another building.
+ */
+export async function getSpotPhotoForTenant(userId: string, blobId: string) {
+  const attachment = await prisma.attachment.findFirst({
+    where: {
+      storageKey: blobId,
+      entityType: "Property",
+      kind: { in: SPOTS.map(spotKind) },
+    },
+    select: { entityId: true },
+  });
+  if (!attachment) return null;
+  const lives = await prisma.leaseTenant.count({
+    where: {
+      tenantProfile: { userId },
+      lease: {
+        status: { in: ["DRAFT", "ACTIVE"] },
+        unit: { propertyId: attachment.entityId },
+      },
+    },
+  });
+  if (lives === 0) return null;
   return prisma.fileBlob.findUnique({
     where: { id: blobId },
     select: { bytes: true, mimeType: true },

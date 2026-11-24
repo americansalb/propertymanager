@@ -111,3 +111,13 @@ export async function getTenantHome(userId: string): Promise<TenantHome | null> 
     terms: tenantLeaseTerms(lease),
   };
 }
+
+/** The people living under one lease, as user ids. Empty for no lease. */
+export async function tenantUserIdsForLease(leaseId: string | null | undefined): Promise<string[]> {
+  if (!leaseId) return [];
+  const rows = await prisma.leaseTenant.findMany({
+    where: { leaseId },
+    select: { tenantProfile: { select: { userId: true } } },
+  });
+  return rows.map((r) => r.tenantProfile.userId);
+}
