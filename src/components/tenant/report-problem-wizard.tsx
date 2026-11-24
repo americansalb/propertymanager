@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { OptionCards, WizardShell } from "@/components/wizard/wizard-shell";
 import { Badge, InfoRow, StepMark, buttonCls, inputCls } from "@/components/ui";
 import {
+  CATEGORY_HINT,
   CATEGORY_LABEL,
   MAINTENANCE_CATEGORIES,
   MAINTENANCE_URGENCIES,
@@ -35,17 +36,6 @@ export type TenantRequest = {
     fromLandlord: boolean;
     changed: boolean;
   }>;
-};
-
-const CATEGORY_HINT: Record<Cat, string> = {
-  PLUMBING: "Leaks, clogs, no hot water",
-  ELECTRICAL: "Outlets, lights, breakers",
-  HVAC: "Heat, air conditioning, thermostat",
-  APPLIANCE: "Fridge, stove, dishwasher, laundry",
-  DOORS_LOCKS: "Locks, keys, doors, windows",
-  PEST: "Insects or rodents",
-  FLOORING_WALLS: "Floors, walls, ceilings, paint",
-  OTHER: "Anything else",
 };
 
 const URGENCY_HINT: Record<Urg, string> = {
