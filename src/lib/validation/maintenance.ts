@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EMERGENCY_KINDS } from "@/lib/urgent";
 
 export const MAINTENANCE_CATEGORIES = [
   "PLUMBING",
@@ -24,6 +25,32 @@ export const maintenanceRequestSchema = z.object({
 });
 
 export type MaintenanceRequestInput = z.infer<typeof maintenanceRequestSchema>;
+
+/** A tenant's emergency: what is happening, and a line more if they like. */
+export const emergencyReportSchema = z.object({
+  kind: z.enum(EMERGENCY_KINDS),
+  details: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().trim().max(2000).optional(),
+  ),
+});
+
+export type EmergencyReportInput = z.infer<typeof emergencyReportSchema>;
+
+/** A repair the owner writes down themselves: a call, a text, something they saw. */
+export const landlordRepairSchema = z.object({
+  unitId: z.string().min(1, "Pick the home it is in."),
+  category: z.enum(MAINTENANCE_CATEGORIES, { message: "Pick the kind of problem." }),
+  title: z.string().trim().min(3, "Say what is wrong in a few words.").max(120),
+  description: z.preprocess(
+    (v) => (typeof v === "string" ? v : ""),
+    z.string().trim().max(2000),
+  ),
+  urgency: z.enum(MAINTENANCE_URGENCIES),
+  permissionToEnter: z.boolean().default(false),
+});
+
+export type LandlordRepairInput = z.infer<typeof landlordRepairSchema>;
 
 export const CATEGORY_LABEL: Record<(typeof MAINTENANCE_CATEGORIES)[number], string> = {
   PLUMBING: "Plumbing",

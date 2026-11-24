@@ -169,6 +169,8 @@ export const propertyDetailsSchema = z.object({
   parkingNotes: clearableText(240),
   waterShutoffLocation: clearableText(240),
   breakerPanelLocation: clearableText(240),
+  gasShutoffLocation: clearableText(240),
+  furnaceLocation: clearableText(240),
   accessCodes: clearableText(240),
   petsAllowed: z
     .union([

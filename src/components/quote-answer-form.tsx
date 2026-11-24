@@ -11,10 +11,13 @@ import { buttonCls, inputCls } from "@/components/ui";
 export function QuoteAnswerForm({
   token,
   ownerName,
+  emergency = false,
   initial,
 }: {
   token: string;
   ownerName: string;
+  /** Someone is needed now: the price is for coming out, and the first yes wins. */
+  emergency?: boolean;
   initial?: { price: string; high: string; availability: string; note: string };
 }) {
   const router = useRouter();
@@ -66,7 +69,7 @@ export function QuoteAnswerForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className={range ? "" : "sm:col-span-2"}>
           <label htmlFor={`${id}-price`} className={label}>
-            {range ? "Your price, at least" : "Your price"}
+            {range ? "Your price, at least" : emergency ? "Your price to come out" : "Your price"}
           </label>
           <div className="relative">
             <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-stone-500">
@@ -118,7 +121,7 @@ export function QuoteAnswerForm({
       </button>
 
       <label htmlFor={`${id}-when`} className={`${label} mt-4`}>
-        When can you come?
+        {emergency ? "How soon can you be there?" : "When can you come?"}
       </label>
       <input
         id={`${id}-when`}
@@ -127,7 +130,7 @@ export function QuoteAnswerForm({
           setAvailability(e.target.value);
           setError(null);
         }}
-        placeholder="Tomorrow morning"
+        placeholder={emergency ? "In 30 minutes" : "Tomorrow morning"}
         className={inputCls}
       />
 
@@ -154,7 +157,7 @@ export function QuoteAnswerForm({
         disabled={busy !== null}
         className={`${buttonCls("primary")} mt-5 min-h-12 w-full`}
       >
-        {busy === "price" ? "Sending…" : "Send my price"}
+        {busy === "price" ? "Sending…" : emergency ? "I can come" : "Send my price"}
       </button>
       <button
         onClick={() => void send("pass")}

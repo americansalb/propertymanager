@@ -39,6 +39,8 @@ export const contractorSchema = z
     notes: optionalText(500),
     /** Say yes for me up to this many dollars. Empty = always ask me. */
     autoApproveDollars: dollarsToCentsOrNull.optional(),
+    /** The price we agreed on for coming out. Empty = none agreed. */
+    calloutDollars: dollarsToCentsOrNull.optional(),
   })
   .refine((d) => Boolean(d.phone) || Boolean(d.email), {
     message: "Add a phone number or an email, so they can be reached.",
@@ -56,11 +58,20 @@ export const contractorPatchSchema = z.object({
   ),
   notes: optionalText(500),
   autoApproveDollars: dollarsToCentsOrNull.optional(),
+  calloutDollars: dollarsToCentsOrNull.optional(),
 });
 
 export type ContractorPatch = z.infer<typeof contractorPatchSchema>;
 
-export const quoteSettingsSchema = z.object({ autoAskQuotes: z.boolean() });
+export const quoteSettingsSchema = z
+  .object({
+    autoAskQuotes: z.boolean().optional(),
+    /** In an emergency, say yes to whoever can come first, up to this. Empty = always ask me. */
+    emergencyLimitDollars: dollarsToCentsOrNull.optional(),
+  })
+  .refine((d) => d.autoAskQuotes !== undefined || d.emergencyLimitDollars !== undefined, {
+    message: "Nothing to save.",
+  });
 
 export const askQuotesSchema = z.object({
   contractorIds: z.array(z.string().min(1)).max(10).optional(),

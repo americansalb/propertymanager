@@ -4,8 +4,10 @@ import {
   addPhoto,
   isAllowedImageType,
   MAX_UPLOAD_BYTES,
+  setSpotPhoto,
   type PhotoEntityType,
 } from "@/lib/services/photos";
+import { isSpot } from "@/lib/urgent";
 
 export async function POST(req: Request) {
   const auth = await requireOrgApi();
@@ -17,6 +19,11 @@ export async function POST(req: Request) {
   const entityType = form.get("entityType");
   const entityId = form.get("entityId");
   const file = form.get("file");
+  // A spot photo (water shutoff, breaker panel) belongs to a property.
+  const spot = form.get("spot");
+  if (spot !== null && (!isSpot(spot) || entityType !== "Property")) {
+    return NextResponse.json({ error: "Invalid upload." }, { status: 400 });
+  }
   if (
     (entityType !== "Property" && entityType !== "Unit") ||
     typeof entityId !== "string" ||
@@ -33,10 +40,12 @@ export async function POST(req: Request) {
 
   try {
     const bytes = Buffer.from(await file.arrayBuffer());
-    const attachment = await addPhoto(auth.ctx, entityType as PhotoEntityType, entityId, {
-      bytes,
-      mimeType: file.type,
-    });
+    const attachment = isSpot(spot)
+      ? await setSpotPhoto(auth.ctx, entityId, spot, { bytes, mimeType: file.type })
+      : await addPhoto(auth.ctx, entityType as PhotoEntityType, entityId, {
+          bytes,
+          mimeType: file.type,
+        });
     return NextResponse.json({ photo: attachment }, { status: 201 });
   } catch (e) {
     if (e instanceof Error && /Input buffer|unsupported image/i.test(e.message)) {

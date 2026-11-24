@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { OptionCards, WizardShell } from "@/components/wizard/wizard-shell";
 import { Badge, InfoRow, StepMark, buttonCls, inputCls } from "@/components/ui";
@@ -252,6 +253,15 @@ export function MaintenanceClient({ requests }: { requests: TenantRequest[] }) {
           )}
 
           {id === "urgency" && (
+            <p className="-mt-3 mb-4 text-sm text-stone-600">
+              Flooding, no power, no heat or a gas smell?{" "}
+              <Link href="/tenant/emergency" className="font-medium text-patina underline">
+                See what to do right now
+              </Link>
+              .
+            </p>
+          )}
+          {id === "urgency" && (
             <OptionCards
               options={MAINTENANCE_URGENCIES.map((u) => ({
                 value: u,
@@ -402,6 +412,13 @@ export function MaintenanceClient({ requests }: { requests: TenantRequest[] }) {
           </button>
         )}
       </div>
+      <p className="mt-1 text-stone-600">
+        Is it an emergency?{" "}
+        <Link href="/tenant/emergency" className="font-medium text-patina underline">
+          See what to do right now
+        </Link>
+        .
+      </p>
 
       {requests.length === 0 ? (
         <section className={`${card} mt-5 p-6 sm:p-8`}>

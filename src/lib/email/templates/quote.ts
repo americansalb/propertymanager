@@ -86,10 +86,13 @@ export type QuoteRequestEmailInput = {
   where: string;
   /** True for emergencies and urgent problems. */
   urgent: boolean;
+  /** True when someone is needed now, not a price for later. */
+  emergency?: boolean;
   link: string;
 };
 
 export function quoteRequestEmail(i: QuoteRequestEmailInput): Email {
+  if (i.emergency) return emergencyRequestEmail(i);
   const subject = `${i.urgent ? "Urgent: " : ""}${i.ownerName} needs a price: ${i.title}`;
   const text = [
     `Hi ${i.contractorName},`,
@@ -116,6 +119,40 @@ export function quoteRequestEmail(i: QuoteRequestEmailInput): Email {
       p("Give your price and when you can come. It takes a minute, and you do not need an account."),
     button: { label: "Give my price", url: i.link },
     footHtml: `If you cannot take it, the same link lets you say so.<br/>Button not working? Paste this into your browser:<br/><a href="${esc(i.link)}" style="color:${INK_SOFT};word-break:break-all;">${esc(i.link)}</a>`,
+  });
+  return { subject, html, text };
+}
+
+/** The same ask, said for an emergency: can you come, and at what price. */
+function emergencyRequestEmail(i: QuoteRequestEmailInput): Email {
+  const subject = `Emergency: ${i.ownerName} needs someone now: ${i.title}`;
+  const ask =
+    "Can you come? Say when you can be there and your price to come out. It takes a minute, and you do not need an account.";
+  const text = [
+    `Hi ${i.contractorName},`,
+    "",
+    `${i.ownerName} has an emergency and needs someone now.`,
+    "",
+    `${i.title}`,
+    ...(i.description ? [`${i.description}`] : []),
+    `Where: ${i.where}`,
+    "",
+    ask,
+    i.link,
+    "",
+    "The first person who can come gets the job. If you cannot, the same link lets you say so.",
+  ].join("\n");
+  const html = layout({
+    brandName: i.brandName,
+    headline: `${i.ownerName} has an emergency`,
+    bodyHtml:
+      p(`Hi ${esc(i.contractorName)},`) +
+      quoteBlock(i.title) +
+      (i.description ? p(esc(i.description)) : "") +
+      p(`Where: ${strong(i.where)}`) +
+      p(esc(ask)),
+    button: { label: "I can come", url: i.link },
+    footHtml: `The first person who can come gets the job. If you cannot, the same link lets you say so.<br/>Button not working? Paste this into your browser:<br/><a href="${esc(i.link)}" style="color:${INK_SOFT};word-break:break-all;">${esc(i.link)}</a>`,
   });
   return { subject, html, text };
 }

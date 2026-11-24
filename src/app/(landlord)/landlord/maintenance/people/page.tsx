@@ -1,5 +1,5 @@
 import { requireOrg } from "@/lib/authz";
-import { getAutoAsk, listContractors } from "@/lib/services/contractor";
+import { getQuoteSettings, listContractors } from "@/lib/services/contractor";
 import { BackLink } from "@/components/ui";
 import { RepairPeople } from "@/components/landlord/repair-people";
 
@@ -8,7 +8,7 @@ export const metadata = { title: "Your repair people" };
 export default async function RepairPeoplePage() {
   const session = await requireOrg("/landlord/maintenance/people");
   const ctx = { userId: session.userId, orgId: session.orgId };
-  const [people, autoAsk] = await Promise.all([listContractors(ctx), getAutoAsk(ctx)]);
+  const [people, settings] = await Promise.all([listContractors(ctx), getQuoteSettings(ctx)]);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -19,7 +19,11 @@ export default async function RepairPeoplePage() {
       <p className="mt-1 text-stone-600">
         The people you already trust. They need no account: they answer through a link.
       </p>
-      <RepairPeople people={people} autoAsk={autoAsk} />
+      <RepairPeople
+        people={people}
+        autoAsk={settings.autoAsk}
+        emergencyLimitCents={settings.emergencyLimitCents}
+      />
     </div>
   );
 }

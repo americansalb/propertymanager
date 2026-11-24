@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireRole } from "@/lib/authz";
 import { getTenantHome } from "@/lib/services/tenant";
 import { getTenantBilling } from "@/lib/services/charges";
+import { getTenantSpots } from "@/lib/services/maintenance";
+import { SpotList } from "@/components/spots";
 import { formatCents } from "@/lib/money";
 import { formatLeaseDate } from "@/lib/leases";
 import { InfoRow, Section } from "@/components/ui";
@@ -41,6 +43,7 @@ export default async function TenantDashboard() {
       : `${unitTitle(home.unitNumber)}, ${p.address1}`;
   const ended = home.leaseStatus === "ENDED" || home.leaseStatus === "TERMINATED";
   const billing = ended ? null : await getTenantBilling(home.leaseId);
+  const spots = ended ? [] : await getTenantSpots(session.userId);
   const terms = home.terms;
   const facts: Array<[string, string]> = terms
     ? ([
@@ -116,6 +119,19 @@ export default async function TenantDashboard() {
             </Link>
           </li>
           <li>
+            <Link href="/tenant/emergency" className={rowLink}>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-stone-900">
+                  It is an emergency
+                </span>
+                <span className="mt-0.5 block text-sm text-stone-600">
+                  Flooding, no power, no heat, a gas smell. See what to do right now.
+                </span>
+              </span>
+              <IconChevronRight className="h-4 w-4 shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-patina" />
+            </Link>
+          </li>
+          <li>
             <Link href="/tenant/messages" className={rowLink}>
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-semibold text-stone-900">
@@ -130,6 +146,12 @@ export default async function TenantDashboard() {
           </li>
         </ul>
       </section>
+
+      {spots.length > 0 && (
+        <Section title="Where things are" hint="Worth knowing before you need them.">
+          <SpotList spots={spots} />
+        </Section>
+      )}
 
       <Section title="Your lease">
         {ended ? (
