@@ -63,6 +63,18 @@ export const CATEGORY_LABEL: Record<(typeof MAINTENANCE_CATEGORIES)[number], str
   OTHER: "Something else",
 };
 
+/** What each kind covers, in the words someone would use. */
+export const CATEGORY_HINT: Record<(typeof MAINTENANCE_CATEGORIES)[number], string> = {
+  PLUMBING: "Leaks, clogs, no hot water",
+  ELECTRICAL: "Outlets, lights, breakers",
+  HVAC: "Heat, air conditioning, thermostat",
+  APPLIANCE: "Fridge, stove, dishwasher, laundry",
+  DOORS_LOCKS: "Locks, keys, doors, windows",
+  PEST: "Insects or rodents",
+  FLOORING_WALLS: "Floors, walls, ceilings, paint",
+  OTHER: "Anything else",
+};
+
 export const URGENCY_LABEL: Record<(typeof MAINTENANCE_URGENCIES)[number], string> = {
   EMERGENCY: "Emergency",
   URGENT: "Urgent",

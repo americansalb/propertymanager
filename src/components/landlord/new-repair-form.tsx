@@ -1,32 +1,43 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
-import { buttonCls, inputCls } from "@/components/ui";
+import { useState } from "react";
+import { OptionCards, WizardShell } from "@/components/wizard/wizard-shell";
+import { InfoRow, buttonCls, inputCls } from "@/components/ui";
 import { useToast } from "@/components/ui-feedback";
-import { CATEGORY_LABEL, MAINTENANCE_CATEGORIES } from "@/lib/validation/maintenance";
+import {
+  CATEGORY_HINT,
+  CATEGORY_LABEL,
+  MAINTENANCE_CATEGORIES,
+} from "@/lib/validation/maintenance";
 
 type Place = { unitId: string; label: string };
+type Cat = (typeof MAINTENANCE_CATEGORIES)[number];
 type Urgency = "NORMAL" | "URGENT" | "EMERGENCY";
 
-const URGENCY: Array<{ value: Urgency; label: string; hint: string }> = [
-  { value: "NORMAL", label: "It can wait", hint: "Any time in the next week or two" },
-  { value: "URGENT", label: "Soon", hint: "In a day or two" },
-  { value: "EMERGENCY", label: "Emergency", hint: "Someone is needed now" },
+const URGENCY: Array<{ value: Urgency; label: string; description: string }> = [
+  { value: "EMERGENCY", label: "Now", description: "Flooding, no power, no heat, or a safety risk" },
+  { value: "URGENT", label: "In a day or two", description: "It should not wait for the weekend" },
+  { value: "NORMAL", label: "It can wait", description: "Any time in the next week or two" },
 ];
 
-const label = "mb-1 block text-sm font-medium text-stone-700";
-const chip = (on: boolean) =>
-  `inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
-    on
-      ? "border-patina bg-patina-tint text-stone-900"
-      : "border-stone-300 bg-white text-stone-700 hover:border-patina"
-  }`;
+const ALL_STEPS = ["home", "kind", "words", "soon", "check"] as const;
+type Step = (typeof ALL_STEPS)[number];
+
+const TITLE: Record<Step, { title: string; subtitle?: string }> = {
+  home: { title: "Which home is it in?" },
+  kind: { title: "What kind of problem?", subtitle: "Pick the closest one." },
+  words: { title: "What is wrong?", subtitle: "A few words are enough." },
+  soon: { title: "How soon does it need someone?" },
+  check: { title: "Check it and save" },
+};
+
+const fieldLabel = "mb-1 block text-sm font-medium text-stone-700";
 
 /**
- * The owner writes a repair down: a call, a text, something they saw. It
- * becomes the same repair a tenant would have reported, so their own
- * repair people are asked the same way.
+ * The owner writes a repair down: a call, a text, something they saw. One
+ * question at a time, mostly taps, the same way a tenant reports one. It
+ * becomes the same repair, so their own repair people are asked the same way.
  */
 export function NewRepairForm({
   places,
@@ -39,9 +50,11 @@ export function NewRepairForm({
 }) {
   const router = useRouter();
   const { push: toast } = useToast();
-  const id = useId();
+  // With one home there is nothing to pick.
+  const steps: Step[] = places.length === 1 ? ALL_STEPS.filter((s) => s !== "home") : [...ALL_STEPS];
+  const [step, setStep] = useState(0);
   const [unitId, setUnitId] = useState(places.length === 1 ? places[0]!.unitId : "");
-  const [category, setCategory] = useState<string | null>(null);
+  const [category, setCategory] = useState<Cat | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [urgency, setUrgency] = useState<Urgency>("NORMAL");
@@ -49,10 +62,17 @@ export function NewRepairForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const id: Step = steps[step]!;
+  const next = () => {
+    setError(null);
+    setStep((s) => Math.min(s + 1, steps.length - 1));
+  };
+  const back = () => {
+    setError(null);
+    setStep((s) => Math.max(0, s - 1));
+  };
+
   async function save() {
-    if (unitId === "") return setError("Pick the home it is in.");
-    if (category === null) return setError("Pick the kind of problem.");
-    if (title.trim().length < 3) return setError("Say what is wrong in a few words.");
     setBusy(true);
     setError(null);
     const res = await fetch("/api/v1/landlord/maintenance", {
@@ -99,141 +119,147 @@ export function NewRepairForm({
           : "Your repair people who fit are asked for a price right away.";
 
   return (
-    <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
-      <div className="space-y-5">
-        <div>
-          <label htmlFor={`${id}-unit`} className={label}>
-            Which home?
-          </label>
-          <select
-            id={`${id}-unit`}
-            value={unitId}
-            onChange={(e) => {
-              setUnitId(e.target.value);
-              setError(null);
+    <section className="mt-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-8">
+      <WizardShell
+        step={step}
+        total={steps.length}
+        onBack={back}
+        title={TITLE[id].title}
+        subtitle={TITLE[id].subtitle}
+      >
+        {id === "home" && (
+          <OptionCards
+            options={places.map((p) => ({ value: p.unitId, label: p.label }))}
+            onSelect={(v) => {
+              setUnitId(v);
+              next();
             }}
-            className={inputCls}
-          >
-            {places.length !== 1 && <option value="">Pick one</option>}
-            {places.map((p) => (
-              <option key={p.unitId} value={p.unitId}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
+          />
+        )}
 
-        <fieldset>
-          <legend className={label}>What kind of problem?</legend>
-          <div className="flex flex-wrap gap-2">
-            {MAINTENANCE_CATEGORIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => {
-                  setCategory(c);
+        {id === "kind" && (
+          <OptionCards
+            options={MAINTENANCE_CATEGORIES.map((c) => ({
+              value: c,
+              label: CATEGORY_LABEL[c],
+              description: CATEGORY_HINT[c],
+            }))}
+            onSelect={(v) => {
+              setCategory(v as Cat);
+              next();
+            }}
+          />
+        )}
+
+        {id === "words" && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (title.trim().length < 3) return setError("Say what is wrong in a few words.");
+              next();
+            }}
+            className="flex flex-1 flex-col gap-3"
+          >
+            <label className="block">
+              <span className={fieldLabel}>In a few words</span>
+              <input
+                autoFocus
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
                   setError(null);
                 }}
-                aria-pressed={category === c}
-                className={chip(category === c)}
-              >
-                {category === c ? "✓ " : ""}
-                {CATEGORY_LABEL[c]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+                placeholder="Kitchen sink leaks"
+                className={inputCls}
+              />
+            </label>
+            <label className="block">
+              <span className={fieldLabel}>
+                More for the repair person{" "}
+                <span className="font-normal text-stone-500">(if you like)</span>
+              </span>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder="What is happening, and since when."
+                className={`${inputCls} resize-none`}
+              />
+            </label>
+            {error && (
+              <p role="alert" className="text-sm font-medium text-red-700">
+                {error}
+              </p>
+            )}
+            <button type="submit" className={`${buttonCls("primary")} mt-2 w-full py-3`}>
+              Continue
+            </button>
+          </form>
+        )}
 
-        <div>
-          <label htmlFor={`${id}-title`} className={label}>
-            In a few words
-          </label>
-          <input
-            id={`${id}-title`}
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              setError(null);
+        {id === "soon" && (
+          <OptionCards
+            options={URGENCY}
+            onSelect={(v) => {
+              setUrgency(v as Urgency);
+              next();
             }}
-            placeholder="Kitchen sink leaks"
-            className={inputCls}
           />
-        </div>
+        )}
 
-        <div>
-          <label htmlFor={`${id}-more`} className={label}>
-            More for the repair person <span className="font-normal text-stone-500">(if you like)</span>
-          </label>
-          <textarea
-            id={`${id}-more`}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            placeholder="What is happening, and since when."
-            className={`${inputCls} resize-none`}
-          />
-        </div>
+        {id === "check" && (
+          <div className="flex flex-1 flex-col">
+            <dl>
+              <InfoRow label="Home">{places.find((p) => p.unitId === unitId)?.label ?? ""}</InfoRow>
+              <InfoRow label="Problem">{title.trim()}</InfoRow>
+              <InfoRow label="Kind">{category ? CATEGORY_LABEL[category] : ""}</InfoRow>
+              {description.trim() && <InfoRow label="Details">{description.trim()}</InfoRow>}
+              <InfoRow label="How soon">
+                {URGENCY.find((u) => u.value === urgency)?.label ?? ""}
+              </InfoRow>
+            </dl>
 
-        <fieldset>
-          <legend className={label}>How soon?</legend>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {URGENCY.map((u) => (
-              <button
-                key={u.value}
-                type="button"
-                onClick={() => setUrgency(u.value)}
-                aria-pressed={urgency === u.value}
-                className={`min-h-16 rounded-xl border px-3 py-2 text-left transition ${
-                  urgency === u.value
-                    ? "border-patina bg-patina-tint"
-                    : "border-stone-300 bg-white hover:border-patina"
-                }`}
-              >
-                <span className="block text-base font-semibold text-stone-900">{u.label}</span>
-                <span className="block text-sm text-stone-600">{u.hint}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
+            <p className="mt-4 text-sm font-medium text-stone-700">
+              Can the repair person go in if nobody is home?
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              {[
+                { v: false, label: "Only when someone is home" },
+                { v: true, label: "Yes, go in" },
+              ].map((o) => (
+                <button
+                  key={String(o.v)}
+                  type="button"
+                  onClick={() => setMayEnter(o.v)}
+                  aria-pressed={mayEnter === o.v}
+                  className={`min-h-12 rounded-xl border px-3 py-3 text-base font-medium transition ${
+                    mayEnter === o.v
+                      ? "border-patina bg-patina-tint text-stone-900"
+                      : "border-stone-300 bg-white text-stone-700 hover:border-patina"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
 
-        <fieldset>
-          <legend className={label}>Can the repair person go in if nobody is home?</legend>
-          <div className="flex flex-wrap gap-2">
+            {error && (
+              <p role="alert" className="mt-3 text-sm font-medium text-red-700">
+                {error}
+              </p>
+            )}
             <button
               type="button"
-              onClick={() => setMayEnter(false)}
-              aria-pressed={!mayEnter}
-              className={chip(!mayEnter)}
+              disabled={busy}
+              onClick={() => void save()}
+              className={`${buttonCls("primary")} mt-6 w-full py-3 disabled:opacity-60`}
             >
-              {!mayEnter ? "✓ " : ""}Only when someone is home
+              {busy ? "Saving…" : "Save this repair"}
             </button>
-            <button
-              type="button"
-              onClick={() => setMayEnter(true)}
-              aria-pressed={mayEnter}
-              className={chip(mayEnter)}
-            >
-              {mayEnter ? "✓ " : ""}Yes, go in
-            </button>
+            <p className="mt-3 text-center text-sm text-stone-500">{who}</p>
           </div>
-        </fieldset>
-      </div>
-
-      {error && (
-        <p role="alert" className="mt-4 text-sm font-medium text-red-700">
-          {error}
-        </p>
-      )}
-
-      <button
-        type="button"
-        onClick={() => void save()}
-        disabled={busy}
-        className={`${buttonCls("primary")} mt-6 w-full`}
-      >
-        {busy ? "Saving…" : "Save this repair"}
-      </button>
-      <p className="mt-3 text-center text-sm text-stone-500">{who}</p>
+        )}
+      </WizardShell>
     </section>
   );
 }
